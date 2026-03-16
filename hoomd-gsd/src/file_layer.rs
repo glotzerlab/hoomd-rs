@@ -151,14 +151,10 @@ pub enum ReadError {
     Decode(String, u64, #[source] DecodeError),
 }
 
-/// Errors that can occur while encoding data to a file.
+/// Errors that can occur while encoding data to write.
 #[non_exhaustive]
 #[derive(Error, Debug)]
 pub enum EncodeError {
-    /// Encountered an I/O error.
-    #[error("I/O error")]
-    IO(#[from] io::Error),
-
     /// Cannot add any more chunk names.
     #[error("too many chunk names")]
     NameListOverflow,
@@ -174,14 +170,27 @@ pub enum EncodeError {
     /// Invalid number of columns.
     #[error("the number of columns must be greater than zero and fit in a u32, got {0}")]
     InvalidColumns(usize),
+}
 
-    /// Index outside the file.
-    #[error("index out of bounds (location={0}, length={1})")]
-    IndexOutOfBounds(u64, u64),
+/// Errors that can occur while synchronizing data to a file.
+#[non_exhaustive]
+#[derive(Error, Debug)]
+pub enum SyncError {
+    /// Encountered an I/O error.
+    #[error("I/O error")]
+    IO(#[from] io::Error),
+
+    /// File is not writable.
+    #[error("file opened in read-only mode")]
+    NotWritable,
 
     /// Name list outside the file.
     #[error("name list out of bounds (location={0}, length={1})")]
     NameListOutOfBounds(u64, u64),
+
+    /// Index outside the file.
+    #[error("index out of bounds (location={0}, length={1})")]
+    IndexOutOfBounds(u64, u64),
 }
 
 /// Errors that can occur while writing to a file.
@@ -191,6 +200,10 @@ pub enum WriteError {
     /// Cannot encode a write to the file.
     #[error("cannot encode chunk `{0}` at frame {1}")]
     Encode(String, u64, #[source] EncodeError),
+
+    /// Cannot synchronize to the file.
+    #[error("cannot synchronize while writing chunk `{0}` at frame {1}")]
+    Sync(String, u64, #[source] SyncError),
 }
 
 /// Iterate over arrays of size M
@@ -1737,7 +1750,6 @@ impl GsdFile {
             }
             len
         })
-        .map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
     }
 
     /// Append an array of array values to the current frame.
@@ -1818,7 +1830,6 @@ impl GsdFile {
                 len
             },
         )
-        .map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
     }
 
     /// Append a string to the current frame.
@@ -1862,7 +1873,6 @@ impl GsdFile {
             buffer.extend(data);
             data.len() as u64
         })
-        .map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
     }
 
     /// Common code used in all write_ methods.
@@ -1874,23 +1884,23 @@ impl GsdFile {
         columns: u32,
         data_type: u8,
         append: F,
-    ) -> Result<(), EncodeError>
+    ) -> Result<(), WriteError>
     where
         F: FnOnce(&mut Vec<u8>) -> u64,
     {
         if self.mode != Mode::Write {
-            return Err(EncodeError::NotWritable);
+            return Err(WriteError::Encode(name.into(), self.buffer_frame, EncodeError::NotWritable));
         }
 
         let location = self.file_len + self.data_buffer.len() as u64;
 
-        let id = self.get_id(name)?;
+        let id = self.get_id(name).map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))?;
 
         if !self.index.frame_names.insert(id) {
-            return Err(EncodeError::DuplicateChunkName(
+            return Err(WriteError::Encode(name.into(), self.buffer_frame, EncodeError::DuplicateChunkName(
                 name.into(),
                 self.buffer_frame,
-            ));
+            )));
         }
 
         // This implementation is a departure from the GSD C implementation
@@ -1927,7 +1937,7 @@ impl GsdFile {
         self.index.pending += 1;
 
         if self.data_buffer.len() >= self.maximum_write_buffer_size {
-            self.flush_data()?;
+            self.flush_data().map_err(|e| WriteError::Sync(name.into(), self.buffer_frame, e))?;
             self.data_buffer_flushed = true;
         }
 
@@ -2137,7 +2147,7 @@ impl GsdFile {
     /// Flush data buffer to the filesystem.
     ///
     /// Returns true when any data was written to the file.
-    fn flush_data(&mut self) -> Result<bool, EncodeError> {
+    fn flush_data(&mut self) -> Result<bool, SyncError> {
         if self.data_buffer.is_empty() {
             Ok(false)
         } else {
@@ -2153,7 +2163,7 @@ impl GsdFile {
     /// Flush the name buffer to the filesystem.
     ///
     /// Returns true when any data was written to the file.
-    fn flush_names(&mut self) -> Result<bool, EncodeError> {
+    fn flush_names(&mut self) -> Result<bool, SyncError> {
         if self.name_list.buffer.is_empty() {
             Ok(false)
         } else {
@@ -2190,12 +2200,12 @@ impl GsdFile {
     ///
     /// # Errors
     ///
-    /// Returns a [`WriteError`] when any of the following occur:
+    /// Returns a [`SyncError`] when any of the following occur:
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
-    pub fn sync_all(&mut self) -> Result<(), EncodeError> {
+    pub fn sync_all(&mut self) -> Result<(), SyncError> {
         if self.mode != Mode::Write {
-            return Err(EncodeError::NotWritable);
+            return Err(SyncError::NotWritable);
         }
 
         let mut need_remap = false;
@@ -2255,7 +2265,7 @@ impl GsdFile {
     }
 
     /// Expand the name list.
-    fn expand_name_list_to(&mut self, capacity: u64) -> Result<(), EncodeError> {
+    fn expand_name_list_to(&mut self, capacity: u64) -> Result<(), SyncError> {
         let old_size = self.header.namelist_allocated_entries * NAME_SIZE;
         let mut new_size = old_size;
         while new_size <= capacity {
@@ -2269,9 +2279,9 @@ impl GsdFile {
         let new_location = self.file.seek(SeekFrom::End(0))?;
 
         usize::try_from(new_location)
-            .map_err(|_| EncodeError::NameListOutOfBounds(new_location, new_size))?;
+            .map_err(|_| SyncError::NameListOutOfBounds(new_location, new_size))?;
         usize::try_from(new_location + new_size)
-            .map_err(|_| EncodeError::NameListOutOfBounds(new_location, new_size))?;
+            .map_err(|_| SyncError::NameListOutOfBounds(new_location, new_size))?;
 
         let old_start = usize::try_from(self.header.namelist_location)
             .expect("namelist should be validated addressable previously");
@@ -2299,7 +2309,7 @@ impl GsdFile {
     }
 
     /// Expand the index.
-    fn expand_index_to(&mut self, capacity: u64) -> Result<(), EncodeError> {
+    fn expand_index_to(&mut self, capacity: u64) -> Result<(), SyncError> {
         let old_size = self.header.index_allocated_entries * INDEX_ENTRY_SIZE;
         let mut new_size = old_size;
         while new_size <= capacity {
@@ -2313,16 +2323,16 @@ impl GsdFile {
         let new_location = self.file.seek(SeekFrom::End(0))?;
 
         usize::try_from(new_location)
-            .map_err(|_| EncodeError::IndexOutOfBounds(new_location, new_size))?;
+            .map_err(|_| SyncError::IndexOutOfBounds(new_location, new_size))?;
         usize::try_from(new_location + new_size)
-            .map_err(|_| EncodeError::IndexOutOfBounds(new_location, new_size))?;
+            .map_err(|_| SyncError::IndexOutOfBounds(new_location, new_size))?;
 
         let old_start = usize::try_from(self.header.index_location)
             .expect("index should be validated addressable previously");
         let old_end = usize::try_from(self.header.index_location + self.index.n * INDEX_ENTRY_SIZE)
             .expect("index should be validated addressable previously");
         if old_end > self.mmap.len() {
-            return Err(EncodeError::IndexOutOfBounds(
+            return Err(SyncError::IndexOutOfBounds(
                 old_start as u64,
                 old_end as u64,
             ));
@@ -2810,7 +2820,7 @@ mod tests {
         assert!(matches!(result, Err(EncodeError::NotWritable)));
 
         let result = gsd_file.sync_all();
-        assert!(matches!(result, Err(EncodeError::NotWritable)));
+        assert!(matches!(result, Err(SyncError::NotWritable)));
 
         Ok(())
     }

@@ -15,7 +15,7 @@ use thiserror::Error;
 
 use hoomd_vector::{Cartesian, Versor};
 
-use crate::file_layer::{EncodeError, GsdFile, Mode, OpenError, Type, WriteError};
+use crate::file_layer::{EncodeError, GsdFile, Mode, OpenError, SyncError, Type, WriteError};
 
 /// Longest type name size (including the null terminator).
 const MAX_NAME_LENGTH: usize = 64;
@@ -136,16 +136,20 @@ pub struct Frame<'a> {
 #[derive(Error, Debug)]
 pub enum AppendError {
     /// This data chunk does not match the dimensions of those previously written.
-    #[error("The length of data chunk {0} does not match those previously written")]
-    InconsistentLength(String),
+    #[error("The length of data chunk {0} does not match previously written {1} chunks")]
+    InconsistentLength(String, String),
 
-    /// Write to the file.
+    /// Cannot write to the file.
     #[error("cannot write to the file")]
     Write(#[from] WriteError),
 
-    /// Encode data to write.
+    /// Cannot encode data to write.
     #[error("cannot encode data to write")]
     Encode(#[from] EncodeError),
+
+    /// Cannot synchronize data to the file.
+    #[error("cannot synchronize data to the file")]
+    Sync(#[from] SyncError),
 
     /// Too many entries to write.
     #[error("cannot write {0} entries to data chunk {1}")]
@@ -295,7 +299,7 @@ impl HoomdGsdFile {
     /// Returns a [`WriteError`] when any of the following occur:
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
-    pub fn sync_all(&mut self) -> Result<(), EncodeError> {
+    pub fn sync_all(&mut self) -> Result<(), SyncError> {
         self.gsd_file.sync_all()?;
         self.last_auto_sync = Instant::now();
         Ok(())
@@ -492,7 +496,7 @@ impl Frame<'_> {
     ) -> Result<(), AppendError> {
         if let Some(n) = self.particles_n {
             if data.len() != n as usize {
-                return Err(AppendError::InconsistentLength(chunk_name.to_string()));
+                return Err(AppendError::InconsistentLength(chunk_name.to_string(), "particles".to_string()));
             }
         } else {
             let n = data
@@ -1193,7 +1197,7 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        check!(let Err(AppendError::InconsistentLength(_)) = hoomd_gsd_file
+        check!(let Err(AppendError::InconsistentLength(_, _)) = hoomd_gsd_file
             .append_frame(1)?
             .particles_type_id([0, 1, 1, 2])?
             .particles_orientation([Versor::default(); 3]));
