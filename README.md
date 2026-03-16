@@ -47,6 +47,7 @@ is HOOMD-blue or hoomd-rs faster on the same CPU?
 * [Documentation]: Tutorial and full Rust API reference guide.
 * [hoomd-rs discussion board](https://github.com/glotzerlab/hoomd-rs/discussions/):
   Ask the **hoomd-rs** user community for help.
+* [Template workflow]: Start here to use *hoomd-rs* with [row] and [signac].
 
 ## Related tools
 
@@ -71,6 +72,7 @@ to build the examples] on your desktop.
 [HOOMD-blue]: https://hoomd-blue.readthedocs.io
 [Rust]: https://www.rust-lang.org/
 [C++ component for HOOMD-blue]: https://github.com/glotzerlab/hoomd-component-template/
+[Template workflow]: https://github.com/glotzerlab/hoomd-workflow/
 [examples]: examples/
 
 [Documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com

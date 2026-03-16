@@ -57,4 +57,4 @@ and molecular dynamics simulations using *hoomd-rs*.
 [Rust]: https://www.rust-lang.org/
 [crates.io]: https://crates.io/
 [`hoomd-interaction`]: api/hoomd_interaction/index.html
-[workflow tutorial]: workflow/index.md
+[workflow tutorial]: workflow-tutorial/index.md

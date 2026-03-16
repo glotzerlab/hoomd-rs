@@ -1,0 +1,158 @@
+# The `simulate` Action
+
+The `simulate` action will be executed by [row] (typically via a job queue
+on an HPC resource). [Row] determines which directories are eligible and
+passes them to the `simulate` action.
+
+```rust
+pub fn simulate_one(directory: &Path) -> anyhow::Result<()> {
+```
+
+This document highlights important sections of the code. Find the
+complete code in `src/simulate.rs`.
+
+## Serialization and Wall Time Management
+
+Most HPC resources limit the wall time your jobs may execute. To enable
+long-running simulation models, this workflow template shows you how to monitor
+the wall time used and *serialize* the entire simulation state to a file a
+few minutes before the time is up. At that point, your HPC job ends and [row]
+will indicate that the directory is eligible again. When you submit the new job,
+`simulate` will *deserialize* the simulation state and continue the simulation
+from where it left off.
+
+> [!NOTE]
+> This example uses the [postcard] format to store the simulation model.
+> [Postcard] is a simple and efficient binary file format. You could use
+> any format supported by [serde] that you like.
+
+When called, the `simulate_one` method is given a directory. It first needs
+to determine if this directory should be continued from a serialized state
+or initialized from the state point. The `get_model` method implements the
+necessary logic:
+```rust,ignore
+fn get_model() -> anyhow::Result<LennardJonesModel> {
+    match fs::read(MODEL_FILE) {
+        Ok(bytes) => {
+            debug!("Continuing simulation from `{MODEL_FILE}`.");
+
+            postcard::from_bytes(&bytes).with_context(|| format!("could not read `{MODEL_FILE}`"))
+        }
+        Err(error) => match error.kind() {
+            io::ErrorKind::NotFound => {
+                debug!("Constructing a new simulation model.");
+                let state_point_bytes = fs::read("signac_statepoint.json")
+                    .context("unable to read `signac_statepoint.json`")?;
+                let state_point: StatePoint = serde_json::from_slice(&state_point_bytes)
+                    .context("could not parse signac_statepoint.json")?;
+                let _ = HoomdGsdFile::create("trajectory.in-progress.gsd");
+                LennardJonesModel::new(state_point)
+            }
+            _ => Err(error).with_context(|| format!("Could not read `{MODEL_FILE}`")),
+        },
+    }
+}
+```
+
+`simulate_one` breaks out of the main simulation loop when the wall time is nearly
+up and then serializes the simulation state to a file:
+```rust,ignore
+let maybe_wall_time_limit = match env::var("ACTION_WALLTIME_IN_MINUTES") {
+    Ok(value) => {
+        let parsed_value = value
+            .parse::<f64>()
+            .context("error parsing ACTION_WALLTIME_IN_MINUTES")?;
+        debug!("Limiting wall time to {parsed_value} minutes.");
+        Some(parsed_value * 60.0)
+    }
+    Err(_) => None,
+};
+
+while model.step() < TOTAL_STEPS {
+    // ...
+    if let Some(wall_time_limit) = maybe_wall_time_limit
+        && wall_time + WALL_TIME_BUFFER > wall_time_limit
+    {
+        info!("Stopping simulation, wall time limit reached.");
+        break;
+    }
+}
+
+let out_bytes: Vec<u8> = postcard::to_stdvec(&model)?;
+let mut file = File::create(MODEL_FILE).context("failed to create `{MODEL_FILE}`")?;
+file.write_all(&out_bytes)
+    .context("failed to write `{MODEL_FILE}`")?;
+```
+
+[Row] notifies the action of its wall time limit via the `ACTION_WALLTIME_IN_MINUTES`
+environment variable.
+
+## GSD Trajectory
+
+`simulate_one` appends to a GSD trajectory for offline visualization and
+analysis:
+
+```rust,ignore
+let mut gsd_file = HoomdGsdFile::open("trajectory.in-progress.gsd")
+    .context("error opening trajectory.in-progress.gsd")?;
+```
+`open` works here because `get_model` created the GSD file.
+
+While the simulation is active, it names the file `trajectory.gsd.in-progress`.
+The [row] workflow configuration (in a later page) will use the existence of
+`trajectory.gsd` as an indication that the simulation is complete (and therefore
+no longer eligible). To achieve this, `simulate_one` closes the gsd file
+and then renames it if the simulation has reached the target number of total
+steps:
+
+```rust,ignore
+drop(gsd_file);
+
+if model.step() == TOTAL_STEPS {
+    info!("Simulation complete.");
+    fs::rename("trajectory.in-progress.gsd", "trajectory.gsd")
+        .context("failed to rename `trajectory.in-progress.gsd` to `trajectory.gsd`")?;
+}
+```
+
+## Log File
+
+Unfortunately, [parquet] files cannot be appended to. The solution suggested by
+the [parquet] developers is to create multiple files. The `create_unique` method
+creates `log.parquet.0` on the first submission then `log.parquet.1` on the second,
+and so on:
+```rust,ignore
+let mut parquet_logger = ParquetLogger::<LogRecord>::create_unique("log.parquet")
+    .context("error creating `log.parquet`")?;
+```
+
+## Error Handling
+
+You might have noticed a recurring pattern in the above code:
+`.context("...")?`. The `?` operator is a shortcut that returns early whenever
+the preceding code generates an error (see [Recoverable Errors with Result]
+in [The Rust Programming Language] for details).
+
+The `.context` method comes from the [anyhow] crate. Use it to describe what you
+are doing that might cause an error. Without the `.context`, your program might
+print `I/O error` as its entire output with no indication what caused it. A later
+page in this tutorial will show example error messages with context and show you
+how to troubleshoot errors.
+
+## Driving the Simulation and I/O
+
+Not shown here is the standard code for advancing the simulation with `advance()`,
+writing to the GSD file, and writing to the log file. See the full code in
+`src/simulate.rs`. Tutorials such as [Applying Interactions] and
+[Patchy Particle Self-Assembly] explain in detail how to advance simulation
+models and write log and GSD files.
+
+[row]: https://row.readthedocs.io
+[postcard]: https://docs.rs/postcard/
+[serde]: https://serde.rs
+[Applying Interactions]: ../mc-tutorial/applying-interactions.md
+[Patchy Particle Self-Assembly]: ../mc-tutorial/patchy-particle-self-assembly.md
+[parquet]: https://parquet.apache.org/
+[Recoverable Errors with Result]: https://doc.rust-lang.org/stable/book/ch09-02-recoverable-errors-with-result.html
+[The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
+[anyhow]: https://docs.rs/anyhow

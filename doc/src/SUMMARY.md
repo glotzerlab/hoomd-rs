@@ -23,7 +23,13 @@
   - [Patchy Particle Self-Assembly](mc-tutorial/patchy-particle-self-assembly.md)
   - [Type-dependent Interactions](mc-tutorial/type-dependent-interactions.md)
   - [Polydisperse Interactions](mc-tutorial/polydisperse-hard-disk-model.md)
-
+- [Workflow Tutorial](workflow-tutorial/index.md)
+  - [The State Point](workflow-tutorial/state-point.md)
+  - [The Simulation Model](workflow-tutorial/simulation-model.md)
+  - [The `simulate` Action](workflow-tutorial/simulate-action.md)
+  - [The `action` Binary](workflow-tutorial/action-binary.md)
+  - [The Row Workflow](workflow-tutorial/row-workflow.md)
+  - [Conclusion](workflow-tutorial/conclusion.md)
 # Reference
 
 - [Topics](topics.md)
