@@ -41,6 +41,13 @@ to multiple CPU cores. Future releases will improve multi-core scaling.
 [HOOMD-blue] is best for large simulations of models that rely only on built-in
 functionality.
 
+## Examples
+
+The [examples] directory contains many files that demonstrate how to use
+**hoomd-rs**. To see them live in your browser, navigate to the relevant
+tutorial in the [documentation]. The documentation also describes how
+to run the examples locally.
+
 ## Resources
 
 * [Documentation]: User guide and tutorial.
@@ -62,14 +69,6 @@ functionality.
 
 [row]: https://row.readthedocs.io
 [signac]: https://signac.readthedocs.io/ 
-
-## Examples
-
-The [examples] directory contains many files that demonstrate how to use
-**hoomd-rs**. To see them live in your browser, navigate to the relevant
-tutorial in the [documentation]. The documentation also describes how
-to run the examples locally.
-
 [HOOMD-blue]: https://hoomd-blue.readthedocs.io
 [Rust]: https://www.rust-lang.org/
 [Template workflow]: https://github.com/glotzerlab/hoomd-workflow/
