@@ -8,7 +8,7 @@
 //! `hoomd-derive` is is a part of *hoomd-rs*. Read the [complete documentation]
 //! for more information.
 //!
-//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 #![allow(
     clippy::missing_inline_in_public_items,

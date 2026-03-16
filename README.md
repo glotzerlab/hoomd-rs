@@ -67,16 +67,15 @@ functionality.
 
 The [examples] directory contains many files that demonstrate how to use
 **hoomd-rs**. To see them live in your browser, navigate to the relevant
-tutorial in the [documentation]. The documentation also describes [how
-to build the examples] on your desktop.
+tutorial in the [documentation]. The documentation also describes how
+to run the examples locally.
 
 [HOOMD-blue]: https://hoomd-blue.readthedocs.io
 [Rust]: https://www.rust-lang.org/
 [Template workflow]: https://github.com/glotzerlab/hoomd-workflow/
 [examples]: examples/
 
-[Documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
-[how to build the examples]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com/examples.html
+[Documentation]: https://hoomd-rs.readthedocs.io
 
 ## License
 
