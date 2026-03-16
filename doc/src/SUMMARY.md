@@ -2,11 +2,12 @@
 
 [Introduction](index.md)
 
-# Getting started
+# User guide
 
-- [Hello, hoomd-rs!](hello.md)
-- [User guide](guide/index.md)
-  - [All crates](guide/crates.md)
+- [Rust](guide/rust.md)
+- [Hello, hoomd-rs!](guide/hello.md)
+- [Overview](guide/overview.md)
+- [All crates](guide/crates.md)
 
 # Tutorials
 

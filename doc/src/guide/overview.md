@@ -1,4 +1,4 @@
-# User guide
+# Overview
 
 *hoomd-rs* is not an application that you install and use. It is a coupled
 set of [Rust] *crates*. Each individual crate serves a narrow purpose and,

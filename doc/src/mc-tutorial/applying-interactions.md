@@ -52,10 +52,10 @@ properties** from the *body reference frame* to the *system reference frame*.
 
 All **interactions** on bodies are a function only of its **sites** and are
 computed in the *system reference frame*. Understanding this will help as
-you review the [API documentation] for the types used later in this tutorial:
+you review the [documentation] for the types used later in this tutorial:
 `External`, `Linear`, `Boxcar`, `Isotropic`, and `PairwiseCutoff`. For a
 complete reference on **bodies**, **sites**, and all their related traits, read
-the [`hoomd-microstate`] API documentation.
+the [`hoomd-microstate`] documentation.
 
 In this tutorial, the bodies will still be points. Specifically, that means
 each **body** has `Point<Cartesian<2>>` for its **body properties** type (`B`),
@@ -394,7 +394,7 @@ action again. Notice how the disks fall to the bottom of the boundary and do
 not overlap, except when newly added. Wait long enough and you will see the
 simulation clear the bodies.
 
-[API documentation]: ../api.md
+[documentation]: ../guide/crates.md
 [`hoomd-microstate`]: ../api/hoomd_microstate/index.html
 [Boxcar function]: https://mathworld.wolfram.com/BoxcarFunction.html
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
