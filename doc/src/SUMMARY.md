@@ -5,10 +5,12 @@
 # Getting started
 
 - [Hello, hoomd-rs!](hello.md)
-- [Running the Examples](examples.md)
+- [User guide](guide/index.md)
+  - [All crates](guide/crates.md)
 
 # Tutorials
 
+- [Running the Examples](examples.md)
 - [Monte Carlo Tutorial](mc-tutorial/index.md)
   - [Random Walk](mc-tutorial/random-walk.md)
   - [Custom Random Walk](mc-tutorial/custom-random-walk.md)
@@ -20,11 +22,10 @@
   - [Patchy Particle Self-Assembly](mc-tutorial/patchy-particle-self-assembly.md)
   - [Type-dependent Interactions](mc-tutorial/type-dependent-interactions.md)
   - [Polydisperse Interactions](mc-tutorial/polydisperse-hard-disk-model.md)
-- [Topics](topics.md)
 
 # Reference
 
-- [API Reference](api.md)
+- [Topics](topics.md)
 - [Notation](notation.md)
 - [Development](development.md)
 - [Logo](logo.md)

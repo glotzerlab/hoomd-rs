@@ -1,6 +1,6 @@
 # Topics
 
-Some tutorials teach multiple topics. This page cross-links topics to
+Some tutorials teach multiple topics. This page cross-links topics by name to
 notable tutorials on that topic.
 
 * [Bodies and sites](mc-tutorial/applying-interactions.html#bodies-and-sites)

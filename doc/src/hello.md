@@ -3,8 +3,8 @@
 ## Rust
 
 The first thing you need to understand about *hoomd-rs* is that it is not an
-application or package that you install. Rather it is a **[Rust] crate** that you
-can use to implement your simulation models.
+application or package that you install. Rather it is a collection of **[Rust]
+crates** that you can use to implement your simulation models.
 
 If you are not familiar with [Rust], it is a relatively new programming language
 that (in the opinion of the *hoomd-rs* developers) combines the best features of
@@ -89,17 +89,15 @@ and molecular dynamics simulations using *hoomd-rs*.
 
 
 > [!NOTE]
-> On HPC platforms, you should run:
+> On HPC platforms, you should run (preferably in an interactive compute job):
 > ```shell
-> $ RUSTFLAGS="-C target-cpu=native" cargo build --release
+> $ cargo build --release
 > ```
-> one (preferably in an interactive compute job) and and then use the
-> executable placed in the `target/release` directory in your submitted job
-> scripts.
+> You can then use the executable placed in the `target/release` directory in
+> your submitted job scripts. For more details, see the [workflow tutorial].
 >
-> Unlike scripting languages (e.g. Python), saving changes to `main.rs` will
-> not take effect until you run
-> `RUSTFLAGS="-C target-cpu=native" cargo build --release` again.
+> Unlike scripting languages (e.g. Python), saving changes to `main.rs` *will
+> NOT take effect* until you run `cargo build --release` again.
 
 
 [Rust]: https://www.rust-lang.org/
@@ -108,3 +106,4 @@ and molecular dynamics simulations using *hoomd-rs*.
 [API documentation]: api.md
 [crates.io]: https://crates.io/
 [`hoomd-interaction`]: api/hoomd_interaction/index.html
+[workflow tutorial]: workflow/index.md
