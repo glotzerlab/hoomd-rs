@@ -274,7 +274,7 @@ impl LJFluid {
 
     // ANCHOR: nve
     fn nve(&mut self) {
-        if self.step() % 10_000 == 0 {
+        if self.step().is_multiple_of(10_000) {
             let (pe, kt) = self.calculate_properties();
 
             println!(
@@ -307,14 +307,27 @@ impl LJFluid {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let mut simulation = LJFluid::new()?;
-    // TODO: Write GSD file.
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
 
+    let mut simulation = LJFluid::new()?;
+    // ANCHOR_END: main
+    // ANCHOR: create_gsd
+    let mut hoomd_gsd_file = HoomdGsdFile::create("nve-ljg-fluid.gsd")?;
+    // ANCHOR_END: create_gsd
+
+    // ANCHOR: advance
     for _ in 0..100_000 {
         simulation.advance()?;
+        // ANCHOR_END: advance
+
+        // ANCHOR: append_microstate
+        if simulation.step().is_multiple_of(5_000) {
+            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+        }
     }
 
     Ok(())
 }
-// ANCHOR_END: main
+// ANCHOR_END: append_microstate
 // ANCHOR_END: all
