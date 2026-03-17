@@ -32,6 +32,7 @@
   - [Conclusion](workflow-tutorial/conclusion.md)
 # Reference
 
+- [Release notes](release-notes.md)
 - [Topics](topics.md)
 - [Notation](notation.md)
 - [Development](development.md)
