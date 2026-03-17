@@ -37,3 +37,4 @@
 - [Development](development.md)
 - [Logo](logo.md)
 - [Credits](credits.md)
+- [License](license.md)
