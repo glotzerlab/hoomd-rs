@@ -41,7 +41,7 @@ default-members = ["examples",
                   ]
 
 [workspace.package]
-version = "0.0.0"
+version = "1.0.0"
 edition = "2024"
 rust-version = "1.91"
 homepage = "https://glotzerlab.engin.umich.edu"
@@ -53,20 +53,20 @@ categories = ["science"]
 
 [workspace.dependencies]
 # Subcrates
-hoomd-bevy = { path = "hoomd-bevy", version = "0.0.0" }
-hoomd-derive = { path = "hoomd-derive", version = "0.0.0" }
-hoomd-geometry = { path = "hoomd-geometry", version = "0.0.0"}
-hoomd-gsd = { path = "hoomd-gsd", version = "0.0.0"}
-hoomd-interaction = { path = "hoomd-interaction", version = "0.0.0"}
-hoomd-linear-algebra = { path = "hoomd-linear-algebra", version = "0.0.0"}
-hoomd-manifold = { path = "hoomd-manifold", version = "0.0.0"}
-hoomd-mc = { path = "hoomd-mc", version = "0.0.0"}
-hoomd-microstate = { path = "hoomd-microstate", version = "0.0.0"}
-hoomd-simulation = { path = "hoomd-simulation", version = "0.0.0"}
-hoomd-spatial = { path = "hoomd-spatial", version = "0.0.0"}
-hoomd-utility = { path = "hoomd-utility", version = "0.0.0"}
-hoomd-vector = { path = "hoomd-vector", version = "0.0.0"}
-hoomd-rand = { path = "hoomd-rand", version = "0.0.0"}
+hoomd-bevy = { path = "hoomd-bevy", version = "1.0.0" }
+hoomd-derive = { path = "hoomd-derive", version = "1.0.0" }
+hoomd-geometry = { path = "hoomd-geometry", version = "1.0.0"}
+hoomd-gsd = { path = "hoomd-gsd", version = "1.0.0"}
+hoomd-interaction = { path = "hoomd-interaction", version = "1.0.0"}
+hoomd-linear-algebra = { path = "hoomd-linear-algebra", version = "1.0.0"}
+hoomd-manifold = { path = "hoomd-manifold", version = "1.0.0"}
+hoomd-mc = { path = "hoomd-mc", version = "1.0.0"}
+hoomd-microstate = { path = "hoomd-microstate", version = "1.0.0"}
+hoomd-simulation = { path = "hoomd-simulation", version = "1.0.0"}
+hoomd-spatial = { path = "hoomd-spatial", version = "1.0.0"}
+hoomd-utility = { path = "hoomd-utility", version = "1.0.0"}
+hoomd-vector = { path = "hoomd-vector", version = "1.0.0"}
+hoomd-rand = { path = "hoomd-rand", version = "1.0.0"}
 
 # Dev dependencies
 assert2 = "=0.4.0"
