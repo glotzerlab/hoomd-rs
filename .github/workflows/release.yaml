@@ -74,9 +74,9 @@ jobs:
       # 4. Remove the 1st version heading.
       # This leaves the content of the release notes for the current release.
       run: >
-        grep -P -m 2 -B 10000 "^## v*\d*\.\d*\.\d*" doc/src/release-notes.md |
+        grep -P -m 2 -B 10000 "^## .*" doc/src/release-notes.md |
         sed '$d' |
-        grep -P -A 10000 "^## v*\d*\.\d*\.\d*" |
+        grep -P -A 10000 "^## .*" |
         sed '1d' |
         tee "${GITHUB_WORKSPACE}/release-notes.md"
       working-directory: code
