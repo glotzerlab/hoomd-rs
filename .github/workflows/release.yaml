@@ -1,0 +1,135 @@
+name: release
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+
+  push:
+    branches:
+    - trunk
+    tags:
+      - "*"
+
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  name: hoomd-rs
+  CARGO_TERM_COLOR: always
+  CLICOLOR: 1
+
+jobs:
+  source:
+    name: Build source tarball
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        path: code
+
+    - name: Determine filename-safe ref from GITHUB_REF_NAME
+      run: echo ref="$(echo "${GITHUB_REF_NAME}" | sed  -e 's/\//-/g')" >> "$GITHUB_ENV"
+
+    - name: Copy source
+      run: cp -R code "${name}-${ref}"
+
+    - name: Remove .git
+      run: rm -rf "${name}-${ref}/.git" && ls -laR "${name}-${ref}"
+
+    - name: Tar/zstd source
+      run: tar --zstd -cvf "${name}-${ref}.tar.zst" "${name}-${ref}"
+
+    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      with:
+        name: source
+        path: |
+          *.tar.*
+
+  release-notes:
+    name: Extract release notes
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        path: code
+
+    - name: Write release-notes.md
+      # 1. Search for the content from the start of the file to the 2nd version heading.
+      # 2. Remove the 2nd version heading.
+      # 3. Search for the content after the first version heading (removes any description at the
+      #    start of the file.
+      # 4. Remove the 1st version heading.
+      # This leaves the content of the release notes for the current release.
+      run: >
+        grep -P -m 2 -B 10000 "^## v*\d*\.\d*\.\d*" doc/src/release-notes.md |
+        sed '$d' |
+        grep -P -A 10000 "^## v*\d*\.\d*\.\d*" |
+        sed '1d' |
+        tee "${GITHUB_WORKSPACE}/release-notes.md"
+      working-directory: code
+
+    - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      with:
+        name: release-notes
+        path: |
+          release-notes.md
+
+  publish_github:
+    name: Publish [GitHub]
+    needs: [source, release-notes]
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        merge-multiple: true
+
+    - name: List files
+      run: ls -lR
+
+    - name: Create release
+      uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          *.zst
+        body_path: release-notes.md
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish_cargo:
+    name: Publish [Cargo]
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Configure Rust
+      id: rust_toolchain
+      uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
+      with:
+        toolchain: 1.94.0
+    - name: Cache
+      uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+      with:
+        key: ${{ hashFiles('Cargo.lock') }}
+        cache-bin: false
+    - name: Dry run
+      run: cargo publish -p 'hoomd-*' --dry-run
+    # - name: Publish to crates.io
+    #   if: startsWith(github.ref, 'refs/tags/')
+    #   run: cargo publish -p 'hoomd-*'
