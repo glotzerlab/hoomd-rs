@@ -1,6 +1,6 @@
 # The Row Workflow
 
-Now to put this all together and automate the submission process with
+Now, let's put this all together and automate the submission process with
 [row].
 
 ## `workflow.toml`
@@ -48,12 +48,14 @@ resources.threads_per_process = 1
 > [!WARNING]
 > Skip either of these settings and *hoomd-rs* will attempt to use *all* cores
 > on the compute node (e.g. 128) even if SLURM has locked your job to 1 core.
+> The resulting resource contention will cause your simulations to run
+> *extremely slowly*.
 
 How should you choose `threads_per_process`? You need to choose it appropriately
 based on how you configure your simulation model. Most of *hoomd-rs* uses
 only 1 thread, so that should be the default. In the current release, only
 `ParallelSweep` uses multiple threads. Benchmark and see how your model scales
-before submitting a huge set of jobs to a cluster. It would be a huge waste
+before submitting a set of jobs to a cluster. It would be a waste of your time
 if you requested `threads_per_process=32`, but your model ran even faster with
 `threads_per_process=8`.
 

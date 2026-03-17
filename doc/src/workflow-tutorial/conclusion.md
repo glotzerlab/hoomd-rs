@@ -1,19 +1,19 @@
 # Conclusion
 
-There is a lot packed into the example workflow. Don't worry if you don't
-understand it all at first, it may take some time to learn it all.
+There is a lot packed into the example workflow, so don't worry if you don't
+understand it all at first.
 
-The template is designed to be used with little modification. Start by modifying
-`state_point.rs`, `model.rs`, and `populate_workspace.py` to implement your
-simulation model. You may need to modify `simulate.rs` or `action.rs` not at all
-or at least only minimally at first.
+To implement your own simulation model, start by modifying `state_point.rs`,
+`model.rs`, and `populate_workspace.py` to implement your. You may need to
+modify `simulate.rs` or `action.rs` not at all or at least only minimally at
+first.
 
 > [!NOTE]
-> Remember: Start your own git repository history from scratch. Don't clone the
+> Remember: Start your own Git repository history from scratch. Don't clone the
 > repository. Make a new one from the template or download the files directly.
 
 If you have any questions, please check the [hoomd-rs discussion board] first.
-If no one else has the same question, the *hoomd-rs* developers would be
+If no one else has asked the same question, the *hoomd-rs* developers would be
 happy to answer yours. **PLEASE** include a fully working example of any code
 you have questions about (post it as a [gist] or link to your GitHub
 repository).

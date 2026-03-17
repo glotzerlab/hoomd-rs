@@ -2,7 +2,9 @@
 
 The `simulate` action will be executed by [row] (typically via a job queue
 on an HPC resource). [Row] determines which directories are eligible and
-passes them to the `simulate` action.
+passes them to the `simulate` action. The command line parsing is explained
+on the next page. Eventually, the `simulate_one` method is called with
+a path to the directory containing the [signac] state point.
 
 ```rust
 pub fn simulate_one(directory: &Path) -> anyhow::Result<()> {
@@ -14,12 +16,12 @@ complete code in `src/simulate.rs`.
 ## Serialization and Wall Time Management
 
 Most HPC resources limit the wall time your jobs may execute. To enable
-long-running simulation models, this workflow template shows you how to monitor
-the wall time used and *serialize* the entire simulation state to a file a
-few minutes before the time is up. At that point, your HPC job ends and [row]
-will indicate that the directory is eligible again. When you submit the new job,
-`simulate` will *deserialize* the simulation state and continue the simulation
-from where it left off.
+long-running simulation models, this workflow template monitors the wall time
+used and *serializes* the entire simulation state to a file a few minutes before
+the time is up. At that point, your HPC job ends and [row] will indicate that
+the directory is eligible again. When you submit the new job, `simulate` will
+*deserialize* the simulation state and continue the simulation from where it
+left off.
 
 > [!NOTE]
 > This example uses the [postcard] format to store the simulation model.
@@ -29,7 +31,9 @@ from where it left off.
 When called, the `simulate_one` method is given a directory. It first needs
 to determine if this directory should be continued from a serialized state
 or initialized from the state point. The `get_model` method implements the
-necessary logic:
+necessary logic. It first checks if `model.postcard` exists. If it does,
+it deserializes the simulation state and returns it. If not, it initializes
+a new simulation model from the [signac] state point:
 ```rust,ignore
 fn get_model() -> anyhow::Result<LennardJonesModel> {
     match fs::read(MODEL_FILE) {
@@ -102,7 +106,7 @@ While the simulation is active, it names the file `trajectory.gsd.in-progress`.
 The [row] workflow configuration (in a later page) will use the existence of
 `trajectory.gsd` as an indication that the simulation is complete (and therefore
 no longer eligible). To achieve this, `simulate_one` closes the gsd file
-and then renames it if the simulation has reached the target number of total
+and then renames it when the simulation has reached the target number of total
 steps:
 
 ```rust,ignore
@@ -117,14 +121,21 @@ if model.step() == TOTAL_STEPS {
 
 ## Log File
 
-Unfortunately, [parquet] files cannot be appended to. The solution suggested by
-the [parquet] developers is to create multiple files. The `create_unique` method
-creates `log.parquet.0` on the first submission then `log.parquet.1` on the second,
-and so on:
+[Parquet] is a convenient file format for logging because it is widely
+supported and the binary format keeps the full precision of every logged value.
+Unfortunately, they are difficult to use when continuing a simulation job
+because [parquet] files cannot be appended to.
+
+The solution suggested by the [parquet] developers is to create multiple files.
+The `create_unique` method creates `log.parquet.0` on the first submission then
+`log.parquet.1` on the second, and so on:
 ```rust,ignore
 let mut parquet_logger = ParquetLogger::<LogRecord>::create_unique("log.parquet")
     .context("error creating `log.parquet`")?;
 ```
+
+When you visualize or post-process the log later, you should concatenate
+the data frames from all `log.parquet.*` files.
 
 ## Error Handling
 
@@ -135,7 +146,7 @@ in [The Rust Programming Language] for details).
 
 The `.context` method comes from the [anyhow] crate. Use it to describe what you
 are doing that might cause an error. Without the `.context`, your program might
-print `I/O error` as its entire output with no indication what caused it. A later
+print `I/O error` as its entire output with no indication of what caused it. A later
 page in this tutorial will show example error messages with context and show you
 how to troubleshoot errors.
 
@@ -145,9 +156,10 @@ Not shown here is the standard code for advancing the simulation with `advance()
 writing to the GSD file, and writing to the log file. See the full code in
 `src/simulate.rs`. Tutorials such as [Applying Interactions] and
 [Patchy Particle Self-Assembly] explain in detail how to advance simulation
-models and write log and GSD files.
+models and write to log and GSD files.
 
 [row]: https://row.readthedocs.io
+[signac]: https://signac.readthedocs.io
 [postcard]: https://docs.rs/postcard/
 [serde]: https://serde.rs
 [Applying Interactions]: ../mc-tutorial/applying-interactions.md

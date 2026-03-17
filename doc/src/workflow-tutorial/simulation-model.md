@@ -2,12 +2,11 @@
 
 ## Initialize from a State Point
 
-The file `src/model.rs` implements the simulation model in the same way
-as all the previous tutorials (see [Applying Interactions] for a full
-explanation). One main difference is in the initialization.
-Instead of hard-coding simulation parameters, the simulation
-in the workflow template initializes using parameters from the
-state point:
+The file `src/model.rs` implements the simulation model similarly to all the
+previous tutorials (see [Applying Interactions] for a full explanation). One
+slight difference is in the initialization. Instead of hard-coding simulation
+parameters, the simulation in the workflow template initializes using parameters
+from the state point:
 ```rust,ignore
 pub fn new(state_point: StatePoint) -> anyhow::Result<Self> {
     let macrostate = Isothermal {
@@ -45,7 +44,7 @@ pub fn new(state_point: StatePoint) -> anyhow::Result<Self> {
 
 ## Constant Parameters
 
-In th the signac/row workflow model, it is important that every simulation can
+In the [row]/[signac] workflow model, it is important that every simulation can
 be constructed only as a function of the state point. At the same time, there
 are usually some parameters that are a fixed part of the simulation protocol.
 Define those as constants:
@@ -66,4 +65,6 @@ include `#[derive(Serialize, Deserialize)]`. On the next page, the
 > To implement your own simulation model, replace the struct fields and
 > method implementations.
 
+[row]: https://row.readthedocs.io
+[signac]: https://signac.readthedocs.io
 [Applying Interactions]: ../mc-tutorial/applying-interactions.html#the-simulation-model

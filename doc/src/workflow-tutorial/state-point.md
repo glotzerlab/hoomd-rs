@@ -1,9 +1,9 @@
 # The State Point
 
-The file `src/state_point.rs` defines a struct to hold the signac state point.
-The template executes a Lennard-Jones fluid simulation. The state point
-sets the number of beads, the potential parameters, the temperature (in
-units of energy), the number density, and the replicate index.
+The file `src/state_point.rs` defines a struct that holds the [signac] state
+point. The template executes a Lennard-Jones fluid simulation. The state point
+sets the number of beads, the potential parameters, the temperature (in units of
+energy), the number density, and the replicate index.
 
 ```rust,ignore
 use serde::{Deserialize, Serialize};
@@ -41,4 +41,5 @@ implements the `Serialize` and `Deserialize` traits for our type.
 > To implement your own simulation model, replace the struct fields with
 > ones that match your state point.
 
+[signac]: https://signac.readthedocs.io
 [serde_json]: https://docs.rs/serde_json

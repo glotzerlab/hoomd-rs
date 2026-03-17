@@ -10,10 +10,9 @@ interface that executes the `simulate` action on directories in the workspace.
 
 ## Parse the Command Line
 
-You need some way to tell `action` what to do. In production, you may
-be running thousands of different `action` instances at once. A command
-line interface is essential. By default, [row] will launch commands
-of the form:
+You need some way to tell `action` what to do. In production, you may be running
+thousands of different `action` instances at once, so a command line interface
+is essential. By default, [row] will launch commands of the form:
 ```shell
 action simulate {directory}
 ```
@@ -40,26 +39,27 @@ fn main() -> anyhow::Result<()> {
     let options = Cli::parse();
 ```
 
-The `Subcommand` is not necessary in a binary that executes only one action.
-The template uses it so that you can easily add more actions (subcommands)
-as needed (e.g. `analyze`, `render`, ...).
+The `Subcommand` is not strictly necessary in a binary that executes only
+one action. The template uses it so that you can easily add more actions
+(subcommands) as needed (e.g. `analyze`, `render`, ...).
 
 > [!TIP]
 > [row] of course allows you to implement these other actions in another
-> language of your preference. You do not have to write everything in Rust.
+> language of your preference. You do not have to write all your workflow
+> actions in Rust.
 
 ## Configure `env_logger`
 
 Did you notice all the `info!` and `debug!` messages throughout the code?
 These macros pass messages to the [log] crate, which does nothing by itself.
-Once you configure a logging backend, the messages will print to `stdout`. The
-[env_logger] crate is one backend that allows fine-grained customization at
-run time (e.g. you could hide messages from `hoomd-mc` and see messages from
-your own crate). The `verbose` option configures what level is visible from the
-command line (which can be overridden by the `RUST_LOG` environment variable).
-By default, `warning!` and `info!` messages are shown. Pass `-q` or `-qq` to
-hide `info` and `warning` respectively. Pass `-v` to enable `debug!` messages
-and `-vv` to enable `trace`.
+Once you configure a logging backend, the messages will print to `stdout` (or
+wherever the backend delivers them). The [env_logger] crate a backend
+that allows fine-grained customization at run time (e.g. you could hide
+messages from `hoomd-mc` and see messages from your own crate). The `verbose`
+option configures what level is visible from the command line (which can be
+overridden by the `RUST_LOG` environment variable). By default, `warning!` and
+`info!` messages are shown. Pass `-q` or `-qq` to hide `info` and `warning`
+respectively. Pass `-v` to enable `debug!` messages and `-vv` to enable `trace!`.
 
 ```rust,ignore
 let log_level = match options.verbose.log_level_filter() {
@@ -90,7 +90,8 @@ relative to `workspace/`) and calls `simulate_one`:
     }
 ```
 
-Add any new subcommands to both the `enum` above and the `match` expression.
+> [!TIP]
+> Add any new subcommands to both the `enum` above and the `match` expression.
 
 To see the log messages in action, execute:
 ```shell
@@ -113,9 +114,10 @@ Try adding `-v`, `-vv`, or `-q` to the command and see how the output changes.
 ## Error Handling
 
 Notice that `main` returns an `anyhow::Result` and checks for errors with `?`.
-In this way, any errors that occur in methods called by main (or methods
-called by those methods, or ...) will propagate all the way to the top,
-unless then are recovered from. When `main`
+In this way, any errors that occur in methods called by main (or methods called
+by those methods, and on down the chain) will propagate all the way to the top,
+unless then are recovered from. When `main` returns an `Err`, `anyhow` prints
+a human readable form of the error message.
 
 To see an error message, execute:
 ```shell
@@ -135,7 +137,7 @@ The `error switching to job directory` came from a call to `.context`.
 
 ## Troubleshooting Difficult Errors
 
-What if you get an error that has a less obvious cause? For example,
+What if `action` prints an error that has a less obvious cause? For example,
 after changing one of the `.rs` files, the command:
 ```shell
 $ target/release/action simulate 524ac2c93c6db72af79821edd021696b
@@ -153,11 +155,12 @@ The context tells us that this error occurs during model initialization.
 It would help to know **exactly where** the error occurred, so you could
 tell which `-0.1` to change.
 
-Rust, like most programming environments, can give you a backtrace. You
+Like most programming environments, Rust can give you a backtrace. You
 set the environment variable `RUST_BACKTRACE=1` to *opt-in*. Normally, Rust
 backtraces are only issued on a `panic`, but [anyhow] enables them for errors
 as well. Furthermore, you must build in a development mode (omit the `--release`
-option) or else you will not see file names or line numbers. The command:
+option) or else you will not see file names or line numbers. With
+the same code modification as above, the command:
 ```shell
 $ RUST_BACKTRACE=1 cargo run -- simulate 524ac2c93c6db72af79821edd021696b
 ```
@@ -176,23 +179,23 @@ Stack backtrace:
    2: std::backtrace::Backtrace::create
              at /rustc/4a4ef493e3a1488c6e321570238084b38948f6db/library/std/src/backtrace.rs:331:13
    3: anyhow::error::<impl core::convert::From<E> for anyhow::Error>::from
-             at /Users/joaander/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/anyhow-1.0.102/src/backtrace.rs:10:14
+             at ${HOME}/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/anyhow-1.0.102/src/backtrace.rs:10:14
    4: <core::result::Result<T,F> as core::ops::try_trait::FromResidual<core::result::Result<core::convert::Infallible,E>>>::from_residual
-             at /Users/joaander/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/result.rs:2189:27
+             at ${HOME}/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/result.rs:2189:27
    5: hoomd_workflow::model::LennardJonesModel::new
-             at /Users/joaander/devel/hoomd-workflow/src/model.rs:101:58
+             at ${HOME}/devel/hoomd-workflow/src/model.rs:101:58
    6: hoomd_workflow::simulate::get_model
-             at /Users/joaander/devel/hoomd-workflow/src/simulate.rs:42:17
+             at ${HOME}/devel/hoomd-workflow/src/simulate.rs:42:17
    7: hoomd_workflow::simulate::simulate_one
-             at /Users/joaander/devel/hoomd-workflow/src/simulate.rs:63:21
+             at ${HOME}/devel/hoomd-workflow/src/simulate.rs:63:21
    8: action::main
-             at /Users/joaander/devel/hoomd-workflow/src/bin/action.rs:43:45
+             at ${HOME}/devel/hoomd-workflow/src/bin/action.rs:43:45
    9: core::ops::function::FnOnce::call_once
-             at /Users/joaander/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/ops/function.rs:250:5
+             at ${HOME}/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/ops/function.rs:250:5
   10: std::sys::backtrace::__rust_begin_short_backtrace
-             at /Users/joaander/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/src/sys/backtrace.rs:166:18
+             at ${HOME}/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/src/sys/backtrace.rs:166:18
   11: std::rt::lang_start::{{closure}}
-             at /Users/joaander/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/src/rt.rs:206:18
+             at ${HOME}/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/src/rt.rs:206:18
   12: core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &F>::call_once
              at /rustc/4a4ef493e3a1488c6e321570238084b38948f6db/library/core/src/ops/function.rs:287:21
   13: std::panicking::catch_unwind::do_call
@@ -212,21 +215,21 @@ Stack backtrace:
   20: std::rt::lang_start_internal
              at /rustc/4a4ef493e3a1488c6e321570238084b38948f6db/library/std/src/rt.rs:171:5
   21: std::rt::lang_start
-             at /Users/joaander/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/src/rt.rs:205:5
+             at ${HOME}/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/src/rt.rs:205:5
   22: _main
 ```
 
 The lowest level file in `hoomd_workflow` that triggered the error is:
 ```
    5: hoomd_workflow::model::LennardJonesModel::new
-             at /Users/joaander/devel/hoomd-workflow/src/model.rs:101:58
+             at ${HOME}/devel/hoomd-workflow/src/model.rs:101:58
 ```
 which is:
 ```rust,ignore
 let translate = Translate::with_maximum_distance(INITIAL_MAXIMUM_DISTANCE.try_into()?);
 ```
 
-From this, you can tell that this demonstration modified
+Now you can tell that this demonstration modified
 `INITIAL_MAXIMUM_DISTANCE` to a negative value. The `Translate` move must have a
 positive value.
 
