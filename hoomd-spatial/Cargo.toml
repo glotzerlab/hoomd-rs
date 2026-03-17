@@ -4,6 +4,7 @@ categories.workspace = true
 description = "Infrastructure for efficient computation of neighbors using spatial data structures."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true

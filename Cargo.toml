@@ -45,6 +45,7 @@ version = "0.0.0"
 edition = "2024"
 rust-version = "1.91"
 homepage = "https://glotzerlab.engin.umich.edu"
+documentation = "https://hoomd-rs.readthedocs.io"
 repository = "https://github.com/glotzerlab/hoomd-rs"
 license = "BSD-3-Clause"
 keywords = ["molecular-dynamics", "monte-carlo", "simulation"]
@@ -74,8 +75,8 @@ paste = "=1.0.15"
 rand_sfc = "=0.2.0"
 rstest = "=0.26.1"
 tempfile = "=3.27.0"
-strum = "0.28.0"
-strum_macros = "0.28.0"
+strum = "=0.28.0"
+strum_macros = "=0.28.0"
 
 # Dependencies used internally
 clap = {version = "4.5.48", features = ["derive"]}
@@ -180,8 +181,6 @@ needless_pass_by_ref_mut = "warn"
 default.extend-words = { ratatui = "ratatui" }
 
 [workspace.metadata.docs.rs]
-# TODO: Check that this works after release. It may need to be in package.metadata
-# https://docs.rs/about/metadata
 rustdoc-args = [ "--html-in-header", "katex.html" ]
 
 # Optimize for size in wasm builds

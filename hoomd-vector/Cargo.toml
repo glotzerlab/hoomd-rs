@@ -4,6 +4,7 @@ categories.workspace = true
 description = "Vector and quaternion math library."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true

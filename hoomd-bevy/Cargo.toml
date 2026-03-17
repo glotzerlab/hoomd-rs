@@ -4,6 +4,7 @@ categories.workspace = true
 description = "Interfrace HOOMD with the bevy game engine."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true

@@ -4,6 +4,7 @@ categories.workspace = true
 description = "Commonly used utility types and methods."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
