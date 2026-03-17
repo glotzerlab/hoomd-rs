@@ -183,7 +183,7 @@ default.extend-words = { ratatui = "ratatui" }
 # Optimize for size in wasm builds
 [profile.release-wasm]
 opt-level = 'z'
-lto = true
+lto = 'thin'
 codegen-units = 1
 inherits = "release"
 

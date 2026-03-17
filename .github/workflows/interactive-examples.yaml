@@ -19,7 +19,6 @@ defaults:
 env:
   CARGO_TERM_COLOR: always
   CLICOLOR: 1
-  CARGO_BUILD_JOBS: 4
 
 jobs:
   build:
