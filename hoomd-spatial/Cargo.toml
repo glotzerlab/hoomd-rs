@@ -11,6 +11,9 @@ repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
+
 [lints]
 workspace = true
 
