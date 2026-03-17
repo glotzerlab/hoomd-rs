@@ -29,6 +29,13 @@
 //! [`PointsNearBall::points_near_ball`] takes a position and a radius
 //! and returns an iterator that will yield all of the inserted points within
 //! the given ball. It *may* yield additional points that you need to filter out.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-spatial` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 use hoomd_utility::valid::PositiveReal;
 
@@ -157,4 +164,19 @@ pub trait PointsNearBall<P, K> {
 pub trait WithSearchRadius {
     /// Construct a spatial data structure that can search *at least* as far as the given radius.
     fn with_search_radius(radius: PositiveReal) -> Self;
+}
+
+/// Locate the index of a given point.
+///
+/// This is used by `Microstate` to sort for cache coherency.
+pub trait IndexFromPosition<P> {
+    /// Orderable type based on the site's position.
+    type Location: Ord;
+
+    /// Determine the location of a site based on its position.
+    ///
+    /// Many positions can map to the same location. The ideal
+    /// mapping will place points close together in physical space
+    /// close together in the ordering.
+    fn location_from_position(&self, position: &P) -> Self::Location;
 }

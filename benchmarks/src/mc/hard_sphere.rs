@@ -26,7 +26,7 @@ use hoomd_microstate::{
     property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
+use hoomd_spatial::{IndexFromPosition, PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::Cartesian;
 use log::debug;
 use serde::{Deserialize, Serialize};
@@ -77,11 +77,18 @@ impl<const D: usize, X> Effort for HardSphereSim<D, X> {
 
 impl<const D: usize, X> Simulation for HardSphereSim<D, X>
 where
-    X: PointsNearBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + Sync,
+    X: PointsNearBall<Cartesian<D>, SiteKey>
+        + PointUpdate<Cartesian<D>, SiteKey>
+        + Sync
+        + IndexFromPosition<Cartesian<D>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
+        if self.microstate.step().is_multiple_of(300) {
+            self.microstate.sort_sites();
+        }
+
         if self.parallel {
             self.count += self.parallel_translate_sweep.apply(
                 &mut self.microstate,
@@ -130,7 +137,9 @@ where
         + WithSearchRadius
         + Clone
         + for<'a> Deserialize<'a>
-        + Serialize,
+        + Serialize
+        + Sync
+        + IndexFromPosition<Cartesian<D>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     /// Construct a new hard sphere simulation
@@ -153,6 +162,7 @@ where
                     .with_context(|| format!("Could not read {cache_filename}"))?;
                 // The cache may have been generated with a different value of parallel.
                 result.parallel = parallel;
+                result.microstate.sort_sites();
                 return Ok(result);
             }
             Err(error) => match error.kind() {
@@ -180,12 +190,13 @@ where
 
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
 
-        let microstate = place_single_site_point_bodies(
+        let mut microstate = place_single_site_point_bodies(
             n,
             number_density,
             hamiltonian.0.maximum_interaction_range(),
             &overlap_penalty_hamiltonian,
         )?;
+        microstate.sort_sites();
 
         translate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
         *parallel_translate_sweep

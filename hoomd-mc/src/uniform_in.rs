@@ -14,6 +14,8 @@ use hoomd_microstate::{
     property::{OrientedPoint, Point},
 };
 
+use crate::BodyDistribution;
+
 /// Generate bodies uniformly in the given boundary condition.
 ///
 /// Give [`UniformIn`] a template vector of sites and it will randomly generate
@@ -26,7 +28,7 @@ use hoomd_microstate::{
 /// Place points at random locations in the boundary:
 /// ```
 /// use hoomd_geometry::{IsPointInside, shape::Rectangle};
-/// use hoomd_mc::UniformIn;
+/// use hoomd_mc::{BodyDistribution, UniformIn};
 /// use hoomd_microstate::{Body, boundary::Closed, property::Point};
 /// use hoomd_vector::Cartesian;
 ///
@@ -42,7 +44,7 @@ use hoomd_microstate::{
 /// };
 ///
 /// let body: Body<Point<Cartesian<2>>, Point<Cartesian<2>>> =
-///     uniform_in.sample(&mut rng);
+///     uniform_in.sample(0, &mut rng);
 /// assert!(
 ///     uniform_in
 ///         .boundary
@@ -56,11 +58,11 @@ use hoomd_microstate::{
 /// Place oriented bodies at random locations in the boundary and give them random
 /// orientations:
 /// ```
-/// use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
+/// use rand::{SeedableRng, rngs::StdRng};
 /// use std::f64::consts::PI;
 ///
 /// use hoomd_geometry::{IsPointInside, shape::Rectangle};
-/// use hoomd_mc::UniformIn;
+/// use hoomd_mc::{BodyDistribution, UniformIn};
 /// use hoomd_microstate::{
 ///     Body,
 ///     boundary::Closed,
@@ -81,7 +83,7 @@ use hoomd_microstate::{
 /// };
 ///
 /// let body: Body<OrientedPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>> =
-///     uniform_in.sample(&mut rng);
+///     uniform_in.sample(0, &mut rng);
 /// assert!(
 ///     uniform_in
 ///         .boundary
@@ -106,13 +108,13 @@ pub struct UniformIn<S, C> {
 /// `sample` chooses the *body's* position randomly in the given boundary. Sites,
 /// therefore, may be placed outside the boundary. Callers should reject insertions
 /// appropriately when `add_body` fails.
-impl<V, S, C> Distribution<Body<Point<V>, S>> for UniformIn<S, C>
+impl<V, S, C> BodyDistribution<Body<Point<V>, S>> for UniformIn<S, C>
 where
     S: Clone,
     C: Distribution<V>,
 {
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Body<Point<V>, S> {
+    fn sample<R: Rng + ?Sized>(&self, _index: usize, rng: &mut R) -> Body<Point<V>, S> {
         let properties = Point {
             position: self.boundary.sample(rng),
         };
@@ -127,14 +129,14 @@ where
 /// assigns a *uniform random orientation*. Sites, therefore, may be placed outside
 /// the boundary. Callers should reject insertions appropriately when `add_body`
 /// fails.
-impl<V, O, S, C> Distribution<Body<OrientedPoint<V, O>, S>> for UniformIn<S, C>
+impl<V, O, S, C> BodyDistribution<Body<OrientedPoint<V, O>, S>> for UniformIn<S, C>
 where
     S: Clone,
     C: Distribution<V>,
     StandardUniform: Distribution<O>,
 {
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Body<OrientedPoint<V, O>, S> {
+    fn sample<R: Rng + ?Sized>(&self, _index: usize, rng: &mut R) -> Body<OrientedPoint<V, O>, S> {
         let properties = OrientedPoint {
             position: self.boundary.sample(rng),
             orientation: rng.random(),

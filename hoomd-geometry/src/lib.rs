@@ -109,6 +109,13 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! # Complete documentation
+//!
+//! `hoomd-geometry` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{InnerProduct, Rotate, Rotation, Vector};
@@ -194,22 +201,6 @@ pub trait IntersectsAtGlobal<S, P, R> {
     ) -> bool;
 }
 
-// impl<const N: usize> IntersectsAtGlobal<Cartesian<N>, >{
-// #[inline]
-// fn intersects_at_global(
-// &self,
-// other: &S,
-// r_self: &P,
-// o_self: &R,
-// r_other: &P,
-// o_other: &R,
-// ) -> bool {
-// let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
-//
-// self.intersects_at(other, &v_ij, &o_ij)
-// }
-// }
-
 /// Test whether two shapes share any points in space.
 ///
 /// # Examples
@@ -285,6 +276,7 @@ where
     ///
     /// [`pair_system_to_local`]: hoomd_vector::pair_system_to_local
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
+
     /// Approximate the amount of overlap between two shapes.
     ///
     /// Move `other` in along `v_ij` until the shapes no longer overlap. Return the

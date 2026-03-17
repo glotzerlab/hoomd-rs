@@ -1,6 +1,24 @@
-# Developer Tools
+# Development
 
-## prek
+## Code Style
+
+All contributions to *hoomd-rs* must follow the established code style:
+
+* All *hoomd-rs* code should be [Idiomatic Rust].
+* Follow standard [API guidelines] when implementing new types and traits.
+* [Spell check] your documentation comments **AND CODE!**
+* Name crates, types, traits, fields, methods, and variables with **complete words**,
+  even for internal names that are not exposed in the public API. Additionally,
+  the chosen word(s) should match those in the most common usage, such as
+  defined in a textbook.
+
+[Idiomatic Rust]: https://github.com/mre/idiomatic-rust
+[API guidelines]: https://rust-lang.github.io/api-guidelines/
+[Spell check]: #spell-checking
+
+## Tools
+
+### prek
 
 Run
 ```shell
@@ -8,7 +26,7 @@ prek run --all-files
 ```
 to perform a number of style checks and fixes.
 
-## Code formatting
+### Code formatting
 
 Run
 ```shell
@@ -17,7 +35,7 @@ cargo +nightly-2025-09-17 fmt
 to automatically format the code. Use the shown Rust nightly version to obtain
 the same results as the CI checks.
 
-## Code Linting
+### Code Linting
 
 Run
 ```shell
@@ -25,7 +43,7 @@ cargo clippy --all-targets --all-features
 ```
 to ensure that the code follows established best practices.
 
-## Spell Checking
+### Spell Checking
 
 Use [codebook] to check for spelling errors in arguments, variable names,
 comments, etc... *hoomd-rs* includes a codebook dictionary file exempting
@@ -33,9 +51,9 @@ words commonly used throughout the repository.
 
 [codebook]: https://github.com/blopker/codebook
 
-## Build the documentation
+### Build the documentation
 
-### mdBook
+#### mdBook
 
 This documentation is built with [mdBook] using the following plugins:
 * [mdbook-alerts]
@@ -56,7 +74,7 @@ $ cd doc
 $ mdbook serve --open
 ```
 
-### rustdoc
+#### rustdoc
 
 To build the API documentation from source, execute:
 ```shell
@@ -65,7 +83,7 @@ To build the API documentation from source, execute:
 Open `target/doc/hoomd-vector/index.html` in your web browser to view the
 documentation.
 
-## WASM
+### WASM
 
 This documentation contains example scripts built for WASM. To build these,
 you need to install the following tools:

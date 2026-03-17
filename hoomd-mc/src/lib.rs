@@ -8,9 +8,81 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-//! Apply the Metropolis Monte Carlo simulation method to systems of particles.
+//! Apply the Metropolis Monte Carlo simulation method to systems of bodies.
 //!
-//! TODO: Expand documentation.
+//! `hoomd-mc` provides building blocks that you can use to create a Monte Carlo
+//! simulation model. Start with a [`hoomd_microstate::Microstate`] to represent
+//! the properties of all the bodies and sites. Form a Hamiltonian using
+//! types from [`hoomd_interaction`] that implement [`TotalEnergy`], [`DeltaEnergyOne`],
+//! [`DeltaEnergyInsert`], and/or [`DeltaEnergyRemove`] and set the macrostate
+//! using one of the types from [`hoomd_simulation`].
+//!
+//! [`DeltaEnergyOne`]: hoomd_interaction::DeltaEnergyOne
+//! [`DeltaEnergyInsert`]: hoomd_interaction::DeltaEnergyInsert
+//! [`DeltaEnergyRemove`]: hoomd_interaction::DeltaEnergyRemove
+//! [`TotalEnergy`]: hoomd_interaction::TotalEnergy
+//!
+//! # Trial moves
+//!
+//! The [`Trial`] trait describes a type that performs trial moves on a microstate.
+//! [`Trial::apply`] takes a mutable microstate, the Hamiltonian, and the macrostate.
+//! It attempts one or more trial moves, modifies the microstate with those that are
+//! accepted, and returns a [`Count`] of the accepted and rejected moves.
+//!
+//! ## Local trial moves
+//!
+//! The [`LocalTrial`] trait describes a type that proposes trial moves as
+//! small perturbations of the body properties. `hoomd-mc` implements
+//! [`Translate`] and [`Rotate`] which propose moves that translate the body's
+//! position and rotate the body's orientation, respectively. You can implement
+//! a custom [`LocalTrial`] as needed in your simulation model.
+//!
+//! [`Sweep`] implements [`Trial`] by applying the given [`LocalTrial`] to every
+//! body in the microstate. [`ParallelSweep`] does the same, but it executes many
+//! trial moves in parallel to increase performance. [`Sweep`] is very general
+//! will work with any boundary condition and local trial move, even when the move
+//! is not actually confined to a small region in space and when all bodies interact
+//! with all other bodies. [`ParallelSweep`] works only with boundaries that can be
+//! covered ([`Cover`]) with a [`Checkerboard`] and when there is a hard cutoff
+//! distance beyond which any two bodies cannot interact.
+//!
+//! ## Global trial moves
+//!
+//! A future release of *hoomd-rs* will implement moves that apply to the
+//! simulation boundary.
+//!
+//! ## Body insertion/removal
+//!
+//! A future release of *hoomd-rs* will implement moves that insert and remove
+//! bodies.
+//!
+//! ## Tuning trial moves
+//!
+//! Most trial moves have tunable parameters. Typical simulation protocols
+//! adjust these parameters to achieve a 20% acceptance rate. Trial moves
+//! that implement the [`Tune`] trait can automatically [`Adjust`] the move
+//! sizes to achieve the target.
+//!
+//! # Algorithms
+//!
+//! `hoomd-mc` also implements a number of MC-adjacent *algorithms*. They are
+//! **not** trial moves (and therefore do not implement [`Trial`]) because they
+//! describe non-reversible processes or otherwise do not obey detailed balance.
+//! These algorithms are useful because they can achieve certain goals much faster
+//! than an equilibrium simulation can.
+//!
+//! [`QuickInsert`] inserts bodies randomly drawn from the given distribution.
+//! The [`UniformIn`] distribution randomly places a template body anywhere
+//! in the simulation boundary. You could write your own distribution for custom
+//! behavior. [`QuickCompress`] compresses the simulation boundary until it
+//! reaches a target volume.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-mc` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -303,6 +375,7 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
     /// to increase or decrease the acceptance ratio as needed over
     /// `steps` iterations.
     ///
+    /// [`tune`]: Tune::tune
     /// [`tune_default`]: Tune::tune_default
     fn tune(
         &mut self,
@@ -340,12 +413,13 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
 
 /// Tune adjustable move sizes toward a target acceptance ratio.
 ///
-/// Prefer [`Sweep::tune`] or [`ParallelSweep::tune`] when tuning local
-/// trial move sizes.
+/// Use [`Sweep::tune`] or [`ParallelSweep::tune`] when tuning local trial move
+/// sizes. [`tune_by_scaling`] is an internal implementation detail that you can
+/// use to tune custom trial moves.
 ///
-/// Pass [`tune`] a target acceptance ratio and the move `count` obtained during
-/// a sampling period with the current `local_trial` move size. [`tune`] will
-/// scale the trial move size by the factor:
+/// Pass [`tune_by_scaling`] a target acceptance ratio and the move `count`
+/// obtained during a sampling period with the current `trial` move size.
+/// [`tune_by_scaling`] will scale the trial move size by the factor:
 /// ```math
 /// \frac{a + \gamma}{t + \gamma}
 /// ```
@@ -356,7 +430,7 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
     reason = "Panic would occur due to a bug in hoomd-rs."
 )]
 #[inline]
-pub fn tune<L>(local_trial: &mut L, target_acceptance: OpenUnitIntervalNumber, count: &Count)
+pub fn tune_by_scaling<L>(trial: &mut L, target_acceptance: OpenUnitIntervalNumber, count: &Count)
 where
     L: Adjust,
 {
@@ -364,8 +438,21 @@ where
 
     if let Some(acceptance_ratio) = count.acceptance_ratio() {
         let scale = (acceptance_ratio + GAMMA) / (target_acceptance.get() + GAMMA);
-        local_trial.adjust(scale.try_into().expect("scale should always be positive"));
+        trial.adjust(scale.try_into().expect("scale should always be positive"));
     }
+}
+
+/// Sample random bodies.
+///
+/// The [`BodyDistribution`] trait describes a type that samples bodies randomly
+/// from a given distribution. [`BodyDistribution`] is used by [`QuickInsert`]
+/// to add new *n* bodies to the microstate. When sampling, [`QuickInsert`] passes
+/// the index (in $` [0,n) `$) of the body it is attempting to add. Implementations
+/// can use this index to e.g. place bodies with a given stoichiometry or
+/// polydispersity.
+pub trait BodyDistribution<Y> {
+    /// Sample a body from the distribution with the given index.
+    fn sample<R: Rng + ?Sized>(&self, index: usize, rng: &mut R) -> Y;
 }
 
 #[cfg(test)]
@@ -407,7 +494,7 @@ mod tests {
         };
 
         let mut local_trial = Translate::<Cartesian<2>>::with_maximum_distance(1.0.try_into()?);
-        tune(&mut local_trial, 0.2.try_into()?, &high);
+        tune_by_scaling(&mut local_trial, 0.2.try_into()?, &high);
         check!(local_trial.maximum_distance().get() > 1.0);
 
         let low = Count {
@@ -416,7 +503,7 @@ mod tests {
         };
 
         let mut local_trial = Translate::<Cartesian<2>>::with_maximum_distance(1.0.try_into()?);
-        tune(&mut local_trial, 0.2.try_into()?, &low);
+        tune_by_scaling(&mut local_trial, 0.2.try_into()?, &low);
         check!(local_trial.maximum_distance().get() < 1.0);
 
         let zero = Count {
@@ -425,7 +512,7 @@ mod tests {
         };
 
         let mut local_trial = Translate::<Cartesian<2>>::with_maximum_distance(1.0.try_into()?);
-        tune(&mut local_trial, 0.2.try_into()?, &zero);
+        tune_by_scaling(&mut local_trial, 0.2.try_into()?, &zero);
         check!(local_trial.maximum_distance().get() < 1.0);
 
         Ok(())

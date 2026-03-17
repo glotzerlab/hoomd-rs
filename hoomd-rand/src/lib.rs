@@ -12,6 +12,13 @@
 //! - `AESRand`: An AES-based RNG (currently only available on some aarch64
 //!   platforms). This can be even faster than SFC64, but has a smaller state that
 //!   makes it less suitable for highly parallel applications.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-rand` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 /// Utility functions for random number generation.
 pub(crate) mod util;

@@ -128,7 +128,7 @@ impl Counter {
     /// let step = 100_000;
     /// let substep = 10;
     /// let seed = 100;
-    /// let index = 1_000_000_000_000u64;
+    /// let index = 1_000_000_000_000_u64;
     ///
     /// let counter = Counter::new(step, substep, seed).index(index);
     /// ```

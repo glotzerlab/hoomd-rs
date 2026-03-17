@@ -1,6 +1,6 @@
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings,
-    representation::triangle_mesh,
+    representation::surface_mesh,
 };
 
 use anyhow::Context;
@@ -9,7 +9,7 @@ use bevy_egui::EguiPlugin;
 
 use super::HardTetrahedronSelfAssembly;
 
-/// Mark the ellipse representation type.
+/// Mark the tetrahedron representation type.
 struct A;
 
 pub(crate) fn main() -> anyhow::Result<()> {
@@ -66,22 +66,12 @@ pub(crate) fn main() -> anyhow::Result<()> {
                 tetrahedron_material.clone(),
             )
         })
-        .pipe(triangle_mesh::TriangleMesh::<A>::setup),
+        .pipe(surface_mesh::SurfaceMesh::<A>::setup),
     );
-
-    // app.add_systems(
-    //     Startup,
-    //     (move || RectangularBoundary {
-    //         width: l,
-    //         height: l,
-    //         ..default()
-    //     })
-    //     .pipe(RectangularBoundary::setup),
-    // );
 
     app.add_systems(
         Update,
-        (sync_sites /* sync_boundary */,)
+        (sync_sites,)
             .run_if(resource_changed::<HardTetrahedronSelfAssembly>)
             .after(AdvanceSet),
     );
@@ -94,16 +84,16 @@ pub(crate) fn main() -> anyhow::Result<()> {
 /// Copy the current positions of simulation sites to bevy entities.
 fn sync_sites(
     mut commands: Commands,
-    site_representation: Res<triangle_mesh::Representation<A>>,
+    site_representation: Res<surface_mesh::Representation<A>>,
     site_query: Query<
         (Entity, &mut Transform),
-        With<triangle_mesh::TriangleMesh<A>>,
+        With<surface_mesh::SurfaceMesh<A>>,
     >,
     simulation: Res<HardTetrahedronSelfAssembly>,
 ) {
     let sites = simulation.microstate.sites();
 
-    triangle_mesh::TriangleMesh::sync(
+    surface_mesh::SurfaceMesh::sync(
         &mut commands,
         site_representation,
         site_query,
@@ -124,15 +114,3 @@ fn sync_sites(
         }),
     );
 }
-
-// /// Draw the simulation boundary at its current size.
-// fn sync_boundary(
-//     entity_rectangle: Single<(Entity, &RectangularBoundary)>,
-//     children: Query<&Children>,
-//     transforms: Query<&mut Transform>,
-//     simulation: Res<HardEllipseSelfAssembly>,
-// ) {
-//     let l =
-//         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
-//     RectangularBoundary::sync(entity_rectangle, children, transforms, l, l);
-// }

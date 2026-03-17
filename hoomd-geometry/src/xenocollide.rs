@@ -143,7 +143,7 @@ where
     // 2. Portal Refinement
     // Now we have three points which form our portal
 
-    let mut count = 0usize;
+    let mut count = 0_usize;
     loop {
         count += 1;
 
@@ -255,7 +255,7 @@ where
     }
 
     // while origin_ray_does_not_intersect_candidate()
-    let mut count = 0usize;
+    let mut count = 0_usize;
     let mut v3 = loop {
         count += 1;
 

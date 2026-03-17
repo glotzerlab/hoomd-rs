@@ -7,7 +7,7 @@ use log::{debug, trace};
 use rand::RngExt;
 use std::fmt::Display;
 
-use super::{Adjust, Count, LocalTrial, tune};
+use super::{Adjust, Count, LocalTrial, tune_by_scaling};
 use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Transform,
@@ -76,7 +76,7 @@ pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA>(
             );
         }
 
-        tune(local_trial, target_acceptance, &count);
+        tune_by_scaling(local_trial, target_acceptance, &count);
     }
 
     debug!("-- complete: {local_trial}");

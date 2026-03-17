@@ -17,13 +17,15 @@
   - [Hard Disk Self-Assembly](mc-tutorial/hard-disk-self-assembly.md)
   - [Hard Ellipse Self-Assembly](mc-tutorial/hard-ellipse-self-assembly.md)
   - [Hard Tetrahedron Self-Assembly](mc-tutorial/hard-tetrahedron-self-assembly.md)
-  - [Patchy Particle Self-Assembly]()
-  - [Modeling Binary Systems]()
-  - [Modeling Polydisperse Systems]()
+  - [Patchy Particle Self-Assembly](mc-tutorial/patchy-particle-self-assembly.md)
+  - [Type-dependent Interactions](mc-tutorial/type-dependent-interactions.md)
+  - [Polydisperse Interactions](mc-tutorial/polydisperse-hard-disk-model.md)
+- [Topics](topics.md)
 
 # Reference
 
 - [API Reference](api.md)
 - [Notation](notation.md)
-- [Developer Tools](developer-tools.md)
+- [Development](development.md)
 - [Logo](logo.md)
+- [Credits](credits.md)

@@ -48,13 +48,13 @@ jobs:
     #   run: rustup target install ${{ matrix.target }} --toolchain ${{ matrix.rust }}
     #   if: ${{ matrix.target != '' }}
     - name: Set default target
-      run: rustup default 1.93.0
+      run: rustup default 1.94.0
     - name: Check rust installation
       run: rustc -vV
     - name: Install cargo-binstall
       run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "$HOME/.cargo/bin"
     - name: Install wasm-bindgen
-      run: cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm --disable-strategies=compile --disable-telemetry
+      run: cargo binstall wasm-bindgen-cli@0.2.114 --no-confirm --disable-strategies=compile --disable-telemetry
     - name: Install binaryen
       run: curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "$HOME/.cargo/bin"
 
@@ -64,7 +64,7 @@ jobs:
     # dramatically. Add the Cargo.lock hash again in the key portion to
     # prevent this restoration.
     - name: Cache
-      uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2.8.2
+      uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
         key: ${{ 'wasm32-unknown-unknown' }}-${{ hashFiles('Cargo.lock') }}
         cache-bin: false

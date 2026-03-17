@@ -151,6 +151,13 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! # Complete documentation
+//!
+//! `hoomd-manifold` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 mod biquaternion;
 mod hyperbolic_angle;

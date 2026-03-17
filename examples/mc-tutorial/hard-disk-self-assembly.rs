@@ -87,13 +87,13 @@ impl HardDiskSelfAssembly {
         let square =
             Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
         let periodic_square =
-            Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
+            Periodic::new(hamiltonian.maximum_interaction_range(), square)?;
         // ANCHOR_END: periodic
 
         // ANCHOR: microstate
         let vec_cell = VecCell::builder()
             .nominal_search_radius(
-                hamiltonian.0.maximum_interaction_range().try_into()?,
+                hamiltonian.maximum_interaction_range().try_into()?,
             )
             .build();
         let mut microstate = Microstate::builder()
@@ -243,11 +243,19 @@ impl HardDiskSelfAssembly {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let mut simulation = HardDiskSelfAssembly::new()?;
-    // TODO: Write GSD file.
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
 
-    for _ in 0..10_000 {
+    let mut simulation = HardDiskSelfAssembly::new()?;
+    let mut hoomd_gsd_file =
+        HoomdGsdFile::create("hard-disk-self-assembly.gsd")?;
+
+    for _ in 0..100_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(10_000) {
+            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+        }
     }
 
     Ok(())
