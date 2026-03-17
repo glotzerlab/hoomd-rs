@@ -43,7 +43,7 @@ default-members = ["examples",
 [workspace.package]
 version = "0.0.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.91"
 homepage = "https://glotzerlab.engin.umich.edu"
 repository = "https://github.com/glotzerlab/hoomd-rs"
 license = "BSD-3-Clause"

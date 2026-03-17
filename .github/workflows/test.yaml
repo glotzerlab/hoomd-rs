@@ -40,7 +40,7 @@ jobs:
           # TODO: Include Mac and Windows tests after the project made public.
           # - macos-14
         rust:
-          - 1.89.0
+          - 1.91.0
           - 1.94.0
         target:
          - ''

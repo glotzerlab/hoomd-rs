@@ -115,7 +115,7 @@
 //! `hoomd-geometry` is is a part of *hoomd-rs*. Read the [complete documentation]
 //! for more information.
 //!
-//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{InnerProduct, Rotate, Rotation, Vector};

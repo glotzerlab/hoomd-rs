@@ -257,7 +257,6 @@ cargo run --release --example custom-random-walk
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
 [Random Walk]: random-walk.md
 [`rand`]: https://docs.rs/rand
-[API documentation]: ../api.md
 [Ovito]: https://www.ovito.org/
 
 ## Complete Code
