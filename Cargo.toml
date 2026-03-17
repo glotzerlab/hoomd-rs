@@ -180,9 +180,6 @@ needless_pass_by_ref_mut = "warn"
 [workspace.metadata.typos]
 default.extend-words = { ratatui = "ratatui" }
 
-[workspace.metadata.docs.rs]
-rustdoc-args = [ "--html-in-header", "katex.html" ]
-
 # Optimize for size in wasm builds
 [profile.release-wasm]
 opt-level = 'z'
