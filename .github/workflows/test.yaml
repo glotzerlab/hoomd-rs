@@ -21,24 +21,16 @@ env:
   CLICOLOR: 1
 
 jobs:
-  start_action_runners:
-    name: Start
-    uses: glotzerlab/jetstream2-admin/.github/workflows/start.yaml@f6746b0a76c06e45cc1b0c5e32576dfa2c7d2d8c # v1.5.1
-    secrets: inherit
-    with:
-      number: 8
-
   unit_test:
     name: Unit test [rust-${{ matrix.rust }}-${{ matrix.os }}-${{ matrix.target || 'native' }}]
-    runs-on: [self-hosted, jetstream2, CPU]
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os:
           - ubuntu-24.04
-          # Disable macOS tests to avoid burning through free GitHub Actions minutes.
-          # TODO: Include Mac and Windows tests after the project made public.
-          # - macos-14
+          - macos-14
+          - windows-2025
         rust:
           - 1.91.0
           - 1.94.0
@@ -52,22 +44,13 @@ jobs:
           target: wasm32-unknown-unknown
 
     steps:
-    # These steps are needed on self-hosted runners and can be removed on GitHub runners
-    - name: Clean workspace
-      run: ( shopt -s dotglob nullglob; rm -rf ./* )
-    - name: Add cargo PATH
-      run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
-    # - name: Update rust
-    #   run: rustup install ${{ matrix.rust }} --no-self-update
-    # - name: Install target
-    #   run: rustup target install ${{ matrix.target }} --toolchain ${{ matrix.rust }}
-    #   if: ${{ matrix.target != '' }}
-    - name: Set default target
-      run: rustup default ${{ matrix.rust }}
+    - name: Configure Rust
+      uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
+      with:
+        toolchain: ${{ matrix.rust }}
+        targets: ${{ matrix.target }}
     - name: Check rust installation
       run: rustc -vV
     # rust-cache already includes a Cargo.lock hash in the key. However, it
