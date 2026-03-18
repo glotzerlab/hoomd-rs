@@ -2,10 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![allow(
     clippy::missing_inline_in_public_items,
@@ -56,9 +56,10 @@
 //! // let path = "file.gsd";
 //! let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
 //! hoomd_gsd_file
-//!     .append_frame(1000)?
+//!     .append_frame(1_000)?
 //!     .configuration_box([100.0, 50.0, 80.0, 0.0, 0.0, 0.0])?
-//!     .particles_position([[0.0, 1.0, 2.0].into(), [3.0, 6.0, 12.0].into()]);
+//!     .particles_position([[0.0, 1.0, 2.0].into(), [3.0, 6.0, 12.0].into()])?
+//!     .end()?;
 //! # Ok(())
 //! # }
 //! ```
@@ -142,7 +143,7 @@
 //! `hoomd-gsd` is is a part of *hoomd-rs*. Read the [complete documentation]
 //! for more information.
 //!
-//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 pub mod file_layer;
 pub mod hoomd;

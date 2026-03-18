@@ -2,10 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 
 //! Apply the Metropolis Monte Carlo simulation method to systems of bodies.
@@ -82,7 +82,7 @@
 //! `hoomd-mc` is is a part of *hoomd-rs*. Read the [complete documentation]
 //! for more information.
 //!
-//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -440,6 +440,19 @@ where
         let scale = (acceptance_ratio + GAMMA) / (target_acceptance.get() + GAMMA);
         trial.adjust(scale.try_into().expect("scale should always be positive"));
     }
+}
+
+/// Sample random bodies.
+///
+/// The [`BodyDistribution`] trait describes a type that samples bodies randomly
+/// from a given distribution. [`BodyDistribution`] is used by [`QuickInsert`]
+/// to add new *n* bodies to the microstate. When sampling, [`QuickInsert`] passes
+/// the index (in $` [0,n) `$) of the body it is attempting to add. Implementations
+/// can use this index to e.g. place bodies with a given stoichiometry or
+/// polydispersity.
+pub trait BodyDistribution<Y> {
+    /// Sample a body from the distribution with the given index.
+    fn sample<R: Rng + ?Sized>(&self, index: usize, rng: &mut R) -> Y;
 }
 
 #[cfg(test)]

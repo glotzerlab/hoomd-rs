@@ -6,7 +6,7 @@ use strum_macros::VariantNames;
 
 use hoomd_geometry::{
     Volume,
-    shape::{Circle, Hypercuboid, Rectangle},
+    shape::{Circle, Rectangle},
 };
 use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 use hoomd_interaction::{
@@ -323,13 +323,8 @@ impl TypeDependentInteractions {
 }
 
 // ANCHOR: append_microstate
-impl<X>
-    AppendMicrostate<
-        BodyProperties,
-        SiteProperties,
-        X,
-        Periodic<Hypercuboid<2>>,
-    > for HoomdGsdFile
+impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Periodic<Rectangle>>
+    for HoomdGsdFile
 {
     #[inline]
     fn append_microstate(
@@ -338,7 +333,7 @@ impl<X>
             BodyProperties,
             SiteProperties,
             X,
-            Periodic<Hypercuboid<2>>,
+            Periodic<Rectangle>,
         >,
     ) -> Result<hoomd_gsd::hoomd::Frame<'_>, hoomd_gsd::hoomd::AppendError>
     {
@@ -389,7 +384,8 @@ fn main() -> anyhow::Result<()> {
                         .microstate
                         .iter_sites_tag_order()
                         .map(|s| site_energy(&simulation, s)),
-                )?;
+                )?
+                .end()?;
         }
     }
 

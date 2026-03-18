@@ -26,8 +26,8 @@ Rust's `use` is similar to Python's `import`. See [The Rust Programming
 Language] for more information.
 
 [`hoomd-interaction`], [`hoomd-mc`], [`hoomd-microstate`], and [`hoomd-vector`]
-are *crates* that each implement a part of the simulation. The [API
-documentation] provides a for a full reference for all *hoomd-rs* crates.
+are *crates* that each implement a part of the simulation. See [All
+Crates] for a list of all *hoomd-rs* crates with links to their documentation.
 
 ## The `main()` Function
 
@@ -166,7 +166,7 @@ a **Microstate** has **open** boundary conditions.
 [`hoomd-mc`]: ../api/hoomd_mc/index.html
 [`hoomd-microstate`]: ../api/hoomd_microstate/index.html
 [`hoomd-vector`]: ../api/hoomd_vector/index.html
-[API documentation]: ../api.md
+[All Crates]: ../guide/crates.md
 [`anyhow`]: https://docs.rs/anyhow/
 
 ## Complete Code
