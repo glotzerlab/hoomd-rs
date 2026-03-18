@@ -58,7 +58,7 @@ Assign all the model parameters in one code block so that they are easy to modif
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:parameters}}
 ```
 
-Here, we choose to use reduced Lennard-Jones units: $`\epsilon=1`$, $`\sigma=1`$, $`m = 1`$ => temperature is in units of $`\epsilon/k_BT`$, time in units of $`\sigma \sqrt{(m/\epsilon)}`$. 
+Here, we choose to use reduced Lennard-Jones units: $ `\epsilon=1` $, $`\sigma=1`$, $`m = 1`$ => temperature is in units of $`\epsilon/k_BT`$, time in units of $`\sigma \sqrt{(m/\epsilon)}`$. 
 
 We will initialize a system with `nxnxn` particles and then run  `eq_steps` in the NVT ensemble to equilibrate the system at $`T^*=`$ `kt` at the fixed number density $`\rho=`$ `density`, followed by a production run in the NVE ensemble. We use a time step of $`\delta t = `$ `dt` and a temperature damping time constant of $`\tau=`$ `tau_thermostat` for the thermostating. The LJ potential is truncated at the `r_cut`.
 

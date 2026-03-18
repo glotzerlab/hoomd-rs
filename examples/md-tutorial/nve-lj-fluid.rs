@@ -121,7 +121,7 @@ impl LJFluid {
                 }
             }
         }
-        // ANCHO_END: particle_positions
+        // ANCHOR_END: particle_positions
 
         // ANCHOR: microstate
         let mut microstate = builder.try_build()?;
