@@ -19,7 +19,11 @@ const PI: f32 = 3.141592653589793238462643;
 
 @group(2) @binding(4) var image_color_texture: texture_2d<f32>;
 @group(2) @binding(5) var image_color_sampler: sampler;
-@group(2) @binding(6) var<storage, read> n_sides: f32;
+struct PolygonParams {
+    n_sides: f32,
+};
+@group(2) @binding(6)
+var<uniform> polygon: PolygonParams;
 
 struct VertexOutput {
     // this is `clip position` when the struct is used as a vertex stage output
@@ -75,7 +79,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vec4<f32>(vertex.position, 1.0)
     );
     out.position = mesh_functions::mesh2d_position_world_to_clip(out.world_position);
-    out.n_sides = n_sides;
+    out.n_sides = polygon.n_sides;
 #endif
 
 #ifdef VERTEX_NORMALS

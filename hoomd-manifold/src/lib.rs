@@ -136,18 +136,23 @@
 //! };
 //! use num::complex::Complex;
 //! use std::f64::consts::PI;
+//! use approxim::assert_relative_eq;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
 //! let q = Biquaternion::from([
-//!     Complex::new(0.0, PI / 4.0).sinh(),
+//!     Complex::new(0.0, (0.2_f64).sinh()),
 //!     Complex::new(0.0, 0.0),
 //!     Complex::new(0.0, 0.0),
-//!     Complex::new(0.0, PI / 4.0).cosh(),
+//!     Complex::new((0.2_f64).cosh(), 0.0),
 //! ]);
 //! let v = q.to_unit()?;
 //! let boosted = v.hyperbolic_rotate(&x);
-//! // boosted is approximately [(PI/2.0).sinh(), 0.0, 0.0, (PI/2.0).cosh()]
+//! assert_relative_eq!(
+//!     boosted,
+//!     [(0.4_f64).sinh(), 0.0, 0.0, (0.4_f64).cosh()].into(),
+//!     epsilon = 1e-12
+//! );
 //! # Ok(())
 //! # }
 //! ```
