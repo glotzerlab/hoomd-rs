@@ -121,7 +121,7 @@ impl LJFluid {
                 }
             }
         }
-        // ANCHOR: particle_positions
+        // ANCHO_END: particle_positions
 
         // ANCHOR: microstate
         let mut microstate = builder.try_build()?;
@@ -162,7 +162,7 @@ impl LJFluid {
 
         // ANCHOR: integrator
         let integrator = ConstantVolume::new(dt);
-        // ANCHO_END: integrator
+        // ANCHOR_END: integrator
 
         // ANCHOR: thermostat
         let thermostat = BussiThermostat::new(tau_thermostat.try_into()?);
@@ -182,8 +182,6 @@ impl LJFluid {
     }
 }
 // ANCHOR_END: struct_initialize
-
-// Alex stop here ########################################################################################################
 
 // ANCHOR: impl_simulation
 impl Simulation for LJFluid {
@@ -237,7 +235,7 @@ impl LJFluid {
 
     // ANCHOR: nvt
     fn nvt(&mut self) {
-        // ANCHOR_end: nvt
+        // ANCHOR_END: nvt
 
         // ANCHOR: state_transition
         if self.step() >= self.eq_step {
