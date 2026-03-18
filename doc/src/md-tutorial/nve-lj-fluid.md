@@ -1,5 +1,11 @@
 # NVE Simulation of a Lennard-Jones Fluid
 
+<script type="module">
+import init from 'https://glotzerlab.github.io/hoomd-rs/md-tutorial/nve-lj-fluid.js'
+{{#include ../../scripts/init-wasm-canvas.js}}
+</script>
+{{#include ../../scripts/canvas.html}}
+
 ## Overview
 
 This tutorial demonstrates how to set up and run a **classical microcanonical (NVE) simulation** of a Lennard-Jones (LJ) fluid using the molecular dynamics (MD) modules of `hoomd-rs`.
