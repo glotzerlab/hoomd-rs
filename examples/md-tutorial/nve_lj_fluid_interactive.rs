@@ -15,8 +15,6 @@ struct A;
 pub(crate) fn main() -> anyhow::Result<()> {
     let simulation = LJFluid::new()
         .context("failed to setup simulation")?;
-    let vertices = simulation.hamiltonian.0.0.0.vertices().to_vec();
-
     let l =
         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
