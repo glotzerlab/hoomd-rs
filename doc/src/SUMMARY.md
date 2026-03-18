@@ -22,7 +22,7 @@
   - [Hard Tetrahedron Self-Assembly](mc-tutorial/hard-tetrahedron-self-assembly.md)
   - [Patchy Particle Self-Assembly](mc-tutorial/patchy-particle-self-assembly.md)
   - [Type-dependent Interactions](mc-tutorial/type-dependent-interactions.md)
-- [Molecular Dynamics Tutorial](mc-tutorial/index.md)
+- [Molecular Dynamics Tutorial]()
   - [NVE Lennard-Jones fluid](md-tutorial/nve-lj-fluid.md)
 - [Workflow Tutorial](workflow-tutorial/index.md)
   - [The State Point](workflow-tutorial/state-point.md)
