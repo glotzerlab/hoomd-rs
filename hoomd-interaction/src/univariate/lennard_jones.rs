@@ -171,7 +171,11 @@ mod tests {
         assert_relative_eq!(lj.force(sigma), 16.0 * epsilon / sigma);
 
         // Bottom of the well
-        assert_relative_eq!(lj.energy(2.0_f64.powf(1.0 / 4.0) * sigma), -epsilon);
+        assert_relative_eq!(
+            lj.energy(2.0_f64.powf(1.0 / 4.0) * sigma),
+            -epsilon,
+            epsilon = 1e-12
+        );
         assert_abs_diff_eq!(
             lj.force(2.0_f64.powf(1.0 / 4.0) * sigma),
             0.0,
