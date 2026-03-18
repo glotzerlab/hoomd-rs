@@ -329,3 +329,10 @@ fn main() -> anyhow::Result<()> {
 }
 // ANCHOR_END: append_microstate
 // ANCHOR_END: all
+
+#[cfg(feature = "bevy")]
+mod nve_lj_fluid_interactive;
+#[cfg(feature = "bevy")]
+use bevy::prelude::Resource;
+#[cfg(feature = "bevy")]
+use nve_lj_fluid_interactive::main;

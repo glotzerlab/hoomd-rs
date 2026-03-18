@@ -9,7 +9,7 @@ use bevy_egui::EguiPlugin;
 
 use super::LJFluid;
 
-/// Mark the tetrahedron representation type.
+/// Mark the disk representation type.
 struct A;
 
 pub(crate) fn main() -> anyhow::Result<()> {
