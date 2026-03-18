@@ -1,6 +1,6 @@
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings,
-    representation::surface_mesh,
+    representation::disk,
 };
 
 use anyhow::Context;
@@ -33,6 +33,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
         Startup,
         (|| disk::MaterialParameters::default()).pipe(disk::Disk::<A>::setup),
     );
+
     app.add_systems(
         Update,
         (sync_sites,)
