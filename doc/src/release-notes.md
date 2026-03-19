@@ -1,10 +1,20 @@
 # Release notes
 
+## Next release
+
+*Added:*
+
+*Changed:*
+
+*Deprecated:*
+
+*Removed:*
+
+*Fixed:*
+
+* `hoomd-microstate` documentation builds on docs.rs (#253).
+* Unit tests pass on the Windows native platform (#253).
+
 ## 1.0.0 (2026-03-17)
 
 *Initial release*.
-
-## History
-
-See the Git repository for a complete history of **hoomd-rs** development
-prior to the initial release.

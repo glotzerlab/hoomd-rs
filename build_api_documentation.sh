@@ -15,4 +15,5 @@ for package in derive linear-algebra simulation utility rand vector gsd manifold
                geometry microstate interaction mc bevy
 do
   cargo doc --package hoomd-$package --lib --no-deps
+  cp katex.html hoomd-$package/
 done
