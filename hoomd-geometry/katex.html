@@ -1,1 +1,44 @@
-../katex.html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
+<!-- From: https://github.com/rust-lang/rust/pull/95691#issuecomment-1089080597 -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Make a list of all replacements to make. Otherwise, the for loops
+    // fail to iterate over all elements that need to be replaced.
+    let to_do = [];
+
+    // Render
+    // ```math
+    // equation
+    // ```
+    // blocks as display mode equations with katex. Markdown translates this to
+    // <pre class="language-math"><code>equation</code></pre>
+    for (let e of document.getElementsByTagName('pre')) {
+        if (e.classList.contains('language-math')) {
+            to_do.push(function () {
+                let x = document.createElement('p');
+                katex.render(e.innerText, x, {displayMode: true, throwOnError: false});
+                e.parentNode.parentNode.replaceChild(x, e.parentNode);
+            });
+        }
+    }
+    // Render $`equation`$ elements as inline equations with katex. Markdown
+    // translates this to <p>...$<code>equation</code>$...</p>. Also remove the
+    // extra $ characters.
+    // <pre class="language-math"><code>equation</code></pre>
+    for (let e of document.getElementsByTagName('code')) {
+        let n = e.nextSibling; let p = e.previousSibling;
+        if (n && p && /^\$/.test(n.data) && /\$$/.test(p.data)) {
+            to_do.push(function () {
+                let n = e.nextSibling; let p = e.previousSibling;
+                let x = document.createElement('span');
+                katex.render(e.innerText, x, {throwOnError: false});
+                e.parentNode.replaceChild(x, e);
+                n.splitText(1); n.remove();
+                p.splitText(p.data.length - 1).remove();
+            });
+        }
+    }
+    for (let f of to_do) f();
+});
+</script>
