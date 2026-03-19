@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::fmt;
 
-use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
-
 /// General matrix-vector products
 pub mod gemv;
 /// ``std::ops`` implementations for [`Matrix`]
@@ -16,11 +14,9 @@ pub mod qr;
 
 pub use crate::diagonal::DiagonalMatrix;
 
-use std::fmt;
-
 /// A lightweight representation of a diagonal matrix.
 use crate::{
-    Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix,
+    Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix,
     matrix::qr::qr_decomposition,
 };
 
@@ -434,6 +430,12 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     pub const fn n_columns(&self) -> usize {
         M
     }
+    /// Compute the QR decomposition of a matrix $`A`$ such that $`A = QR`$ where Q is orthogonal and R is upper triangular.
+    #[must_use]
+    #[inline]
+    pub fn qr(&self) -> (Matrix<N, M>, Vec<f64>) {
+        qr_decomposition(self)
+    }
 }
 impl<const N: usize> Matrix<N, N> {
     /// Construct a square matrix with the given diagonal.
@@ -454,12 +456,6 @@ impl<const N: usize> Matrix<N, N> {
     #[must_use]
     pub fn with_diagonal(diagonal: [f64; N]) -> Self {
         DiagonalMatrix { elements: diagonal }.to_dense()
-    }
-    /// Compute the QR decomposition of a matrix $`A`$ such that $`A = QR`$ where Q is orthogonal and R is upper triangular.
-    #[must_use]
-    #[inline]
-    pub fn qr(&self) -> (Matrix<N, M>, Vec<f64>) {
-        qr_decomposition(self)
     }
 }
 impl<const N: usize> Matrix<N, N> {
