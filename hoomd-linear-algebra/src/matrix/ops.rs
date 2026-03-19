@@ -1,28 +1,26 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use super::Matrix;
 use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
-/// Index the rows and columns of a [`Matrix`]
-///
-/// Indices for [`Matrix`] types are zero-indexed and reflect the indexing pattern of
-/// the underlying data. This results in the pattern `(row, column)`, which mirrors the
-/// behavior of Numpy and similar array languages.
-///
-/// # Examples
-/// ```
-/// use hoomd_linear_algebra::matrix::Matrix;
-/// let rows = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
-/// let mat = Matrix { rows };
-/// assert_eq!(mat[(0, 1)], rows[0][1]);
-/// assert_eq!(mat[(2, 1)], 6.0);
-/// assert_eq!(mat[(1, 1)], 4.0);
-/// // Out-of-bounds: would panic!
-/// // mat[(3, 0)];
-/// ```
 impl<const N: usize, const M: usize> Index<(usize, usize)> for Matrix<N, M> {
     type Output = f64;
+
+    /// Access matrix elements..
+    ///
+    /// Elements are indexed by `(row, column)`.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let rows = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
+    /// let a = Matrix { rows };
+    /// assert_eq!(a[(0, 1)], rows[0][1]);
+    /// assert_eq!(a[(2, 1)], 6.0);
+    /// assert_eq!(a[(1, 1)], 4.0);
+    /// ```
     #[inline]
     fn index(&self, index: (usize, usize)) -> &f64 {
         let (i, j) = index;
@@ -34,6 +32,24 @@ impl<const N: usize, const M: usize> IndexMut<(usize, usize)> for Matrix<N, M> {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut f64 {
         let (i, j) = index;
         &mut self.rows[i][j]
+    }
+}
+
+impl<const N: usize, const M: usize> Index<(usize, std::ops::Range<usize>)> for Matrix<N, M> {
+    type Output = [f64];
+
+    #[inline]
+    fn index(&self, index: (usize, std::ops::Range<usize>)) -> &Self::Output {
+        let (row_index, col_range) = index;
+        &self.rows[row_index][col_range]
+    }
+}
+
+impl<const N: usize, const M: usize> IndexMut<(usize, std::ops::Range<usize>)> for Matrix<N, M> {
+    #[inline]
+    fn index_mut(&mut self, index: (usize, std::ops::Range<usize>)) -> &mut Self::Output {
+        let (row_index, col_range) = index;
+        &mut self.rows[row_index][col_range]
     }
 }
 
@@ -68,59 +84,73 @@ impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
     type Output = Self;
 
     #[inline]
+    /// Matrix-scalar multiplication.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
+    ///
+    /// let matrix = Matrix22::full(2.0);
+    /// let scalar = 2.0;
+    /// assert_eq!(matrix * scalar, matrix + matrix);
+    /// ```
     fn mul(self, rhs: f64) -> Self {
-        self.map_elementwise(|x| x * rhs)
+        self.map_elements(|x| x * rhs)
     }
 }
-/// Multiply an `f64` scalar by a [`Matrix`] rhs.
-///
-/// # Examples
-/// ```
-/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
-/// let matrix = Matrix22::full(2.0);
-/// let scalar = 3.0;
-/// assert_eq!(scalar * matrix, matrix * scalar);
-/// ```
+
 impl<const N: usize, const M: usize> Mul<Matrix<N, M>> for f64 {
     type Output = Matrix<N, M>;
 
+    /// Matrix-scalar multiplication.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
+    ///
+    /// let matrix = Matrix22::full(2.0);
+    /// let scalar = 3.0;
+    /// assert_eq!(scalar * matrix, matrix * scalar);
+    /// ```
     #[inline]
     fn mul(self, rhs: Self::Output) -> Self::Output {
-        rhs.map_elementwise(|x| x * self)
+        rhs.map_elements(|x| x * self)
     }
 }
 
-/// Compute the elementwise, in-place scalar multiplication of a [`Matrix`]
-///
-/// # Examples
-/// ```
-/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
-/// let mut matrix = Matrix22::full(2.0);
-/// let matrix_copy = matrix.clone();
-/// matrix *= 3.0;
-/// assert_eq!(matrix, matrix_copy * 3.0);
-/// ```
 impl<const N: usize, const M: usize> MulAssign<f64> for Matrix<N, M> {
     #[inline]
+    /// Matrix-scalar multiplication assignment.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
+    ///
+    /// let mut matrix = Matrix22::full(2.0);
+    /// let matrix_copy = matrix.clone();
+    /// matrix *= 3.0;
+    /// assert_eq!(matrix, matrix_copy * 3.0);
+    /// ```
     fn mul_assign(&mut self, rhs: f64) {
-        self.iter_flat_mut().for_each(|x| *x *= rhs);
+        self.iter_elements_mut().for_each(|x| *x *= rhs);
     }
 }
 
-/// Compute the elementwise negation of a [`Matrix`].
-///
-/// # Examples
-/// ```
-/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
-/// let matrix = Matrix22::full(5.0);
-/// assert_eq!(-matrix, Matrix22::zeros() - matrix);
-/// ```
 impl<const N: usize, const M: usize> Neg for Matrix<N, M> {
     type Output = Self;
 
+    /// Matrix negation.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
+    ///
+    /// let matrix = Matrix22::full(5.0);
+    /// assert_eq!(-matrix, Matrix22::zeros() - matrix);
+    /// ```
     #[inline]
     fn neg(self) -> Self {
-        self.map_elementwise(f64::neg)
+        self.map_elements(f64::neg)
     }
 }
 
@@ -139,8 +169,8 @@ impl<const N: usize, const M: usize> Add<Self> for Matrix<N, M> {
 impl<const N: usize, const M: usize> AddAssign for Matrix<N, M> {
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
-        self.iter_flat_mut()
-            .zip(rhs.iter_flat())
+        self.iter_elements_mut()
+            .zip(rhs.iter_elements())
             .for_each(|(x, r)| *x += r);
     }
 }
@@ -159,8 +189,8 @@ impl<const N: usize, const M: usize> Sub<Self> for Matrix<N, M> {
 impl<const N: usize, const M: usize> SubAssign for Matrix<N, M> {
     #[inline]
     fn sub_assign(&mut self, rhs: Self) {
-        self.iter_flat_mut()
-            .zip(rhs.iter_flat())
+        self.iter_elements_mut()
+            .zip(rhs.iter_elements())
             .for_each(|(x, r)| *x -= r);
     }
 }

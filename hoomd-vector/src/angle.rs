@@ -1,13 +1,16 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Angle`]
 
+use serde::{Deserialize, Serialize};
+use std::{f64::consts::PI, fmt};
+
+use approxim::approx_derive::RelativeEq;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
-use std::{f64::consts::PI, fmt};
 
 use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 
@@ -39,7 +42,7 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 /// Create a random [`Angle`] from the uniform distribution over all rotations:
 /// ```
 /// use hoomd_vector::Angle;
-/// use rand::{Rng, SeedableRng, rngs::StdRng};
+/// use rand::{RngExt, SeedableRng, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(1);
@@ -52,7 +55,7 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 ///
 /// Rotate a [`Cartesian<2>`] vector by an [`Angle`]:
 /// ```
-/// use ::approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
 /// use std::f64::consts::PI;
 ///
@@ -72,7 +75,7 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 /// let c = a.combine(&b);
 /// assert_eq!(c.theta, PI / 4.0);
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Angle {
     /// Rotation angle (radians).
     pub theta: f64,
@@ -112,7 +115,7 @@ impl From<Angle> for RotationMatrix<2> {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix};
     /// use std::f64::consts::PI;
     ///
@@ -160,7 +163,7 @@ impl Rotate<Cartesian<2>> for Angle {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
     /// use std::f64::consts::PI;
     ///
@@ -243,7 +246,7 @@ impl Distribution<Angle> for StandardUniform {
     ///
     /// ```
     /// use hoomd_vector::Angle;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);
@@ -253,52 +256,16 @@ impl Distribution<Angle> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Angle {
-        #[expect(
-            clippy::expect_used,
-            reason = "This constants chosen for this distribution are valid"
-        )]
         let uniform = Uniform::new(0.0, 2.0 * PI).expect("hard-coded distribution should be valid");
         Angle::from(uniform.sample(rng))
     }
 }
 
 #[cfg(test)]
-mod approx {
-    use approx::{AbsDiffEq, RelativeEq};
-
-    impl AbsDiffEq for super::Angle {
-        type Epsilon = <f64 as AbsDiffEq>::Epsilon;
-
-        fn default_epsilon() -> Self::Epsilon {
-            f64::default_epsilon()
-        }
-
-        fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-            f64::abs_diff_eq(&self.theta, &other.theta, epsilon)
-        }
-    }
-
-    impl RelativeEq for super::Angle {
-        fn default_max_relative() -> Self::Epsilon {
-            f64::default_max_relative()
-        }
-
-        fn relative_eq(
-            &self,
-            other: &Self,
-            epsilon: Self::Epsilon,
-            max_relative: Self::Epsilon,
-        ) -> bool {
-            f64::relative_eq(&self.theta, &other.theta, epsilon, max_relative)
-        }
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::assert_relative_eq;
-    use rand::{SeedableRng, rngs::StdRng};
+    use approxim::assert_relative_eq;
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
 

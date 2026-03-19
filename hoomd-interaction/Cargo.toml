@@ -4,23 +4,33 @@ categories.workspace = true
 description = "Evaluate interactions on particles."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
+
 [lints]
 workspace = true
 
 [dependencies]
+serde.workspace = true
+
+hoomd-derive.workspace = true
 hoomd-microstate.workspace = true
 hoomd-vector.workspace = true
 hoomd-geometry.workspace = true
+hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 
 [dev-dependencies]
-approx.workspace = true
+anyhow.workspace = true
+assert2.workspace = true
+approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true
 rand.workspace = true

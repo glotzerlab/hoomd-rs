@@ -1,9 +1,10 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement Open
 
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
+use serde::{Deserialize, Serialize};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 
@@ -11,7 +12,7 @@ use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 ///
 /// Every point lies inside `Open` boundary conditions, bodies and sites
 /// are never wrapped, and there are no ghost sites.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Open;
 
 impl<P> Wrap<P> for Open {
@@ -31,7 +32,7 @@ where
     }
 
     #[inline]
-    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         ArrayVec::new()
     }
 }

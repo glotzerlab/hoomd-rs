@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implementations of the Xenocollide collision detection algorithm.
@@ -75,7 +75,7 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
         sb_n - self.sa.support_mapping(&-n) // eq. 2.5.6 in GPG7
     }
 
-    /// Create a new `MinkowskiDifference` evaluator.
+    /// Create a new `MinkowskiDifference`
     #[inline]
     fn new<R: Rotation>(
         sa: &'a A,
@@ -143,7 +143,7 @@ where
     // 2. Portal Refinement
     // Now we have three points which form our portal
 
-    let mut count = 0usize;
+    let mut count = 0_usize;
     loop {
         count += 1;
 
@@ -255,7 +255,7 @@ where
     }
 
     // while origin_ray_does_not_intersect_candidate()
-    let mut count = 0usize;
+    let mut count = 0_usize;
     let mut v3 = loop {
         count += 1;
 

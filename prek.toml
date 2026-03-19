@@ -1,0 +1,34 @@
+[[repos]]
+repo = "https://github.com/glotzerlab/fix-license-header"
+rev = "v0.4.1"
+hooks = [
+  {
+    id = "fix-license-header",
+    name = "Fix license headers",
+    types_or = ["rust"],
+    exclude = ".*examples/.*",
+    args = [
+      "--license-file=LICENSE",
+      "--add=Part of hoomd-rs, released under the BSD 3-Clause License."
+    ]
+  }
+]
+
+[[repos]]
+repo = "builtin"
+hooks = [
+  { id = "end-of-file-fixer" },
+  { id = "trailing-whitespace" },
+  { id = "check-json" },
+  { id = "check-toml" },
+  { id = "check-yaml" },
+  { id = "check-case-conflict" },
+  { id = "mixed-line-ending" }
+]
+
+[[repos]]
+repo = "https://github.com/rhysd/actionlint"
+rev = "v1.7.11"
+hooks = [
+  { id = "actionlint" }
+]

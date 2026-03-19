@@ -1,11 +1,11 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![allow(
     clippy::missing_inline_in_public_items,
@@ -20,9 +20,80 @@
 //! that are associated with trajectory frames. The [GSD Python package] can read
 //! and write these files. `hoomd-gsd` implements GSD file I/O in native Rust.
 //!
-//! [GSD Python package]: https://gsd.readthedocs.io
+//! # HOOMD schema
 //!
-//! # The file layer
+//! Use [`HoomdGsdFile`] to write to GSD files with the HOOMD schema that can
+//! be read by the [Ovito], [HOOMD-blue], the [GSD Python package], and other applications.
+//!
+//! [`HoomdGsdFile`]: hoomd::HoomdGsdFile
+//! [GSD Python package]: https://gsd.readthedocs.io
+//! [HOOMD-blue]: https://hoomd-blue.readthedocs.io
+//! [Ovito]: https://www.ovito.org
+//!
+//! Create a new GSD file with the hoomd schema:
+//!
+//! ```
+//! use hoomd_gsd::hoomd::HoomdGsdFile;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # use tempfile::tempdir;
+//! # let tmp_dir = tempdir().expect("temp dir should be created");
+//! # let path = tmp_dir.path().join("test.gsd");
+//! // let path = "file.gsd";
+//! let hoomd_gsd_file = HoomdGsdFile::create(path)?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! Call [`append_frame`] to add a new frame to file. Chain any number of method calls
+//! On the return value of [`append_frame`] to write those data chunks to the frame:
+//!
+//! ```
+//! use hoomd_gsd::hoomd::HoomdGsdFile;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # use tempfile::tempdir;
+//! # let tmp_dir = tempdir().expect("temp dir should be created");
+//! # let path = tmp_dir.path().join("test.gsd");
+//! // let path = "file.gsd";
+//! let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
+//! hoomd_gsd_file
+//!     .append_frame(1_000)?
+//!     .configuration_box([100.0, 50.0, 80.0, 0.0, 0.0, 0.0])?
+//!     .particles_position([[0.0, 1.0, 2.0].into(), [3.0, 6.0, 12.0].into()])?
+//!     .end()?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! See the [`Frame`] documentation for a complete list of data chunks that you can write.
+//!
+//! The file is automatically synchronized and closed when the [`HoomdGsdFile`] is dropped.
+//! Call [`open`] to open an existing file and append more frames:
+//!
+//! ```
+//! use hoomd_gsd::hoomd::HoomdGsdFile;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # use tempfile::tempdir;
+//! # let tmp_dir = tempdir().expect("temp dir should be created");
+//! # let path = tmp_dir.path().join("test.gsd");
+//! // let path = "file.gsd";
+//! # HoomdGsdFile::create(&path)?;
+//! let mut hoomd_gsd_file = HoomdGsdFile::open(path)?;
+//! hoomd_gsd_file
+//!     .append_frame(2000)?
+//!     .configuration_box([105.0, 48.0, 72.0, 0.0, 0.0, 0.0])?
+//!     .particles_position([
+//!         [2.0, 3.0, -1.0].into(),
+//!         [18.0, 4.0, -6.0].into(),
+//!     ]);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! [`Frame`]: hoomd::Frame
+//! [`append_frame`]: hoomd::HoomdGsdFile::append_frame
+//! [`open`]: hoomd::HoomdGsdFile::open
+//!
+//! ## The file layer
 //!
 //! [`GsdFile`](file_layer::GsdFile) provides direct access to read and write GSD
 //! formatted files. Call [`create_new`](file_layer::GsdFile::create_new) to create
@@ -51,15 +122,15 @@
 //! # use tempfile::tempdir;
 //! # let tmp_dir = tempdir().expect("temp dir should be created");
 //! # let path = tmp_dir.path().join("test.gsd");
-//! let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
+//! let position = vec![[5.0_f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
 //!
 //! let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-//! gsd_file.write_scalars("configuration/step", &[100_000u64])?;
+//! gsd_file.write_scalars("configuration/step", [100_000_u64])?;
 //! gsd_file.write_scalars(
 //!     "configuration/box",
-//!     &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+//!     [10.0_f32, 20.0, 15.0, 0.0, 0.0, 0.0],
 //! )?;
-//! gsd_file.write_arrays("particles/position", &position)?;
+//! gsd_file.write_arrays("particles/position", position.iter().copied())?;
 //! gsd_file.end_frame()?;
 //! # Ok(())
 //! # }
@@ -67,19 +138,12 @@
 //! Each array in the file in stored in a specific type. `write_scalars` and
 //! `write_arrays` automatically infer that type from the argument given.
 //!
-//! # HOOMD schema
+//! # Complete documentation
 //!
-//! See the [GSD Python package] documentation for a full specification of the HOOMD
-//! schema. Files written with this schema will interoperate with [HOOMD-blue],
-//! [OVITO], and other applications.
+//! `hoomd-gsd` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
 //!
-//! [HOOMD-blue]: https://hoomd-blue.readthedocs.io
-//! [Ovito]: https://www.ovito.org
-//!
-//! At this time, the `hoomd-gsd` crate does not provide any high level API for
-//! reading or writing the HOOMD schema. See the code examples throughout the
-//! [`file_layer`] module for minimal examples that write files with the HOOMD
-//! schema. Note that the HOOMD schema uses f32 data types, so convert appropriately
-//! when mapping vectors from `hoomd-vector`.
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 pub mod file_layer;
+pub mod hoomd;

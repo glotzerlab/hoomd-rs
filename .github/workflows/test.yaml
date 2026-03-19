@@ -1,4 +1,4 @@
-name: test
+name: Test
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -23,7 +23,7 @@ env:
 jobs:
   start_action_runners:
     name: Start
-    uses: glotzerlab/jetstream2-admin/.github/workflows/start.yaml@9ef0cf7995c9209bfa77d45baa124f15df669393 # v1.4.0
+    uses: glotzerlab/jetstream2-admin/.github/workflows/start.yaml@f6746b0a76c06e45cc1b0c5e32576dfa2c7d2d8c # v1.5.1
     secrets: inherit
     with:
       number: 8
@@ -40,16 +40,15 @@ jobs:
           # TODO: Include Mac and Windows tests after the project made public.
           # - macos-14
         rust:
-          # Test multiple rust versions on multiple platforms in the debug profile.
-          - 1.88.0
-          - 1.90.0
+          - 1.91.0
+          - 1.94.0
         target:
          - ''
 
         include:
         # Add a WASM build.
         - os: ubuntu-24.04
-          rust: 1.90.0
+          rust: 1.94.0
           target: wasm32-unknown-unknown
 
     steps:
@@ -60,7 +59,7 @@ jobs:
       run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
     - name: Checkout
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
     # - name: Update rust
     #   run: rustup install ${{ matrix.rust }} --no-self-update
@@ -71,10 +70,15 @@ jobs:
       run: rustup default ${{ matrix.rust }}
     - name: Check rust installation
       run: rustc -vV
+    # rust-cache already includes a Cargo.lock hash in the key. However, it
+    # eagerly restores caches with previous Cargo.lock files. This causes
+    # multiple builds to be cached in target/ increasing the cache usage
+    # dramatically. Add the Cargo.lock hash again in the key portion to
+    # prevent this restoration.
     - name: Cache
-      uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+      uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
-        key: ${{ matrix.target || 'native' }}
+        key: ${{ matrix.target || 'native' }}-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
 
     - name: Build [default features]
@@ -133,6 +137,9 @@ jobs:
         --locked
         --workspace
       if: ${{ matrix.target == '' }}
+
+    - name: Show target directory size
+      run: du -hsc target/*
 
   tests_complete:
     name: All tests

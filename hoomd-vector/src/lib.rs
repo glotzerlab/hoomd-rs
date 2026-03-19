@@ -1,11 +1,11 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 
 //! Vector and quaternion math.
@@ -123,7 +123,7 @@
 //!
 //! [`Angle`] implements rotations on [`Cartesian<2>`] vectors.
 //! ```
-//! use ::approx::assert_relative_eq;
+//! use approxim::assert_relative_eq;
 //! use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
 //! use std::f64::consts::PI;
 //!
@@ -135,7 +135,7 @@
 //!
 //! [`Versor`] implements rotations on [`Cartesian<3>`] vectors.
 //! ```
-//! use ::approx::assert_relative_eq;
+//! use approxim::assert_relative_eq;
 //! use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
 //! use std::f64::consts::PI;
 //!
@@ -156,45 +156,62 @@
 //!
 //! `hoomd_vector` interoperates with [`rand`] to generate random vectors and rotations.
 //!
-//! The [`StandardUniform`](rand::distr::StandardUniform) distribution
-//! samples rotations uniformly from the set of all rotations and vectors from the
-//! `[-1,1]` hypercube.
+//! The [`StandardUniform`](rand::distr::StandardUniform) distribution randomly samples
+//! rotations uniformly from the set of all vectors or rotations.
 //!
+//! - Vectors are uniformly sampled from the `[-1,1]` hypercube
+//! - Angles are uniformly sampled from the half-open interval `[0, 2π)`
+//! - Versors are uniformly sampled from the surface of the `3-Sphere`, which doubly
+//!   covers `SO(3)`, the manifold of rotations in three dimensions.
 //!
 //! ```
 //! use hoomd_vector::{Angle, Cartesian, Versor};
-//! use rand::{Rng, SeedableRng, rngs::StdRng};
+//! use rand::{RngExt, SeedableRng, rngs::StdRng};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut rng = StdRng::seed_from_u64(1);
-//! let angle: Angle = rng.random();
 //! let vector: Cartesian<3> = rng.random();
+//! let angle: Angle = rng.random();
 //! let versor: Versor = rng.random();
 //! # Ok(())
 //! # }
 //! ```
 //!
-//! # Feature flags
+//! The [`Ball`](crate::distribution::Ball) distribution samples vectors from
+//! the interior of an `n-Ball`, the set of all points whose distance from the origin is
+//! in `[0, 1)`.
 //!
-//! These unstable features are intended for internal use. `hoomd-vector` may make
-//! breaking changes to the code gated behind unstable features in any release.
+//! ```
+//! use hoomd_vector::{Cartesian, distribution::Ball};
+//! use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
 //!
-//! * `approx`: Enable `assert_relative_eq` and `assert_abs_diff_eq` from the
-//!   [`approx`](https://docs.rs/approx/latest/approx/) crate on [`Cartesian`],
-//!   [`Quaternion`] and [`Versor`].
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut rng = StdRng::seed_from_u64(1);
+//! let ball = Ball {
+//!     radius: 3.0.try_into()?,
+//! };
+//! let v: Cartesian<3> = ball.sample(&mut rng);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Complete documentation
+//!
+//! `hoomd-vector` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 mod angle;
 mod cartesian;
 pub mod distribution;
 mod quaternion;
 
-#[cfg(any(test, feature = "approx"))]
-pub mod approx;
-
 pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
 pub use quaternion::{Quaternion, Versor};
 
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;
 
@@ -352,17 +369,24 @@ pub trait Vector:
     + Div<f64, Output = Self>
     + DivAssign<f64>
     + PartialEq
+    + Metric
     + Mul<f64, Output = Self>
     + MulAssign<f64>
     + Sub<Self, Output = Self>
     + SubAssign
     + Neg<Output = Self>
 {
+}
+
+/// Operates on elements on a metric space.
+///
+/// [`Metric`] implements a distance metric between points.
+pub trait Metric {
     /// Compute the squared distance between two vectors belonging to a metric space.
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Cartesian::from([0.0, 1.0, 1.0]);
@@ -377,7 +401,7 @@ pub trait Vector:
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let vec2 = Cartesian::<2>::default();
@@ -392,17 +416,15 @@ pub trait Vector:
     /// Compute the distance between two vectors belonging to a metric space.
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// let x = Cartesian::from([0.0, 0.0]);
     /// let y = Cartesian::from([3.0, 4.0]);
     /// assert_eq!(5.0, x.distance(&y));
     /// ```
-    #[inline]
-    fn distance(&self, other: &Self) -> f64 {
-        self.distance_squared(other).sqrt()
-    }
+    fn distance(&self, other: &Self) -> f64;
 }
+
 /// Operate on elements of an inner product space.
 ///
 /// The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector
@@ -577,7 +599,7 @@ pub trait InnerProduct: Vector {
 }
 
 /// A [`Vector`] with magnitude 1.0.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Unit<V>(V);
 
 impl<V> Unit<V> {
@@ -630,7 +652,7 @@ pub trait Rotate<V: Vector> {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
@@ -700,7 +722,7 @@ pub trait Rotation: Copy {
 /// # Example
 ///
 /// ```
-/// use ::approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_vector::{self, Angle, Cartesian};
 /// use std::f64::consts::PI;
 ///
@@ -717,22 +739,24 @@ pub trait Rotation: Copy {
 /// assert_relative_eq!(o_ab.theta, PI / 2.0);
 /// ```
 #[inline]
-#[expect(clippy::similar_names, reason = "standard math notation")]
 pub fn pair_system_to_local<V, R>(r_a: &V, o_a: &R, r_b: &V, o_b: &R) -> (V, R)
 where
     V: Vector,
     R: Rotation + Rotate<V>,
 {
     let r_ab = *r_b - *r_a;
-    let r_a_inverted = o_a.inverted();
-    let v_ij = r_a_inverted.rotate(&r_ab);
-    let o_ij = o_b.combine(&r_a_inverted);
+    let o_a_inverted = o_a.inverted();
+    let v_ij = o_a_inverted.rotate(&r_ab);
+    let o_ij = o_a_inverted.combine(o_b);
     (v_ij, o_ij)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approxim::assert_relative_eq;
+    use assert2::check;
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
 
     fn compute_add_generic<T>(a: T, b: T) -> T
     where
@@ -746,6 +770,72 @@ mod tests {
         let a = Cartesian::from([1.0, 2.0, 3.0]);
         let b = Cartesian::from([4.0, 5.0, 6.0]);
         let c = compute_add_generic(a, b);
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
+        check!(c == [5.0, 7.0, 9.0].into());
+    }
+
+    #[test]
+    fn test_pair_system_to_local_2d() {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        for _ in 0..1_000 {
+            let o_a: Angle = rng.random();
+            let o_b: Angle = rng.random();
+
+            let r_a: Cartesian<2> = rng.random();
+            let r_b: Cartesian<2> = rng.random();
+
+            let c_in_b: Cartesian<2> = rng.random();
+
+            // Test self-consistency by locating c in both a's and b's reference frames.
+            // Check that they are equivalent in the global frame.
+            let (v_ij, o_ij) = pair_system_to_local(&r_a, &o_a, &r_b, &o_b);
+            let c_in_a = v_ij + o_ij.rotate(&c_in_b);
+
+            assert_relative_eq!(
+                r_a + o_a.rotate(&c_in_a),
+                r_b + o_b.rotate(&c_in_b),
+                epsilon = 4.0 * f64::EPSILON
+            );
+
+            let (v_ji, o_ji) = pair_system_to_local(&r_b, &o_b, &r_a, &o_a);
+            assert_relative_eq!(
+                v_ji + o_ji.rotate(&c_in_a),
+                c_in_b,
+                epsilon = 4.0 * f64::EPSILON
+            );
+        }
+    }
+
+    #[test]
+    fn test_pair_system_to_local_3d() {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        for _ in 0..1_000 {
+            let o_a: Versor = rng.random();
+            let o_b: Versor = rng.random();
+
+            let r_a: Cartesian<3> = rng.random();
+            let r_b: Cartesian<3> = rng.random();
+
+            let c_in_b: Cartesian<3> = rng.random();
+
+            // Test self-consistency by locating c in both a's and b's reference frames.
+            // Check that they are equivalent in the global frame.
+            let (v_ij, o_ij) = pair_system_to_local(&r_a, &o_a, &r_b, &o_b);
+            let c_in_a = v_ij + o_ij.rotate(&c_in_b);
+
+            assert_relative_eq!(
+                r_a + o_a.rotate(&c_in_a),
+                r_b + o_b.rotate(&c_in_b),
+                epsilon = 10.0 * f64::EPSILON
+            );
+
+            let (v_ji, o_ji) = pair_system_to_local(&r_b, &o_b, &r_a, &o_a);
+            assert_relative_eq!(
+                v_ji + o_ji.rotate(&c_in_a),
+                c_in_b,
+                epsilon = 10.0 * f64::EPSILON
+            );
+        }
     }
 }

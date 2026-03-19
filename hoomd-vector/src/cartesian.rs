@@ -1,21 +1,26 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement canonical vector types.
+
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 use std::{
     array, fmt,
     iter::{Sum, zip},
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
+use approxim::approx_derive::RelativeEq;
 use hoomd_utility::valid::PositiveReal;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
 
-use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
+use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
 use hoomd_linear_algebra::{Diagonal, matrix::Matrix};
+use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -50,7 +55,7 @@ use hoomd_linear_algebra::{Diagonal, matrix::Matrix};
 ///
 /// ```
 /// use hoomd_vector::Cartesian;
-/// use rand::{Rng, SeedableRng, rngs::StdRng};
+/// use rand::{RngExt, SeedableRng, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(1);
@@ -87,9 +92,13 @@ use hoomd_linear_algebra::{Diagonal, matrix::Matrix};
 ///         .into_iter()
 ///         .sum();
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
+#[approx(epsilon_type = f64)]
 pub struct Cartesian<const N: usize> {
     /// The vector's coordinates.
+    #[serde_as(as = "[_; N]")]
+    #[approx(into_iter)]
     pub coordinates: [f64; N],
 }
 
@@ -276,6 +285,8 @@ impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     }
 }
 
+impl<const N: usize> Vector for Cartesian<N> {}
+
 impl<const N: usize> InnerProduct for Cartesian<N> {
     #[inline]
     fn dot(&self, other: &Self) -> f64 {
@@ -306,7 +317,7 @@ impl<const N: usize> InnerProduct for Cartesian<N> {
     }
 }
 
-impl<const N: usize> Vector for Cartesian<N> {
+impl<const N: usize> Metric for Cartesian<N> {
     /// Computes the squared distance between two points in Euclidean space.
     /// ```math
     /// d^2(\vec{x},\vec{y}) = \sum_{i=1}^{N} (x_i - y_i)^2
@@ -314,7 +325,7 @@ impl<const N: usize> Vector for Cartesian<N> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Cartesian::from([0.0, 1.0, 1.0]);
@@ -328,12 +339,15 @@ impl<const N: usize> Vector for Cartesian<N> {
         zip(self.coordinates.iter(), other.coordinates.iter())
             .fold(0.0, |product, x| product + (x.0 - x.1).powi(2))
     }
-
+    #[inline]
+    fn distance(&self, other: &Self) -> f64 {
+        (self.distance_squared(other)).sqrt()
+    }
     /// Return the number of dimensions in this Cartesian vector space.
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let vec2 = Cartesian::<2>::default();
@@ -569,7 +583,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     ///
     /// ```
     /// use hoomd_vector::Cartesian;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);
@@ -579,10 +593,6 @@ impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        #[expect(
-            clippy::expect_used,
-            reason = "This constants chosen for this distribution are valid"
-        )]
         let uniform = Uniform::new_inclusive(-1.0, 1.0)
             .expect("hard-coded range should form a valid distribution");
         Cartesian {
@@ -683,9 +693,11 @@ impl<const N: usize> Sum for Cartesian<N> {
 /// [`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
 /// rotations that are often the most effective and numerically stable to
 /// manipulate.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RotationMatrix<const N: usize> {
     /// Rows of the rotation matrix.
+    #[serde_as(as = "[_; N]")]
     pub(crate) rows: [Cartesian<N>; N],
 }
 
@@ -795,7 +807,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     ///
     /// # Examples
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix};
     /// use std::f64::consts::PI;
     ///
@@ -808,7 +820,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     /// ```
     ///
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
     /// use std::f64::consts::PI;
     ///
@@ -833,11 +845,28 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     }
 }
 
-impl<const N: usize> Diagonal for Cartesian<N> {}
+impl<const N: usize, const K: usize> MatMul<Matrix<N, K>> for RotationMatrix<N> {
+    type Output = Matrix<N, K>;
 
-#[allow(dead_code, reason = "TODO: Used in other branch.")]
+    #[inline]
+    fn matmul(&self, rhs: &Matrix<N, K>) -> Self::Output {
+        Matrix::from(*self).matmul(rhs)
+    }
+}
+
 impl<const N: usize> Cartesian<N> {
-    /// Convert a [Cartesian<N>] into a row matrix [Matrix<1, N>].
+    /// Convert a [`Cartesian<N>`] into a row matrix [`Matrix<1, N>`].
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let a = Cartesian::from([1.0, -2.0, 3.0]);
+    ///
+    /// let b = a.to_row_matrix();
+    /// assert_eq!(b.rows, [[1.0, -2.0, 3.0]]);
+    /// ```
     #[inline]
     #[must_use]
     pub fn to_row_matrix(self) -> Matrix<1, N> {
@@ -845,7 +874,18 @@ impl<const N: usize> Cartesian<N> {
             rows: [self.coordinates],
         }
     }
-    /// Convert a [Cartesian<N>] into a column matrix [Matrix<N, 1>].
+    /// Convert a [`Cartesian<N>`] into a column matrix [`Matrix<N, 1>`].
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let a = Cartesian::from([1.0, -2.0, 3.0]);
+    ///
+    /// let b = a.to_column_matrix();
+    /// assert_eq!(b.rows, [[1.0], [-2.0], [3.0]]);
+    /// ```
     #[inline]
     #[must_use]
     pub fn to_column_matrix(self) -> Matrix<N, 1> {
@@ -860,9 +900,9 @@ mod tests {
     use crate::{Angle, Rotation, Versor};
 
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use paste::paste;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
 
     // Parameterize a test function over an array of vector lengths

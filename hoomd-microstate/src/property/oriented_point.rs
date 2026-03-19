@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement Point
+//! Implement `OrientedPoint`
+
+use serde::{Deserialize, Serialize};
 
 use super::{Orientation, Point, Position};
 use crate::Transform;
@@ -22,7 +24,7 @@ use hoomd_vector::{Rotate, Rotation, Vector};
 ///     orientation: Angle::from(1.2),
 /// };
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct OrientedPoint<V, R> {
     /// The location of the extended body in space.
     pub position: V,
@@ -43,7 +45,7 @@ where
     /// ```
     ///
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_microstate::{
     ///     Transform,
     ///     property::{OrientedPoint, Point},
@@ -84,7 +86,7 @@ where
     /// ```
     ///
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_microstate::{Transform, property::OrientedPoint};
     /// use hoomd_vector::{Angle, Cartesian};
     /// use std::f64::consts::PI;
@@ -111,16 +113,16 @@ where
     }
 }
 
-impl<V, R> Position for OrientedPoint<V, R> {
-    type Vector = V;
+impl<P, R> Position for OrientedPoint<P, R> {
+    type Position = P;
 
     #[inline]
-    fn position(&self) -> &V {
+    fn position(&self) -> &P {
         &self.position
     }
 
     #[inline]
-    fn position_mut(&mut self) -> &mut V {
+    fn position_mut(&mut self) -> &mut P {
         &mut self.position
     }
 }
@@ -142,7 +144,7 @@ impl<V, R> Orientation for OrientedPoint<V, R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use std::f64::consts::PI;
 
     use hoomd_vector::{Cartesian, Versor};

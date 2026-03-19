@@ -1,7 +1,7 @@
 # Custom Random Walk
 
 <script type="module">
-import init from './custom-random-walk.js'
+import init from 'https://glotzerlab.github.io/hoomd-rs/mc-tutorial/custom-random-walk.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}
@@ -124,8 +124,9 @@ practice in your applications. As you build more complex codes, however, you
 will need to move those elements to a struct so that the whole simulation model
 can be accessed in different modules.
 
-The custom random walk model consists of the **microstate**, the **Hamiltonian**,
-the translation **trial moves**, and the temperature set point $`kT`$:
+The custom random walk model consists of the **microstate**, the **Hamiltonian**, the
+translation **trial moves**, and the **temperature** set point (in units of energy
+$`kT`$):
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:simulation_struct}}
 ```
@@ -227,8 +228,8 @@ Then call `advance()` many times:
 {{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:main}}
 ```
 
-Write the sites to a GSD file periodically so that you can inspect the results
-of the simulation.
+Later tutorials will show how you can write simulation trajectories and
+log properties of the simulation to files.
 
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
@@ -236,7 +237,7 @@ of the simulation.
 
 ## Conclusion
 
-Now you know how to customize the random walk simulation with new
+This tutorial showed you how to customize the random walk simulation with new
 boundary conditions and apply your own trial moves to the points in it. Rust
 compiles your customizations into machine code and can inline them into the main
 simulation loop. This means that your custom simulations run *just as fast* as
@@ -247,19 +248,15 @@ again. Notice that no points leave the boundary. Try pausing the simulation and
 advancing one step at a time. You should see that every particle moves left,
 right, down, or up on every step.
 
-Alternately, you can run the example in batch mode and then open
+You can also run the example in batch mode and then open
 the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
 cargo run --release --example custom-random-walk
 ```
 
-The next section shows how to use the Hamiltonian to describe how the bodies
-interact with each other and with an external field.
-
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
 [Random Walk]: random-walk.md
 [`rand`]: https://docs.rs/rand
-[API documentation]: ../api.md
 [Ovito]: https://www.ovito.org/
 
 ## Complete Code

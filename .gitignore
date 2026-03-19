@@ -6,3 +6,12 @@ perf.data.old
 *.DS_Store
 screenshot.png
 *.wasm
+flamegraph.svg
+profile.json.gz
+mc_*.json
+*.parquet
+.RData
+.Rhistory
+*.Rmd
+*.postcard
+*.py

@@ -2,5 +2,27 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>glotzerlab/renovate-config"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["bevy*"],
+      "groupName": "bevy"
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["parquet*"],
+      "groupName": "parquet"
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["rand", "rand_distr", "chacha20"],
+      "groupName": "rand"
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["wayland-*"],
+      "groupName": "wayland"
+    }
   ]
 }

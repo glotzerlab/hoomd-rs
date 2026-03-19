@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Traits that describe body and/or site properties a a selection types that implement them.
@@ -45,44 +45,74 @@
 //! use hoomd_microstate::property::{Orientation, Position};
 //! use hoomd_vector::{Cartesian, Versor};
 //!
+//! #[derive(Position, Orientation)]
 //! struct Custom {
 //!     position: Cartesian<3>,
 //!     orientation: Versor,
 //!     custom: f64,
 //! }
-//!
-//! impl Orientation for Custom {
-//!     type Rotation = Versor;
-//!
-//!     fn orientation(&self) -> &Versor {
-//!         &self.orientation
-//!     }
-//!
-//!     fn orientation_mut(&mut self) -> &mut Versor {
-//!         &mut self.orientation
-//!     }
-//! }
-//!
-//! impl Position for Custom {
-//!     type Vector = Cartesian<3>;
-//!
-//!     fn position(&self) -> &Cartesian<3> {
-//!         &self.position
-//!     }
-//!
-//!     fn position_mut(&mut self) -> &mut Cartesian<3> {
-//!         &mut self.position
-//!     }
-//! }
 //! ```
 //!
 //! ## Transformations
 //!
-//!
 //! Implement `Transform` to take sites from the body frame to the system frame.
 //! Typically, this involves transforming position and orientation while leaving
-//! all other fields unchanged:
+//! all other fields unchanged. The three most common implementations of `Transform`
+//! follow. All these examples are in 3D. To convert to 2D, replace `Cartesian<3>`
+//! with `Cartesian<2>` and `Versor` with `Angle`.
 //!
+//! Non-oriented bodies and sites (i.e. point particles or non-rotating rigid bodies):
+//! ```
+//! use hoomd_microstate::{
+//!     Transform,
+//!     property::{Point, Position},
+//! };
+//! use hoomd_vector::Cartesian;
+//!
+//! #[derive(Position)]
+//! struct Custom {
+//!     position: Cartesian<3>,
+//!     custom: f64,
+//! }
+//!
+//! impl Transform<Custom> for Point<Cartesian<3>> {
+//!     fn transform(&self, site_properties: &Custom) -> Custom {
+//!         Custom {
+//!             position: self.position + site_properties.position,
+//!             ..*site_properties
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! Oriented bodies and non-oriented sites (i.e. rotating rigid bodies with
+//! isotropic site-site interactions):
+//! ```
+//! use hoomd_microstate::{
+//!     Transform,
+//!     property::{OrientedPoint, Position},
+//! };
+//! use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
+//!
+//! #[derive(Position)]
+//! struct Custom {
+//!     position: Cartesian<3>,
+//!     custom: f64,
+//! }
+//!
+//! impl Transform<Custom> for OrientedPoint<Cartesian<3>, Versor> {
+//!     fn transform(&self, site_properties: &Custom) -> Custom {
+//!         Custom {
+//!             position: self.position
+//!                 + self.orientation.rotate(&site_properties.position),
+//!             ..*site_properties
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! Oriented bodies and oriented sites (i.e. rotating rigid bodies with
+//! anisotropic site-site interactions):
 //! ```
 //! use hoomd_microstate::{
 //!     Transform,
@@ -90,6 +120,7 @@
 //! };
 //! use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
 //!
+//! #[derive(Position, Orientation)]
 //! struct Custom {
 //!     position: Cartesian<3>,
 //!     orientation: Versor,
@@ -116,6 +147,11 @@ pub use point::Point;
 mod oriented_point;
 pub use oriented_point::OrientedPoint;
 
+mod oriented_hyperbolic_point;
+pub use oriented_hyperbolic_point::OrientedHyperbolicPoint;
+
+pub use hoomd_derive::{Orientation, Position};
+
 /// Locate sites and bodies.
 ///
 /// When applied to site properties, [`Position`] describes the location of the site
@@ -129,15 +165,29 @@ pub use oriented_point::OrientedPoint;
 /// # Units
 ///
 /// Position vectors have units of *\[length\]*.
+///
+/// # Derive macro
+///
+/// Use the [`Position`](macro@Position) derive macro to automatically implement
+/// the `Position` trait on a type. The type **must** have a field named `position`.
+/// ```
+/// use hoomd_microstate::property::Position;
+/// use hoomd_vector::Cartesian;
+///
+/// #[derive(Position)]
+/// struct Custom {
+///     position: Cartesian<3>,
+/// }
+/// ```
 pub trait Position {
     /// Every position is located in this vector space.
-    type Vector;
+    type Position;
 
     /// The position of this body or site *\[length\]*.
-    fn position(&self) -> &Self::Vector;
+    fn position(&self) -> &Self::Position;
 
     /// The mutable position of this body or site *\[length\]*.
-    fn position_mut(&mut self) -> &mut Self::Vector;
+    fn position_mut(&mut self) -> &mut Self::Position;
 }
 
 /// Rotate sites and bodies.
@@ -153,6 +203,20 @@ pub trait Position {
 /// The units of [`Orientation`] depend on the representation chosen for `R`.
 /// For example, [`hoomd_vector::Angle`] has units of radians while
 /// [`hoomd_vector::Versor`] is unitless.
+///
+/// # Derive macro
+///
+/// Use the [`Orientation`](macro@Orientation) derive macro to automatically implement
+/// the `Orientation` trait on a type. The type **must** have a field named `orientation`.
+/// ```
+/// use hoomd_microstate::property::Orientation;
+/// use hoomd_vector::Versor;
+///
+/// #[derive(Orientation)]
+/// struct Custom {
+///     orientation: Versor,
+/// }
+/// ```
 pub trait Orientation {
     /// Type that can express the orientation of a body or site.
     type Rotation;

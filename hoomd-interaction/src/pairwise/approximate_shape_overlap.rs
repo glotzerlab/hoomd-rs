@@ -1,9 +1,12 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`ApproximateShapeOverlap`].
 
-use super::{AnisotropicEnergy, IsotropicEnergy};
+use serde::{Deserialize, Serialize};
+
+use super::AnisotropicEnergy;
+use crate::univariate::UnivariateEnergy;
 use hoomd_geometry::IntersectsAt;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{InnerProduct, Rotate, Rotation};
@@ -26,14 +29,14 @@ use hoomd_vector::{InnerProduct, Rotate, Rotation};
 /// for use during a brief initialization phase when `QuickInsert` is adding
 /// bodies or `QuickCompress` is compressing the system.
 ///
-/// [`OverlapPenalty`]: crate::pairwise::OverlapPenalty
+/// [`OverlapPenalty`]: crate::univariate::OverlapPenalty
 ///
 /// # Example
 ///
 /// ```
 /// use hoomd_geometry::{Convex, shape::ConvexPolygon};
-/// use hoomd_interaction::pairwise::{
-///     ApproximateShapeOverlap, OverlapPenalty,
+/// use hoomd_interaction::{
+///     pairwise::ApproximateShapeOverlap, univariate::OverlapPenalty,
 /// };
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -45,6 +48,7 @@ use hoomd_vector::{InnerProduct, Rotate, Rotation};
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApproximateShapeOverlap<E, A, B = A> {
     /// The site i's shape.
     pub shape_i: A,
@@ -58,7 +62,7 @@ pub struct ApproximateShapeOverlap<E, A, B = A> {
 
 impl<E, A, B, V, R> AnisotropicEnergy<V, R> for ApproximateShapeOverlap<E, A, B>
 where
-    E: IsotropicEnergy,
+    E: UnivariateEnergy,
     V: InnerProduct,
     R: Rotation + Rotate<V>,
     A: IntersectsAt<B, V, R>,
@@ -69,24 +73,28 @@ where
     /// use hoomd_geometry::{Convex, shape::ConvexPolygon};
     /// use hoomd_interaction::{
     ///     SitePairEnergy,
-    ///     pairwise::{Anisotropic, ApproximateShapeOverlap, OverlapPenalty},
+    ///     pairwise::{Anisotropic, ApproximateShapeOverlap},
+    ///     univariate::OverlapPenalty,
     /// };
     /// use hoomd_microstate::property::OrientedPoint;
     /// use hoomd_vector::{Angle, Cartesian};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let approximate_shape_overlap = Anisotropic(ApproximateShapeOverlap::new(
-    ///     Convex(ConvexPolygon::regular(6)),
-    ///     OverlapPenalty::default(),
-    ///     0.01.try_into()?,
-    /// ));
+    /// let approximate_shape_overlap = Anisotropic {
+    ///     interaction: ApproximateShapeOverlap::new(
+    ///         Convex(ConvexPolygon::regular(6)),
+    ///         OverlapPenalty::default(),
+    ///         0.01.try_into()?,
+    ///     ),
+    ///     r_cut: 1.0,
+    /// };
     ///
     /// let a = OrientedPoint {
     ///     position: Cartesian::from([0.0, 0.0]),
     ///     orientation: Angle::default(),
     /// };
     /// let b = OrientedPoint {
-    ///     position: Cartesian::from([1.2, 0.0]),
+    ///     position: Cartesian::from([0.6, 0.0]),
     ///     orientation: Angle::default(),
     /// };
     ///
@@ -94,7 +102,7 @@ where
     /// assert!(energy >= 100.0);
     ///
     /// let c = OrientedPoint {
-    ///     position: Cartesian::from([1.6, 0.0]),
+    ///     position: Cartesian::from([0.9, 0.0]),
     ///     orientation: Angle::default(),
     /// };
     ///
@@ -103,7 +111,7 @@ where
     /// assert!(energy < f64::INFINITY);
     ///
     /// let d = OrientedPoint {
-    ///     position: Cartesian::from([2.0, 0.0]),
+    ///     position: Cartesian::from([1.0, 0.0]),
     ///     orientation: Angle::default(),
     /// };
     ///
@@ -135,8 +143,8 @@ impl<E, G> ApproximateShapeOverlap<E, G> {
     ///
     /// ```
     /// use hoomd_geometry::{Convex, shape::ConvexPolygon};
-    /// use hoomd_interaction::pairwise::{
-    ///     ApproximateShapeOverlap, OverlapPenalty,
+    /// use hoomd_interaction::{
+    ///     pairwise::ApproximateShapeOverlap, univariate::OverlapPenalty,
     /// };
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {

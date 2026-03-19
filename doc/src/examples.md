@@ -5,9 +5,9 @@ on the display to focus it. Click on the rest of the page to cancel that focus.
 
 While focused, you can interact with the simulation. All the examples have a few
 common controls. For example, you can press `<space>` to pause the simulation
-and then the `<right arrow>` to advance it one step at a time. You can also press
-`<esc>` to bring up the settings screen and then `-` to decrease the simulation
-speed. Press `?` to see a help screen that shows all the keyboard controls.
+and then the `n` to advance it one step at a time. Press `m` to show/hide the
+options menu. Use the GUI to control the simulation speed, camera sensitivity,
+and other options. The GUI also shows the keyboard shortcuts on many controls.
 
 Some examples provide a relatively static view while others give you more
 opportunity to interact with the simulation. See the on-screen help messages of
@@ -29,25 +29,30 @@ $ cd hoomd-rs
 ```
 You will find the example code in `examples`.
 
-To compile and run an example as a desktop application, execute:
+To compile and run an example in batch mode (no display, GSD file output), execute:
+```shell
+$ cargo run --release --example {example}
+```
+where `{example}` is the name of the example *without* the path
+or extension (e.g. `--example applying-interactions`, will build and run
+`examples/mc-tutorial/applying-interactions.rs`).
+
+To compile and run an example as an interactive desktop application, execute:
 ```shell
 $ cargo run --release --features=bevy --example {example}
 ```
-where `{example}` is the name of the example *without* the path
-or extension (e.g. `--example random-walk`, will build and run
-`examples/mc-tutorial/random-walk.rs`).
 
-The examples use the [Bevy] engine. If you get compile errors when building
-`bevy` crates, you may need to [install additional software]. MacOS is the
-simplest platform to configure, as you only need XCode. On Linux, you will need
-to install a number of system packages depending on your distribution. On Windows,
-you will need the *Microsoft C++ build tools*.
+The interactive examples use the [Bevy] engine. If you get compile errors when
+building `bevy` crates, you may need to [install additional software]. MacOS
+is the simplest platform to configure as you only need XCode. On Windows, you
+will need the *Microsoft C++ build tools*. On Linux, you will need to install a
+number of system packages depending on your distribution.
 
 > [!NOTE]
 > These additional software dependencies are *only* needed to build examples
-> with interactive displays and your own code that uses the `hoomd-bevy` crate.
+> with `--features=bevy` and your own code that uses the `hoomd-bevy` crate.
 > You do not need to install additional software to build and run command line
-> applications with *hoomd-rs*, you only need Rust.
+> applications with *hoomd-rs*.
 
 ## Building Browser Applications
 

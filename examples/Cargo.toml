@@ -1,9 +1,10 @@
 [package]
-name = "hoomd-examples"
+name = "examples"
 categories.workspace = true
 description = "Collect examples that demonstrate how to use hoomd-rs."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -18,32 +19,33 @@ publish = false
 print_stdout = "allow"
 
 [features]
-bevy = ["dep:bevy", "dep:hoomd-bevy"]
+bevy = ["dep:bevy", "dep:hoomd-bevy", "dep:bevy_egui"]
 webgpu = ["hoomd-bevy/webgpu"]
 doc-example = ["bevy", "hoomd-bevy/doc-example"]
 
 [dependencies]
 hoomd-bevy = { workspace =  true, optional = true }
+hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
 hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true
+hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
 hoomd-simulation.workspace = true
+hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
+bevy_egui = { workspace = true, optional = true }
+thiserror.workspace = true
+parquet.workspace = true
+parquet_derive.workspace = true
 rand.workspace = true
-
-# Work around failing build: https://github.com/bevyengine/bevy/issues/17699#issuecomment-2862717597
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.3.3", default-features = false, features = ["wasm_js"] }
-uuid = { version = "1.17.0", default-features = false, features = ["js"] }
-
-[package.metadata.docs.rs]
-all-features = true
+strum.workspace = true
+strum_macros.workspace = true
 
 [[example]]
 name = "hello"
@@ -75,8 +77,43 @@ path = "mc-tutorial/tetronimoes.rs"
 path = "mc-tutorial"
 
 [[example]]
-name = "hard-particle-self-assembly"
-path = "mc-tutorial/hard-particle-self-assembly.rs"
+name = "hard-disk-self-assembly"
+path = "mc-tutorial/hard-disk-self-assembly.rs"
 
-[package.metadata.example.hard-particle-self-assembly]
+[package.metadata.example.hard-disk-self-assembly]
+path = "mc-tutorial"
+
+[[example]]
+name = "hard-ellipse-self-assembly"
+path = "mc-tutorial/hard-ellipse-self-assembly.rs"
+
+[package.metadata.example.hard-ellipse-self-assembly]
+path = "mc-tutorial"
+
+[[example]]
+name = "hard-tetrahedron-self-assembly"
+path = "mc-tutorial/hard-tetrahedron-self-assembly.rs"
+
+[package.metadata.example.hard-tetrahedron-self-assembly]
+path = "mc-tutorial"
+
+[[example]]
+name = "patchy-particle-self-assembly"
+path = "mc-tutorial/patchy-particle-self-assembly.rs"
+
+[package.metadata.example.patchy-particle-self-assembly]
+path = "mc-tutorial"
+
+[[example]]
+name = "type-dependent-interactions"
+path = "mc-tutorial/type-dependent-interactions.rs"
+
+[package.metadata.example.type-dependent-interactions]
+path = "mc-tutorial"
+
+[[example]]
+name = "polydisperse-hard-disk-model"
+path = "mc-tutorial/polydisperse-hard-disk-model.rs"
+
+[package.metadata.example.polydisperse-hard-disk-model]
 path = "mc-tutorial"

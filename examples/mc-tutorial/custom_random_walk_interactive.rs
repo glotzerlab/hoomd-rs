@@ -5,6 +5,7 @@ use hoomd_bevy::{
 
 use anyhow::Context;
 use bevy::prelude::*;
+use bevy_egui::EguiPlugin;
 
 use super::CustomRandomWalk;
 
@@ -27,6 +28,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
 
     let mut app = App::new();
     hoomd_bevy::add_default_plugins(&mut app);
+    app.add_plugins(EguiPlugin::default());
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
@@ -63,7 +65,7 @@ fn sync_simulation(
                     site.properties.position[1] as f32,
                     0.0,
                 ),
-                1.0f32,
+                1.0_f32,
             )
         }),
     );

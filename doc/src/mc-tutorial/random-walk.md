@@ -26,8 +26,8 @@ Rust's `use` is similar to Python's `import`. See [The Rust Programming
 Language] for more information.
 
 [`hoomd-interaction`], [`hoomd-mc`], [`hoomd-microstate`], and [`hoomd-vector`]
-are *crates* that each implement a part of the simulation. The [API
-documentation] provides a for a full reference for all *hoomd-rs* crates.
+are *crates* that each implement a part of the simulation. See [All
+Crates] for a list of all *hoomd-rs* crates with links to their documentation.
 
 ## The `main()` Function
 
@@ -45,7 +45,7 @@ crate will nicely print any errors that occur in a human-readable format.
 
 In the random walk simulation, the **microstate** contains the position of the
 point, the **sweep** applies a **trial move** to each point, the Hamiltonian
-is always 0 and the temperature $`kT`$ is not relevant.
+is always 0 and the temperature is not relevant.
 
 ### Microstate
 
@@ -88,6 +88,15 @@ that expresses $`H = 0`$:
 {{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:hamiltonian}}
 ```
 
+### Macrostate
+
+Local trial moves are accepted or rejected based on the temperature of the
+simulation. You need to supply a macrostate even though this simulation has
+no interactions. Set the temperature to 1.0 as a placeholder:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:macrostate}}
+```
+
 ## Advancing the Simulation
 
 Use a `for` loop to execute the simulation a given number of steps:
@@ -115,7 +124,7 @@ indicate that this step is complete:
 
 ### Produce Output
 
-To see some output, print the coordinates of the point at each step:
+Print the coordinates of the point at each step:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:print}}
 ```
@@ -150,16 +159,14 @@ should  see output similar to:
 
 Notice the particle moves a little bit on every step. Run the simulation for
 many steps and notice that the particles can move without bounds. By default,
-a **Microstate** has **open** boundary conditions. The next section will show
-you how to apply custom boundary conditions and custom trial moves to the random
-walk.
+a **Microstate** has **open** boundary conditions.
 
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
 [`hoomd-interaction`]: ../api/hoomd_interaction/index.html
 [`hoomd-mc`]: ../api/hoomd_mc/index.html
 [`hoomd-microstate`]: ../api/hoomd_microstate/index.html
 [`hoomd-vector`]: ../api/hoomd_vector/index.html
-[API documentation]: ../api.md
+[All Crates]: ../guide/crates.md
 [`anyhow`]: https://docs.rs/anyhow/
 
 ## Complete Code

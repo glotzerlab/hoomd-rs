@@ -1,11 +1,14 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Linear`]
 
-use super::super::SiteEnergy;
+use serde::{Deserialize, Serialize};
+
 use hoomd_microstate::property::Position;
 use hoomd_vector::{InnerProduct, Unit};
+
+use super::super::SiteEnergy;
 
 /// Linear potential based on position.
 ///
@@ -33,7 +36,7 @@ use hoomd_vector::{InnerProduct, Unit};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Linear<V> {
     /// Interaction strength *(\[energy\] \[length\]^(-1))*.
     pub alpha: f64,
@@ -74,10 +77,10 @@ where
     }
 }
 
-impl<S, V> SiteEnergy<S> for Linear<V>
+impl<S, P> SiteEnergy<S> for Linear<P>
 where
-    S: Position<Vector = V>,
-    V: InnerProduct,
+    S: Position<Position = P>,
+    P: InnerProduct,
 {
     #[inline]
     fn site_energy(&self, site_properties: &S) -> f64 where {
@@ -90,7 +93,7 @@ mod tests {
     use hoomd_vector::Cartesian;
 
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rstest::*;
 
     #[rstest]

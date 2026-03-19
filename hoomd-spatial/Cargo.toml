@@ -1,0 +1,32 @@
+[package]
+name = "hoomd-spatial"
+categories.workspace = true
+description = "Infrastructure for efficient computation of neighbors using spatial data structures."
+edition.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
+
+[lints]
+workspace = true
+
+[dependencies]
+log.workspace = true
+rustc-hash.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+
+hoomd-vector.workspace = true
+hoomd-utility.workspace = true
+
+[dev-dependencies]
+assert2.workspace = true
+rand.workspace = true
+rstest.workspace = true

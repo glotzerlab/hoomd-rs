@@ -1,9 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement periodic boundary conditions for cuboids in cartesian space.
 
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
 
 use crate::{
     boundary::{
@@ -53,7 +53,7 @@ impl<const N: usize> MaximumAllowableInteractionRange for Hypercuboid<N> {
 
 impl<const N: usize, P> Wrap<P> for Periodic<Hypercuboid<N>>
 where
-    P: Position<Vector = Cartesian<N>>,
+    P: Position<Position = Cartesian<N>>,
 {
     /// Wrap any cartesian vector to the inside of the given cuboid.
     ///
@@ -95,7 +95,7 @@ where
 
 impl<S> GenerateGhosts<S> for Periodic<Hypercuboid<2>>
 where
-    S: Position<Vector = Cartesian<2>> + Copy + Default,
+    S: Position<Position = Cartesian<2>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
@@ -107,7 +107,7 @@ where
     /// For 2D cuboids, `generate_ghosts` places ghosts near the 4 edges and 4
     /// vertices.
     #[inline]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();
@@ -161,7 +161,7 @@ where
 
 impl<S> GenerateGhosts<S> for Periodic<Hypercuboid<3>>
 where
-    S: Position<Vector = Cartesian<3>> + Copy + Default,
+    S: Position<Position = Cartesian<3>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
@@ -173,7 +173,7 @@ where
     /// For 3D cuboids, `generate_ghosts` places ghosts near the 6 faces, 12 edges,
     /// and 8 vertices.
     #[inline]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();
@@ -290,7 +290,7 @@ mod tests {
     use super::*;
     use crate::property::Point;
 
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
 
     const N_SAMPLES: usize = 1024;
@@ -354,7 +354,7 @@ mod tests {
             let point = Point::new([-10.0, -10.0].into());
             assert_eq!(periodic.wrap(point), Ok(point));
 
-            let point = Point::new([10.0f64.next_down(), 10.0f64.next_down()].into());
+            let point = Point::new([10.0_f64.next_down(), 10.0_f64.next_down()].into());
             assert_eq!(periodic.wrap(point), Ok(point));
 
             let point = Point::new([10.0, 10.0].into());
@@ -531,9 +531,9 @@ mod tests {
 
             let point = Point::new(
                 [
-                    10.0f64.next_down(),
-                    10.0f64.next_down(),
-                    10.0f64.next_down(),
+                    10.0_f64.next_down(),
+                    10.0_f64.next_down(),
+                    10.0_f64.next_down(),
                 ]
                 .into(),
             );

@@ -7,10 +7,11 @@ use hoomd_geometry::IsPointInside;
 use hoomd_interaction::Zero;
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
+    Body, Microstate, SiteKey, boundary::Closed, property::Point,
 };
-use hoomd_simulation::Simulation;
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::AllPairs;
+use hoomd_vector::{Cartesian, Metric};
 // ANCHOR_END: use
 
 // ANCHOR: boundary_struct
@@ -65,14 +66,18 @@ impl LocalTrial<Point<Cartesian<2>>> for Discrete {
 // ANCHOR: simulation_struct
 struct CustomRandomWalk {
     /// Positions of all the bodies in the simulation.
-    microstate:
-        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Circle>>,
+    microstate: Microstate<
+        Point<Cartesian<2>>,
+        Point<Cartesian<2>>,
+        AllPairs<SiteKey>,
+        Closed<Circle>,
+    >,
     /// How sites interact with other sites and fields.
     hamiltonian: Zero,
     /// Trial moves to apply.
     translate_sweep: Sweep<Discrete>,
     /// Temperature set point.
-    kt: f64,
+    macrostate: Isothermal,
 }
 // ANCHOR_END: simulation_struct
 
@@ -82,15 +87,16 @@ impl CustomRandomWalk {
     fn new() -> anyhow::Result<CustomRandomWalk> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let kt = 1.0;
         let n = 1000;
         let radius = 50.0;
+        let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
         // ANCHOR: microstate
         let circle = Circle { radius };
 
-        let microstate = MicrostateBuilder::with_boundary(Closed(circle))
+        let microstate = Microstate::builder()
+            .boundary(Closed(circle))
             .bodies(iter::repeat_n(Body::point(Cartesian::default()), n))
             .try_build()?;
         // ANCHOR_END: microstate
@@ -108,7 +114,7 @@ impl CustomRandomWalk {
             microstate,
             hamiltonian,
             translate_sweep,
-            kt,
+            macrostate,
         })
     }
 }
@@ -123,7 +129,7 @@ impl Simulation for CustomRandomWalk {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
-            &self.kt,
+            &self.macrostate,
         );
         self.microstate.increment_step();
         Ok(())
@@ -143,16 +149,14 @@ impl Simulation for CustomRandomWalk {
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
     let mut simulation = CustomRandomWalk::new()?;
-    // TODO: Write GSD file.
-
-    for _ in 0..100_000 {
+    for _ in 0..1_000_000 {
         simulation.advance()?;
     }
 
     Ok(())
 }
-// ANCHOR_END: main
 // ANCHOR_END: all
+// ANCHOR_END: main
 
 #[cfg(feature = "bevy")]
 mod custom_random_walk_interactive;

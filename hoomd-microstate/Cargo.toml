@@ -4,28 +4,43 @@ categories.workspace = true
 description = "Store and manage a system microstate."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", "katex.html"]
+
 [lints]
 workspace = true
 
 [dependencies]
+arrayvec.workspace = true
+rand.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+robust.workspace = true
+
+hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
 hoomd-linear-algebra.workspace = true
-hoomd-vector.workspace = true
+hoomd-gsd.workspace = true
+hoomd-manifold.workspace = true
+hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
-rand.workspace = true
-thiserror.workspace = true
-tinyvec.workspace = true
+hoomd-rand.workspace = true
+hoomd-vector.workspace = true
 
 [dev-dependencies]
-hoomd-vector = { features = ["approx"], workspace = true }
-approx.workspace = true
+assert2.workspace = true
 anyhow.workspace = true
+approxim.workspace = true
 divan.workspace = true
+itertools.workspace = true
+log.workspace = true
 rand.workspace = true
 rstest.workspace = true
+tempfile.workspace = true

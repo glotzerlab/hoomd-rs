@@ -1,0 +1,48 @@
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+//! Test derive(Orientation)
+
+use assert2::check;
+use hoomd_microstate::property::Orientation;
+
+// Compile error
+// #[derive(Orientation)]
+// struct Tuple(f64);
+
+// Compile error
+// #[derive(Orientation)]
+// struct Unit;
+
+// Compile error
+// #[derive(Orientation)]
+// enum Enum {
+//     A,B
+// };
+
+// Compile error
+// #[derive(Orientation)]
+// union Union {
+//     f1: u32,
+//     f2: f32,
+// }
+
+// Compile Error
+// #[derive(Orientation)]
+// struct InvalidNamed {
+//     orientation: f64,
+// }
+
+#[derive(Orientation)]
+struct Named {
+    orientation: f64,
+}
+
+#[test]
+fn derive_orientation() {
+    let mut test = Named { orientation: 15.0 };
+    check!(*test.orientation() == 15.0);
+
+    *test.orientation_mut() = 32.0;
+    check!(test.orientation == 32.0);
+}
