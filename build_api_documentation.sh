@@ -16,4 +16,5 @@ for package in derive linear-algebra simulation utility rand vector gsd manifold
 do
   cargo doc --package hoomd-$package --lib --no-deps
   cp katex.html hoomd-$package/
+  cp README.md hoomd-$package/
 done
