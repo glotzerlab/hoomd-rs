@@ -9,7 +9,7 @@ use crate::{
     },
     property::Position,
 };
-use hoomd_geometry::shape::Hyperparallelepiped;
+use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
 use hoomd_linear_algebra::{MatMul, matrix::Matrix, matrix::Matrix33, matrix::qr};
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
 use tinyvec::ArrayVec;
@@ -108,14 +108,13 @@ where
             return result;
         }
 
-        let new_site = |x, y| {
+        let new_site = |x, y, z| {
             let mut new_site = *site_properties;
-            new_site.position_mut()[0] += x * self.shape.edge_vectors[0].get();
-            new_site.position_mut()[1] += y * self.shape.edge_vectors[1].get();
+            new_site.position_mut()[0] += x * self.shape.edge_vectors[0];
+            new_site.position_mut()[1] += y * self.shape.edge_vectors[1];
+            new_site.position_mut()[2] += z * self.shape.edge_vectors[2];
             new_site
         };
-        todo!("Working on it!")
-
         // Find which boundaries particle is near.
     }
 }
