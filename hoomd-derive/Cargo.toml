@@ -1,7 +1,7 @@
 [package]
 name = "hoomd-derive"
 categories.workspace = true
-description = "Derive macros."
+description = "Derive macros for hoomd-rs traits."
 edition.workspace = true
 homepage.workspace = true
 documentation.workspace = true
