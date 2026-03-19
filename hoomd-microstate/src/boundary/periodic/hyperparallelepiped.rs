@@ -9,10 +9,10 @@ use crate::{
     },
     property::Position,
 };
+use arrayvec::ArrayVec;
 use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
 use hoomd_linear_algebra::{MatMul, matrix::Matrix, matrix::Matrix33, matrix::qr};
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
-use tinyvec::ArrayVec;
 
 impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N> {
     /// The largest value that the maximum interaction range can take.
@@ -38,7 +38,7 @@ impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N>
 
 impl<P, const N: usize> Wrap<P> for Periodic<Hyperparallelepiped<N>>
 where
-    P: Position<Vector = Cartesian<N>>,
+    P: Position<Position = Cartesian<N>>,
 {
     /// Wrap any cartesian vector to the inside of the given hyperparallepiped.
     ///
@@ -79,7 +79,7 @@ where
 
         let fractional = qr::qr_solve(&a, r.to_column_matrix());
 
-        let position_offset = a.matmul(&fractional.map_elementwise(f64::round));
+        let position_offset = a.matmul(&fractional.map_elements(f64::round));
         *r -= Cartesian::from_col_matrix(position_offset);
 
         Ok(properties)
@@ -88,7 +88,7 @@ where
 
 impl<S> GenerateGhosts<S> for Periodic<Hyperparallelepiped<3>>
 where
-    S: Position<Vector = Cartesian<3>> + Copy + Default,
+    S: Position<Position = Cartesian<3>> + Copy + Default,
 {
     // #[inline]
     fn maximum_interaction_range(&self) -> f64 {
@@ -97,24 +97,25 @@ where
 
     // /// Place periodic images of sites near the edge of the periodic boundary.
     // #[inline]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
-        let mut result = ArrayVec::new();
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        // let mut result = ArrayVec::new();
 
-        let r = site_properties.position();
-        let max = self.shape.maximal_extents();
-        let min = self.shape.minimal_extents();
+        // let r = site_properties.position();
+        // let max = self.shape.maximal_extents();
+        // let min = self.shape.minimal_extents();
 
-        if !self.shape.is_point_inside(r) {
-            return result;
-        }
+        // if !self.shape.is_point_inside(r) {
+        //     return result;
+        // }
 
-        let new_site = |x, y, z| {
-            let mut new_site = *site_properties;
-            new_site.position_mut()[0] += x * self.shape.edge_vectors[0];
-            new_site.position_mut()[1] += y * self.shape.edge_vectors[1];
-            new_site.position_mut()[2] += z * self.shape.edge_vectors[2];
-            new_site
-        };
+        // let new_site = |x, y, z| {
+        //     let mut new_site = *site_properties;
+        //     new_site.position_mut()[0] += x * self.shape.edge_vectors[0];
+        //     new_site.position_mut()[1] += y * self.shape.edge_vectors[1];
+        //     new_site.position_mut()[2] += z * self.shape.edge_vectors[2];
+        //     new_site
+        // };
         // Find which boundaries particle is near.
+        todo!();
     }
 }

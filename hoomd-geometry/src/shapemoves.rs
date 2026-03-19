@@ -66,7 +66,7 @@ impl<const N: usize> Scale for Hypersphere<N> {
 impl<const N: usize> Scale for Hyperellipsoid<N> {
     #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
-        self.semi_axes = self.semi_axes.map(|v| v * scale_factor);
+        *self = Hyperellipsoid::with_semi_axes(self.semi_axes().map(|v| v * scale_factor));
     }
 }
 
