@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //TODO: Figure out to handle fat matrices... Should I just multiple extra columns by reflectors? But we don't have space in the matrix to store them?
