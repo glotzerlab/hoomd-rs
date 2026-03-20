@@ -33,6 +33,7 @@ jobs:
       with:
         key: ${{ hashFiles('Cargo.lock') }}
         cache-bin: false
+        save-if: ${{ github.ref != 'refs/heads/trunk' }}
 
     # Unfortunately, it is not currently possible to mark warnings as errors with cargo check:
     # https://github.com/rust-lang/cargo/issues/8424#issuecomment-1915265827

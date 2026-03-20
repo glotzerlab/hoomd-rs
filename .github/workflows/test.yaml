@@ -63,6 +63,7 @@ jobs:
       with:
         key: ${{ matrix.target || 'native' }}-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
+        save-if: ${{ github.ref != 'refs/heads/trunk' }}
 
     - name: Build [default features]
       run: >
