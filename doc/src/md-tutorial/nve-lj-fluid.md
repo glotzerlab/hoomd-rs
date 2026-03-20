@@ -1,7 +1,7 @@
 # NVE Simulation of a Lennard-Jones Fluid
 
 <script type="module">
-import init from 'https://glotzerlab.github.io/hoomd-rs/md-tutorial/nve-lj-fluid.js'
+import init from './nve-lj-fluid.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}
@@ -25,6 +25,7 @@ We will:
 * Run (interactively – if Bevy visualization is enabled):
   ```shell
   cargo run --release --features "bevy" --example nve-lj-fluid
+  ```
 
 ## Dynamic Bodies and Sites
 Following the **Applying-Interactions** tutorial in the `mc-tutorial`, we again use point particles in the three-dimension with each **body** now has extended properties to perform MD simulation, including the momentum, mass and net force. Specifically, that means
@@ -64,7 +65,7 @@ Assign all the model parameters in one code block so that they are easy to modif
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:parameters}}
 ```
 
-Here, we choose to use reduced Lennard-Jones units: $ `\epsilon=1` $, $`\sigma=1`$, $`m = 1`$ => temperature is in units of $`\epsilon/k_BT`$, time in units of $`\sigma \sqrt{(m/\epsilon)}`$. 
+Here, we choose to use reduced Lennard-Jones units: $` \epsilon=1 `$, $`\sigma=1`$, $`m = 1`$ => temperature is in units of $`\epsilon/k_BT`$, time in units of $`\sigma \sqrt{(m/\epsilon)}`$. 
 
 We will initialize a system with `nxnxn` particles and then run  `eq_steps` in the NVT ensemble to equilibrate the system at $`T^*=`$ `kt` at the fixed number density $`\rho=`$ `density`, followed by a production run in the NVE ensemble. We use a time step of $`\delta t = `$ `dt` and a temperature damping time constant of $`\tau=`$ `tau_thermostat` for the thermostating. The LJ potential is truncated at the `r_cut`.
 
