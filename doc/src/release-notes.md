@@ -2,14 +2,6 @@
 
 ## Next release
 
-*Added:*
-
-*Changed:*
-
-*Deprecated:*
-
-*Removed:*
-
 *Fixed:*
 
 * `hoomd-microstate` documentation builds on docs.rs (#253).
