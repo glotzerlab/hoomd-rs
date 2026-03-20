@@ -155,13 +155,13 @@ via the `file://` URL.
 
 To make a new release:
 
-- [ ] Run [cargo-public-api] on any changed crates to determine whether this should
-  be a *patch*, *minor*, or *major* release: `cargo public-api diff latest -p 'hoomd-{name}'`
+- [ ] Run `./diff_public_api.sh` (which uses [cargo-public-api]) to help determine
+  whether this should be a *patch*, *minor*, or *major* release.
   * *patch* release: no changes at all.
   * *minor* release: Only added changes (including new crates).
   * *major* release: Often needed when APIs are changed and removed, though
     [it is very complicated]. Our user base is small enough that conservatively
-    making a *major* release is fine if there is any doubt.
+    making a *major* release is fine when there is any doubt.
 - [ ] Make a new `release-{X.Y.Z}` branch (where `{X.Y.Z}` is the new version).
 
 On that branch, take the following steps (committing after each step when needed):
@@ -169,7 +169,7 @@ On that branch, take the following steps (committing after each step when needed
 - [ ] Run `prek autoupdate`.
 - [ ] Check for new or duplicate contributors since the last release:
   ```shell
-  `comm -13 (git log $(git describe --tags --abbrev=0) --format="%aN <%aE>" | sort | uniq | psub) (git log --format="%aN <%aE>" | sort | uniq | psub)
+  comm -13 (git log $(git describe --tags --abbrev=0) --format="%aN <%aE>" | sort | uniq | psub) (git log --format="%aN <%aE>" | sort | uniq | psub)
   ````
   Add entries to `.mailmap` to remove duplicates.
 - [ ] Review `release-notes.md` and revise if needed.
