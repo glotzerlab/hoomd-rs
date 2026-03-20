@@ -22,11 +22,6 @@ filename = "README.md"
 search = "/{current_version}/"
 replace = "/{new_version}/"
 
-# [[tool.bumpversion.files]]
-# filename = ".github/ISSUE_TEMPLATE/release.md"
-# search = "Release {current_version}"
-# replace = "Release {new_version}"
-
 [[tool.bumpversion.files]]
 filename = "doc/src/release-notes.md"
 regex = true

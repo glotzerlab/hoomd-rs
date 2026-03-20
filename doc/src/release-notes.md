@@ -1,5 +1,11 @@
 # Release notes
 
+## Next release
+
+*Fixed:*
+
+* Trusted publishing workflow.
+
 ## 1.0.1 (2026-03-20)
 
 *Fixed:*
