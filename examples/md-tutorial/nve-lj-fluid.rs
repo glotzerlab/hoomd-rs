@@ -69,18 +69,27 @@ impl LJFluid {
     fn new() -> anyhow::Result<LJFluid> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let eq_step = 50_000;
-        let kt = 0.85;
-        let density = 0.776;
+        let epsilon: f64 = 1.0;
+        let sigma: f64 = 1.0;
+        let m: f64 = 1.0;
+
         let n: f64 = 8.0;
+        let eq_step = 50_000;
+        let temperature_lj = 0.85;
+        let density_lj = 0.776;
+        let dt_lj = 0.005;
+        let tau_lj = 50.0;
+        let r_cut_lj = 3.0;
+
+        // convert to real unit
+        let dt = dt_lj * sigma * (m/epsilon).sqrt();
+        let kt = temperature_lj * epsilon;
+        let tau = tau_lj * dt;
+        let r_cut = r_cut_lj * sigma;
+        let density = density_lj / sigma.powi(3);
         let box_volume = n.powi(3) / density;
         let box_length = box_volume.cbrt();      
         let macrostate = Isothermal { temperature: kt }; 
-        let epsilon = 1.0;
-        let sigma = 1.0;
-        let r_cut = 3.0 * sigma;
-        let dt = 0.005;
-        let tau_thermostat = 50.0 * dt;
         // ANCHOR_END: parameters
 
         // ANCHOR: boundary
@@ -114,7 +123,7 @@ impl LJFluid {
                             position: Cartesian::from([x, y, z]),
                             momentum: Cartesian::default(),
                             net_force: Cartesian::default(),
-                            mass: 1.0,
+                            mass: m,
                         },
                         sites: vec![Point::default()],
                     }]);
@@ -165,7 +174,7 @@ impl LJFluid {
         // ANCHOR_END: integrator
 
         // ANCHOR: thermostat
-        let thermostat = BussiThermostat::new(tau_thermostat.try_into()?);
+        let thermostat = BussiThermostat::new(tau.try_into()?);
         // ANCHOR_END: thermostat
 
         // ANCHOR: struct_initialize
@@ -276,7 +285,7 @@ impl LJFluid {
             let (pe, kt) = self.calculate_properties();
 
             println!(
-                "NVE, Step {}, Temperature {}, Potential energy (w/ LRC) per particle {}" ,
+                "NVE, Step {}, kT {}, Potential energy (w/ LRC) per particle {}" ,
                 self.microstate.step() - self.eq_step,
                 kt,
                 pe

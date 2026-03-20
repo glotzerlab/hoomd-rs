@@ -65,9 +65,9 @@ Assign all the model parameters in one code block so that they are easy to modif
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:parameters}}
 ```
 
-Here, we choose to use reduced Lennard-Jones units: $` \epsilon=1 `$, $`\sigma=1`$, $`m = 1`$ => temperature is in units of $`\epsilon/k_BT`$, time in units of $`\sigma \sqrt{(m/\epsilon)}`$. 
+Here, we choose to use reduced Lennard-Jones units: $` \epsilon=1 `$, $`\sigma=1`$, $`m = 1`$ => temperature is in units of $`k_BT/\epsilon`$, time in units of $`\sigma \sqrt{(m/\epsilon)}`$. 
 
-We will initialize a system with `nxnxn` particles and then run  `eq_steps` in the NVT ensemble to equilibrate the system at $`T^*=`$ `kt` at the fixed number density $`\rho=`$ `density`, followed by a production run in the NVE ensemble. We use a time step of $`\delta t = `$ `dt` and a temperature damping time constant of $`\tau=`$ `tau_thermostat` for the thermostating. The LJ potential is truncated at the `r_cut`.
+We will initialize a system with `n x n x n` particles and then run  `eq_steps` in the NVT ensemble to equilibrate the system at temperature $`T^*=`$ `temperature_lj` at the fixed volume density $`\rho^*=`$ `density_lj`, followed by a production run in the NVE ensemble. We use a time step of $`\delta t ^*= `$ `dt_lj` and a temperature damping time constant of $`\tau^*=`$ `tau_lj` for the thermostating. The LJ potential is truncated at the `r_cut_lj`.
 
 ### Boundary and Spatial Data Structure
 ```rust,ignore
@@ -221,10 +221,10 @@ Call `append_microstate` to write to the GSD file for every 5,000 steps.
 Should see output similar to:
 ```
 Isotherm preparation finished at step 50000.
-NVE, Step 10000, Temperature 0.8747741585945321, Potential energy (w/ LRC) per particle -5.481555101132949
-NVE, Step 20000, Temperature 0.890226773983914, Potential energy (w/ LRC) per particle -5.50325224785257
-NVE, Step 30000, Temperature 0.8838402378487593, Potential energy (w/ LRC) per particle -5.493167294987841
-NVE, Step 40000, Temperature 0.8942898500494086, Potential energy (w/ LRC) per particle -5.509090715545137
+NVE, Step 10000, kT 0.8747741585945321, Potential energy (w/ LRC) per particle -5.481555101132949
+NVE, Step 20000, kT 0.890226773983914, Potential energy (w/ LRC) per particle -5.50325224785257
+NVE, Step 30000, kT 0.8838402378487593, Potential energy (w/ LRC) per particle -5.493167294987841
+NVE, Step 40000, kT 0.8942898500494086, Potential energy (w/ LRC) per particle -5.509090715545137
 ...
 ```
 
