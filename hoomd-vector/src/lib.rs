@@ -216,7 +216,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssi
 use thiserror::Error;
 
 /// Enumerate possible sources of error in fallible vector math operations.
-#[non_exhaustive]
+// #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
     /// Attempted converting a value to a vector with a dimension not equal to the value's length.
@@ -230,6 +230,9 @@ pub enum Error {
     /// Attempted to normalize a quaternion with an invalid magnitude.
     #[error("cannot normalize the 0 quaternion")]
     InvalidQuaternionMagnitude,
+
+    #[error("test")]
+    Test,
 }
 
 /// A new function
