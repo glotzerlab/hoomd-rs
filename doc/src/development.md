@@ -150,3 +150,71 @@ via the `file://` URL.
 > to appear in the published documentation.
 
 [the WASM chapter in the bevy cheat book]: https://bevy-cheatbook.github.io/platforms/wasm.html
+
+## Release Process
+
+To make a new release:
+
+- [ ] Run [cargo-semver-checks] to determine whether this should be a *patch*,
+  *minor*, or *major* release:
+  ```shell
+  $ 
+- [ ] Make a new `release-{X.Y.Z}` branch (where `{X.Y.Z}` is the new version).
+
+On that branch, take the following steps (committing after each step when needed):
+
+- [ ] Run `prek autoupdate`.
+- [ ] Check for new or duplicate contributors since the last release:
+  `comm -13 (git log $(git describe --tags --abbrev=0) --format="%aN <%aE>" | sort | uniq | psub) (git log --format="%aN <%aE>" | sort | uniq | psub)`.
+  Add entries to `.mailmap` to remove duplicates.
+- [ ] Review `release-notes.md` and revise if needed.
+- [ ] Add highlights to release notes.
+- [ ] Run `bump-my-version bump {type}`. Replace `{type}` with:
+  - `patch` when this release *only* includes bug fixes.
+  - `minor` when this release includes new features and possibly bug fixes.
+  - `major` when this release includes API breaking changes.
+- [ ] Run `cargo check`
+- [ ] Run `cargo update`
+- [ ] Run `cargo bundle-licenses --format yaml --output THIRDPARTY.yaml`
+- [ ] Push the branch and open a pull request.
+- [ ] Check that readthedocs builds the docs correctly in the pull request checks.
+- [ ] Merge the pull request after all tests pass.
+- [ ] Make a new tag on the trunk branch:
+  ```
+  git switch trunk
+  git pull
+  git tag -a {X.Y.Z}
+  git push origin --tags
+  ```
+
+> [!IMPORTANT]
+> Make sure to **exclude** `v` from the tag name!
+
+- [ ] Add a blank release notes entry for the next release:
+  ```
+  ## Next release
+
+  *Added:*
+
+  *Changed:*
+
+  *Deprecated:*
+
+  *Removed:*
+
+  *Fixed:*
+  ```
+
+> [!NOTE]
+> Paste `Next release` exactly as shown. `bump-my-version` will replace that
+> string with the version number and date.
+
+GitHub Actions will trigger on the tag and upload the release to crates.io and create a
+GitHub release. After a few hours, the conda-forge autotick bot will submit a PR
+for the new release.
+
+- [ ] Check that the GitHub release posted correctly: https://github.com/glotzerlab/row/releases
+- [ ] Check that the crates.io upload succeeded: https://crates.io/crates/row
+- [ ] Merge the conda-forge recipe, updating it first if necessary (e.g. when adding dependencies).
+
+[cargo-semver-checks]: https://github.com/obi1kenobi/cargo-semver-checks

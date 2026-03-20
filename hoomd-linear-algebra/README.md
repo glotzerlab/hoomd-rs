@@ -7,6 +7,7 @@
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/y/glotzerlab/hoomd-rs?label=commits)](https://github.com/glotzerlab/hoomd-rs)
 [![Contributors](https://img.shields.io/github/contributors-anon/glotzerlab/hoomd-rs.svg?style=flat)](https://hoomd-rs.readthedocs.io/en/latest/credits.html)
 [![GitHub top language](https://img.shields.io/github/languages/top/glotzerlab/hoomd-rs?color=a44300)](https://rust-lang.org/)
+[![prek](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/docs/assets/badge-v0.json)](https://github.com/j178/prek)
 
 **hoomd-rs** is a collection of [Rust] crates that implement particle
 simulations and related methods. It performs Monte Carlo simulations of hard

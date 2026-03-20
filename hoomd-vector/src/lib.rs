@@ -232,6 +232,11 @@ pub enum Error {
     InvalidQuaternionMagnitude,
 }
 
+/// A new function
+pub fn new_fn() {
+
+}
+
 /// Operate on elements of a metric vector space.
 ///
 /// Specifically, [`Vector`] defines methods that can be performed on any vector in a metric vector
