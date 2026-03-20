@@ -26,22 +26,26 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
+      # Test the latest Rust on all platforms.
       matrix:
         os:
           - ubuntu-24.04
           - macos-14
           - windows-2025
         rust:
-          - 1.91.0
           - 1.94.0
         target:
          - ''
 
         include:
-        # Add a WASM build.
         - os: ubuntu-24.04
           rust: 1.94.0
           target: wasm32-unknown-unknown
+
+        # Test MSRV
+        - os: ubuntu-24.04
+          rust: 1.91.0
+          target: ''
 
     steps:
     - name: Checkout
