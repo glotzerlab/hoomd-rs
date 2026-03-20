@@ -23,7 +23,11 @@ hooks = [
   { id = "check-toml" },
   { id = "check-yaml" },
   { id = "check-case-conflict" },
-  { id = "mixed-line-ending" }
+  { id = "mixed-line-ending" },
+  { id = "check-added-large-files" },
+  { id = "check-executables-have-shebangs" },
+  { id = "check-symlinks" },
+  { id = "detect-private-key" },
 ]
 
 [[repos]]
@@ -31,4 +35,16 @@ repo = "https://github.com/rhysd/actionlint"
 rev = "v1.7.11"
 hooks = [
   { id = "actionlint" }
+]
+
+[[repos]]
+repo = "https://github.com/mit-d/check-unicode"
+rev = "v0.5.0"
+hooks = [
+  { id = "check-unicode",
+    args = [
+      "--allow-printable",
+      "--check-confusables",
+    ]
+  }
 ]

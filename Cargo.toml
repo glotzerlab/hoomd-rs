@@ -52,21 +52,22 @@ keywords = ["molecular-dynamics", "monte-carlo", "simulation"]
 categories = ["science"]
 
 [workspace.dependencies]
-# Subcrates
-hoomd-bevy = { path = "hoomd-bevy", version = "1.0.0" }
-hoomd-derive = { path = "hoomd-derive", version = "1.0.0" }
-hoomd-geometry = { path = "hoomd-geometry", version = "1.0.0"}
-hoomd-gsd = { path = "hoomd-gsd", version = "1.0.0"}
-hoomd-interaction = { path = "hoomd-interaction", version = "1.0.0"}
-hoomd-linear-algebra = { path = "hoomd-linear-algebra", version = "1.0.0"}
-hoomd-manifold = { path = "hoomd-manifold", version = "1.0.0"}
-hoomd-mc = { path = "hoomd-mc", version = "1.0.0"}
-hoomd-microstate = { path = "hoomd-microstate", version = "1.0.0"}
-hoomd-simulation = { path = "hoomd-simulation", version = "1.0.0"}
-hoomd-spatial = { path = "hoomd-spatial", version = "1.0.0"}
-hoomd-utility = { path = "hoomd-utility", version = "1.0.0"}
-hoomd-vector = { path = "hoomd-vector", version = "1.0.0"}
-hoomd-rand = { path = "hoomd-rand", version = "1.0.0"}
+# hooomd-rs crates
+# These lines must have 'version = "X.Y.Z", path' *in that order* to work with bump-my-version.
+hoomd-bevy = { version = "1.0.0", path = "hoomd-bevy" }
+hoomd-derive = { version = "1.0.0", path = "hoomd-derive" }
+hoomd-geometry = { version = "1.0.0", path = "hoomd-geometry" }
+hoomd-gsd = { version = "1.0.0", path = "hoomd-gsd" }
+hoomd-interaction = { version = "1.0.0", path = "hoomd-interaction" }
+hoomd-linear-algebra = { version = "1.0.0", path = "hoomd-linear-algebra" }
+hoomd-manifold = { version = "1.0.0", path = "hoomd-manifold" }
+hoomd-mc = { version = "1.0.0", path = "hoomd-mc" }
+hoomd-microstate = { version = "1.0.0", path = "hoomd-microstate" }
+hoomd-simulation = { version = "1.0.0", path = "hoomd-simulation" }
+hoomd-spatial = { version = "1.0.0", path = "hoomd-spatial" }
+hoomd-utility = { version = "1.0.0", path = "hoomd-utility" }
+hoomd-vector = { version = "1.0.0", path = "hoomd-vector" }
+hoomd-rand = { version = "1.0.0", path = "hoomd-rand" }
 
 # Dev dependencies
 assert2 = "=0.4.0"

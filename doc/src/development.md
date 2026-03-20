@@ -150,3 +150,75 @@ via the `file://` URL.
 > to appear in the published documentation.
 
 [the WASM chapter in the bevy cheat book]: https://bevy-cheatbook.github.io/platforms/wasm.html
+
+## Release Process
+
+To make a new release:
+
+- [ ] Run [cargo-public-api] on any changed crates to determine whether this should
+  be a *patch*, *minor*, or *major* release: `cargo public-api diff latest -p 'hoomd-{name}'`
+  * *patch* release: no changes at all.
+  * *minor* release: Only added changes (including new crates).
+  * *major* release: Often needed when APIs are changed and removed, though
+    [it is very complicated]. Our user base is small enough that conservatively
+    making a *major* release is fine if there is any doubt.
+- [ ] Make a new `release-{X.Y.Z}` branch (where `{X.Y.Z}` is the new version).
+
+On that branch, take the following steps (committing after each step when needed):
+
+- [ ] Run `prek autoupdate`.
+- [ ] Check for new or duplicate contributors since the last release:
+  ```shell
+  `comm -13 (git log $(git describe --tags --abbrev=0) --format="%aN <%aE>" | sort | uniq | psub) (git log --format="%aN <%aE>" | sort | uniq | psub)
+  ````
+  Add entries to `.mailmap` to remove duplicates.
+- [ ] Review `release-notes.md` and revise if needed.
+- [ ] Add highlights to release notes (*if needed*).
+- [ ] Run `./build_api_documentation.sh` and commit the updated files (it copies
+  files from the root to all crates for rustdoc).
+- [ ] Run `./check_links.sh` and fix any broken links.
+- [ ] Run `bump-my-version bump {type}`. Set `{type}` to `patch`, `minor`, or `major`.
+- [ ] Run `cargo check`
+- [ ] Run `cargo update`
+- [ ] Run `cargo bundle-licenses --format yaml --output THIRDPARTY.yaml`
+- [ ] Push the branch and open a pull request.
+- [ ] Check that readthedocs builds the docs correctly in the pull request checks.
+- [ ] Merge the pull request after all tests pass.
+- [ ] Make a new tag on the trunk branch:
+  ```
+  git switch trunk
+  git pull
+  git tag -a {X.Y.Z}
+  git push origin --tags
+  ```
+
+> [!IMPORTANT]
+> Make sure to **exclude** `v` from the tag name!
+
+- [ ] Add a blank release notes entry for the next release:
+  ```
+  ## Next release
+
+  *Added:*
+
+  *Changed:*
+
+  *Deprecated:*
+
+  *Removed:*
+
+  *Fixed:*
+  ```
+
+> [!NOTE]
+> Paste `Next release` exactly as shown. `bump-my-version` will replace that
+> string with the version number and date of the *next* release.
+
+GitHub Actions will trigger on the tag and upload the release to crates.io and create a
+GitHub release.
+
+- [ ] [Check that the GitHub release posted correctly](https://github.com/glotzerlab/hoomd-rs/releases/).
+- [ ] [Check that all crates.io uploads succeeded](https://crates.io/users/joaander).
+
+[cargo-public-api]: https://github.com/cargo-public-api/cargo-public-api
+[it is very complicated]: https://doc.rust-lang.org/cargo/reference/semver.html

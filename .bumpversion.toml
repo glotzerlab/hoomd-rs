@@ -1,0 +1,34 @@
+[tool.bumpversion]
+current_version = "1.0.0"
+
+[[tool.bumpversion.files]]
+filename = "Cargo.toml"
+search = """
+[workspace.package]
+version = "{current_version}"
+"""
+replace = """
+[workspace.package]
+version = "{new_version}"
+"""
+
+[[tool.bumpversion.files]]
+filename = "Cargo.toml"
+search = 'version = "{current_version}", path'
+replace = 'version = "{new_version}", path'
+
+[[tool.bumpversion.files]]
+filename = "README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+# [[tool.bumpversion.files]]
+# filename = ".github/ISSUE_TEMPLATE/release.md"
+# search = "Release {current_version}"
+# replace = "Release {new_version}"
+
+[[tool.bumpversion.files]]
+filename = "doc/src/release-notes.md"
+regex = true
+search = 'Next release$'
+replace = '{new_version} ({now:%Y-%m-%d})'

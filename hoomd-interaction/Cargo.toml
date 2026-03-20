@@ -1,7 +1,7 @@
 [package]
 name = "hoomd-interaction"
 categories.workspace = true
-description = "Evaluate interactions on particles."
+description = "Hamiltonians and other interaction models that apply to hoomd-rs simulations."
 edition.workspace = true
 homepage.workspace = true
 documentation.workspace = true
