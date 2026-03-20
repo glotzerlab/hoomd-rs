@@ -394,7 +394,7 @@ action again. Notice how the disks fall to the bottom of the boundary and do
 not overlap, except when newly added. Wait long enough and you will see the
 simulation clear the bodies.
 
-[documentation]: ../guide/crates.md
+[documentation]: ../guide/overview.md
 [`hoomd-microstate`]: ../api/hoomd_microstate/index.html
 [Boxcar function]: https://mathworld.wolfram.com/BoxcarFunction.html
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/

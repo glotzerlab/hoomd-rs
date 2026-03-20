@@ -7,7 +7,7 @@
 - [Rust](guide/rust.md)
 - [Hello, hoomd-rs!](guide/hello.md)
 - [Overview](guide/overview.md)
-- [All crates](guide/crates.md)
+- [All crates](api/index.md)
 
 # Tutorials
 
