@@ -439,12 +439,25 @@ impl<const N: usize> Neg for Cartesian<N> {
 
 impl Cross for Cartesian<3> {
     #[inline]
-    fn cross(&self, other: &Self) -> Self {
-        Cartesian::from((
-            self[1] * other[2] - self[2] * other[1],
-            self[2] * other[0] - self[0] * other[2],
-            self[0] * other[1] - self[1] * other[0],
-        ))
+    fn cross(&self, other: &f64) -> Self {
+    //     Cartesian::from((
+    //         self[1] * other[2] - self[2] * other[1],
+    //         self[2] * other[0] - self[0] * other[2],
+    //         self[0] * other[1] - self[1] * other[0],
+    //     ))
+        todo!()
+    }
+}
+
+impl Cross for Cartesian<2> {
+    fn cross(&self, other: &f64) -> Self {
+        todo!()
+    }
+}
+
+impl Cartesian<3> {
+    pub fn new_inherent_method() -> bool {
+        false
     }
 }
 

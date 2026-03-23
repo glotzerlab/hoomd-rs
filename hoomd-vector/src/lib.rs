@@ -631,8 +631,19 @@ pub trait Cross {
     /// # }
     /// ```
     #[must_use]
-    fn cross(&self, other: &Self) -> Self;
+    fn cross(&self, other: &f64) -> Self;
+
+    fn new_trait_method() -> bool {
+        false
+    }
 }
+
+pub fn new_function() -> bool {
+    true
+}
+
+pub trait NewTrait {}
+pub struct NewType;
 
 /// Applies the rotation operation to vectors.
 ///
@@ -739,7 +750,7 @@ pub trait Rotation: Copy {
 /// assert_relative_eq!(o_ab.theta, PI / 2.0);
 /// ```
 #[inline]
-pub fn pair_system_to_local<V, R>(r_a: &V, o_a: &R, r_b: &V, o_b: &R) -> (V, R)
+pub fn pair_system_to_local<V, R>(r_a: &mut V, o_a: &R, r_b: &V, o_b: &R) -> (V, R, bool)
 where
     V: Vector,
     R: Rotation + Rotate<V>,
@@ -748,7 +759,7 @@ where
     let o_a_inverted = o_a.inverted();
     let v_ij = o_a_inverted.rotate(&r_ab);
     let o_ij = o_a_inverted.combine(o_b);
-    (v_ij, o_ij)
+    (v_ij, o_ij, true)
 }
 
 #[cfg(test)]
