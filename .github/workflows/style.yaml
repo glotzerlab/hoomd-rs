@@ -126,6 +126,16 @@ jobs:
       with:
         prek-version: '0.3.6'
 
+  cargo-semver-checks:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Check semver
+      uses: obi1kenobi/cargo-semver-checks-action@v2
+      with:
+        package: hoomd-vector
+
   # This job is used to provide a single requirement for branch merge conditions.
   tests_complete:
     name: All style checks
