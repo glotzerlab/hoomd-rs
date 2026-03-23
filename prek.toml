@@ -1,3 +1,7 @@
+#:schema https://www.schemastore.org/prek.json
+
+minimum_prek_version = "0.3.8"
+
 [[repos]]
 repo = "https://github.com/glotzerlab/fix-license-header"
 rev = "v0.4.1"
