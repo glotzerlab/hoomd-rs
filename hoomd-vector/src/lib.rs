@@ -631,7 +631,7 @@ pub trait Cross {
     /// # }
     /// ```
     #[must_use]
-    fn cross(&self, other: &f64) -> Self;
+    fn cross(&self, other: &f64) -> f64;
 
     fn new_trait_method() -> bool {
         false
