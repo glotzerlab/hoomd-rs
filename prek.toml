@@ -28,6 +28,9 @@ hooks = [
   { id = "check-executables-have-shebangs" },
   { id = "check-symlinks" },
   { id = "detect-private-key" },
+  { id = "check-vcs-permalinks" },
+  { id = "check-shebang-scripts-are-executable" },
+  { id = "check-illegal-windows-names" },
 ]
 
 [[repos]]
