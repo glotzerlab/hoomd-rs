@@ -240,6 +240,7 @@ where
             simulation.translate_sweep.0.maximum_distance()
         );
 
+        simulation.count = Count::default();
         let out_bytes: Vec<u8> = postcard::to_stdvec(&simulation)?;
         let mut file = File::create(cache_filename)?;
         file.write_all(&out_bytes)?;
