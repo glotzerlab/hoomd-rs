@@ -4,11 +4,15 @@ categories.workspace = true
 description = "Commonly used utility types and methods."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
 
 [lints]
 workspace = true
@@ -20,5 +24,6 @@ thiserror.workspace = true
 serde.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
 assert2.workspace = true
 tempfile.workspace = true

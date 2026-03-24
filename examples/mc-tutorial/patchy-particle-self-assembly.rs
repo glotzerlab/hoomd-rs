@@ -352,12 +352,14 @@ fn main() -> anyhow::Result<()> {
         simulation.advance()?;
 
         if simulation.step().is_multiple_of(10_000) {
-            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+            hoomd_gsd_file
+                .append_microstate(&simulation.microstate)?
+                .end()?;
         }
         // ANCHOR_END: run_simulation
 
         // ANCHOR: write_log
-        if simulation.step().is_multiple_of(1000) {
+        if simulation.step().is_multiple_of(1_000) {
             parquet_logger.log(LogRecord {
                 step: simulation.microstate.step(),
                 potential_energy: simulation

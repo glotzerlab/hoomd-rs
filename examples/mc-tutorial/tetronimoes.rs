@@ -266,7 +266,9 @@ fn main() -> anyhow::Result<()> {
         simulation.advance()?;
 
         if simulation.step().is_multiple_of(1_000) {
-            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+            hoomd_gsd_file
+                .append_microstate(&simulation.microstate)?
+                .end()?;
         }
     }
 

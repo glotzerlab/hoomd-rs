@@ -15,7 +15,7 @@ use thiserror::Error;
 
 use hoomd_vector::{Cartesian, Versor};
 
-use crate::file_layer::{EncodeError, GsdFile, Mode, OpenError, Type, WriteError};
+use crate::file_layer::{EncodeError, GsdFile, Mode, OpenError, SyncError, Type, WriteError};
 
 /// Longest type name size (including the null terminator).
 const MAX_NAME_LENGTH: usize = 64;
@@ -51,12 +51,13 @@ const DEFAULT_AUTO_SYNC_DELAY: Duration = Duration::new(10, 0);
 /// // let path = "file.gsd";
 /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
 /// hoomd_gsd_file
-///     .append_frame(2000)?
+///     .append_frame(2_000)?
 ///     .configuration_box([105.0, 48.0, 72.0, 0.0, 0.0, 0.0])?
 ///     .particles_position([
 ///         [2.0, 3.0, -1.0].into(),
 ///         [18.0, 4.0, -6.0].into(),
-///     ]);
+///     ])?
+///     .end()?;
 /// # Ok(())
 /// # }
 /// ```
@@ -125,6 +126,9 @@ pub struct Frame<'a> {
 
     /// Stores the number of particles for error checking `particles_*` calls.
     particles_n: Option<u32>,
+
+    /// Flag when the frame has ended.
+    ended: bool,
 }
 
 /// Errors that can occur while appending a frame to a HOOMD GSD file.
@@ -132,12 +136,20 @@ pub struct Frame<'a> {
 #[derive(Error, Debug)]
 pub enum AppendError {
     /// This data chunk does not match the dimensions of those previously written.
-    #[error("The length of data chunk {0} does not match those previously written")]
-    InconsistentLength(String),
+    #[error("The length of data chunk {0} does not match previously written {1} chunks")]
+    InconsistentLength(String, String),
 
-    /// Write to the file.
+    /// Cannot write to the file.
     #[error("cannot write to the file")]
     Write(#[from] WriteError),
+
+    /// Cannot encode data to write.
+    #[error("cannot encode data to write")]
+    Encode(#[from] EncodeError),
+
+    /// Cannot synchronize data to the file.
+    #[error("cannot synchronize data to the file")]
+    Sync(#[from] SyncError),
 
     /// Too many entries to write.
     #[error("cannot write {0} entries to data chunk {1}")]
@@ -287,7 +299,7 @@ impl HoomdGsdFile {
     /// Returns a [`WriteError`] when any of the following occur:
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
-    pub fn sync_all(&mut self) -> Result<(), EncodeError> {
+    pub fn sync_all(&mut self) -> Result<(), SyncError> {
         self.gsd_file.sync_all()?;
         self.last_auto_sync = Instant::now();
         Ok(())
@@ -316,9 +328,10 @@ impl HoomdGsdFile {
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
-    ///     .append_frame(1000)?
+    ///     .append_frame(1_000)?
     ///     .configuration_box([100.0, 50.0, 80.0, 0.0, 0.0, 0.0])?
-    ///     .particles_position([[0.0, 1.0, 2.0].into(), [3.0, 6.0, 12.0].into()]);
+    ///     .particles_position([[0.0, 1.0, 2.0].into(), [3.0, 6.0, 12.0].into()])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -334,6 +347,7 @@ impl HoomdGsdFile {
         Ok(Frame {
             hoomd_gsd_file: self,
             particles_n: None,
+            ended: false,
         })
     }
 
@@ -402,8 +416,9 @@ impl Frame<'_> {
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
-    ///     .append_frame(1000)?
-    ///     .configuration_dimensions(Dimensions::Two)?;
+    ///     .append_frame(1_000)?
+    ///     .configuration_dimensions(Dimensions::Two)?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -445,8 +460,9 @@ impl Frame<'_> {
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
-    ///     .append_frame(1000)?
-    ///     .configuration_box([10.0, 20.0, 30.0, 0.0, 0.0, 0.0])?;
+    ///     .append_frame(1_000)?
+    ///     .configuration_box([10.0, 20.0, 30.0, 0.0, 0.0, 0.0])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -480,7 +496,10 @@ impl Frame<'_> {
     ) -> Result<(), AppendError> {
         if let Some(n) = self.particles_n {
             if data.len() != n as usize {
-                return Err(AppendError::InconsistentLength(chunk_name.to_string()));
+                return Err(AppendError::InconsistentLength(
+                    chunk_name.to_string(),
+                    "particles".to_string(),
+                ));
             }
         } else {
             let n = data
@@ -512,10 +531,13 @@ impl Frame<'_> {
     /// # let path = tmp_dir.path().join("test.gsd");
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
-    /// hoomd_gsd_file.append_frame(1000)?.particles_position([
-    ///     [2.0, 3.0, -1.0].into(),
-    ///     [18.0, 4.0, -6.0].into(),
-    /// ])?;
+    /// hoomd_gsd_file
+    ///     .append_frame(1_000)?
+    ///     .particles_position([
+    ///         [2.0, 3.0, -1.0].into(),
+    ///         [18.0, 4.0, -6.0].into(),
+    ///     ])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -566,10 +588,13 @@ impl Frame<'_> {
     /// # let path = tmp_dir.path().join("test.gsd");
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
-    /// hoomd_gsd_file.append_frame(1000)?.particles_orientation([
-    ///     Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, 1.2),
-    ///     Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, -0.3),
-    /// ])?;
+    /// hoomd_gsd_file
+    ///     .append_frame(1_000)?
+    ///     .particles_orientation([
+    ///         Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, 1.2),
+    ///         Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, -0.3),
+    ///     ])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -625,8 +650,9 @@ impl Frame<'_> {
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
-    ///     .append_frame(1000)?
-    ///     .particles_type_id([0, 0, 0, 1, 1, 1])?;
+    ///     .append_frame(1_000)?
+    ///     .particles_type_id([0, 0, 0, 1, 1, 1])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -668,8 +694,9 @@ impl Frame<'_> {
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
-    ///     .append_frame(1000)?
-    ///     .particles_types(["A", "B", "linker"])?;
+    ///     .append_frame(1_000)?
+    ///     .particles_types(["A", "B", "linker"])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -720,8 +747,9 @@ impl Frame<'_> {
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
-    ///     .append_frame(1000)?
-    ///     .particles_diameter([1.0, 0.5, 0.25, 2.0])?;
+    ///     .append_frame(1_000)?
+    ///     .particles_diameter([1.0, 0.5, 0.25, 2.0])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -768,8 +796,9 @@ impl Frame<'_> {
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
-    ///     .append_frame(1000)?
-    ///     .log_scalar("height", 10.0_f64)?;
+    ///     .append_frame(1_000)?
+    ///     .log_scalar("height", 10.0_f64)?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -808,8 +837,9 @@ impl Frame<'_> {
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
-    ///     .append_frame(1000)?
-    ///     .log_scalars("energy", [1.0_f64, 2.0, 3.0])?;
+    ///     .append_frame(1_000)?
+    ///     .log_scalars("energy", [1.0_f64, 2.0, 3.0])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -849,8 +879,9 @@ impl Frame<'_> {
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
-    ///     .append_frame(1000)?
-    ///     .log_arrays("points", [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])?;
+    ///     .append_frame(1_000)?
+    ///     .log_arrays("points", [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -877,6 +908,44 @@ impl Frame<'_> {
 
         Ok(self)
     }
+
+    /// End the frame.
+    ///
+    /// Once the frame is complete, no more data chunks may be added to it. The next call
+    /// to [`HoomdGsdFile::append_frame`] will add a new frame to the file.
+    ///
+    /// Calling `end` is *optional*. The frame will automatically end when [`Frame`] is
+    /// dropped. `Drop` ignores any errors. Call `end` explicitly to check for
+    /// errors.
+    ///
+    /// # Errors
+    ///
+    /// Returns an I/O error when there is a problem writing to the file.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::hoomd::HoomdGsdFile;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// // let path = "file.gsd";
+    /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
+    /// hoomd_gsd_file.append_frame(1_000)?.end()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn end(mut self) -> Result<(), AppendError> {
+        self.hoomd_gsd_file.gsd_file.end_frame()?;
+        if self.hoomd_gsd_file.last_auto_sync.elapsed() >= self.hoomd_gsd_file.auto_sync_delay {
+            self.hoomd_gsd_file.sync_all()?;
+        }
+
+        self.ended = true;
+
+        Ok(())
+    }
 }
 
 /// End the frame.
@@ -886,11 +955,31 @@ impl Frame<'_> {
 ///
 /// `drop` checks the amount of time since the last call to [`HoomdGsdFile::sync_all`].
 /// If it has been more than the auto sync delay, `drop` calls `sync_all`.
+/// `drop` ignores all errors. Call [`Frame::end`] to end the frame and
+/// check on potential I/O errors.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_gsd::hoomd::HoomdGsdFile;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # use tempfile::tempdir;
+/// # let tmp_dir = tempdir().expect("temp dir should be created");
+/// # let path = tmp_dir.path().join("test.gsd");
+/// // let path = "file.gsd";
+/// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
+/// hoomd_gsd_file.append_frame(1_000)?;
+/// // ... some I/O errors might be ignored during the implicit drop.
+/// # Ok(())
+/// # }
+/// ```
 impl Drop for Frame<'_> {
     fn drop(&mut self) {
-        let _ = self.hoomd_gsd_file.gsd_file.end_frame();
-        if self.hoomd_gsd_file.last_auto_sync.elapsed() >= self.hoomd_gsd_file.auto_sync_delay {
-            let _ = self.hoomd_gsd_file.sync_all();
+        if !self.ended {
+            let _ = self.hoomd_gsd_file.gsd_file.end_frame();
+            if self.hoomd_gsd_file.last_auto_sync.elapsed() >= self.hoomd_gsd_file.auto_sync_delay {
+                let _ = self.hoomd_gsd_file.sync_all();
+            }
         }
     }
 }
@@ -957,6 +1046,7 @@ mod test {
 
         let hoomd_gsd_file = HoomdGsdFile::open(path.clone())?;
         check!(*hoomd_gsd_file.gsd_file.mode() == Mode::Write);
+        // TODO: test that data chunks can be appended to an open file
         drop(hoomd_gsd_file);
 
         Ok(())
@@ -1112,7 +1202,7 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        check!(let Err(AppendError::InconsistentLength(_)) = hoomd_gsd_file
+        check!(let Err(AppendError::InconsistentLength(_, _)) = hoomd_gsd_file
             .append_frame(1)?
             .particles_type_id([0, 1, 1, 2])?
             .particles_orientation([Versor::default(); 3]));

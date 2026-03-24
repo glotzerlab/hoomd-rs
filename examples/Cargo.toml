@@ -4,6 +4,7 @@ categories.workspace = true
 description = "Collect examples that demonstrate how to use hoomd-rs."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true

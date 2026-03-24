@@ -4,6 +4,7 @@ categories.workspace = true
 description = "Build the WASM examples and put them in doc/src/..."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
