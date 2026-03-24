@@ -11,7 +11,7 @@ use crate::{
     },
     property::Position,
 };
-use hoomd_geometry::{IsPointInside, shape::Hypercuboid};
+use hoomd_geometry::{IsPointInside, shape::Triclinic};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
@@ -52,7 +52,7 @@ where
     }
 
     #[inline]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         todo!();
     }
 }

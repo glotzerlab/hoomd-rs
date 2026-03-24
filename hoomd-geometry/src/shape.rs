@@ -23,6 +23,9 @@ pub use cuboid::{Cuboid, Hypercuboid, Rectangle};
 mod parallelepiped;
 pub use parallelepiped::{Hyperparallelepiped, Parallelepiped, Parallelogram};
 
+mod triclinic;
+pub use triclinic::Triclinic;
+
 mod cylinder;
 pub use cylinder::Cylinder;
 
