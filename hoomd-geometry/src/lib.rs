@@ -257,9 +257,6 @@ pub trait IntersectsAtGlobal<S, P, R> {
 /// # }
 /// ```
 pub trait IntersectsAt<S, V, R>
-where
-    V: Vector,
-    R: Rotation + Rotate<V>,
 {
     /// Test whether the set of points in one shape intersects with the set of another
     /// (in the local frame).
