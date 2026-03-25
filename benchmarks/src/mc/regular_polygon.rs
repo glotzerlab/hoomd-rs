@@ -4,7 +4,10 @@
 //! Benchmark hard polygon Monte Carlo simulations.
 
 use std::{
-    f64::consts::PI, fmt, fs::{self, File}, io::{self, Write}
+    f64::consts::PI,
+    fmt,
+    fs::{self, File},
+    io::{self, Write},
 };
 
 use anyhow::Context;
@@ -17,9 +20,7 @@ use hoomd_interaction::{
     pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
     univariate::OverlapPenalty,
 };
-use hoomd_mc::{
-    Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial,
-};
+use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -291,7 +292,6 @@ where
             "Rotation move size: {}",
             simulation.rotate_sweep.0.maximum_rotation()
         );
-
 
         simulation.translate_count = Count::default();
         simulation.rotate_count = Count::default();
