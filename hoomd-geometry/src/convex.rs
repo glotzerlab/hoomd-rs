@@ -88,7 +88,7 @@ impl<A, B, R> IntersectsAt<Convex<A>, Cartesian<2>, R> for Convex<B>
 where
     A: SupportMapping<Cartesian<2>> + BoundingSphereRadius,
     B: SupportMapping<Cartesian<2>> + BoundingSphereRadius,
-    R: Rotate<Cartesian<2>> + Rotation,
+    R: Rotate<Cartesian<2>> + Rotation, // TODO: Is this needed?
     RotationMatrix<2>: From<R>,
 {
     #[inline]

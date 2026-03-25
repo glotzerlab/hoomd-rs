@@ -9,6 +9,8 @@ use crate::{BoundingSphereRadius, Error, SupportMapping};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 
+mod convex_polygon;
+
 /// A faceted solid defined by the convex hull of its vertices.
 ///
 /// # Examples
