@@ -67,6 +67,7 @@ fn predicate_orient2d(edge: (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) ->
 /// # Errors
 ///
 /// `[Error::PolytopeNotConvex]` when the provided vertices do not form a convex set.
+#[inline]
 pub fn hull_2d_grahamscan(vertices: &mut [Cartesian<2>]) -> Option<Vec<Cartesian<2>>> {
     // vertices.sort_by(|a, b| {});
     let (anchor_idx, anchor) = find_lowest_leftmost(&vertices[..]);
