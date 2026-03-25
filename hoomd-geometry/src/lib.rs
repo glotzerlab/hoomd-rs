@@ -444,6 +444,8 @@ pub trait MapPoint<P> {
     /// `self`.
     fn map_point(&self, point: P, other: &Self) -> Result<P, Error>;
 }
+
+/// TODO
 mod hull;
 pub use hull::hull_2d_grahamscan;
 
