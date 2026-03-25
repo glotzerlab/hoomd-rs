@@ -24,7 +24,7 @@ fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> (usize, Cartesian<2>) {
 
 /// Get the key for a lexographical sort of points with respect to an anchor.
 #[inline]
-fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
+pub fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
     let diff = p - anchor;
     (f64::atan2(diff[1], diff[0]), diff.dot(&diff))
 }
@@ -82,7 +82,7 @@ pub fn hull_2d_grahamscan(vertices: &mut [Cartesian<2>]) -> Option<Vec<Cartesian
         a0.total_cmp(&b0).then(a1.total_cmp(&b1))
     });
 
-    // TODO: no allocation
+    // TODO: no allocation - swap remove? Ideally move unwanted to end and then truncate
     let mut angle_order = vertices[1..].iter().copied().collect::<VecDeque<_>>();
 
     // The anchor and the first vertex in the sorted list are always on the hull

@@ -40,3 +40,7 @@ rstest.workspace = true
 [[bench]]
 name = "overlaps"
 harness = false
+
+[[bench]]
+name = "hull"
+harness = false
