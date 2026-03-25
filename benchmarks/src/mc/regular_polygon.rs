@@ -71,7 +71,7 @@ pub struct RegularPolygon<X> {
     >,
 
     /// Hard polygon interaction.
-    hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolygon>>>,
+    hamiltonian: PairwiseCutoff<HardShape<ConvexPolygon>>,
 
     /// Temperature set point.
     macrostate: Isothermal,
@@ -215,7 +215,7 @@ where
         let maximum_rotation = 2.0 * PI / 6.0;
 
         let hexagon = ConvexPolygon::regular(6);
-        let hamiltonian = PairwiseCutoff(HardShape(Convex(hexagon.clone())));
+        let hamiltonian = PairwiseCutoff(HardShape(hexagon.clone()));
 
         let translate = Translate::with_maximum_distance(maximum_translation.try_into()?);
         let translate_sweep = Sweep(translate.clone());
@@ -231,7 +231,7 @@ where
 
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
-                Convex(hexagon),
+                hexagon,
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
