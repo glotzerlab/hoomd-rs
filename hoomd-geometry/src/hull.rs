@@ -7,10 +7,16 @@ struct _SortKey {
 }
 
 /// Find the lowest, leftmost point from a slice of Cartesian vectors.
-fn _find_lowest_leftmost(vertices: &[Cartesian<2>]) -> (i32, Cartesian<2>) {
+fn _find_lowest_leftmost(vertices: &[Cartesian<2>]) -> (usize, Cartesian<2>) {
     vertices.iter().enumerate().fold(
-        (-1, Cartesian::from([f64::INFINITY, f64::INFINITY])),
-        |(i, v), lowest_leftmost| (i, v),
+        (usize::MAX, Cartesian::from([f64::INFINITY, f64::INFINITY])),
+        |(i, p), (min_i, &min_p)| {
+            if p[1] < min_p[1] || (p[1] == min_p[0] && p[0] < min_p[0]) {
+                (i, p)
+            } else {
+                (min_i, min_p)
+            }
+        },
     )
 }
 
