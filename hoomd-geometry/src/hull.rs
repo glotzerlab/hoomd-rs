@@ -22,15 +22,7 @@ fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> (usize, Cartesian<2>) {
     )
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
-/// Helper struct for ordering points with respect to an anchor.
-struct SortKey {
-    /// The angle a point makes with another.
-    angle: f64,
-    /// The distance of the point from the reference.
-    distance: f64,
-}
-
+/// Get the key for a lexographical sort of points with respect to an anchor.
 #[inline]
 fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
     let diff = p - anchor;
