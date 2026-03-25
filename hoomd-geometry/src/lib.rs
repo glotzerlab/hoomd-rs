@@ -441,6 +441,8 @@ pub trait MapPoint<P> {
     /// `self`.
     fn map_point(&self, point: P, other: &Self) -> Result<P, Error>;
 }
+mod hull;
+pub(crate) use hull::hull_2d_grahamscan;
 
 /// Enumerate possible sources of error in fallible geometry methods.
 #[non_exhaustive]
@@ -449,6 +451,10 @@ pub enum Error {
     /// Polytopes require at least one vertex.
     #[error("a ConvexPolytope must have at least one vertex")]
     DegeneratePolytope,
+
+    /// Convex Polytopes must be convex
+    #[error("a ConvexPolytope must be convex")]
+    PolytopeNotConvex,
 
     /// The point is outside the shape.
     #[error("cannot map a point that is outside the shape")]
