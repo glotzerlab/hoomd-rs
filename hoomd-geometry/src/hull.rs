@@ -1,12 +1,11 @@
-use crate::Error;
-use hoomd_vector::Cartesian;
+use std::collections::VecDeque;
 
-struct _SortKey {
-    angle: f64,
-    distance: f64,
-}
+use crate::Error;
+use hoomd_vector::{Cartesian, InnerProduct};
+use itertools::Itertools;
 
 /// Find the lowest, leftmost point from a slice of Cartesian vectors.
+#[inline]
 fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> (usize, Cartesian<2>) {
     vertices.iter().enumerate().fold(
         (usize::MAX, Cartesian::from([f64::INFINITY, f64::INFINITY])),
@@ -20,14 +19,52 @@ fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> (usize, Cartesian<2>) {
     )
 }
 
+#[derive(Debug, PartialEq, PartialOrd)]
+/// Helper struct for ordering points with respect to an anchor.
+struct SortKey {
+    /// The angle a point makes with another.
+    angle: f64,
+    /// The distance of the point from the reference.
+    distance: f64,
+}
+
+#[inline]
+fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
+    let diff = p - anchor;
+    (f64::atan2(diff[1], diff[0]), diff.dot(&diff))
+}
+
 /// Compute the convex hull of points in two dimensions using a Graham scan.
 /// # Errors
 ///
 /// `[Error::PolytopeNotConvex]` when the provided vertices do not form a convex set.
-pub fn hull_2d_grahamscan<I>(vertices: Vec<Cartesian<2>>) -> Result<bool, Error> {
+pub fn hull_2d_grahamscan<I>(vertices: &mut [Cartesian<2>]) -> Option<bool> {
     // vertices.sort_by(|a, b| {});
     let (anchor_idx, anchor) = find_lowest_leftmost(&vertices[..]);
-    Ok(true)
+
+    // Move the anchor to the front of the list of vertices, as it is always in the hull
+    vertices.swap(0, anchor_idx);
+    let anchor = vertices[0];
+
+    // Sort the remainder of the slice in-place
+    vertices[1..].sort_unstable_by(|&a, &b| {
+        let (a0, a1) = get_graham_key(a, anchor);
+        let (b0, b1) = get_graham_key(b, anchor);
+        a0.total_cmp(&b0).then(a1.total_cmp(&b1))
+    });
+
+    // TODO: no allocation
+    let mut angle_order = vertices[1..].iter().copied().collect::<VecDeque<_>>();
+
+    // The anchor and the first vertex in the sorted list are always on the hull
+    let hull_vertices= vec![anchor, angle_order.pop_front()?];
+
+    while !angle_order.is_empty() {
+        let c = angle_order.pop_front()
+        
+    }
+    Some(true)
+
 }
 
 #[cfg(test)]
