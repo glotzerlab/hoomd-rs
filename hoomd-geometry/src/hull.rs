@@ -33,6 +33,40 @@ fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
     let diff = p - anchor;
     (f64::atan2(diff[1], diff[0]), diff.dot(&diff))
 }
+/// Determines whether a point `test` is to the left, right, or colinear with `edge`.
+///
+/// # Warning
+///
+/// This predicate is not robust: points very close to the line may be misclassified
+/// due to floating-point precision limits. For all practical inputs, this will not
+/// result in issues.
+///
+/// # Note
+///
+/// This formulation (often referred to as the shoelace formula) guarantees
+/// **cyclic invariance**, or the property that the orientation sign is identical
+/// for any ordering of the three points `(e0, e1, t)`, `(e1, t, e0)`, and
+/// `(t, e0, e1)`. As a result, the result is antisymmetric about the edge `e`
+/// such that `p == -p'` for any `p'` reflected over `e`.
+///
+/// These properties do *not* prevent misclassification of points near the line—they
+/// only ensure consistent behavior for related inputs.
+///
+/// **Source:** [Robust Arithmetic in Computational Geometry](https://observablehq.com/@mourner/non-robust-arithmetic-as-art)
+fn predicate_orient2d(edge: (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) -> i64 {
+    let (p, q) = edge;
+    let orientation = (p[0] * q[1] - p[1] * q[0])
+        + (q[0] * test[1] - q[1] * test[0])
+        + (test[0] * p[1] - test[1] * p[0]);
+    if orientation > 0.0 {
+        // clockwise
+        return 1;
+    } else if orientation < 0.0 {
+        // counterclockwise
+        return -1;
+    }
+    0
+}
 
 /// Compute the convex hull of points in two dimensions using a Graham scan.
 /// # Errors
@@ -57,14 +91,22 @@ pub fn hull_2d_grahamscan<I>(vertices: &mut [Cartesian<2>]) -> Option<bool> {
     let mut angle_order = vertices[1..].iter().copied().collect::<VecDeque<_>>();
 
     // The anchor and the first vertex in the sorted list are always on the hull
-    let hull_vertices= vec![anchor, angle_order.pop_front()?];
-
+    let mut hull_vertices = vec![anchor, angle_order.pop_front()?];
     while !angle_order.is_empty() {
-        let c = angle_order.pop_front()
-        
+        let c = angle_order.pop_front()?;
+        while hull_vertices.len() >= 2 {
+            // Backtrack while hull_indices[-1] is inside hull
+            let &[p, n] = hull_vertices.last_chunk::<2>()?;
+
+            if predicate_orient2d((p, n), c) <= 0 {
+                hull_vertices.pop(); // point n is inside the hull, so we remove it
+            } else {
+                break;
+            }
+        }
+        hull_vertices.push(c);
     }
     Some(true)
-
 }
 
 #[cfg(test)]
