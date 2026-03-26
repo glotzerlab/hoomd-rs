@@ -38,7 +38,39 @@ where
     RotationMatrix<2>: From<R>,
     R: Copy,
 {
-    /// TODO: Example
+    /// Test convex polygon intersections with separating planes.
+    ///
+    /// When the number of vertices is small, separating planes is significantly
+    /// faster than the Xenocollide algorithm implemented for the `Convex<ConvexPolygon>`
+    /// type.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_geometry::{IntersectsAt, shape::ConvexPolygon};
+    /// use hoomd_vector::{Angle, Cartesian};
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let rectangle = ConvexPolygon::with_vertices([
+    ///     [-2.0, -1.0].into(),
+    ///     [2.0, -1.0].into(),
+    ///     [2.0, 1.0].into(),
+    ///     [-2.0, 1.0].into(),
+    /// ])?;
+    ///
+    /// assert!(!rectangle.intersects_at(
+    ///     &rectangle,
+    ///     &[0.0, 2.1].into(),
+    ///     &Angle::default()
+    /// ));
+    /// assert!(rectangle.intersects_at(
+    ///     &rectangle,
+    ///     &[0.0, 2.1].into(),
+    ///     &Angle::from(PI / 2.0)
+    /// ));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn intersects_at(&self, other: &Self, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
         assert!(

@@ -157,7 +157,8 @@ impl<const N: usize> ConvexPolytope<N> {
     /// ```
     /// # Errors
     ///
-    /// `[Error::DegeneratePolytope]` when no vertices are provided.
+    /// [`Error::DegeneratePolytope`](variant@crate::Error::DegeneratePolytope)
+    /// when no vertices are provided.
     #[inline]
     pub fn with_vertices<I>(vertices: I) -> Result<ConvexPolytope<N>, Error>
     where
