@@ -42,6 +42,11 @@ where
     /// TODO: Example
     #[inline]
     fn intersects_at(&self, other: &Self, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
+        assert!(
+            self.vertices.len() > 2 && other.vertices.len() > 2,
+            "A convex polygon must have at least 3 vertices."
+        );
+
         let o_j = RotationMatrix::from(*o_ij);
         if b_edge_separates(self, other, v_ij, &o_j) {
             return false;
@@ -58,13 +63,13 @@ where
 }
 
 /// Determine if any edge of `b` separates the points in `a` and `b`.
+#[inline]
 fn b_edge_separates(
     a: &ConvexPolygon,
     b: &ConvexPolygon,
     v_ab: &Cartesian<2>,
     o_b: &RotationMatrix<2>,
 ) -> bool {
-    // SAFETY: Do not call this method if there are zero or one vertices (TODO)
     let mut previous = b.vertices.len() - 1;
     for current in 0..b.vertices.len() {
         let p = b.vertices[current];
@@ -87,6 +92,7 @@ fn b_edge_separates(
 }
 
 /// Determine if all of a's vertices are outside the given plane.
+#[inline]
 fn is_separating(a: &ConvexPolygon, p: &Cartesian<2>, n: &Cartesian<2>) -> bool {
     // check if n dot (v[i]-p) < 0 for every vertex in the polygon
     // distribute: (n dot v[i] - n dot p) < 0
