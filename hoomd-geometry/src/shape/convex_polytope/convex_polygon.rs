@@ -3,8 +3,8 @@
 
 //! Implement separating planes overlap check for `ConvexPolygon`.
 
-use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal};
 use super::ConvexPolygon;
+use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal};
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
 
 impl<R> IntersectsAtGlobal<Self, Cartesian<2>, R> for ConvexPolygon
@@ -42,12 +42,11 @@ where
     /// TODO: Example
     #[inline]
     fn intersects_at(&self, other: &Self, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
-
         let o_j = RotationMatrix::from(*o_ij);
         if b_edge_separates(self, other, v_ij, &o_j) {
             return false;
         }
-        
+
         let o_j_inverted = o_j.inverted();
         let v_ji = o_j_inverted.rotate(&-*v_ij);
         if b_edge_separates(other, self, &v_ji, &o_j_inverted) {
@@ -59,39 +58,36 @@ where
 }
 
 /// Determine if any edge of `b` separates the points in `a` and `b`.
-fn b_edge_separates(a: &ConvexPolygon, b: &ConvexPolygon,
-                    v_ab: &Cartesian<2>,
-                    o_b: &RotationMatrix<2>) -> bool
-    {
+fn b_edge_separates(
+    a: &ConvexPolygon,
+    b: &ConvexPolygon,
+    v_ab: &Cartesian<2>,
+    o_b: &RotationMatrix<2>,
+) -> bool {
     // SAFETY: Do not call this method if there are zero or one vertices (TODO)
     let mut previous = b.vertices.len() - 1;
-    for current in 0..b.vertices.len()
-        {
+    for current in 0..b.vertices.len() {
         let p = b.vertices[current];
         let edge = p - b.vertices[previous];
 
-        // SAFETY: Vertices must be counter-clockwise ordered.
+        // SAFETY: Vertices must be counter-clockwise ordered (TODO).
         let n = -edge.perpendicular();
 
         let p_in_frame_a = o_b.rotate(&p) + *v_ab;
         let n_in_frame_a = o_b.rotate(&n);
 
-        // is this a separating plane?
-        if is_separating(a, &p_in_frame_a, &n_in_frame_a)
-            {
+        if is_separating(a, &p_in_frame_a, &n_in_frame_a) {
             return true;
-            }
-
-        // save previous vertex for next iteration
-        previous = current;
         }
 
-    false
+        previous = current;
     }
+
+    false
+}
 
 /// Determine if all of a's vertices are outside the given plane.
 fn is_separating(a: &ConvexPolygon, p: &Cartesian<2>, n: &Cartesian<2>) -> bool {
-
     // check if n dot (v[i]-p) < 0 for every vertex in the polygon
     // distribute: (n dot v[i] - n dot p) < 0
     let n_dot_p = n.dot(p);
@@ -99,8 +95,200 @@ fn is_separating(a: &ConvexPolygon, p: &Cartesian<2>, n: &Cartesian<2>) -> bool 
     for v in &a.vertices {
         if n.dot(v) - n_dot_p <= 0.0 {
             return false;
-        } 
+        }
     }
-    
+
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::IntersectsAt;
+    use hoomd_vector::{Angle, Cartesian, Rotate, Rotation, Versor};
+
+    use rstest::*;
+
+    use std::f64::consts::PI;
+
+    // ConvexPolygon tests from hoomd-blue's test_convex_polygon.cc
+
+    #[fixture]
+    fn square() -> ConvexPolygon {
+        ConvexPolygon::with_vertices([
+            [-0.5, -0.5].into(),
+            [0.5, -0.5].into(),
+            [0.5, 0.5].into(),
+            [-0.5, 0.5].into(),
+        ])
+        .expect("hard-coded vertices form a valid polygon")
+    }
+
+    #[fixture]
+    fn triangle() -> ConvexPolygon {
+        ConvexPolygon::with_vertices([[-0.5, -0.5].into(), [0.5, -0.5].into(), [0.5, 0.5].into()])
+            .expect("hard-coded vertices form a valid polygon")
+    }
+
+    #[rstest]
+    fn square_no_rot(square: ConvexPolygon) {
+        let a = Angle::identity();
+        assert!(!square.intersects_at(&square, &[10.0, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[-10.0, 0.0].into(), &a));
+
+        assert!(!square.intersects_at(&square, &[1.1, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[-1.1, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[0.0, 1.1].into(), &a));
+        assert!(!square.intersects_at(&square, &[0.0, -1.1].into(), &a));
+
+        assert!(square.intersects_at(&square, &[0.9, 0.2].into(), &a));
+        assert!(square.intersects_at(&square, &[-0.9, 0.2].into(), &a));
+        assert!(square.intersects_at(&square, &[-0.2, 0.9].into(), &a));
+        assert!(square.intersects_at(&square, &[-0.2, -0.9].into(), &a));
+
+        assert!(square.intersects_at(&square, &[1.0, 0.2].into(), &a));
+    }
+
+    #[rstest]
+    fn square_rot(square: ConvexPolygon) {
+        let a = Angle::from(PI / 4.0);
+
+        assert!(!square.intersects_at(&square, &[10.0, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[-10.0, 0.0].into(), &a));
+
+        assert!(!square.intersects_at(&square, &[1.3, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[-1.3, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[0.0, 1.3].into(), &a));
+        assert!(!square.intersects_at(&square, &[0.0, -1.3].into(), &a));
+
+        assert!(!square.intersects_at(&square, &[1.3, 0.2].into(), &a));
+        assert!(!square.intersects_at(&square, &[-1.3, 0.2].into(), &a));
+        assert!(!square.intersects_at(&square, &[-0.2, 1.3].into(), &a));
+        assert!(!square.intersects_at(&square, &[-0.2, -1.3].into(), &a));
+
+        assert!(square.intersects_at(&square, &[1.2, 0.2].into(), &a));
+        assert!(square.intersects_at(&square, &[-1.2, 0.2].into(), &a));
+        assert!(square.intersects_at(&square, &[-0.2, 1.2].into(), &a));
+        assert!(square.intersects_at(&square, &[-0.2, -1.2].into(), &a));
+    }
+
+    fn test_overlap<A, B, R, const N: usize>(
+        r_ab: Cartesian<N>,
+        a: &A,
+        b: &B,
+        o_a: R,
+        o_b: &R,
+    ) -> bool
+    where
+        R: Rotation + Rotate<Cartesian<N>>,
+        A: IntersectsAt<B, Cartesian<N>, R>,
+    {
+        let r_a_inverted = o_a.inverted();
+        let v_ij = r_a_inverted.rotate(&r_ab);
+        let o_ij = o_b.combine(&r_a_inverted);
+        a.intersects_at(b, &v_ij, &o_ij)
+    }
+
+    fn assert_symmetric_overlap<A, B, R, const N: usize>(
+        r_ab: Cartesian<N>,
+        a: &A,
+        b: &B,
+        r_a: R,
+        r_b: R,
+        expected: bool,
+    ) where
+        R: Rotation + Rotate<Cartesian<N>>,
+        A: IntersectsAt<B, Cartesian<N>, R>,
+        B: IntersectsAt<A, Cartesian<N>, R>,
+    {
+        assert_eq!(test_overlap(r_ab, a, b, r_a, &r_b), expected);
+        assert_eq!(test_overlap(-r_ab, b, a, r_b, &r_a), expected);
+    }
+
+    #[rstest]
+    fn square_triangle(square: ConvexPolygon, triangle: ConvexPolygon) {
+        let r_square = Angle::from(-PI / 4.0);
+        let r_triangle = Angle::from(PI);
+
+        assert_symmetric_overlap(
+            [10.0, 0.0].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle,
+            false,
+        );
+
+        assert_symmetric_overlap(
+            [1.3, 0.0].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle,
+            false,
+        );
+
+        assert_symmetric_overlap(
+            [-1.3, 0.0].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle,
+            false,
+        );
+
+        assert_symmetric_overlap(
+            [0.0, 1.3].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle,
+            false,
+        );
+
+        assert_symmetric_overlap(
+            [0.0, -1.3].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle,
+            false,
+        );
+
+        assert_symmetric_overlap(
+            [1.2, 0.2].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle,
+            true,
+        );
+
+        assert_symmetric_overlap(
+            [-0.7, -0.2].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle,
+            true,
+        );
+
+        assert_symmetric_overlap(
+            [0.4, 1.1].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle,
+            true,
+        );
+
+        assert_symmetric_overlap(
+            [-0.2, -1.2].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle,
+            true,
+        );
+    }
 }

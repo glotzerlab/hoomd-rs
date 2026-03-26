@@ -255,8 +255,7 @@ pub trait IntersectsAtGlobal<S, P, R> {
 /// # Ok(())
 /// # }
 /// ```
-pub trait IntersectsAt<S, V, R>
-{
+pub trait IntersectsAt<S, V, R> {
     /// Test whether the set of points in one shape intersects with the set of another
     /// (in the local frame).
     ///
