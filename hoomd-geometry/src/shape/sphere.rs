@@ -236,7 +236,7 @@ impl<const N: usize> Volume for Hypersphere<N> {
 
 impl<const N: usize, R> IntersectsAtGlobal<Hypersphere<N>, Cartesian<N>, R> for Hypersphere<N>
 where
-    R: Rotation
+    R: Rotation,
 {
     #[inline]
     fn intersects_at_global(
