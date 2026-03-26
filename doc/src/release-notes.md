@@ -6,12 +6,12 @@
 
 * Implement `IntersectsAt` for `ConvexPolygon` intersection tests.
   The separating planes method is faster for small *n* than the Xenocollide
-  algorithm implemented for `Convex<ConvexPolygon>`.
+  algorithm implemented for `Convex<ConvexPolygon>` (#260).
 
 *Changed:*
 
-* Remove unnecessary trait bounds on `IntersectsAt` implementation.
-* Adjust benchmark parameters to make accurate comparisons with HOOMD-blue.
+* Remove unnecessary trait bounds on `IntersectsAt` implementation (#260).
+* Adjust benchmark parameters to make accurate comparisons with HOOMD-blue (#260).
 
 *Deprecated:*
 
