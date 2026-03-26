@@ -228,7 +228,7 @@ impl<const N: usize> Volume for Hyperellipsoid<N> {
 
 impl<R> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R> for Hyperellipsoid<2>
 where
-    R: Rotation + Rotate<Cartesian<2>>,
+    R: Copy,
     Angle: From<R>,
     RotationMatrix<2>: From<R>,
 {
