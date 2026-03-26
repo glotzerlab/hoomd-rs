@@ -101,11 +101,7 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
 
 /// Detect collision between two convex 2D objects via Minkowski Portal Refinement.
 #[inline]
-pub fn collide2d<
-    R: Copy,
-    A: SupportMapping<Cartesian<2>>,
-    B: SupportMapping<Cartesian<2>>,
->(
+pub fn collide2d<R: Copy, A: SupportMapping<Cartesian<2>>, B: SupportMapping<Cartesian<2>>>(
     sa: &A,
     sb: &B,
     v_ij: &Cartesian<2>,
