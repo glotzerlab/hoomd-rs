@@ -38,11 +38,11 @@ where
     RotationMatrix<2>: From<R>,
     R: Copy,
 {
-    /// Test convex polygon intersections with separating planes.
+    /// Test convex polygon intersections using the separating planes method.
     ///
     /// When the number of vertices is small, separating planes is significantly
     /// faster than the Xenocollide algorithm implemented for the `Convex<ConvexPolygon>`
-    /// type.
+    /// type, even though separating planes is $` O(n^2) `$.
     ///
     /// # Example
     /// ```
