@@ -173,8 +173,7 @@ impl<const N: usize> ConvexPolytope<N> {
             return Err(Error::DegeneratePolytope);
         }
         if N == 2 {
-            //
-            hull_2d_grahamscan(&mut vertices[..]);
+            hull_2d_grahamscan(&mut vertices)?;
         }
 
         Ok(ConvexPolytope {

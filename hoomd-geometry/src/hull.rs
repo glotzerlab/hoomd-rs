@@ -169,7 +169,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
         // Check all corners are in hull
         let corners = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
@@ -193,7 +193,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // Hull should have 4 corners (interior edge points excluded)
         assert_eq!(vertices.len(), 4);
         let corners = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
@@ -222,7 +222,7 @@ mod tests {
             pts.push([0.0, i as f64 / 19.0]);
         }
         let mut vertices: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
     }
 
@@ -235,7 +235,7 @@ mod tests {
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // All points on circle should be in hull
         assert_eq!(vertices.len(), n);
     }
@@ -251,7 +251,7 @@ mod tests {
             .collect();
         // Add interior points
         vertices.extend([[0.0, 0.0], [0.3, 0.3], [-0.2, 0.1], [0.1, -0.4]].map(Cartesian::from));
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // Only boundary points should be in hull
         assert_eq!(vertices.len(), n_boundary);
     }
@@ -265,7 +265,7 @@ mod tests {
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // All points on partial arc should be in hull
         assert_eq!(vertices.len(), 10);
     }
@@ -277,7 +277,7 @@ mod tests {
             .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
             .collect();
         let mut vertices = original.clone();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // Hull should have at least 3 points
         assert!(vertices.len() >= 3);
         // All hull points should be in original set
@@ -297,7 +297,7 @@ mod tests {
                 ])
             })
             .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         assert!(vertices.len() >= 3);
     }
 
@@ -333,7 +333,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         assert!(vertices.len() >= 3);
     }
 
@@ -352,7 +352,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // Should handle duplicates gracefully
         assert!(vertices.len() >= 3);
     }
@@ -369,7 +369,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // Should pick leftmost of bottom points and include apex
         assert!(vertices.len() >= 3);
     }
@@ -385,7 +385,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // [0, 0] should be the anchor point
         assert!(hull_contains(&vertices, [0.0, 0.0], 1e-10));
     }
@@ -395,7 +395,7 @@ mod tests {
         let mut pts: Vec<[f64; 2]> = (0..10).map(|i| [i as f64 * 2.0 / 9.0, 0.0]).collect();
         pts.push([1.0, 1.0]); // Apex
         let mut vertices: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // Leftmost [0,0] and rightmost [2,0] should be in hull with apex
         assert!(vertices.len() >= 3);
     }
@@ -413,7 +413,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // Should only keep furthest point in each direction
         assert!(vertices.len() >= 3);
     }
@@ -436,7 +436,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // Should keep only outermost points
         assert!(vertices.len() >= 3);
     }
@@ -451,7 +451,7 @@ mod tests {
                 vertices.push(Cartesian::from([r * angle.cos(), r * angle.sin()]));
             }
         }
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         // Outer points should form the hull
         assert!(vertices.len() >= 8); // At least 8 outer points
     }
@@ -462,7 +462,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 3);
     }
 
@@ -473,7 +473,7 @@ mod tests {
                 .into_iter()
                 .map(Cartesian::from)
                 .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
     }
 
@@ -483,7 +483,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        assert!(hull_2d_grahamscan(&mut vertices));
+        hull_2d_grahamscan(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
     }
 }
