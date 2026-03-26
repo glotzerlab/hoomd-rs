@@ -90,10 +90,12 @@ pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> bool {
         return true;
     }
 
-    // Now vertices[..2] is an edge on the hull
+    // Now vertices[..2] is an edge on the hull. Initialize counters for the hull length
+    // and number of vertices on the hull
     let mut n_vertices_on_hull = 2;
     let mut next_candidate = 2;
 
+    // Repeat until all interior points are gone
     while next_candidate < vertices.len() {
         let c = vertices[next_candidate];
         while n_vertices_on_hull >= 2 {
