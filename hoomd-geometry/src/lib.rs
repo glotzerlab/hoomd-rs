@@ -454,7 +454,7 @@ pub use hull::hull_2d_grahamscan;
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
     /// Polytopes require at least one vertex.
-    #[error("a ConvexPolytope must have at least one vertex")]
+    #[error("a ConvexPolytope must have at least (N+1) vertices")]
     DegeneratePolytope,
 
     /// Convex Polytopes must be convex

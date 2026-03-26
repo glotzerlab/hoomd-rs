@@ -1,6 +1,7 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use crate::Error;
 use hoomd_vector::{Cartesian, InnerProduct};
 
 /// Find the lowest, leftmost point from a slice of Cartesian vectors.
@@ -68,9 +69,10 @@ fn predicate_orient2d(edge: (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) ->
 ///
 /// `true` if the hull was computed, `false` if the input was empty.
 #[inline]
-pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> bool {
-    if vertices.is_empty() {
-        return false;
+pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> Result<(), Error> {
+    // No need to try and triangulate if the hull is degenerate
+    if vertices.len() < 3 {
+        return Err(Error::DegeneratePolytope);
     }
 
     let (anchor_idx, _) = find_lowest_leftmost(vertices);
@@ -85,11 +87,6 @@ pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> bool {
         let (b0, b1) = get_graham_key(b, anchor);
         a0.total_cmp(&b0).then(a1.total_cmp(&b1))
     });
-
-    // No need to try and triangulate if the hull is degenerate
-    if vertices.len() < 3 {
-        return true;
-    }
 
     // Now vertices[..2] is an edge on the hull. Initialize counters for the hull length
     // and number of vertices on the hull
@@ -117,7 +114,11 @@ pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> bool {
     }
 
     vertices.truncate(n_vertices_on_hull);
-    true
+    if vertices.len() >= 3 {
+        Ok(())
+    } else {
+        Err(Error::DegeneratePolytope)
+    }
 }
 
 #[cfg(test)]
