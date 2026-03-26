@@ -61,7 +61,7 @@ mod random {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_random_points(N, &mut rng))
-            .bench_local_values(|pts| black_box(hull_2d_grahamscan(pts)));
+            .bench_local_values(|mut pts| black_box(hull_2d_grahamscan(&mut pts)));
     }
 }
 
@@ -74,7 +74,7 @@ mod boundaries {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_circle_points(N))
-            .bench_local_values(|pts| black_box(hull_2d_grahamscan(pts)));
+            .bench_local_values(|mut pts| black_box(hull_2d_grahamscan(&mut pts)));
     }
 
     #[divan::bench(consts = NUM_POINTS)]
@@ -82,6 +82,6 @@ mod boundaries {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_square_boundary(N / 4 + 1))
-            .bench_local_values(|pts| black_box(hull_2d_grahamscan(pts)));
+            .bench_local_values(|mut pts| black_box(hull_2d_grahamscan(&mut pts)));
     }
 }
