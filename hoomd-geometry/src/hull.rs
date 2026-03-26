@@ -86,6 +86,7 @@ pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> bool {
         a0.total_cmp(&b0).then(a1.total_cmp(&b1))
     });
 
+    // No need to try and triangulate if the hull is degenerate
     if vertices.len() < 3 {
         return true;
     }
@@ -109,7 +110,7 @@ pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> bool {
                 break;
             }
         }
-        // Swap candidate into hull position
+        // Swap the vertex c onto the end of the hull, extending it by one
         vertices.swap(next_candidate, n_vertices_on_hull);
         n_vertices_on_hull += 1;
         next_candidate += 1;
