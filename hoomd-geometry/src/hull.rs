@@ -82,27 +82,41 @@ pub fn hull_2d_grahamscan(vertices: &mut [Cartesian<2>]) -> Option<Vec<Cartesian
         let (b0, b1) = get_graham_key(b, anchor);
         a0.total_cmp(&b0).then(a1.total_cmp(&b1))
     });
+    // Now vertices[..2] is an edge on the hull
+    let mut n_vertices_on_hull = 2;
+    let mut n_vertices_total = vertices.len();
 
     // TODO: no allocation - swap remove? Ideally move unwanted to end and then truncate
-    let mut angle_order = vertices[1..].iter().copied().collect::<VecDeque<_>>();
+    // let mut angle_order = vertices[1..].iter().copied().collect::<VecDeque<_>>();
 
     // The anchor and the first vertex in the sorted list are always on the hull
-    let mut hull_vertices = vec![anchor, angle_order.pop_front()?];
-    while !angle_order.is_empty() {
-        let c = angle_order.pop_front()?;
-        while hull_vertices.len() >= 2 {
+    // let mut hull_vertices = vec![anchor, angle_order.pop_front()?];
+    // while !angle_order.is_empty() {
+    while n_vertices_on_hull < n_vertices_total {
+        // let c = angle_order.pop_front()?;
+        let c = vertices[n_vertices_on_hull]; // Next point in the sort
+        // while hull_vertices.len() >= 2 {
+        while n_vertices_total >= 2 {
             // Backtrack while hull_indices[-1] is inside hull
-            let &[p, n] = hull_vertices.last_chunk::<2>()?;
+            // let &[p, n] = hull_vertices.last_chunk::<2>()?;
+            let p = vertices[n_vertices_on_hull - 2];
+            let n = vertices[n_vertices_on_hull - 1];
 
             if predicate_orient2d((p, n), c) <= 0 {
-                hull_vertices.pop(); // point n is inside the hull, so we remove it
+                // hull_vertices.pop(); // point n is inside the hull, so we remove it
+                // vertices.swap_remove(n_vertices_on_hull - 1)
+                vertices.swap(n_vertices_on_hull - 1, vertices.len() - 1);
+                n_vertices_total -= 1;
             } else {
+                // n_vertices_on_hull += 1;
                 break;
             }
         }
-        hull_vertices.push(c);
+        // hull_vertices.push(c);
+        println!("{n_vertices_on_hull}");
+        n_vertices_on_hull += 1;
     }
-    Some(hull_vertices)
+    Some(vertices.to_vec())
 }
 
 #[cfg(test)]
