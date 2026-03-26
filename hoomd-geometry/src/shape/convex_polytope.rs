@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{BoundingSphereRadius, Error, SupportMapping};
+use crate::{BoundingSphereRadius, Error, SupportMapping, hull_2d_grahamscan};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 
@@ -165,6 +165,13 @@ impl<const N: usize> ConvexPolytope<N> {
 
         if vertices.is_empty() {
             return Err(Error::DegeneratePolytope);
+        }
+        if vertices.len() < (N + 1) {
+            return Err(Error::DegeneratePolytope);
+        }
+        if N == 2 {
+            //
+            hull_2d_grahamscan(&mut vertices[..]);
         }
 
         Ok(ConvexPolytope {
