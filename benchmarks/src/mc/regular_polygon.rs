@@ -11,10 +11,7 @@ use std::{
 };
 
 use anyhow::Context;
-use hoomd_geometry::{
-    Convex,
-    shape::{ConvexPolygon, Hypercuboid},
-};
+use hoomd_geometry::shape::{ConvexPolygon, Hypercuboid};
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
     pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
