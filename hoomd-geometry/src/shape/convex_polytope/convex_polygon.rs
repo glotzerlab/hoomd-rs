@@ -11,7 +11,6 @@ impl<R> IntersectsAtGlobal<Self, Cartesian<2>, R> for ConvexPolygon
 where
     R: Rotation + Rotate<Cartesian<2>>,
     RotationMatrix<2>: From<R>,
-    R: Copy,
 {
     #[inline]
     fn intersects_at_global(
@@ -111,7 +110,7 @@ fn is_separating(a: &ConvexPolygon, p: &Cartesian<2>, n: &Cartesian<2>) -> bool 
 mod tests {
     use super::*;
     use crate::IntersectsAt;
-    use hoomd_vector::{Angle, Cartesian, Rotate, Rotation, Versor};
+    use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
 
     use rstest::*;
 

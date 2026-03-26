@@ -59,7 +59,7 @@
 //! implemented as well:
 //! ```
 //! use hoomd_geometry::{Convex, IntersectsAt, shape::Sphere};
-//! use hoomd_vector::Versor;
+//! use hoomd_vector::{Cartesian, Versor};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let s0 = Sphere {
@@ -71,8 +71,8 @@
 //!
 //! let q_id = Versor::default();
 //!
-//! assert!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id));
-//! assert!(!s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id));
+//! assert!(s0.intersects_at(&s1, &Cartesian::from([1.9, 0.0, 0.0]), &q_id));
+//! assert!(!s0.intersects_at(&s1, &Cartesian::from([2.1, 0.0, 0.0]), &q_id));
 //! # Ok(())
 //! # }
 //! ```
@@ -118,7 +118,7 @@
 //! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{InnerProduct, Rotate, Rotation, Vector};
+use hoomd_vector::InnerProduct;
 use thiserror::Error;
 
 mod convex;
@@ -209,7 +209,7 @@ pub trait IntersectsAtGlobal<S, P, R> {
 /// Some shapes implement [`IntersectsAt`] directly:
 /// ```
 /// use hoomd_geometry::{Convex, IntersectsAt, shape::Sphere};
-/// use hoomd_vector::Versor;
+/// use hoomd_vector::{Cartesian, Versor};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let s0 = Sphere {
@@ -221,8 +221,8 @@ pub trait IntersectsAtGlobal<S, P, R> {
 ///
 /// let q_id = Versor::default();
 ///
-/// assert!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id));
-/// assert!(!s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id));
+/// assert!(s0.intersects_at(&s1, &Cartesian::from([1.9, 0.0, 0.0]), &q_id));
+/// assert!(!s0.intersects_at(&s1, &Cartesian::from([2.1, 0.0, 0.0]), &q_id));
 /// # Ok(())
 /// # }
 /// ```

@@ -88,8 +88,8 @@ impl<A, B, R> IntersectsAt<Convex<A>, Cartesian<2>, R> for Convex<B>
 where
     A: SupportMapping<Cartesian<2>> + BoundingSphereRadius,
     B: SupportMapping<Cartesian<2>> + BoundingSphereRadius,
-    R: Rotate<Cartesian<2>> + Rotation, // TODO: Is this needed?
     RotationMatrix<2>: From<R>,
+    R: Copy,
 {
     #[inline]
     fn intersects_at(&self, other: &Convex<A>, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
@@ -132,7 +132,7 @@ impl<A, B, R> IntersectsAt<Convex<A>, Cartesian<3>, R> for Convex<B>
 where
     A: SupportMapping<Cartesian<3>> + BoundingSphereRadius,
     B: SupportMapping<Cartesian<3>> + BoundingSphereRadius,
-    R: Rotate<Cartesian<3>> + Rotation,
+    R: Copy,
     RotationMatrix<3>: From<R>,
 {
     #[inline]

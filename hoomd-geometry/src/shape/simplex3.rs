@@ -326,7 +326,7 @@ where
 
 impl<R> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3
 where
-    R: Rotation + Rotate<Cartesian<3>>,
+    R: Copy,
     RotationMatrix<3>: From<R>,
 {
     /// Original C code of algorithm:
