@@ -62,13 +62,20 @@ fn predicate_orient2d(edge: (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) ->
 }
 
 /// Compute the convex hull of points in two dimensions using a Graham scan.
+///
+/// Takes ownership of the input vector and returns the hull vertices.
+/// The input is sorted and rearranged in-place, then truncated to the hull size.
+///
 /// # Errors
 ///
 /// `[Error::PolytopeNotConvex]` when the provided vertices do not form a convex set.
 #[inline]
-pub fn hull_2d_grahamscan(vertices: &mut [Cartesian<2>]) -> Option<Vec<Cartesian<2>>> {
-    // vertices.sort_by(|a, b| {});
-    let (anchor_idx, anchor) = find_lowest_leftmost(&vertices[..]);
+pub fn hull_2d_grahamscan(mut vertices: Vec<Cartesian<2>>) -> Option<Vec<Cartesian<2>>> {
+    if vertices.is_empty() {
+        return None;
+    }
+
+    let (anchor_idx, anchor) = find_lowest_leftmost(&vertices);
 
     // Move the anchor to the front of the list of vertices, as it is always in the hull
     vertices.swap(0, anchor_idx);
@@ -80,13 +87,9 @@ pub fn hull_2d_grahamscan(vertices: &mut [Cartesian<2>]) -> Option<Vec<Cartesian
         let (b0, b1) = get_graham_key(b, anchor);
         a0.total_cmp(&b0).then(a1.total_cmp(&b1))
     });
-    // Handle degenerate cases
+
     if vertices.len() < 3 {
-        return if vertices.is_empty() {
-            None
-        } else {
-            Some(vertices.to_vec())
-        };
+        return Some(vertices);
     }
 
     // Now vertices[..2] is an edge on the hull
@@ -111,7 +114,9 @@ pub fn hull_2d_grahamscan(vertices: &mut [Cartesian<2>]) -> Option<Vec<Cartesian
         n_vertices_on_hull += 1;
         next_candidate += 1;
     }
-    Some(vertices[..n_vertices_on_hull].to_vec())
+
+    vertices.truncate(n_vertices_on_hull);
+    Some(vertices)
 }
 
 #[cfg(test)]
@@ -162,11 +167,12 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         assert_eq!(hull.len(), 4);
         // Check all corners are in hull
-        for v in &vertices {
-            assert!(hull.iter().any(|h| (*h - *v).norm() < 1e-10));
+        let corners = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
+        for corner in corners {
+            assert!(hull_contains(&hull, corner, 1e-10));
         }
     }
 
@@ -185,7 +191,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // Hull should have 4 corners (interior edge points excluded)
         assert_eq!(hull.len(), 4);
         let corners = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
@@ -214,7 +220,7 @@ mod tests {
             pts.push([0.0, i as f64 / 19.0]);
         }
         let mut vertices: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         assert_eq!(hull.len(), 4);
     }
 
@@ -227,7 +233,7 @@ mod tests {
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // All points on circle should be in hull
         assert_eq!(hull.len(), n);
     }
@@ -243,7 +249,7 @@ mod tests {
             .collect();
         // Add interior points
         vertices.extend([[0.0, 0.0], [0.3, 0.3], [-0.2, 0.1], [0.1, -0.4]].map(Cartesian::from));
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // Only boundary points should be in hull
         assert_eq!(hull.len(), n_boundary);
     }
@@ -257,7 +263,7 @@ mod tests {
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // All points on partial arc should be in hull
         assert_eq!(hull.len(), 10);
     }
@@ -269,7 +275,7 @@ mod tests {
             .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
             .collect();
         let mut vertices = original.clone();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // Hull should have at least 3 points
         assert!(hull.len() >= 3);
         // All hull points should be in original set
@@ -289,7 +295,7 @@ mod tests {
                 ])
             })
             .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         assert!(hull.len() >= 3);
     }
 
@@ -297,16 +303,16 @@ mod tests {
     fn test_random_deterministic_output() {
         for _ in 0..3 {
             let mut rng = StdRng::seed_from_u64(123);
-            let mut vertices1: Vec<Cartesian<2>> = (0..30)
+            let vertices1: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-            let hull1 = hull_2d_grahamscan(&mut vertices1).expect("hull should exist");
+            let hull1 = hull_2d_grahamscan(vertices1).expect("hull should exist");
 
             let mut rng = StdRng::seed_from_u64(123);
-            let mut vertices2: Vec<Cartesian<2>> = (0..30)
+            let vertices2: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-            let hull2 = hull_2d_grahamscan(&mut vertices2).expect("hull should exist");
+            let hull2 = hull_2d_grahamscan(vertices2).expect("hull should exist");
 
             assert_eq!(hull1.len(), hull2.len());
         }
@@ -325,7 +331,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         assert!(hull.len() >= 3);
     }
 
@@ -344,7 +350,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // Should handle duplicates gracefully
         assert!(hull.len() >= 3);
     }
@@ -361,7 +367,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // Should pick leftmost of bottom points and include apex
         assert!(hull.len() >= 3);
     }
@@ -377,7 +383,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // [0, 0] should be the anchor point
         assert!(hull_contains(&hull, [0.0, 0.0], 1e-10));
     }
@@ -387,7 +393,7 @@ mod tests {
         let mut pts: Vec<[f64; 2]> = (0..10).map(|i| [i as f64 * 2.0 / 9.0, 0.0]).collect();
         pts.push([1.0, 1.0]); // Apex
         let mut vertices: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // Leftmost [0,0] and rightmost [2,0] should be in hull with apex
         assert!(hull.len() >= 3);
     }
@@ -405,7 +411,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // Should only keep furthest point in each direction
         assert!(hull.len() >= 3);
     }
@@ -428,7 +434,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // Should keep only outermost points
         assert!(hull.len() >= 3);
     }
@@ -443,7 +449,7 @@ mod tests {
                 vertices.push(Cartesian::from([r * angle.cos(), r * angle.sin()]));
             }
         }
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         // Outer points should form the hull
         assert!(hull.len() >= 8); // At least 8 outer points
     }
@@ -454,7 +460,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         assert_eq!(hull.len(), 3);
     }
 
@@ -465,7 +471,7 @@ mod tests {
                 .into_iter()
                 .map(Cartesian::from)
                 .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         assert_eq!(hull.len(), 4);
     }
 
@@ -475,7 +481,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        let hull = hull_2d_grahamscan(&mut vertices).expect("hull should exist");
+        let hull = hull_2d_grahamscan(vertices).expect("hull should exist");
         assert_eq!(hull.len(), 4);
     }
 }
