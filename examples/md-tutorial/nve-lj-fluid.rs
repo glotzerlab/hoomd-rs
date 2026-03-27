@@ -69,18 +69,27 @@ impl LJFluid {
     fn new() -> anyhow::Result<LJFluid> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let eq_step = 100_000;
-        let kt = 0.85;
-        let density = 0.776;
+        let epsilon: f64 = 1.0;
+        let sigma: f64 = 1.0;
+        let m: f64 = 1.0;
+
         let n: f64 = 8.0;
+        let eq_step = 50_000;
+        let temperature_lj = 0.85;
+        let density_lj = 0.776;
+        let dt_lj = 0.005;
+        let tau_lj = 50.0;
+        let r_cut_lj = 3.0;
+
+        // convert to real unit
+        let dt = dt_lj * sigma * (m/epsilon).sqrt();
+        let kt = temperature_lj * epsilon;
+        let tau = tau_lj * dt;
+        let r_cut = r_cut_lj * sigma;
+        let density = density_lj / sigma.powi(3);
         let box_volume = n.powi(3) / density;
         let box_length = box_volume.cbrt();      
         let macrostate = Isothermal { temperature: kt }; 
-        let epsilon = 1.0;
-        let sigma = 1.0;
-        let r_cut = 3.0 * sigma;
-        let dt = 0.005;
-        let tau_thermostat = 50.0 * dt;
         // ANCHOR_END: parameters
 
         // ANCHOR: boundary
@@ -114,14 +123,14 @@ impl LJFluid {
                             position: Cartesian::from([x, y, z]),
                             momentum: Cartesian::default(),
                             net_force: Cartesian::default(),
-                            mass: 1.0,
+                            mass: m,
                         },
                         sites: vec![Point::default()],
                     }]);
                 }
             }
         }
-        // ANCHOR: particle_positions
+        // ANCHOR_END: particle_positions
 
         // ANCHOR: microstate
         let mut microstate = builder.try_build()?;
@@ -162,10 +171,10 @@ impl LJFluid {
 
         // ANCHOR: integrator
         let integrator = ConstantVolume::new(dt);
-        // ANCHO_END: integrator
+        // ANCHOR_END: integrator
 
         // ANCHOR: thermostat
-        let thermostat = BussiThermostat::new(tau_thermostat.try_into()?);
+        let thermostat = BussiThermostat::new(tau.try_into()?);
         // ANCHOR_END: thermostat
 
         // ANCHOR: struct_initialize
@@ -182,8 +191,6 @@ impl LJFluid {
     }
 }
 // ANCHOR_END: struct_initialize
-
-// Alex stop here ########################################################################################################
 
 // ANCHOR: impl_simulation
 impl Simulation for LJFluid {
@@ -237,7 +244,7 @@ impl LJFluid {
 
     // ANCHOR: nvt
     fn nvt(&mut self) {
-        // ANCHOR_end: nvt
+        // ANCHOR_END: nvt
 
         // ANCHOR: state_transition
         if self.step() >= self.eq_step {
@@ -274,11 +281,11 @@ impl LJFluid {
 
     // ANCHOR: nve
     fn nve(&mut self) {
-        if self.step() % 10_000 == 0 {
+        if self.step().is_multiple_of(10_000) {
             let (pe, kt) = self.calculate_properties();
 
             println!(
-                "NVE, Step {}, Temperature {}, Potential energy (w/ LRC) per particle {}" ,
+                "NVE, Step {}, kT {}, Potential energy (w/ LRC) per particle {}" ,
                 self.microstate.step() - self.eq_step,
                 kt,
                 pe
@@ -307,14 +314,34 @@ impl LJFluid {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let mut simulation = LJFluid::new()?;
-    // TODO: Write GSD file.
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
 
-    for _ in 0..500_000 {
+    let mut simulation = LJFluid::new()?;
+    // ANCHOR_END: main
+    // ANCHOR: create_gsd
+    let mut hoomd_gsd_file = HoomdGsdFile::create("nve-ljg-fluid.gsd")?;
+    // ANCHOR_END: create_gsd
+
+    // ANCHOR: advance
+    for _ in 0..100_000 {
         simulation.advance()?;
+        // ANCHOR_END: advance
+
+        // ANCHOR: append_microstate
+        if simulation.step().is_multiple_of(5_000) {
+            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+        }
     }
 
     Ok(())
 }
-// ANCHOR_END: main
+// ANCHOR_END: append_microstate
 // ANCHOR_END: all
+
+#[cfg(feature = "bevy")]
+mod nve_lj_fluid_interactive;
+#[cfg(feature = "bevy")]
+use bevy::prelude::Resource;
+#[cfg(feature = "bevy")]
+use nve_lj_fluid_interactive::main;

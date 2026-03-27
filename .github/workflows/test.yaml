@@ -40,15 +40,15 @@ jobs:
           # TODO: Include Mac and Windows tests after the project made public.
           # - macos-14
         rust:
-          - 1.89.0
-          - 1.93.0
+          - 1.91.0
+          - 1.94.0
         target:
          - ''
 
         include:
         # Add a WASM build.
         - os: ubuntu-24.04
-          rust: 1.93.0
+          rust: 1.94.0
           target: wasm32-unknown-unknown
 
     steps:
@@ -76,7 +76,7 @@ jobs:
     # dramatically. Add the Cargo.lock hash again in the key portion to
     # prevent this restoration.
     - name: Cache
-      uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2.8.2
+      uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
         key: ${{ matrix.target || 'native' }}-${{ hashFiles('Cargo.lock') }}
         cache-bin: false

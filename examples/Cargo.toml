@@ -4,6 +4,7 @@ categories.workspace = true
 description = "Collect examples that demonstrate how to use hoomd-rs."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -117,3 +118,10 @@ path = "md-tutorial/nve-lj-fluid.rs"
 
 [package.metadata.example.nve-lj-fluid]
 path = "md-tutorial"
+
+[[example]]
+name = "polydisperse-hard-disk-model"
+path = "mc-tutorial/polydisperse-hard-disk-model.rs"
+
+[package.metadata.example.polydisperse-hard-disk-model]
+path = "mc-tutorial"

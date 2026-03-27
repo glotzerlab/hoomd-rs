@@ -1,15 +1,14 @@
 # NVE Simulation of a Lennard-Jones Fluid
 
 <script type="module">
-import init from 'https://glotzerlab.github.io/hoomd-rs/md-tutorial/nve-lj-fluid.js'
+import init from './nve-lj-fluid.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}
 
-
 ## Overview
 
-This tutorial demonstrates how to set up and run a **classical NVE (microcanonical) simulation** of a Lennard-Jones (LJ) fluid using the molecular dynamics (MD) modules of `hoomd-rs`.
+This tutorial demonstrates how to set up and run a **classical microcanonical (NVE) simulation** of a Lennard-Jones (LJ) fluid using the molecular dynamics (MD) modules of `hoomd-rs`.
 
 We will:
 
@@ -26,6 +25,7 @@ We will:
 * Run (interactively – if Bevy visualization is enabled):
   ```shell
   cargo run --release --features "bevy" --example nve-lj-fluid
+  ```
 
 ## Dynamic Bodies and Sites
 Following the **Applying-Interactions** tutorial in the `mc-tutorial`, we again use point particles in the three-dimension with each **body** now has extended properties to perform MD simulation, including the momentum, mass and net force. Specifically, that means
@@ -65,11 +65,11 @@ Assign all the model parameters in one code block so that they are easy to modif
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:parameters}}
 ```
 
-Here, we choose to use reduced Lennard-Jones units: $`\epsilon=1`$, $`\sigma=1`$, $`m = 1`$ => temperature is in units of $`\epsilon/k_BT`$, time in units of $`\sigma \sqrt{(m/\epsilon)}`$. 
+Here, we choose to use reduced Lennard-Jones units: $` \epsilon=1 `$, $`\sigma=1`$, $`m = 1`$ => temperature is in units of $`k_BT/\epsilon`$, time in units of $`\sigma \sqrt{(m/\epsilon)}`$. 
 
-We will initialize a system with `nxnxn` particles and then run  `eq_steps` in the NVT ensemble to equilibrate the system at $`T^*=`$ `kt` at the fixed number density $`\rho=`$ `density`, followed by a production run in the NVE ensemble. We use a time step of $`\delta t = `$ `dt` and a temperature damping time constant of $`\tau=`$ `tau_thermostat` for the thermostating. The LJ potential is truncated at the `r_cut`.
+We will initialize a system with `n x n x n` particles and then run  `eq_steps` in the NVT ensemble to equilibrate the system at temperature $`T^*=`$ `temperature_lj` at the fixed volume density $`\rho^*=`$ `density_lj`, followed by a production run in the NVE ensemble. We use a time step of $`\delta t ^*= `$ `dt_lj` and a temperature damping time constant of $`\tau^*=`$ `tau_lj` for the thermostating. The LJ potential is truncated at the `r_cut_lj`.
 
-### Boundary and spatial data structure
+### Boundary and Spatial Data Structure
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:boundary}}
 ```
@@ -80,7 +80,7 @@ We will initialize a system with `nxnxn` particles and then run  `eq_steps` in t
 > The nominal search radius passed to `VecCell::builder()` must be at least as large as the largest cutoff used in any pairwise interaction.
 Here we use `r_cut`, so we set the search radius accordingly. In *hoomd-rs*, it is *YOUR responsibility* to determine the appropriate `r_cut`.
 
-### Lennard-Jones potential
+### Lennard-Jones Potential
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:pair_force}}
 ```
@@ -88,7 +88,7 @@ We use the 12-6 LJ potential truncated at `r_cut` and wrapped in `PairwiseCutoff
 
 Although there are no rigid bodies here, `Rigid` is the standard wrapper when sites belong to bodies and when net force calculation on each **body** is needed. `Rigid` type sums over all forces acting on **sites** that constitutes the **body**.
 
-### Long-range correction (LRC)
+### Long-Range Correction (LRC)
 Because we truncate the LJ potential, we add the standard mean-field long-range correction to the potential energy per particle:
 
 The correction can be calculated as:
@@ -101,20 +101,20 @@ where $`\rho`$ is the number density `density`.
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:energy_lrc}}
 ```
 
-### Initialize positions
+### Initialize Positions
 We initialize the particle position as a simple cubic crystal with the lattice constant of `space`, which will result in the number density `density`.
 
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:particle_positions}}
 ```
 
-### Initialize momentums
+### Initialize Momentums
 We first draw random momentums from the Maxwell–Boltzmann distribution at temperature `kt`, then remove center-of-mass linear and angular momentum to avoid net drift of the system.
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:particle_momenta}}
 ```
 
-### Integrator and thermostat
+### Integrator and Thermostat
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:integrator}}
 ```
@@ -123,7 +123,7 @@ We first draw random momentums from the Maxwell–Boltzmann distribution at temp
 ```
 We use the Bussi (stochastic velocity rescaling) thermostat during the equilibration phase.
 
-### Simulation phase tracking
+### Simulation Phase Tracking
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:phase}}
 ```
@@ -142,23 +142,23 @@ We define two phases:
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:advance}}
 ```
 
-### NVT equilibration phase
+### NVT Equilibration Phase
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:nvt}}
 ```
 We run velocity Verlet with the thermostat for `eq_step` steps, then switch to NVE.
 
-#### First-half integration
+#### First-Half Integration
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:first_half_integration}}
 ```
 
-#### Force update
+#### Net Force Update
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:update_force}}
 ```
 
-#### Second-half integration
+#### Second-Half Integration
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:second_half_integration}}
 ```
@@ -168,7 +168,7 @@ We run velocity Verlet with the thermostat for `eq_step` steps, then switch to N
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:state_transition}}
 ```
 
-### NVE production phase
+### NVE Production Phase
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:nve}}
 ```
@@ -178,7 +178,7 @@ In the production phase we:
 - Use a dummy macrostate `Isoenergy` (not used in NVE)
 - Print temperature and potential energy every 10,000 steps
 
-### Compute thermodynamic properties
+### Compute Thermodynamic Properties
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:properties}}
 ```
@@ -193,11 +193,40 @@ We calculate:
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:current_temeprature}}
 ```
 
-## Implement `main()`
+## Execute the Simulation in Batch Mode
+
+### Implement `main()`
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:main}}
 ```
-We run a fixed 500,000 total steps of MD simulation.
+
+### Create a GSD Trajectory
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:create_gsd}}
+```
+
+### Advance the Simulation
+We run a fixed 100,000 total steps of MD simulation.
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:advance}}
+```
+
+### Write Frames to the GSD File
+Call `append_microstate` to write to the GSD file for every 5,000 steps.
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:append_microstate}}
+```
+
+
+Should see output similar to:
+```
+Isotherm preparation finished at step 50000.
+NVE, Step 10000, kT 0.8747741585945321, Potential energy (w/ LRC) per particle -5.481555101132949
+NVE, Step 20000, kT 0.890226773983914, Potential energy (w/ LRC) per particle -5.50325224785257
+NVE, Step 30000, kT 0.8838402378487593, Potential energy (w/ LRC) per particle -5.493167294987841
+NVE, Step 40000, kT 0.8942898500494086, Potential energy (w/ LRC) per particle -5.509090715545137
+...
+```
 
 ## Conclusion
 You have now seen how to:
@@ -212,4 +241,12 @@ You have now seen how to:
 
 Navigate to the top of the page and refresh to see the simulation in action (if Bevy visualization is enabled).
 
-You can also run the example in batch mode and analyze the printed output or extend it to write GSD/XTC trajectory files.
+## Reference Resources
+Benchmark results can be found on the NIST website for comparison.
+
+[NIST NVE Lennard-Jones fluid simulation](https://mmlapps.nist.gov/srs/LJ_PURE/md.htm)
+
+## Complete Code
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:all}}
+

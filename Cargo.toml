@@ -43,10 +43,11 @@ default-members = ["examples",
                   ]
 
 [workspace.package]
-version = "0.0.0"
+version = "1.0.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.91"
 homepage = "https://glotzerlab.engin.umich.edu"
+documentation = "https://hoomd-rs.readthedocs.io"
 repository = "https://github.com/glotzerlab/hoomd-rs"
 license = "BSD-3-Clause"
 keywords = ["molecular-dynamics", "monte-carlo", "simulation"]
@@ -54,21 +55,21 @@ categories = ["science"]
 
 [workspace.dependencies]
 # Subcrates
-hoomd-bevy = { path = "hoomd-bevy", version = "0.0.0" }
-hoomd-derive = { path = "hoomd-derive", version = "0.0.0" }
-hoomd-geometry = { path = "hoomd-geometry", version = "0.0.0"}
-hoomd-gsd = { path = "hoomd-gsd", version = "0.0.0"}
-hoomd-interaction = { path = "hoomd-interaction", version = "0.0.0"}
-hoomd-linear-algebra = { path = "hoomd-linear-algebra", version = "0.0.0"}
-hoomd-manifold = { path = "hoomd-manifold", version = "0.0.0"}
-hoomd-mc = { path = "hoomd-mc", version = "0.0.0"}
-hoomd-md = { path = "hoomd-md", version = "0.0.0"}
-hoomd-microstate = { path = "hoomd-microstate", version = "0.0.0"}
-hoomd-simulation = { path = "hoomd-simulation", version = "0.0.0"}
-hoomd-spatial = { path = "hoomd-spatial", version = "0.0.0"}
-hoomd-utility = { path = "hoomd-utility", version = "0.0.0"}
-hoomd-vector = { path = "hoomd-vector", version = "0.0.0"}
-hoomd-rand = { path = "hoomd-rand", version = "0.0.0"}
+hoomd-bevy = { path = "hoomd-bevy", version = "1.0.0" }
+hoomd-derive = { path = "hoomd-derive", version = "1.0.0" }
+hoomd-geometry = { path = "hoomd-geometry", version = "1.0.0"}
+hoomd-gsd = { path = "hoomd-gsd", version = "1.0.0"}
+hoomd-interaction = { path = "hoomd-interaction", version = "1.0.0"}
+hoomd-linear-algebra = { path = "hoomd-linear-algebra", version = "1.0.0"}
+hoomd-manifold = { path = "hoomd-manifold", version = "1.0.0"}
+hoomd-mc = { path = "hoomd-mc", version = "1.0.0"}
+hoomd-md = { path = "hoomd-md", version = "1.0.0"}
+hoomd-microstate = { path = "hoomd-microstate", version = "1.0.0"}
+hoomd-simulation = { path = "hoomd-simulation", version = "1.0.0"}
+hoomd-spatial = { path = "hoomd-spatial", version = "1.0.0"}
+hoomd-utility = { path = "hoomd-utility", version = "1.0.0"}
+hoomd-vector = { path = "hoomd-vector", version = "1.0.0"}
+hoomd-rand = { path = "hoomd-rand", version = "1.0.0"}
 
 # Dev dependencies
 assert2 = "=0.4.0"
@@ -77,8 +78,8 @@ paste = "=1.0.15"
 rand_sfc = "=0.2.0"
 rstest = "=0.26.1"
 tempfile = "=3.27.0"
-strum = "0.28.0"
-strum_macros = "0.28.0"
+strum = "=0.28.0"
+strum_macros = "=0.28.0"
 
 # Dependencies used internally
 clap = {version = "4.5.48", features = ["derive"]}
@@ -181,11 +182,6 @@ needless_pass_by_ref_mut = "warn"
 
 [workspace.metadata.typos]
 default.extend-words = { ratatui = "ratatui" }
-
-[workspace.metadata.docs.rs]
-# TODO: Check that this works after release. It may need to be in package.metadata
-# https://docs.rs/about/metadata
-rustdoc-args = [ "--html-in-header", "katex.html" ]
 
 # Optimize for size in wasm builds
 [profile.release-wasm]

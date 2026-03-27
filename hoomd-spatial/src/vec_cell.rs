@@ -24,7 +24,7 @@ use hoomd_vector::Cartesian;
 
 use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 
-use crate::hash_cell::CellIndex;
+use crate::{IndexFromPosition, hash_cell::CellIndex};
 
 /// Bucket sort points into cubes with [`Vec`]-backed storage
 ///
@@ -774,6 +774,18 @@ where
             self.cell_width.get() * self.stencils.len() as f64
         )?;
         write!(f, "- Largest cell length: {largest_cell_size}")
+    }
+}
+
+impl<K, const D: usize> IndexFromPosition<Cartesian<D>> for VecCell<K, D>
+where
+    K: Eq + Hash,
+{
+    type Location = [i64; D];
+
+    #[inline]
+    fn location_from_position(&self, position: &Cartesian<D>) -> Self::Location {
+        self.cell_index_from_position(position)
     }
 }
 
