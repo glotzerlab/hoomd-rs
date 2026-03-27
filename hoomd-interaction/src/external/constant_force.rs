@@ -89,7 +89,7 @@ where
     #[inline]
     #[must_use]
     pub fn force(&self) -> V {
-        *self.plane_normal.get() * self.alpha
+        *self.plane_normal.get() * self.alpha * -1.0
     }
 }
 
