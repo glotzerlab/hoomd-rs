@@ -46,3 +46,33 @@ impl<B, S, X, C, M> Thermostat<B, S, X, C, M> for NoThermostat {
         1.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hoomd_microstate::Body;
+    use hoomd_vector::Cartesian;
+
+    struct NVE;
+
+    fn compute_properties<B, S, X, C>(_m: &Microstate<B, S, X, C>) -> (f64, f64) {
+        (1.0, 1.0)
+    }
+
+    #[test]
+    fn test_no_thermostat() -> anyhow::Result<()> {
+        // Instantiation
+        let mut thermostat = NoThermostat;
+
+        // Thermostat Implementation
+        let mut microstate = Microstate::new();
+        microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
+        let macrostate = NVE;
+        let dt = 1.0;
+
+        assert_eq!(1.0, thermostat.integrate_step_one(&microstate, &macrostate, &dt, compute_properties));
+        assert_eq!(1.0, thermostat.integrate_step_two(&microstate, &macrostate, &dt, compute_properties));
+
+        Ok(())
+    }
+}

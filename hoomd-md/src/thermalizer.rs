@@ -54,3 +54,14 @@ pub struct Thermalizer {
     /// The desired temperature
     pub kT: f64,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_thermalizer() {
+        // Instantiation
+        let _ = Thermalizer { kT: 1.0 };
+    }
+}
