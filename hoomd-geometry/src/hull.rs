@@ -308,13 +308,13 @@ mod tests {
             let mut vertices1: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-            assert!(hull_2d_grahamscan(&mut vertices1));
+            hull_2d_grahamscan(&mut vertices1).unwrap();
 
             let mut rng = StdRng::seed_from_u64(123);
             let mut vertices2: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-            assert!(hull_2d_grahamscan(&mut vertices2));
+            hull_2d_grahamscan(&mut vertices2).unwrap();
 
             assert_eq!(vertices1.len(), vertices2.len());
         }

@@ -108,6 +108,35 @@ pub type ConvexPolygon = ConvexPolytope<2>;
 pub type ConvexPolyhedron = ConvexPolytope<3>;
 
 impl ConvexPolytope<2> {
+    /// Create a 2D convex polygon with the given vertices.
+    ///
+    /// The vertices are reduced to their convex hull using a Graham scan.
+    ///
+    /// # Errors
+    ///
+    /// Returns `[Error::DegeneratePolytope]` when the hull has fewer than 3 vertices.
+    #[inline]
+    pub fn with_vertices_hull<I>(vertices: I) -> Result<ConvexPolytope<2>, Error>
+    where
+        I: IntoIterator<Item = Cartesian<2>>,
+    {
+        let mut vertices: Vec<Cartesian<2>> = vertices.into_iter().collect();
+
+        if vertices.is_empty() {
+            return Err(Error::DegeneratePolytope);
+        }
+        if vertices.len() < 3 {
+            return Err(Error::DegeneratePolytope);
+        }
+
+        hull_2d_grahamscan(&mut vertices)?;
+
+        Ok(ConvexPolytope {
+            bounding_radius: Self::bounding_radius(&vertices),
+            vertices,
+        })
+    }
+
     /// Create a regular *n*-gon with *n* vertices and circumradius 0.5.
     ///
     /// # Example
@@ -168,9 +197,6 @@ impl<const N: usize> ConvexPolytope<N> {
         }
         if vertices.len() < (N + 1) {
             return Err(Error::DegeneratePolytope);
-        }
-        if N == 2 {
-            hull_2d_grahamscan(&mut vertices)?;
         }
 
         Ok(ConvexPolytope {
