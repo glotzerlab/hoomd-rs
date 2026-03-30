@@ -3,20 +3,15 @@
 
 use crate::Error;
 use hoomd_vector::{Cartesian, InnerProduct};
+use itertools::Itertools;
 
 /// Find the lowest, leftmost point from a slice of Cartesian vectors.
 #[inline]
-fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> Option<(usize, &Cartesian<2>)> {
-    vertices
-        .iter()
-        .enumerate()
-        .reduce(|(min_i, min_p), (curr_i, curr_p)| {
-            if curr_p[1] < min_p[1] || (curr_p[1] == min_p[1] && curr_p[0] < min_p[0]) {
-                (curr_i, curr_p)
-            } else {
-                (min_i, min_p)
-            }
-        })
+fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> Option<usize> {
+    vertices.iter().position_min_by(|a, b| {
+        // Compare y-coordinates, then x.
+        a[1].total_cmp(&b[1]).then(a[0].total_cmp(&b[0]))
+    })
 }
 
 /// Get the key for a lexographical sort of points with respect to an anchor.
@@ -67,7 +62,7 @@ fn predicate_orient2d(edge: (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) ->
 ///
 /// # Returns
 ///
-/// `true` if the hull was computed, `false` if the input was empty.
+/// `()` if the hull was computed, [`Error`] if a hull could not be generated.
 ///
 /// # Errors
 ///
@@ -79,7 +74,7 @@ pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> Result<(), Error>
         return Err(Error::DegeneratePolytope);
     }
 
-    let (anchor_idx, _) = find_lowest_leftmost(vertices).ok_or(Error::DegeneratePolytope)?;
+    let anchor_idx = find_lowest_leftmost(vertices).ok_or(Error::DegeneratePolytope)?;
 
     // Move the anchor to the front of the list of vertices, as it is always in the hull
     vertices.swap(0, anchor_idx);
@@ -128,7 +123,6 @@ pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> Result<(), Error>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approxim::assert_relative_eq;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
 
@@ -151,9 +145,14 @@ mod tests {
     #[case::diagonal_tiebreak(vec![[5.0, 5.0], [4.0, 4.0], [3.0, 3.0], [2.0, 2.0], [1.0, 1.0]], 4)]
     fn test_find_lowest_leftmost(#[case] vertices: Vec<[f64; 2]>, #[case] expected_idx: usize) {
         let vertices: Vec<Cartesian<2>> = vertices.into_iter().map(Cartesian::from).collect();
-        let (idx, point) = find_lowest_leftmost(&vertices);
+        let idx = find_lowest_leftmost(&vertices).expect("returned None for non-empty input");
         assert_eq!(idx, expected_idx);
-        assert_relative_eq!(point, vertices[expected_idx]);
+    }
+
+    #[rstest]
+    fn test_find_lowest_leftmost_empty() {
+        let vertices: Vec<Cartesian<2>> = vec![];
+        assert_eq!(find_lowest_leftmost(&vertices), None);
     }
 
     #[rstest]
@@ -162,9 +161,8 @@ mod tests {
         coords: [f64; 2],
     ) {
         let vertices = vec![Cartesian::from(coords)];
-        let (idx, point) = find_lowest_leftmost(&vertices);
+        let idx = find_lowest_leftmost(&vertices).expect("returned None for non-empty input");
         assert_eq!(idx, 0);
-        assert_relative_eq!(point, Cartesian::from(coords));
     }
 
     #[rstest]
