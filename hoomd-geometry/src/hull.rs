@@ -18,7 +18,7 @@ fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> Option<usize> {
 
 /// Get the key for a lexographical sort of points with respect to an anchor.
 #[inline]
-pub fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
+fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
     let diff = p - anchor;
     (f64::atan2(diff[1], diff[0]), diff.dot(&diff))
 }
@@ -233,7 +233,7 @@ mod tests {
         let n = 20;
         let mut vertices: Vec<Cartesian<2>> = (0..n)
             .map(|i| {
-                let angle = 2.0 * std::f64::consts::PI * f64::from(i) / n as f64;
+                let angle = 2.0 * std::f64::consts::PI * i as f64 / n as f64;
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
@@ -247,7 +247,7 @@ mod tests {
         let n_boundary = 12;
         let mut vertices: Vec<Cartesian<2>> = (0..n_boundary)
             .map(|i| {
-                let angle = 2.0 * std::f64::consts::PI * f64::from(i) / n_boundary as f64;
+                let angle = 2.0 * std::f64::consts::PI * i as f64 / n_boundary as f64;
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
