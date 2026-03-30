@@ -42,6 +42,7 @@ pub fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
 /// only ensure consistent behavior for related inputs.
 ///
 /// **Source:** [Robust Arithmetic in Computational Geometry](https://observablehq.com/@mourner/non-robust-arithmetic-as-art)
+#[inline]
 fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) -> i64 {
     let orientation = (p[0] * q[1] - p[1] * q[0])
         + (q[0] * test[1] - q[1] * test[0])
