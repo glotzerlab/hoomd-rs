@@ -209,19 +209,19 @@ mod tests {
         let mut pts: Vec<[f64; 2]> = Vec::new();
         // Bottom edge
         for i in 0..20 {
-            pts.push([i as f64 / 19.0, 0.0]);
+            pts.push([f64::from(i) / 19.0, 0.0]);
         }
         // Right edge
         for i in 0..20 {
-            pts.push([1.0, i as f64 / 19.0]);
+            pts.push([1.0, f64::from(i) / 19.0]);
         }
         // Top edge
         for i in 0..20 {
-            pts.push([i as f64 / 19.0, 1.0]);
+            pts.push([f64::from(i) / 19.0, 1.0]);
         }
         // Left edge
         for i in 0..20 {
-            pts.push([0.0, i as f64 / 19.0]);
+            pts.push([0.0, f64::from(i) / 19.0]);
         }
         let mut vertices: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
         hull_2d_grahamscan(&mut vertices).unwrap();
@@ -233,7 +233,7 @@ mod tests {
         let n = 20;
         let mut vertices: Vec<Cartesian<2>> = (0..n)
             .map(|i| {
-                let angle = 2.0 * std::f64::consts::PI * i as f64 / n as f64;
+                let angle = 2.0 * std::f64::consts::PI * f64::from(i) / n as f64;
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
@@ -247,7 +247,7 @@ mod tests {
         let n_boundary = 12;
         let mut vertices: Vec<Cartesian<2>> = (0..n_boundary)
             .map(|i| {
-                let angle = 2.0 * std::f64::consts::PI * i as f64 / n_boundary as f64;
+                let angle = 2.0 * std::f64::consts::PI * f64::from(i) / n_boundary as f64;
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
@@ -262,8 +262,8 @@ mod tests {
     fn test_circle_partial_arc() {
         let mut vertices: Vec<Cartesian<2>> = (0..10)
             .map(|i| {
-                let angle =
-                    -std::f64::consts::FRAC_PI_4 + (std::f64::consts::FRAC_PI_2 * i as f64 / 9.0);
+                let angle = -std::f64::consts::FRAC_PI_4
+                    + (std::f64::consts::FRAC_PI_2 * f64::from(i) / 9.0);
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
@@ -394,7 +394,7 @@ mod tests {
 
     #[rstest]
     fn test_many_bottom_points() {
-        let mut pts: Vec<[f64; 2]> = (0..10).map(|i| [i as f64 * 2.0 / 9.0, 0.0]).collect();
+        let mut pts: Vec<[f64; 2]> = (0..10).map(|i| [f64::from(i) * 2.0 / 9.0, 0.0]).collect();
         pts.push([1.0, 1.0]); // Apex
         let mut vertices: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
         hull_2d_grahamscan(&mut vertices).unwrap();
@@ -448,7 +448,7 @@ mod tests {
         let mut vertices: Vec<Cartesian<2>> = vec![Cartesian::from([0.0, 0.0])]; // Anchor
         // Create points along 8 rays
         for i in 0..8 {
-            let angle = 2.0 * std::f64::consts::PI * i as f64 / 8.0;
+            let angle = 2.0 * std::f64::consts::PI * f64::from(i) / 8.0;
             for r in [0.5, 1.0, 1.5] {
                 vertices.push(Cartesian::from([r * angle.cos(), r * angle.sin()]));
             }
