@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use std::cmp::Ordering;
+
 use crate::Error;
 use hoomd_vector::{Cartesian, InnerProduct};
 use itertools::Itertools;
@@ -40,19 +42,16 @@ pub fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
 /// only ensure consistent behavior for related inputs.
 ///
 /// **Source:** [Robust Arithmetic in Computational Geometry](https://observablehq.com/@mourner/non-robust-arithmetic-as-art)
-fn predicate_orient2d(edge: (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) -> i64 {
-    let (p, q) = edge;
+fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) -> i64 {
     let orientation = (p[0] * q[1] - p[1] * q[0])
         + (q[0] * test[1] - q[1] * test[0])
         + (test[0] * p[1] - test[1] * p[0]);
-    if orientation > 0.0 {
-        // clockwise
-        return 1;
-    } else if orientation < 0.0 {
-        // counterclockwise
-        return -1;
+
+    match orientation.total_cmp(&0.0) {
+        Ordering::Greater => 1,
+        Ordering::Less => -1,
+        Ordering::Equal => 0,
     }
-    0
 }
 
 /// Compute the convex hull of points in two dimensions using a Graham scan.
