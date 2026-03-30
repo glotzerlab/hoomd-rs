@@ -6,17 +6,17 @@ use hoomd_vector::{Cartesian, InnerProduct};
 
 /// Find the lowest, leftmost point from a slice of Cartesian vectors.
 #[inline]
-fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> (usize, Cartesian<2>) {
-    vertices.iter().enumerate().fold(
-        (usize::MAX, Cartesian::from([f64::INFINITY, f64::INFINITY])),
-        |(i, p), (min_i, &min_p)| {
-            if p[1] < min_p[1] || (p[1] == min_p[1] && p[0] < min_p[0]) {
-                (i, p)
+fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> Option<(usize, &Cartesian<2>)> {
+    vertices
+        .iter()
+        .enumerate()
+        .reduce(|(min_i, min_p), (curr_i, curr_p)| {
+            if curr_p[1] < min_p[1] || (curr_p[1] == min_p[1] && curr_p[0] < min_p[0]) {
+                (curr_i, curr_p)
             } else {
                 (min_i, min_p)
             }
-        },
-    )
+        })
 }
 
 /// Get the key for a lexographical sort of points with respect to an anchor.
@@ -68,6 +68,10 @@ fn predicate_orient2d(edge: (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) ->
 /// # Returns
 ///
 /// `true` if the hull was computed, `false` if the input was empty.
+///
+/// # Errors
+///
+/// Returns [`Error`] if the input vertices do not form a convex body with 3 or more points.
 #[inline]
 pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> Result<(), Error> {
     // No need to try and triangulate if the hull is degenerate
@@ -75,7 +79,7 @@ pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> Result<(), Error>
         return Err(Error::DegeneratePolytope);
     }
 
-    let (anchor_idx, _) = find_lowest_leftmost(vertices);
+    let (anchor_idx, _) = find_lowest_leftmost(vertices).ok_or(Error::DegeneratePolytope)?;
 
     // Move the anchor to the front of the list of vertices, as it is always in the hull
     vertices.swap(0, anchor_idx);
