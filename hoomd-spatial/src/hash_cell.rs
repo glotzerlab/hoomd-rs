@@ -573,9 +573,9 @@ where
 )]
 #[cfg(test)]
 mod tests {
-    use assert2::{assert, check, let_assert};
+    use assert2::{assert, check};
     use rand::{
-        Rng, SeedableRng,
+        RngExt, SeedableRng,
         distr::{Distribution, Uniform},
         rngs::StdRng,
     };
@@ -608,7 +608,7 @@ mod tests {
         check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
 
         let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
-        let_assert!(Some(keys) = keys);
+        assert2::assert!(let Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&0));
     }
@@ -626,13 +626,13 @@ mod tests {
         check!(cell_list.cell_index.get(&2) == Some(&CellIndex([-1, 3])));
 
         let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
-        let_assert!(Some(keys) = keys);
+        assert2::assert!(let Some(keys) = keys);
         check!(keys.len() == 2);
         check!(keys.contains(&0));
         check!(keys.contains(&1));
 
         let keys = cell_list.particle_indices.get(&CellIndex([-1, 3]));
-        let_assert!(Some(keys) = keys);
+        assert2::assert!(let Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&2));
     }
@@ -648,7 +648,7 @@ mod tests {
         check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
 
         let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
-        let_assert!(Some(keys) = keys);
+        assert2::assert!(let Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&0));
     }
@@ -665,12 +665,12 @@ mod tests {
         check!(cell_list.cell_index.get(&1) == Some(&CellIndex([-1, -1])));
 
         let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
-        let_assert!(Some(keys) = keys);
+        assert2::assert!(let Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&0));
 
         let keys = cell_list.particle_indices.get(&CellIndex([-1, -1]));
-        let_assert!(Some(keys) = keys);
+        assert2::assert!(let Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&1));
     }
@@ -691,12 +691,12 @@ mod tests {
         check!(cell_list.cell_index.get(&2) == None);
 
         let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
-        let_assert!(Some(keys) = keys);
+        assert2::assert!(let Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&0));
 
         let keys = cell_list.particle_indices.get(&CellIndex([-1, 3]));
-        let_assert!(Some(keys) = keys);
+        assert2::assert!(let Some(keys) = keys);
         assert!(keys.len() == 0);
     }
 
@@ -729,7 +729,7 @@ mod tests {
         check!(cell_list.particle_indices.len() == 1);
 
         let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
-        let_assert!(Some(keys) = keys);
+        assert2::assert!(let Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&0));
     }
@@ -777,7 +777,7 @@ mod tests {
             assert!(value == Some(&CellIndex(reference_value)));
 
             let keys = cell_list.particle_indices.get(&CellIndex(reference_value));
-            let_assert!(Some(keys) = keys);
+            assert2::assert!(let Some(keys) = keys);
             check!(keys.contains(&reference_key));
         }
 

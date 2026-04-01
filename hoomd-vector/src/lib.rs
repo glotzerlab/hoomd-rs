@@ -2,10 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 
 //! Vector and quaternion math.
@@ -166,7 +166,7 @@
 //!
 //! ```
 //! use hoomd_vector::{Angle, Cartesian, Versor};
-//! use rand::{Rng, SeedableRng, rngs::StdRng};
+//! use rand::{RngExt, SeedableRng, rngs::StdRng};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut rng = StdRng::seed_from_u64(1);
@@ -194,6 +194,13 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! # Complete documentation
+//!
+//! `hoomd-vector` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 mod angle;
 mod cartesian;
@@ -749,7 +756,7 @@ mod tests {
     use super::*;
     use approxim::assert_relative_eq;
     use assert2::check;
-    use rand::{Rng, SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
 
     fn compute_add_generic<T>(a: T, b: T) -> T
     where

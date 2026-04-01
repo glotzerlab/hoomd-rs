@@ -32,7 +32,7 @@ type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 
 // ANCHOR: simulation_new
 impl HardTetrahedronSelfAssembly {
-    /// Construct a new hard ellipsoid self-assembly simulation.
+    /// Construct a new hard tetrahedron self-assembly simulation.
     fn new() -> anyhow::Result<HardTetrahedronSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
@@ -45,14 +45,14 @@ impl HardTetrahedronSelfAssembly {
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
-        let a = 1.0f64;
-        let h = 6.0f64.sqrt() / 3.0 * a;
-        let tetrahedron_volume = 1.0 / 12.0 * 2.0f64.sqrt() * a.powi(3);
+        let a = 1.0_f64;
+        let h = 6.0_f64.sqrt() / 3.0 * a;
+        let tetrahedron_volume = 1.0 / 12.0 * 2.0_f64.sqrt() * a.powi(3);
 
         let tetrahedron = ConvexPolyhedron::with_vertices(vec![
-            [3.0f64.sqrt() / 3.0 * a, 0.0, -h / 4.0].into(),
-            [-3.0f64.sqrt() / 6.0 * a, 0.5 * a, -h / 4.0].into(),
-            [-3.0f64.sqrt() / 6.0 * a, -0.5 * a, -h / 4.0].into(),
+            [3.0_f64.sqrt() / 3.0 * a, 0.0, -h / 4.0].into(),
+            [-3.0_f64.sqrt() / 6.0 * a, 0.5 * a, -h / 4.0].into(),
+            [-3.0_f64.sqrt() / 6.0 * a, -0.5 * a, -h / 4.0].into(),
             [0.0, 0.0, 3.0 * h / 4.0].into(),
         ])?;
         let hamiltonian =
@@ -66,11 +66,11 @@ impl HardTetrahedronSelfAssembly {
         let cube =
             Cuboid::with_equal_edges(initial_box_edge_length.try_into()?);
         let periodic_cube =
-            Periodic::new(hamiltonian.0.maximum_interaction_range(), cube)?;
+            Periodic::new(hamiltonian.maximum_interaction_range(), cube)?;
 
         let vec_cell = VecCell::builder()
             .nominal_search_radius(
-                hamiltonian.0.maximum_interaction_range().try_into()?,
+                hamiltonian.maximum_interaction_range().try_into()?,
             )
             .build();
         let microstate = Microstate::builder()
@@ -103,7 +103,7 @@ impl HardTetrahedronSelfAssembly {
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
-            r_cut: hamiltonian.0.maximum_interaction_range(),
+            r_cut: hamiltonian.maximum_interaction_range(),
         };
 
         let overlap_penalty_hamiltonian =
@@ -143,7 +143,7 @@ struct HardTetrahedronSelfAssembly {
     /// Quick compress algorithm.
     quick_compress: QuickCompress<Periodic<Cuboid>>,
     /// Quick insert algorithm.
-    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Cuboid>>>,
+    quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Cuboid>>>,
     /// How sites interact when inserted and compressed.
     overlap_penalty_hamiltonian: PairwiseCutoff<
         Anisotropic<
@@ -257,11 +257,21 @@ impl HardTetrahedronSelfAssembly {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
+
     let mut simulation = HardTetrahedronSelfAssembly::new()?;
-    // TODO: Write GSD file.
+    let mut hoomd_gsd_file =
+        HoomdGsdFile::create("hard-tetrahedron-self-assembly.gsd")?;
 
     for _ in 0..40_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(10_000) {
+            hoomd_gsd_file
+                .append_microstate(&simulation.microstate)?
+                .end()?;
+        }
     }
 
     Ok(())

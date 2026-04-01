@@ -15,10 +15,17 @@
 
 pub mod disk;
 pub mod ellipse;
-pub mod triangle_mesh;
+pub mod plane_mesh;
+pub mod surface_mesh;
 
 pub(crate) mod rectangular_boundary;
 pub use rectangular_boundary::RectangularBoundary;
 
 pub(crate) mod hyperbolic_disk;
 pub use hyperbolic_disk::{HyperbolicDisk, HyperbolicDiskAssets, HyperbolicDiskMaterial};
+
+pub(crate) mod hyperbolic_polygon;
+pub use hyperbolic_polygon::{
+    HyperbolicPolygon, HyperbolicPolygonAssets, HyperbolicPolygonMaterial,
+    HyperbolicPolygonMaterialParameters,
+};

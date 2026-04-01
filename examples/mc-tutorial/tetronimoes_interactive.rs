@@ -78,7 +78,7 @@ fn ui_system(
         ui.horizontal(|ui| {
             ui.add(
                 egui::Slider::new(
-                    &mut simulation.hamiltonian.0.0.alpha,
+                    &mut simulation.hamiltonian.linear.0.alpha,
                     0.0..=2.0,
                 )
                 .text("alpha")
@@ -129,7 +129,7 @@ fn sync_simulation(
                     site.properties.position[1] as f32,
                     0.0,
                 ),
-                1.0f32,
+                1.0_f32,
             )
         }),
     );

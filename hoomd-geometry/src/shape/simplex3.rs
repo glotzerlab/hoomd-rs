@@ -9,7 +9,7 @@ use std::{array, fmt};
 
 use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
 
-use crate::{IntersectsAt, SupportMapping, Volume};
+use crate::{IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
 
 /// The hull of any 4 noncoplanar points in three dimensions.
 ///
@@ -304,6 +304,26 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
     true
 }
 
+impl<R> IntersectsAtGlobal<Simplex3, Cartesian<3>, R> for Simplex3
+where
+    R: Rotation + Rotate<Cartesian<3>>,
+    RotationMatrix<3>: From<R>,
+{
+    #[inline]
+    fn intersects_at_global(
+        &self,
+        other: &Simplex3,
+        r_self: &Cartesian<3>,
+        o_self: &R,
+        r_other: &Cartesian<3>,
+        o_other: &R,
+    ) -> bool {
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
+
+        self.intersects_at(other, &v_ij, &o_ij)
+    }
+}
+
 impl<R> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3
 where
     R: Rotation + Rotate<Cartesian<3>>,
@@ -324,7 +344,7 @@ where
         // Edge difference vectors for tetrahedron p
         let mut edge_vectors_p = [Cartesian::<3>::default(); 5];
         let mut masks = [0u8; 4];
-        let mut affs = [[0f64; 4]; 4];
+        let mut affs = [[0_f64; 4]; 4];
 
         edge_vectors_p[0] = self.vertices[1] - self.vertices[0];
         edge_vectors_p[1] = self.vertices[2] - self.vertices[0];

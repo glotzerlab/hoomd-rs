@@ -3,7 +3,7 @@
 
 //! Implement `ParallelSweep`
 
-use rand::{Rng, seq::IndexedRandom};
+use rand::{RngExt, seq::IndexedRandom};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -91,6 +91,7 @@ pub struct ParallelSweep<L, K, B, S> {
     checkerboard: K,
 
     /// Cached storage of the body indices assigned to each space.
+    #[serde(skip)]
     spaces: Vec<Vec<usize>>,
 
     /// Cached storage of the body trial moves in each space.

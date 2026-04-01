@@ -30,7 +30,7 @@ use hoomd_microstate::{
     property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
+use hoomd_spatial::{IndexFromPosition, PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::{Cartesian, Versor};
 
 use crate::{Effort, place::place_single_site_orientable_bodies};
@@ -99,11 +99,18 @@ impl<X> Effort for EllipsoidSim<X> {
 
 impl<X> Simulation for EllipsoidSim<X>
 where
-    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + Sync,
+    X: PointsNearBall<Cartesian<3>, SiteKey>
+        + PointUpdate<Cartesian<3>, SiteKey>
+        + Sync
+        + IndexFromPosition<Cartesian<3>>,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
+        if self.microstate.step().is_multiple_of(300) {
+            self.microstate.sort_sites();
+        }
+
         if self.parallel {
             self.translate_count += self.parallel_translate_sweep.apply(
                 &mut self.microstate,
@@ -167,7 +174,9 @@ where
         + WithSearchRadius
         + Clone
         + for<'a> Deserialize<'a>
-        + Serialize,
+        + Serialize
+        + Sync
+        + IndexFromPosition<Cartesian<3>>,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     /// Construct a new hard octahedra simulation
@@ -191,6 +200,7 @@ where
                     .with_context(|| format!("Could not read {cache_filename}"))?;
                 // The cache may have been generated with a different value of parallel.
                 result.parallel = parallel;
+                result.microstate.sort_sites();
                 return Ok(result);
             }
             Err(error) => match error.kind() {
@@ -204,16 +214,14 @@ where
         let translate = Translate::with_maximum_distance(0.05.try_into()?);
         let mut translate_sweep = Sweep(translate.clone());
         let mut parallel_translate_sweep = ParallelSweep::new(
-            hamiltonian.0.maximum_interaction_range().try_into()?,
+            hamiltonian.maximum_interaction_range().try_into()?,
             translate,
         );
 
         let rotate = Rotate::with_maximum_rotation((0.03).try_into()?);
         let mut rotate_sweep = Sweep(rotate.clone());
-        let mut parallel_rotate_sweep = ParallelSweep::new(
-            hamiltonian.0.maximum_interaction_range().try_into()?,
-            rotate,
-        );
+        let mut parallel_rotate_sweep =
+            ParallelSweep::new(hamiltonian.maximum_interaction_range().try_into()?, rotate);
 
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
@@ -221,16 +229,17 @@ where
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
-            r_cut: hamiltonian.0.maximum_interaction_range(),
+            r_cut: hamiltonian.maximum_interaction_range(),
         };
         let overlap_penalty_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
 
-        let microstate = place_single_site_orientable_bodies(
+        let mut microstate = place_single_site_orientable_bodies(
             n,
             number_density,
-            hamiltonian.0.maximum_interaction_range(),
+            hamiltonian.maximum_interaction_range(),
             &overlap_penalty_hamiltonian,
         )?;
+        microstate.sort_sites();
 
         translate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
         *parallel_translate_sweep

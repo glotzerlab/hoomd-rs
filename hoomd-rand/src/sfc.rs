@@ -1,7 +1,12 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use rand::{RngCore, SeedableRng, rand_core::impls};
+use core::convert::Infallible;
+
+use rand::{
+    SeedableRng,
+    rand_core::{TryRng, utils},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::util::read_le_u64;
@@ -33,7 +38,7 @@ use crate::util::read_le_u64;
 ///
 /// ## Generation
 ///
-/// The generators implements [`RngCore`] and thus also `Rng`.
+/// The generators implements [`TryRng`] and thus also `Rng`.
 /// See also the [Random Values] chapter in the Rust Rand book.
 ///
 /// [portable]: https://rust-random.github.io/book/crate-reprod.html
@@ -81,22 +86,24 @@ impl SFC64 {
     }
 }
 
-impl RngCore for SFC64 {
+impl TryRng for SFC64 {
+    type Error = Infallible;
+
     #[inline]
-    fn next_u64(&mut self) -> u64 {
-        self.step()
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        Ok(self.step())
     }
     #[inline]
     #[expect(
         clippy::cast_possible_truncation,
         reason = "the truncation is intended"
     )]
-    fn next_u32(&mut self) -> u32 {
-        self.step() as u32
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        Ok(self.step() as u32)
     }
     #[inline]
-    fn fill_bytes(&mut self, dst: &mut [u8]) {
-        impls::fill_bytes_via_next(self, dst);
+    fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
+        utils::fill_bytes_via_next_word(dst, || Ok(self.step()))
     }
 }
 impl SeedableRng for SFC64 {
@@ -115,7 +122,7 @@ impl SeedableRng for SFC64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::SeedableRng;
+    use rand::{Rng, SeedableRng};
     use rstest::rstest;
 
     // To generate test data:
@@ -162,7 +169,7 @@ mod tests {
 
     #[rstest::fixture]
     fn large_uniform_sample() -> Vec<u64> {
-        const N: u32 = 2u32.pow(23);
+        const N: u32 = 2_u32.pow(23);
         let mut rng = SFC64::initialize(456_981, 0xcafe, 9_345_663_908, 123_456_789);
         (0..N).map(|_| rng.next_u64()).collect::<Vec<_>>()
     }
@@ -200,7 +207,7 @@ mod tests {
     #[test]
     fn test_sfc64_deep() {
         let mut rng = SFC64::seed_from_u64(0);
-        (0..(2u64.pow(17) - 1)).for_each(|_| {
+        (0..(2_u64.pow(17) - 1)).for_each(|_| {
             rng.next_u64();
         });
         assert_eq!(rng.next_u64(), 4_977_758_738_274_538_201);

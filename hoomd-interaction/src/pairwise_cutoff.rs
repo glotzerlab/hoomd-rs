@@ -152,7 +152,7 @@ impl<E> PairwiseCutoff<E> {
     ///
     /// let body_a = Body::point(Cartesian::from([0.0, 0.0]));
     /// let body_b = Body::point(Cartesian::from([0.0, 3.0]));
-    /// let body_c = Body::point(Cartesian::from([0.0, -2.0f64.powf(1.0 / 6.0)]));
+    /// let body_c = Body::point(Cartesian::from([0.0, -2.0_f64.powf(1.0 / 6.0)]));
     ///
     /// let microstate = Microstate::builder()
     ///     .bodies([body_a, body_b, body_c])
@@ -825,7 +825,7 @@ mod tests_finite {
 
     use approxim::assert_relative_eq;
     use rand::{
-        Rng, SeedableRng,
+        RngExt, SeedableRng,
         distr::{Distribution, Uniform},
         rngs::StdRng,
     };
@@ -1283,6 +1283,16 @@ mod tests_finite {
         }
 
         Ok(())
+    }
+}
+
+impl<E> MaximumInteractionRange for PairwiseCutoff<E>
+where
+    E: MaximumInteractionRange,
+{
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        self.0.maximum_interaction_range()
     }
 }
 

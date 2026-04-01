@@ -127,8 +127,8 @@ microstate. The crate also implements commonly used energies, such as external
 potentials and cutoff pair potentials. Users can write custom types that
 implement the `TotalEnergy` trait.
 
-Tuples of types that implement `TotalEnergy` (and similar traits) sum the
-contributions from all elements of the tuple.
+Derive macros for `TotalEnergy` (and similar traits) sum the contributions from
+all fields of the struct.
 
 ### Forces and torques
 
@@ -179,7 +179,10 @@ cutoff to 0 at a given distance `r_cut`.
 
 ## Type dependent parameters
 
-TODO: Sketch out how enums and `SiteEnergy`/`SitePairEnergy` work with match expressions.
+Users should implement custom site and site pair interaction types.
+The "Type-dependent Interactions" tutorial demonstrates best practices
+for this approach (use an `enum` for the site type and a `match` in
+the `SitePairEnergy` implementation).
 
 ## Cutoff potentials, spatial data structures, and periodic boundary conditions
 

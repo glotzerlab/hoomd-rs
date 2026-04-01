@@ -2,10 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![allow(
     clippy::exhaustive_enums,
@@ -52,6 +52,13 @@
 //!
 //! `doc-example` Make examples suitable for display in a web browser.
 //! `webgpu` Compile for the WebGPU platform when building for the wasm32 target.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-bevy` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 use std::{ops::Range, time::Duration};
 
@@ -93,6 +100,9 @@ pub mod representation;
 
 /// The default color for the primary representation (in 2D).
 pub const PRIMARY_COLOR: Color = Color::srgb(249.0 / 255.0, 203.0 / 255.0, 136.0 / 255.0);
+
+/// The default color for highlighted features.
+pub const HIGHLIGHT_COLOR: Color = Color::srgb(174.0 / 255.0, 215.0 / 255.0, 1.0);
 
 /// The default color for the primary representation (darkened for 3D lighting).
 pub const PRIMARY_COLOR_3D: Color = Color::srgb(0.836, 0.533, 0.211);
@@ -682,6 +692,7 @@ where
         representation::disk::build(app);
         representation::ellipse::build(app);
         representation::hyperbolic_disk::build(app);
+        representation::hyperbolic_polygon::build(app);
 
         embedded_asset!(app, "logo.png");
 
@@ -1002,6 +1013,7 @@ pub fn add_default_plugins(app: &mut App) {
             primary_window: Some(Window {
                 canvas: Some("#hoomd-example".into()),
                 fit_canvas_to_parent: true,
+                focused: false,
                 ..default()
             }),
             ..default()

@@ -51,7 +51,7 @@ struct HardEllipseSelfAssembly {
     /// Quick compress algorithm.
     quick_compress: QuickCompress<Periodic<Rectangle>>,
     /// Quick insert algorithm.
-    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
+    quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted and compressed.
     overlap_penalty_hamiltonian: PairwiseCutoff<
         Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
@@ -70,7 +70,7 @@ enum Phase {
 
 // ANCHOR: simulation_new
 impl HardEllipseSelfAssembly {
-    /// Construct a new hard ellipsoid self-assembly simulation.
+    /// Construct a new hard ellipse self-assembly simulation.
     fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
@@ -100,13 +100,13 @@ impl HardEllipseSelfAssembly {
         let square =
             Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
         let periodic_square =
-            Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
+            Periodic::new(hamiltonian.maximum_interaction_range(), square)?;
         // ANCHOR_END: periodic
 
         // ANCHOR: microstate
         let vec_cell = VecCell::builder()
             .nominal_search_radius(
-                hamiltonian.0.maximum_interaction_range().try_into()?,
+                hamiltonian.maximum_interaction_range().try_into()?,
             )
             .build();
         let microstate = Microstate::builder()
@@ -287,11 +287,21 @@ impl HardEllipseSelfAssembly {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let mut simulation = HardEllipseSelfAssembly::new()?;
-    // TODO: Write GSD file.
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
 
-    for _ in 0..40_000 {
+    let mut simulation = HardEllipseSelfAssembly::new()?;
+    let mut hoomd_gsd_file =
+        HoomdGsdFile::create("hard-ellipse-self-assembly.gsd")?;
+
+    for _ in 0..100_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(10_000) {
+            hoomd_gsd_file
+                .append_microstate(&simulation.microstate)?
+                .end()?;
+        }
     }
 
     Ok(())

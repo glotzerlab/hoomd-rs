@@ -56,7 +56,7 @@ impl Default for OverlapPenalty {
     /// The default values are tuned for use with `QuickInsert` and `QuickCompress`
     /// applied to systems of spherical particles with diameter approximately 1.
     ///
-    /// * $`k = 1000`$
+    /// * $`k = 10,000`$
     /// * $`d_\mathrm{max} = 0.2`$
     /// * $`\varepsilon_\mathrm{shoulder} = 100`$
     ///
@@ -73,7 +73,7 @@ impl Default for OverlapPenalty {
     #[inline]
     fn default() -> Self {
         Self {
-            k: 1000.0,
+            k: 10_000.0,
             maximum_allowed_overlap: 0.2,
             epsilon_shoulder: 100.0,
         }
@@ -133,7 +133,10 @@ mod tests {
 
         assert_eq!(overlap_penalty.energy(1.0), 0.0);
         assert_eq!(overlap_penalty.energy(0.0), 0.0);
-        assert_eq!(overlap_penalty.energy(0.0f64.next_down()), epsilon_shoulder);
+        assert_eq!(
+            overlap_penalty.energy(0.0_f64.next_down()),
+            epsilon_shoulder
+        );
         assert_eq!(overlap_penalty.energy(-0.5), epsilon_shoulder);
     }
 
@@ -151,9 +154,12 @@ mod tests {
 
         assert_eq!(overlap_penalty.energy(1.0), 0.0);
         assert_eq!(overlap_penalty.energy(0.0), 0.0);
-        assert_eq!(overlap_penalty.energy(0.0f64.next_down()), 0.0);
+        assert_eq!(overlap_penalty.energy(0.0_f64.next_down()), 0.0);
         assert_eq!(overlap_penalty.energy(-0.5), 0.0);
-        assert_eq!(overlap_penalty.energy((-0.5f64).next_down()), f64::INFINITY);
+        assert_eq!(
+            overlap_penalty.energy((-0.5_f64).next_down()),
+            f64::INFINITY
+        );
         assert_eq!(overlap_penalty.energy(-1.0), f64::INFINITY);
     }
 
@@ -171,6 +177,6 @@ mod tests {
 
         assert_eq!(overlap_penalty.energy(1.0), 0.0);
         assert_eq!(overlap_penalty.energy(0.0), 0.0);
-        assert_eq!(overlap_penalty.energy(-0.125), 0.5 * k * 0.125f64.powi(2));
+        assert_eq!(overlap_penalty.energy(-0.125), 0.5 * k * 0.125_f64.powi(2));
     }
 }

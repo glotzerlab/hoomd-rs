@@ -35,7 +35,7 @@ and you get something very interesting.
 ## Type Aliases
 
 Create type aliases for your model's *vector*, *body properties*, and *site
-properties* types so that you don't need to repeat the full nested generic type
+properties* types so that you don't need to repeat the full generic type
 names throughout the code:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:type_aliases}}
@@ -74,7 +74,8 @@ moves because the result is more visually interesting.
 
 ## The Simulation Model
 
-Here is the type that holds the simulation model:
+Here is the type that holds the simulation model along with the corresponding
+Hamiltonian:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:simulation_struct}}
 ```
@@ -88,17 +89,9 @@ The `new()` method constructs a new simulation model:
 
 #### Parameters
 
-Assign all the model parameters in one code block so that they are easy to modify:
+Assign all the model parameters in one code block:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:parameters}}
-```
-
-#### Microstate
-
-Use the `VecCell` spatial data structure, confine the bodies and sites inside of a
-closed square, and start with no bodies in the microstate:
-```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:microstate}}
 ```
 
 #### Hamiltonian
@@ -109,6 +102,14 @@ Use the same Hamiltonian as the [Applying Interactions] tutorial:
 ```
 
 These interactions are applied to the *sites* in the microstate.
+
+#### Microstate
+
+Use the `VecCell` spatial data structure, confine the bodies and sites inside of a
+closed square, and start with no bodies in the microstate:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:microstate}}
+```
 
 #### Trial Moves
 
@@ -183,20 +184,40 @@ Apply the custom trial move to each body in the microstate:
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:step}}
 ```
 
-## Implement `main()`
+## Execute the Simulation in Batch Mode
 
-To run the simulation, construct the `Tetronimoes` simulation model.
-Then call `advance()` many times:
+### Implement `main()`
+
+To run the simulation, construct the `Tetronimoes` simulation model. Then call
+`advance()` many times and write the sites to a GSD file periodically so that
+you can inspect the results of the simulation:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:main}}
 ```
 
-Write the sites to a GSD file periodically so that you can inspect the results
-of the simulation.
+See [Applying Interactions](applying-interactions.md) for a step-by-step explanation
+of this code.
 
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
-> shown here) used in the interactive example.
+> shown here) used in the interactive example. The interactive example does *not*
+> write the GSD file.
+
+### Run the Simulation
+
+In a terminal, execute the following command to run the simulation in batch mode:
+```shell
+cargo run --release --example tetronimoes
+```
+
+### Visualize the Simulation Results
+
+Open the generated `tetronimoes.gsd` in [Ovito] or another visualization
+tool to see the simulation results. [Ovito] will render the disks as spheres
+with the expected diameter of 1 by default.
+
+Render with Tachyon, and you should see something like:
+![Tetronimoes rendered with Ovito](tetronimoes.png)
 
 ## Conclusion
 
@@ -206,15 +227,6 @@ can be translated and rotated by trial moves.
 Navigate to the top of the page and refresh to see the simulation in
 action again. Notice how the randomly generated tetronimoes fall to the
 bottom while randomly rotating.
-
-You can also run the example in batch mode and then open
-the generated `trajectory.gsd` in [Ovito] or another visualization tool:
-```shell
-cargo run --release --example tetronimoes
-```
-
-The next section will explain how to run self-assembly simulations of hard
-particles.
 
 [Applying Interactions]: applying-interactions.md
 [Custom Random Walk]: custom-random-walk.md
