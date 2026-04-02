@@ -1,15 +1,13 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
+use crate::thermalizer::TranslationalMomentumModifier;
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        Mass, Momentum, NetForce, 
-        Position,
-    }
+    Microstate, SiteKey, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{Mass, Momentum, NetForce, Position},
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::Cartesian;
-use crate::thermalizer::TranslationalMomentumModifier;
-
 
 /// Remove the center-of-mass momentum.
 pub struct ComMomentumRemover;

@@ -1,15 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
+use crate::thermalizer::TranslationalMomentumModifier;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        Mass, Momentum, NetForce, Position,
-    }
+    Microstate, SiteKey, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{Mass, Momentum, NetForce, Position},
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Cartesian, InnerProduct, TensorProduct, WedgeProduct};
-use crate::thermalizer::TranslationalMomentumModifier;
-
 
 /// Remove the center-of-mass angular momentum.
 pub struct ComAngularMomentumRemover;
@@ -27,7 +26,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
-    /// 
+    ///
     /// The function modifies the three-dimensional system's momentum by zeroing the
     /// center-of-mass (COM) angular momentum as
     /// ```math
@@ -144,7 +143,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
-    /// 
+    ///
     /// The function modifies the two-dimensional system's momentum by zeroing the
     /// center-of-mass (COM) angular momentum as
     /// ```math
@@ -202,9 +201,8 @@ where
                 let mass = body_properties.mass();
 
                 let p_to_com = *position - com;
-                
-                momentum -=
-                    p_to_com.perpendicular() * com_angular_velocity * *mass;
+
+                momentum -= p_to_com.perpendicular() * com_angular_velocity * *mass;
 
                 *body_properties.momentum_mut() = momentum;
 
