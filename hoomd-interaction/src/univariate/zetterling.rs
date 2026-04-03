@@ -53,13 +53,10 @@ impl UnivariateForce for Zetterling {
         let exp = (self.alpha * r_ell).exp();
 
         let first = -self.epsilon * self.alpha * exp * cos * (r_ell_inv.powi(3));
-        let second =
-            self.epsilon * 2.0 * self.kf * exp * sin * (r_ell_inv.powi(3));
+        let second = self.epsilon * 2.0 * self.kf * exp * sin * (r_ell_inv.powi(3));
         let third = 3.0 * self.epsilon * exp * cos * (r_ell_inv.powi(4));
-        let fourth = self.beta
-            * self.n
-            * (self.sigma.powf(self.n))
-            * (r_ell_inv.powf(self.n + 1.0));
+        let fourth =
+            self.beta * self.n * (self.sigma.powf(self.n)) * (r_ell_inv.powf(self.n + 1.0));
 
         first + second + third + fourth
     }

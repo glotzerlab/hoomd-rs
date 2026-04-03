@@ -131,12 +131,12 @@
 //! Boost point in 3D hyperbolic space in x direction using biquaternion
 //! algebra:
 //! ```
+//! use approxim::assert_relative_eq;
 //! use hoomd_manifold::{
 //!     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
 //! };
 //! use num::complex::Complex;
 //! use std::f64::consts::PI;
-//! use approxim::assert_relative_eq;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);

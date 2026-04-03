@@ -26,7 +26,7 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(14);
     /// let initial_point = Point::new(Spherical::from_cartesian_coordinates(
-    ///     [0.5_f64.sqrt(),0.0,  0.5_f64.sqrt()].into(),
+    ///     [0.5_f64.sqrt(), 0.0, 0.5_f64.sqrt()].into(),
     /// ));
     /// let d = 0.1;
     /// let translate = Translate::with_maximum_distance(d.try_into()?);
@@ -53,7 +53,7 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
         body_properties: Point<Spherical<3>>,
     ) -> Point<Spherical<3>> {
         let mut trial = body_properties;
-        let displacement = (self.maximum_distance().get())*rng.sample::<f64, _>(StandardNormal);
+        let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
         let (sn, cs) = (displacement.sin(), displacement.cos());
         let vec = Cartesian::<3>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
         let proj = vec.dot(trial.position.point());
@@ -64,23 +64,22 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
         ]);
         let (unit, _norm) = tangent.to_unit().expect("cannot be null");
         let new = Cartesian::from([
-            trial.position.coordinates()[0] * cs + unit.get().coordinates[0]*sn,
-            trial.position.coordinates()[1] * cs + unit.get().coordinates[1]*sn,
-            trial.position.coordinates()[2] * cs + unit.get().coordinates[2]*sn,
+            trial.position.coordinates()[0] * cs + unit.get().coordinates[0] * sn,
+            trial.position.coordinates()[1] * cs + unit.get().coordinates[1] * sn,
+            trial.position.coordinates()[2] * cs + unit.get().coordinates[2] * sn,
         ]);
-        *trial.position_mut() = Spherical::from_cartesian_coordinates(
-            new);
+        *trial.position_mut() = Spherical::from_cartesian_coordinates(new);
         trial
-/*         let mut trial = body_properties;
-        let disk = SphericalDisk {
-            disk_radius: *self.maximum_distance(),
-            point: *trial.position_mut(),
-        };
-        *trial.position_mut() = disk.sample(rng);
-        let rescale = 1.0 / trial.position().point().norm();
-        *trial.position_mut() =
-            Spherical::from_cartesian_coordinates(*trial.position().point() * rescale);
-        trial */
+        //         let mut trial = body_properties;
+        // let disk = SphericalDisk {
+        // disk_radius: *self.maximum_distance(),
+        // point: *trial.position_mut(),
+        // };
+        // trial.position_mut() = disk.sample(rng);
+        // let rescale = 1.0 / trial.position().point().norm();
+        // trial.position_mut() =
+        // Spherical::from_cartesian_coordinates(*trial.position().point() * rescale);
+        // trial
     }
 }
 

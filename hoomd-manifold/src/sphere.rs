@@ -210,7 +210,13 @@ impl Metric for Spherical<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
-        let arg_clipped = if arg >= 1.0 {1.0} else if arg <= -1.0 {-1.0} else {arg};
+        let arg_clipped = if arg >= 1.0 {
+            1.0
+        } else if arg <= -1.0 {
+            -1.0
+        } else {
+            arg
+        };
         arg_clipped.acos()
     }
     #[inline]
