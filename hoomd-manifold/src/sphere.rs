@@ -125,26 +125,48 @@ impl Spherical<4> {
     /// Create a versor which maps $`(1,0,0,0)`$ to the target `Spherical<4>` point.
     /// # Example
     /// ```
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::Spherical;
     /// use hoomd_vector::{Cartesian, Quaternion, Versor};
-    /// use approxim::assert_relative_eq;
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let radius = 1.0;
-    /// let x = Spherical::<4>::from_polar_coordinates(PI/4.0, PI/8.0, 5.0*PI/4.0);
-
+    /// let x = Spherical::<4>::from_polar_coordinates(
+    ///     PI / 4.0,
+    ///     PI / 8.0,
+    ///     5.0 * PI / 4.0,
+    /// );
     /// let x_versor = x.to_versor();
-    /// let pole_versor = Quaternion::from([1.0,0.0,0.0,0.0]).to_versor().expect("not a null vector");
-    /// let transformation = (*x_versor.get() * *pole_versor.get() * *x_versor.get())
+    /// let pole_versor = Quaternion::from([1.0, 0.0, 0.0, 0.0])
     ///     .to_versor()
-    ///     .expect("Hard-coded example is valid");
+    ///     .expect("not a null vector");
+    /// let transformation =
+    ///     (*x_versor.get() * *pole_versor.get() * *x_versor.get())
+    ///         .to_versor()
+    ///         .expect("Hard-coded example is valid");
     /// let mapped_pole = Spherical::<4>::from_versor(transformation);
     ///
-    /// assert_relative_eq!(mapped_pole.coordinates()[0], x.coordinates()[0], epsilon=1e-12);
-    /// assert_relative_eq!(mapped_pole.coordinates()[1], x.coordinates()[1], epsilon=1e-12);
-    /// assert_relative_eq!(mapped_pole.coordinates()[2], x.coordinates()[2], epsilon=1e-12);
-    /// assert_relative_eq!(mapped_pole.coordinates()[3], x.coordinates()[3], epsilon=1e-12);
+    /// assert_relative_eq!(
+    ///     mapped_pole.coordinates()[0],
+    ///     x.coordinates()[0],
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(
+    ///     mapped_pole.coordinates()[1],
+    ///     x.coordinates()[1],
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(
+    ///     mapped_pole.coordinates()[2],
+    ///     x.coordinates()[2],
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(
+    ///     mapped_pole.coordinates()[3],
+    ///     x.coordinates()[3],
+    ///     epsilon = 1e-12
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -210,13 +232,7 @@ impl Metric for Spherical<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
-        let arg_clipped = if arg >= 1.0 {
-            1.0
-        } else if arg <= -1.0 {
-            -1.0
-        } else {
-            arg
-        };
+        let arg_clipped = arg.clamp(-1.0, 1.0);
         arg_clipped.acos()
     }
     #[inline]
@@ -357,8 +373,7 @@ impl Distribution<Spherical<4>> for SphericalDisk<4> {
                 .to_versor()
                 .expect("sperical points cannot be null");
         let sphere_point = Spherical::<4>::from_versor(transformation);
-        let transformed_point = Spherical::<4>::from_cartesian_coordinates(*sphere_point.point());
-        transformed_point
+        Spherical::<4>::from_cartesian_coordinates(*sphere_point.point())
     }
 }
 
