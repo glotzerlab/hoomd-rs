@@ -1,3 +1,7 @@
+#:schema https://www.schemastore.org/prek.json
+
+minimum_prek_version = "0.3.8"
+
 [[repos]]
 repo = "https://github.com/glotzerlab/fix-license-header"
 rev = "v0.4.1"
@@ -23,12 +27,31 @@ hooks = [
   { id = "check-toml" },
   { id = "check-yaml" },
   { id = "check-case-conflict" },
-  { id = "mixed-line-ending" }
+  { id = "mixed-line-ending" },
+  { id = "check-added-large-files" },
+  { id = "check-executables-have-shebangs" },
+  { id = "check-symlinks" },
+  { id = "detect-private-key" },
+  { id = "check-vcs-permalinks" },
+  { id = "check-shebang-scripts-are-executable" },
+  { id = "check-illegal-windows-names" },
 ]
 
 [[repos]]
 repo = "https://github.com/rhysd/actionlint"
-rev = "v1.7.11"
+rev = "v1.7.12"
 hooks = [
   { id = "actionlint" }
+]
+
+[[repos]]
+repo = "https://github.com/mit-d/check-unicode"
+rev = "v0.6.0"
+hooks = [
+  { id = "check-unicode",
+    args = [
+      "--allow-printable",
+      "--check-confusables",
+    ]
+  }
 ]

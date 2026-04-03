@@ -251,7 +251,7 @@ of string type names.
 > as a starting point when you need to implement `AppendMicrostate` for your
 > custom site and/or boundary types.
 
-[Patchy Particle Self-assembly]: patchy-particle-self-assesmbly.md
+[Patchy Particle Self-assembly]: patchy-particle-self-assembly.md
 [`hoomd-microstate/src/append.rs`]: https://github.com/glotzerlab/hoomd-rs/blob/trunk/hoomd-microstate/src/append.rs
 
 ### Implement `main()`
