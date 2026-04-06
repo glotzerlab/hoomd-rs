@@ -1,6 +1,6 @@
 [package]
 name = "hoomd-manifold"
-description = "Manifold and curved geometries library."
+description = "Enable hoomd-rs simulations in curved space."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

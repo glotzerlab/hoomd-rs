@@ -469,7 +469,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "benchmarks"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -1891,7 +1891,7 @@ dependencies = [
 
 [[package]]
 name = "build-wasm-doc-examples"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -2872,9 +2872,9 @@ checksum = "dea2df4cf52843e0452895c455a1a2cfbb842a1e7329671acf418fdc53ed4c59"
 
 [[package]]
 name = "euclid"
-version = "0.22.13"
+version = "0.22.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df61bf483e837f88d5c2291dcf55c67be7e676b3a51acc48db3a7b163b91ed63"
+checksum = "f1a05365e3b1c6d1650318537c7460c6923f1abdd272ad6842baa2b509957a06"
 dependencies = [
  "num-traits",
 ]
@@ -2902,7 +2902,7 @@ dependencies = [
 
 [[package]]
 name = "examples"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "bevy",
@@ -3700,7 +3700,7 @@ checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
 
 [[package]]
 name = "hoomd-bevy"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "bevy",
@@ -3717,7 +3717,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-derive"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3726,7 +3726,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-geometry"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "approxim",
@@ -3747,7 +3747,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-gsd"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "assert2",
@@ -3761,7 +3761,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-interaction"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "approxim",
@@ -3781,7 +3781,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-linear-algebra"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "approxim",
  "divan",
@@ -3795,7 +3795,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-manifold"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "approxim",
  "divan",
@@ -3812,7 +3812,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-mc"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "approxim",
@@ -3863,7 +3863,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-microstate"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "approxim",
@@ -3890,7 +3890,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-rand"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "approxim",
  "assert2",
@@ -3905,7 +3905,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-simulation"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "serde",
@@ -3913,7 +3913,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-spatial"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "assert2",
  "hoomd-utility",
@@ -3928,7 +3928,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-utility"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "assert2",
@@ -3941,7 +3941,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-vector"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "approxim",
@@ -4214,9 +4214,9 @@ dependencies = [
 
 [[package]]
 name = "itoa"
-version = "1.0.17"
+version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92ecc6618181def0457392ccd0ee51198e065e016d1d527a7ac1b6dc7c1f09d2"
+checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "jiff"
@@ -8210,18 +8210,18 @@ checksum = "6df3dc4292935e51816d896edcd52aa30bc297907c26167fec31e2b0c6a32524"
 
 [[package]]
 name = "zerocopy"
-version = "0.8.42"
+version = "0.8.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2578b716f8a7a858b7f02d5bd870c14bf4ddbbcf3a4c05414ba6503640505e3"
+checksum = "efbb2a062be311f2ba113ce66f697a4dc589f85e78a4aea276200804cea0ed87"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.8.42"
+version = "0.8.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e6cc098ea4d3bd6246687de65af3f920c430e236bee1e3bf2e441463f08a02f"
+checksum = "0e8bc7269b54418e7aeeef514aa68f8690b8c0489a06b0136e5f57c4c5ccab89"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -8296,9 +8296,9 @@ checksum = "cb8a0807f7c01457d0379ba880ba6322660448ddebc890ce29bb64da71fb40f9"
 
 [[package]]
 name = "zune-jpeg"
-version = "0.5.13"
+version = "0.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec5f41c76397b7da451efd19915684f727d7e1d516384ca6bd0ec43ec94de23c"
+checksum = "0b7a1c0af6e5d8d1363f4994b7a091ccf963d8b694f7da5b0b9cceb82da2c0a6"
 dependencies = [
  "zune-core",
 ]

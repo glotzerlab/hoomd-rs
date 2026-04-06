@@ -1,4 +1,13 @@
-![hoomd-rs](doc/src/images/hoomdrust-logo-horizontal.svg)
+![hoomd-rs](https://raw.githubusercontent.com/glotzerlab/hoomd-rs/refs/tags/1.0.2/doc/src/images/hoomdrust-logo-horizontal.svg)
+
+[![Crates.io Version](https://img.shields.io/crates/v/hoomd-mc?color=a44300)](https://crates.io/crates/hoomd-mc)
+[![Read the Docs](https://img.shields.io/readthedocs/hoomd-rs/latest.svg)](https://hoomd-rs.readthedocs.io/)
+[![GitHub Repository](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/glotzerlab/hoomd-rs)
+[![GitHub Discussions](https://img.shields.io/github/discussions/glotzerlab/hoomd-rs)](https://github.com/glotzerlab/hoomd-rs/discussions/)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/y/glotzerlab/hoomd-rs?label=commits)](https://github.com/glotzerlab/hoomd-rs)
+[![Contributors](https://img.shields.io/github/contributors-anon/glotzerlab/hoomd-rs.svg?style=flat)](https://hoomd-rs.readthedocs.io/en/latest/credits.html)
+[![GitHub top language](https://img.shields.io/github/languages/top/glotzerlab/hoomd-rs?color=a44300)](https://rust-lang.org/)
+[![prek](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/docs/assets/badge-v0.json)](https://github.com/j178/prek)
 
 **hoomd-rs** is a collection of [Rust] crates that implement particle
 simulations and related methods. It performs Monte Carlo simulations of hard
@@ -72,7 +81,7 @@ to run the examples locally.
 [HOOMD-blue]: https://hoomd-blue.readthedocs.io
 [Rust]: https://www.rust-lang.org/
 [Template workflow]: https://github.com/glotzerlab/hoomd-workflow/
-[examples]: examples/
+[examples]: https://github.com/glotzerlab/hoomd-rs/tree/1.0.2/examples
 
 [Documentation]: https://hoomd-rs.readthedocs.io
 

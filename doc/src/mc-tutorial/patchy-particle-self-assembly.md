@@ -16,8 +16,8 @@ The tutorial also uses a temperature ramp to improve the quality of the
 self-assembled structures and logs the temperature and potential energy
 for further analysis.
 
-[10.1039/C0SM01494J]: http://doi.org/10.1039/C0SM01494J
-[10.1039/D2SM01593E]: http://doi.org/10.1039/D2SM01593E
+[10.1039/C0SM01494J]: https://doi.org/10.1039/C0SM01494J
+[10.1039/D2SM01593E]: https://doi.org/10.1039/D2SM01593E
 
 * Objectives:
   * Explain how to model systems of hard core particles with attractive patches.
