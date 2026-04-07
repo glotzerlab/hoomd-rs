@@ -6,6 +6,7 @@
     reason = "benches don't need public documentation"
 )]
 #![expect(clippy::wildcard_imports, reason = "simplifies code")]
+#![expect(clippy::cast_possible_truncation, reason = "N is small")]
 
 //! Benchmark 2D convex hull (Graham scan)
 
