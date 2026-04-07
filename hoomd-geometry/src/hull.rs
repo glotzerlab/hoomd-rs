@@ -174,20 +174,35 @@ mod tests {
         hull_2d_grahamscan(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
 
-        let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [1.0, 1.0].into(), [0.0, 1.0].into()];
+        let hull = [
+            [0.0, 0.0].into(),
+            [1.0, 0.0].into(),
+            [1.0, 1.0].into(),
+            [0.0, 1.0].into(),
+        ];
         itertools::assert_equal(&vertices, &hull);
     }
 
     #[rstest]
     fn test_square_corners_big() {
-        let mut vertices: Vec<Cartesian<2>> = vec![[101.0, 101.0], [101.0, 100.0], [100.0, 101.0], [100.0, 100.0]]
-            .into_iter()
-            .map(Cartesian::from)
-            .collect();
+        let mut vertices: Vec<Cartesian<2>> = vec![
+            [101.0, 101.0],
+            [101.0, 100.0],
+            [100.0, 101.0],
+            [100.0, 100.0],
+        ]
+        .into_iter()
+        .map(Cartesian::from)
+        .collect();
         hull_2d_grahamscan(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
 
-        let hull = [[100.0, 100.0].into(), [101.0, 100.0].into(), [101.0, 101.0].into(), [100.0, 101.0].into()];
+        let hull = [
+            [100.0, 100.0].into(),
+            [101.0, 100.0].into(),
+            [101.0, 101.0].into(),
+            [100.0, 101.0].into(),
+        ];
         itertools::assert_equal(&vertices, &hull);
     }
 
@@ -209,7 +224,12 @@ mod tests {
         hull_2d_grahamscan(&mut vertices).unwrap();
         // Hull should have 4 corners (interior edge points excluded)
         assert_eq!(vertices.len(), 4);
-        let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [1.0, 1.0].into(), [0.0, 1.0].into()];
+        let hull = [
+            [0.0, 0.0].into(),
+            [1.0, 0.0].into(),
+            [1.0, 1.0].into(),
+            [0.0, 1.0].into(),
+        ];
         itertools::assert_equal(&vertices, &hull);
     }
 
@@ -236,7 +256,12 @@ mod tests {
         hull_2d_grahamscan(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
 
-        let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [1.0, 1.0].into(), [0.0, 1.0].into()];
+        let hull = [
+            [0.0, 0.0].into(),
+            [1.0, 0.0].into(),
+            [1.0, 1.0].into(),
+            [0.0, 1.0].into(),
+        ];
         itertools::assert_equal(&vertices, &hull);
     }
 
@@ -350,7 +375,12 @@ mod tests {
         hull_2d_grahamscan(&mut vertices).unwrap();
         assert!(vertices.len() >= 3);
 
-        let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [1.0, 1.0].into(), [0.0, 1.0].into()];
+        let hull = [
+            [0.0, 0.0].into(),
+            [1.0, 0.0].into(),
+            [1.0, 1.0].into(),
+            [0.0, 1.0].into(),
+        ];
         itertools::assert_equal(&vertices, &hull);
     }
 
@@ -443,7 +473,12 @@ mod tests {
         // Should only keep furthest point in each direction
         assert!(vertices.len() >= 3);
 
-        let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [3.0, 3.0].into(), [0.0, 1.0].into()];
+        let hull = [
+            [0.0, 0.0].into(),
+            [1.0, 0.0].into(),
+            [3.0, 3.0].into(),
+            [0.0, 1.0].into(),
+        ];
         itertools::assert_equal(&vertices, &hull);
     }
 
@@ -508,7 +543,12 @@ mod tests {
         hull_2d_grahamscan(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
 
-        let hull = [[-1.0, -1.0].into(), [1.0, -1.0].into(), [1.0, 1.0].into(), [-1.0, 1.0].into()];
+        let hull = [
+            [-1.0, -1.0].into(),
+            [1.0, -1.0].into(),
+            [1.0, 1.0].into(),
+            [-1.0, 1.0].into(),
+        ];
         itertools::assert_equal(&vertices, &hull);
     }
 
@@ -521,7 +561,12 @@ mod tests {
         hull_2d_grahamscan(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
 
-        let hull = [[0.0, 0.0].into(), [1e6, 0.0].into(), [1e6, 1e6].into(), [0.0, 1e6].into()];
+        let hull = [
+            [0.0, 0.0].into(),
+            [1e6, 0.0].into(),
+            [1e6, 1e6].into(),
+            [0.0, 1e6].into(),
+        ];
         itertools::assert_equal(&vertices, &hull);
     }
 }
