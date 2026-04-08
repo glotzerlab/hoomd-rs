@@ -11,7 +11,7 @@ use hoomd_vector::{Angle, Cartesian, Versor};
 use crate::{
     AppendMicrostate, Microstate,
     boundary::{Closed, Open, Periodic},
-    property::{OrientedHyperbolicPoint, OrientedPoint, Point},
+    property::{OrientedPoint, OrientedHyperbolicPoint, Point},
 };
 
 impl<B, X> AppendMicrostate<B, Point<Cartesian<2>>, X, Closed<Hypercuboid<2>>> for HoomdGsdFile {

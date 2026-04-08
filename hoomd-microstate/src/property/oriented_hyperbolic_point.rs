@@ -12,6 +12,7 @@ use rand::{
     distr::{Distribution, Uniform},
 };
 use robust::{Coord, orient2d};
+use serde::{Deserialize, Serialize};
 use std::f64::consts::PI;
 
 /// The position and orientation of an extended body in hyperbolic space.
@@ -33,7 +34,7 @@ use std::f64::consts::PI;
 ///     orientation: Angle::from(2.39),
 /// };
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct OrientedHyperbolicPoint<const N: usize, R> {
     /// The location of the extended body in the system frame.
     pub position: Hyperbolic<N>,

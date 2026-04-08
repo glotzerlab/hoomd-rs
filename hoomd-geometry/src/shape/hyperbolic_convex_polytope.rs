@@ -8,6 +8,7 @@ use hoomd_manifold::{Hyperbolic, Minkowski};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Angle, Metric};
 use robust::{Coord, orient2d};
+use serde::{Deserialize, Serialize};
 use std::f64::consts::PI;
 
 /// A faceted hyperbolic solid defined by the convex hull of its vertices.
@@ -51,12 +52,12 @@ use std::f64::consts::PI;
 ///     &Hyperbolic::<3>::default(),
 ///     &Angle::default(),
 ///     &Hyperbolic::<3>::from_polar_coordinates(3.0, 2.3),
-///     &Angle::from(0.2)
+///     &Angle::from(0.2) 
 /// ));
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HyperbolicConvexPolytope<const N: usize> {
     /// The vertices of the shape
     vertices: Vec<Hyperbolic<N>>,

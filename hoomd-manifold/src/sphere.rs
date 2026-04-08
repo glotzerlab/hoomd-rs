@@ -269,7 +269,7 @@ pub struct SphericalDisk<const N: usize> {
     /// Max distance away from point.
     pub disk_radius: PositiveReal,
     /// The center of the disk.
-    pub point: Spherical<3>,
+    pub point: Spherical<N>,
 }
 
 impl<const N: usize> Default for Spherical<N> {
