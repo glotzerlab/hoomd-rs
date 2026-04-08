@@ -24,7 +24,7 @@ use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 #[inline(never)]
 fn asm_collide3d() {
     let mut rng = StdRng::seed_from_u64(1);
-    let (p0, p1) = create_dipyramid_pair::<4, 6, _>(&mut rng, 10.0);
+    let (p0, p1) = create_dipyramid_pair::<6, _>(&mut rng, 10.0);
     let (t, r) = create_offset_3d(&mut rng);
     collide3d(&p0, &p1, &t, &r);
 }
@@ -90,14 +90,14 @@ fn create_simplex_pair<R: Rng>(rng: &mut R) -> (Simplex3, Simplex3) {
         ]),
     )
 }
-/// Create a pair of N-dipyramids with random half-heights between 0 and `h_max`
-fn create_dipyramid_pair<const N: usize, const MAX: usize, R: Rng>(
+/// Create a pair of dipyramids with N total vertices (N-2 base + 2 apex).
+fn create_dipyramid_pair<const N: usize, R: Rng>(
     rng: &mut R,
     h_max: f64,
-) -> (ConvexPolytope<3, MAX>, ConvexPolytope<3, MAX>) {
-    let base = ConvexPolytope::<2, N>::regular(N);
+) -> (ConvexPolytope<3, N>, ConvexPolytope<3, N>) {
+    let base = ConvexPolytope::<2, N>::regular(N - 2);
     (
-        ConvexPolytope::<3, MAX>::with_vertices(
+        ConvexPolytope::<3, N>::with_vertices(
             base.vertices()
                 .iter()
                 .map(|x| Cartesian::from([x[0], x[1], 0.0]))
@@ -107,7 +107,7 @@ fn create_dipyramid_pair<const N: usize, const MAX: usize, R: Rng>(
                 ]),
         )
         .unwrap(),
-        ConvexPolytope::<3, MAX>::with_vertices(
+        ConvexPolytope::<3, N>::with_vertices(
             base.vertices()
                 .iter()
                 .map(|x| Cartesian::from([x[0], x[1], 0.0]))
@@ -164,6 +164,7 @@ fn create_offset_3d<R: Rng>(rng: &mut R) -> (Cartesian<3>, Versor) {
 
 const DIMENSIONS: &[usize] = &[2, 3, 4];
 const NUM_VERTICES: &[usize] = &[3, 4, 8, 16, 50];
+const DIPYRAMID_VERTICES: &[usize] = &[5, 6, 10, 18, 52];
 
 #[divan::bench_group]
 mod sphere {
@@ -285,7 +286,7 @@ mod polytopes {
             .bench_local_values(|((p0, p1), (t, r))| black_box(collide2d(&p0, &p1, &t, &r)));
     }
 
-    #[divan::bench(consts = NUM_VERTICES)]
+    #[divan::bench(consts = DIPYRAMID_VERTICES)]
     fn dipyramid_3d<const N: usize>(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
 
@@ -293,7 +294,7 @@ mod polytopes {
             .counter(ItemsCount::from(1_u32))
             .with_inputs(|| {
                 (
-                    shapes_to_convex(create_dipyramid_pair::<N, 52, _>(&mut rng, 10.0)),
+                    shapes_to_convex(create_dipyramid_pair::<N, _>(&mut rng, 10.0)),
                     create_offset_3d(&mut rng),
                 )
             })
