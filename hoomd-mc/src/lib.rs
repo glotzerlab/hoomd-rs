@@ -358,6 +358,32 @@ pub trait Adjust {
     fn adjust(&mut self, factor: PositiveReal);
 }
 
+/// Options that control move size tuning by [`Tune`].
+///
+/// The defaults are:
+/// - `target_acceptance`: 0.2
+/// - `samples`: 8,000
+/// - `steps`: 32
+pub struct TuneOptions {
+    /// The target move acceptance ratio.
+    target_acceptance: OpenUnitIntervalNumber,
+    /// Number of trial moves sampled per step.
+    samples: usize,
+    /// Tune the move size over this many steps.
+    steps: usize,
+}
+
+impl Default for TuneOptions {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            target_acceptance: 0.2.try_into().expect("hard-coded constant should be valid"),
+            samples: 8_000,
+            steps: 32,
+        }
+    }
+}
+
 /// Tune trial move maximum sizes toward a target acceptance ratio.
 ///
 /// [`Trial`] moves that implement [`Tune`] can automatically adjust

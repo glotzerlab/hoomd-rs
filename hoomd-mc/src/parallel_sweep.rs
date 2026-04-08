@@ -8,7 +8,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-use super::{Adjust, Count, LocalTrial, Trial, Tune, tune_local::tune_local_trial};
+use super::{Adjust, Count, LocalTrial, Trial, Tune, TuneOptions, tune_local::tune_local_trial};
 use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Transform,
@@ -485,9 +485,12 @@ where
             microstate,
             hamiltonian,
             macrostate,
-            target_acceptance,
-            samples,
-            steps,
+            &TuneOptions {
+                target_acceptance,
+                samples,
+                steps,
+            },
+            |_| true,
         );
     }
 }
