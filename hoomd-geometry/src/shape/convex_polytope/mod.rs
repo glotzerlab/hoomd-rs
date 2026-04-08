@@ -195,9 +195,6 @@ impl<const N: usize> ConvexPolytope<N> {
     {
         let vertices = vertices.into_iter().collect::<Vec<_>>();
 
-        if vertices.is_empty() {
-            return Err(Error::DegeneratePolytope);
-        }
         if vertices.len() < (N + 1) {
             return Err(Error::DegeneratePolytope);
         }
