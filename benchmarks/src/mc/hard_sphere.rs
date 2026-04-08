@@ -19,7 +19,7 @@ use hoomd_interaction::{
     pairwise::{HardSphere, Isotropic},
     univariate::{Expanded, OverlapPenalty},
 };
-use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial};
+use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial, Tune, TuneOptions};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -28,13 +28,10 @@ use hoomd_microstate::{
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::{IndexFromPosition, PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::Cartesian;
-use log::{debug, info, trace};
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{Effort, place::place_single_site_point_bodies};
-
-/// Relax configurations this many steps before tuning move sizes.
-const RELAX_STEPS: usize = 1_000;
 
 /// The hard sphere simulation.
 #[derive(Serialize, Deserialize)]
@@ -174,17 +171,11 @@ where
             },
         }
 
-        let maximum_distance = match D {
-            2 => 0.7,
-            3 => 0.13,
-            _ => 0.1,
-        };
-
         let hamiltonian = PairwiseCutoff(HardSphere { diameter: sigma });
 
-        let translate = Translate::with_maximum_distance(maximum_distance.try_into()?);
-        let translate_sweep = Sweep(translate.clone());
-        let parallel_translate_sweep = ParallelSweep::new(
+        let translate = Translate::with_maximum_distance((sigma * 0.24).try_into()?);
+        let mut translate_sweep = Sweep(translate.clone());
+        let mut parallel_translate_sweep = ParallelSweep::new(
             hamiltonian.0.maximum_interaction_range().try_into()?,
             translate.clone(),
         );
@@ -199,14 +190,20 @@ where
 
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
 
-        let microstate = place_single_site_point_bodies(
+        let mut microstate = place_single_site_point_bodies(
             n,
             number_density,
             hamiltonian.0.maximum_interaction_range(),
             &overlap_penalty_hamiltonian,
         )?;
+        microstate.sort_sites();
 
-        let mut simulation = Self {
+        translate_sweep.tune_with_options(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 }, &TuneOptions::default());
+        *parallel_translate_sweep
+            .local_trial_mut()
+            .maximum_distance_mut() = *translate_sweep.0.maximum_distance();
+
+        let simulation = Self {
             microstate,
             translate_sweep,
             parallel_translate_sweep,
@@ -216,31 +213,6 @@ where
             parallel,
         };
 
-        debug!("Relaxing configuration...");
-
-        for i in 0..RELAX_STEPS {
-            simulation.advance()?;
-            if (i + 1).is_multiple_of(100) {
-                trace!("{:.1}%", ((i + 1) as f64 / RELAX_STEPS as f64) * 100.0);
-            }
-        }
-
-        simulation.microstate.sort_sites();
-
-        // Move sizes are fixed above for comparison with HOOMD-blue. Uncomment this code
-        // when there is a need to retune the move sizes.
-
-        // simulation.translate_sweep.tune_default(&simulation.microstate, &simulation.hamiltonian, &Isothermal { temperature: 1.0 });
-        // *simulation.parallel_translate_sweep
-        //     .local_trial_mut()
-        //     .maximum_distance_mut() = *simulation.translate_sweep.0.maximum_distance();
-
-        info!(
-            "Translation move size: {}",
-            simulation.translate_sweep.0.maximum_distance()
-        );
-
-        simulation.count = Count::default();
         let out_bytes: Vec<u8> = postcard::to_stdvec(&simulation)?;
         let mut file = File::create(cache_filename)?;
         file.write_all(&out_bytes)?;

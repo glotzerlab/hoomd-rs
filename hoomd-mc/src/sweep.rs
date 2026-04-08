@@ -311,11 +311,6 @@ where
 {
     /// Tune the trial move maximum size to achieve a given acceptance ratio.
     ///
-    /// Use [`tune_default`] unless you have a specific need to adjust the
-    /// tuning parameters.
-    ///
-    /// [`tune_default`]: Self::tune_default
-    ///
     /// # Example
     ///
     /// ```
@@ -323,7 +318,7 @@ where
     /// use hoomd_interaction::{
     ///     MaximumInteractionRange, PairwiseCutoff, pairwise::HardSphere,
     /// };
-    /// use hoomd_mc::{Sweep, Translate, Trial, Tune};
+    /// use hoomd_mc::{Sweep, Translate, Trial, Tune, TuneOptions};
     /// use hoomd_microstate::{
     ///     Body, Microstate, boundary::Periodic, property::Position,
     /// };
@@ -346,7 +341,7 @@ where
     /// let hamiltonian = PairwiseCutoff(HardSphere { diameter: 1.0 });
     /// let macrostate = Isothermal { temperature: 1.0 };
     ///
-    /// translate_sweep.tune_default(&microstate, &hamiltonian, &macrostate);
+    /// translate_sweep.tune_with_options(&microstate, &hamiltonian, &macrostate, &TuneOptions::default());
     ///
     /// # Ok(())
     /// # }

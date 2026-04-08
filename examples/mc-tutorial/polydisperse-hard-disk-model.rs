@@ -17,7 +17,7 @@ use hoomd_interaction::{
     univariate::{Expanded, OverlapPenalty, UnivariateEnergy},
 };
 use hoomd_mc::{
-    BodyDistribution, QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune,
+    BodyDistribution, QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune, TuneOptions,
 };
 use hoomd_microstate::{
     AppendMicrostate, Body, Microstate, SiteKey, Transform,
@@ -338,10 +338,11 @@ impl PolydisperseHardDiskModel {
         );
 
         if self.quick_compress.is_complete() {
-            self.translate_sweep.tune_default(
+            self.translate_sweep.tune_with_options(
                 &self.microstate,
                 &self.hamiltonian,
                 &self.macrostate,
+                &TuneOptions::default(),
             );
 
             self.phase = Phase::Equilibrate;

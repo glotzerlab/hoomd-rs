@@ -4,7 +4,7 @@
 //! Benchmark hard ellipsoid Monte Carlo simulations.
 
 use anyhow::Context;
-use log::{debug, info, trace};
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt,
@@ -21,7 +21,9 @@ use hoomd_interaction::{
     pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
     univariate::OverlapPenalty,
 };
-use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial};
+use hoomd_mc::{
+    Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial, Tune, TuneOptions,
+};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -33,10 +35,7 @@ use hoomd_vector::{Cartesian, Versor};
 
 use crate::{Effort, place::place_single_site_orientable_bodies};
 
-/// Relax configurations this many steps before tuning move sizes.
-const RELAX_STEPS: usize = 1_000;
-
-/// The hard ellipsoid simulation.
+/// The hard octahedra simulation.
 #[derive(Serialize, Deserialize)]
 pub struct EllipsoidSim<X> {
     /// Simulation microstate
@@ -187,7 +186,7 @@ where
     #[inline]
     pub fn new(n: usize, parallel: bool) -> anyhow::Result<Self> {
         let macrostate = Isothermal { temperature: 1.0 };
-        let packing_fraction = 0.4;
+        let packing_fraction = 0.5;
         let ellipsoid =
             Hyperellipsoid::with_semi_axes([2.5.try_into()?, 0.5.try_into()?, 0.5.try_into()?]);
         let number_density = packing_fraction / ellipsoid.volume();
@@ -210,21 +209,18 @@ where
             },
         }
 
-        let maximum_translation = 0.19;
-        let maximum_rotation = 0.093;
-
         let hamiltonian = PairwiseCutoff(HardShape(Convex(ellipsoid.clone())));
 
-        let translate = Translate::with_maximum_distance(maximum_translation.try_into()?);
-        let translate_sweep = Sweep(translate.clone());
-        let parallel_translate_sweep = ParallelSweep::new(
+        let translate = Translate::with_maximum_distance(0.05.try_into()?);
+        let mut translate_sweep = Sweep(translate.clone());
+        let mut parallel_translate_sweep = ParallelSweep::new(
             hamiltonian.maximum_interaction_range().try_into()?,
             translate,
         );
 
-        let rotate = Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
-        let rotate_sweep = Sweep(rotate.clone());
-        let parallel_rotate_sweep =
+        let rotate = Rotate::with_maximum_rotation((0.03).try_into()?);
+        let mut rotate_sweep = Sweep(rotate.clone());
+        let mut parallel_rotate_sweep =
             ParallelSweep::new(hamiltonian.maximum_interaction_range().try_into()?, rotate);
 
         let approximate_shape_overlap = Anisotropic {
@@ -237,14 +233,25 @@ where
         };
         let overlap_penalty_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
 
-        let microstate = place_single_site_orientable_bodies(
+        let mut microstate = place_single_site_orientable_bodies(
             n,
             number_density,
             hamiltonian.maximum_interaction_range(),
             &overlap_penalty_hamiltonian,
         )?;
+        microstate.sort_sites();
 
-        let mut simulation = Self {
+        translate_sweep.tune_with_options(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 }, &TuneOptions::default());
+        *parallel_translate_sweep
+            .local_trial_mut()
+            .maximum_distance_mut() = *translate_sweep.0.maximum_distance();
+
+        rotate_sweep.tune_with_options(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 }, &TuneOptions::default());
+        *parallel_rotate_sweep
+            .local_trial_mut()
+            .maximum_rotation_mut() = *rotate_sweep.0.maximum_rotation();
+
+        let simulation = Self {
             microstate,
             translate_sweep,
             rotate_sweep,
@@ -257,42 +264,6 @@ where
             parallel,
         };
 
-        debug!("Relaxing configuration...");
-
-        for i in 0..RELAX_STEPS {
-            simulation.advance()?;
-            if (i + 1).is_multiple_of(100) {
-                trace!("{:.1}%", ((i + 1) as f64 / RELAX_STEPS as f64) * 100.0);
-            }
-        }
-
-        simulation.microstate.sort_sites();
-
-        // Move sizes are fixed above for comparison with HOOMD-blue. Uncomment this code
-        // when there is a need to retune the move sizes.
-
-        // simulation.translate_sweep.tune_default(&simulation.microstate, &simulation.hamiltonian, &Isothermal { temperature: 1.0 });
-        // *simulation.parallel_translate_sweep
-        //     .local_trial_mut()
-        //     .maximum_distance_mut() = *simulation.translate_sweep.0.maximum_distance();
-
-        // simulation.rotate_sweep.tune_default(&simulation.microstate, &simulation.hamiltonian, &Isothermal { temperature: 1.0 });
-        // *simulation.parallel_rotate_sweep
-        //     .local_trial_mut()
-        //     .maximum_rotation_mut() = *simulation.rotate_sweep.0.maximum_rotation();
-
-        info!(
-            "Translation move size: {}",
-            simulation.translate_sweep.0.maximum_distance()
-        );
-
-        info!(
-            "Rotation move size: {}",
-            simulation.rotate_sweep.0.maximum_rotation()
-        );
-
-        simulation.translate_count = Count::default();
-        simulation.rotate_count = Count::default();
         let out_bytes: Vec<u8> = postcard::to_stdvec(&simulation)?;
         let mut file = File::create(cache_filename)?;
         file.write_all(&out_bytes)?;
