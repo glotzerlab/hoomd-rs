@@ -19,7 +19,7 @@ fn main() {
     divan::main();
 }
 
-const NUM_POINTS: &[usize] = &[10, 100, 1_000, 10_000];
+const NUM_POINTS: &[usize] = &[10, 100, 1_000];
 
 /// Create random points in the unit square
 fn create_random_points(n: usize, rng: &mut StdRng) -> Vec<Cartesian<2>> {

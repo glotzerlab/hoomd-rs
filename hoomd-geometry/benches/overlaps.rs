@@ -160,7 +160,7 @@ fn create_offset_3d<R: Rng>(rng: &mut R) -> (Cartesian<3>, Versor) {
 }
 
 const DIMENSIONS: &[usize] = &[2, 3, 4];
-const NUM_VERTICES: &[usize] = &[3, 4, 8, 16, 64, 256];
+const NUM_VERTICES: &[usize] = &[3, 4, 8, 16, 50];
 
 #[divan::bench_group]
 mod sphere {
