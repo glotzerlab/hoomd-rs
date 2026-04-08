@@ -126,7 +126,7 @@ mod tests {
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
 
-    // Helper to check if a point is approximately in the hull
+    /// Helper to check if a point is approximately in the hull
     fn hull_contains(hull: &[Cartesian<2>], point: [f64; 2], tol: f64) -> bool {
         hull.iter()
             .any(|h| (h[0] - point[0]).abs() < tol && (h[1] - point[1]).abs() < tol)
@@ -299,8 +299,8 @@ mod tests {
     fn test_circle_partial_arc() {
         let mut vertices: Vec<Cartesian<2>> = (0..10)
             .map(|i| {
-                let angle = -std::f64::consts::FRAC_PI_4
-                    + (std::f64::consts::FRAC_PI_2 * f64::from(i) / 9.0);
+                let angle =
+                    -std::f64::consts::FRAC_PI_4 + (std::f64::consts::FRAC_PI_2 * f64::from(i) / 9.0);
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
