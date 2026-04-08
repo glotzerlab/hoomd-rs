@@ -444,7 +444,7 @@ pub trait MapPoint<P> {
 
 /// TODO
 mod hull;
-pub use hull::hull_2d_grahamscan;
+pub use hull::construct_convex_hull_2d;
 
 /// Enumerate possible sources of error in fallible geometry methods.
 #[non_exhaustive]
