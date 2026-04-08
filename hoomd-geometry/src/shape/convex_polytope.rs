@@ -116,7 +116,7 @@ impl ConvexPolytope<2> {
     ///
     /// Returns `[Error::DegeneratePolytope]` when the hull has fewer than 3 vertices.
     #[inline]
-    pub fn with_vertices_hull<I>(vertices: I) -> Result<ConvexPolytope<2>, Error>
+    pub fn convex_hull_from_vertices<I>(vertices: I) -> Result<ConvexPolytope<2>, Error>
     where
         I: IntoIterator<Item = Cartesian<2>>,
     {
