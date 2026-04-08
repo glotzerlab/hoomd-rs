@@ -124,9 +124,6 @@ impl ConvexPolytope<2> {
     {
         let mut vertices: Vec<Cartesian<2>> = vertices.into_iter().collect();
 
-        if vertices.is_empty() {
-            return Err(Error::DegeneratePolytope);
-        }
         if vertices.len() < 3 {
             return Err(Error::DegeneratePolytope);
         }
