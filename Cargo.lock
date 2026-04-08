@@ -3667,6 +3667,7 @@ version = "1.0.2"
 dependencies = [
  "anyhow",
  "approxim",
+ "arrayvec",
  "assert2",
  "divan",
  "hoomd-linear-algebra",
