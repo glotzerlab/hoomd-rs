@@ -6,10 +6,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{BoundingSphereRadius, Error, SupportMapping, construct_convex_hull_2d};
+use arrayvec::ArrayVec;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
-
-mod convex_polygon;
 
 /// A faceted solid defined by the convex hull of its vertices.
 ///
@@ -64,9 +63,9 @@ mod convex_polygon;
 /// # }
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ConvexPolytope<const N: usize> {
+pub struct ConvexPolytope<const N: usize, const MAX_VERTICES: usize = 64> {
     /// The vertices of the shape.
-    pub(crate) vertices: Vec<Cartesian<N>>,
+    vertices: ArrayVec<Cartesian<N>, MAX_VERTICES>,
     /// The radius of a bounding sphere of the geometry.
     pub(crate) bounding_radius: PositiveReal,
 }
@@ -87,7 +86,7 @@ pub struct ConvexPolytope<const N: usize> {
 /// # Ok(())
 /// # }
 /// ```
-pub type ConvexPolygon = ConvexPolytope<2>;
+pub type ConvexPolygon = ConvexPolytope<2, 32>;
 
 /// A faceted convex body in three dimensions.
 ///
@@ -107,9 +106,9 @@ pub type ConvexPolygon = ConvexPolytope<2>;
 /// # Ok(())
 /// # }
 /// ```
-pub type ConvexPolyhedron = ConvexPolytope<3>;
+pub type ConvexPolyhedron = ConvexPolytope<3, 32>;
 
-impl ConvexPolytope<2> {
+impl<const MAX_VERTICES: usize> ConvexPolytope<2, MAX_VERTICES> {
     /// Create a 2D convex polygon with the given vertices.
     ///
     /// The vertices are reduced to their convex hull using a Graham scan.
@@ -117,22 +116,34 @@ impl ConvexPolytope<2> {
     /// # Errors
     ///
     /// Returns `[Error::DegeneratePolytope]` when the hull has fewer than 3 vertices.
+    /// Returns `[Error::TooManyVertices]` when more than `MAX_VERTICES` vertices are provided. If this is the case, increase `MAX_VERTICES` as needed.
     #[inline]
-    pub fn convex_hull_from_vertices<I>(vertices: I) -> Result<ConvexPolytope<2>, Error>
+    pub fn convex_hull_from_vertices<I>(
+        vertices: I,
+    ) -> Result<ConvexPolytope<2, MAX_VERTICES>, Error>
     where
         I: IntoIterator<Item = Cartesian<2>>,
     {
-        let mut vertices: Vec<Cartesian<2>> = vertices.into_iter().collect();
+        let mut buf: Vec<Cartesian<2>> = vertices.into_iter().collect();
 
-        if vertices.len() < 3 {
+        if buf.len() < 3 {
             return Err(Error::DegeneratePolytope);
         }
 
-        construct_convex_hull_2d(&mut vertices)?;
+        construct_convex_hull_2d(&mut buf)?;
+
+        if buf.len() > MAX_VERTICES {
+            return Err(Error::TooManyVertices);
+        }
+
+        let mut verts: ArrayVec<Cartesian<2>, MAX_VERTICES> = ArrayVec::new();
+        for v in buf {
+            verts.push(v);
+        }
 
         Ok(ConvexPolytope {
-            bounding_radius: Self::bounding_radius(&vertices),
-            vertices,
+            bounding_radius: Self::bounding_radius(&verts),
+            vertices: verts,
         })
     }
 
@@ -142,7 +153,7 @@ impl ConvexPolytope<2> {
     /// ```
     /// use hoomd_geometry::shape::ConvexPolytope;
     ///
-    /// let equilateral_triangle = ConvexPolytope::regular(3);
+    /// let equilateral_triangle: ConvexPolytope<2> = ConvexPolytope::regular(3);
     /// ```
     #[inline]
     #[must_use]
@@ -150,14 +161,14 @@ impl ConvexPolytope<2> {
         clippy::missing_panics_doc,
         reason = "panic will never occur on a hard-coded constant"
     )]
-    pub fn regular(n: usize) -> ConvexPolytope<2> {
+    pub fn regular(n: usize) -> ConvexPolytope<2, MAX_VERTICES> {
         ConvexPolytope {
             vertices: (0..n)
                 .map(|x| {
                     let theta = 2.0 * std::f64::consts::PI * (x as f64) / (n as f64);
                     Cartesian::from([0.5 * f64::cos(theta), 0.5 * f64::sin(theta)])
                 })
-                .collect::<Vec<_>>(),
+                .collect(),
             bounding_radius: 0.5
                 .try_into()
                 .expect("hard-coded constant should be positive"),
@@ -165,7 +176,7 @@ impl ConvexPolytope<2> {
     }
 }
 
-impl<const N: usize> ConvexPolytope<N> {
+impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> {
     /// Create an `N`-polytope with the given vertices.
     ///
     /// # Example
@@ -173,7 +184,7 @@ impl<const N: usize> ConvexPolytope<N> {
     /// use hoomd_geometry::shape::ConvexPolytope;
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
-    /// let equilateral_triangle = ConvexPolytope::with_vertices(vec![
+    /// let equilateral_triangle: ConvexPolytope<2> = ConvexPolytope::with_vertices(vec![
     ///     [1.0, 0.0].into(),
     ///     [0.5, f64::sqrt(3.0) / 2.0].into(),
     ///     [-0.5, f64::sqrt(3.0) / 2.0].into(),
@@ -183,22 +194,24 @@ impl<const N: usize> ConvexPolytope<N> {
     /// ```
     /// # Errors
     ///
-    /// [`Error::DegeneratePolytope`](variant@crate::Error::DegeneratePolytope)
-    /// when no vertices are provided.
+    /// `[Error::DegeneratePolytope]` when no vertices are provided.
     #[inline]
-    pub fn with_vertices<I>(vertices: I) -> Result<ConvexPolytope<N>, Error>
+    pub fn with_vertices<I>(vertices: I) -> Result<ConvexPolytope<N, MAX_VERTICES>, Error>
     where
         I: IntoIterator<Item = Cartesian<N>>,
     {
-        let vertices = vertices.into_iter().collect::<Vec<_>>();
+        let mut buf: ArrayVec<Cartesian<N>, MAX_VERTICES> = ArrayVec::new();
+        for v in vertices {
+            buf.try_push(v).map_err(|_| Error::TooManyVertices)?;
+        }
 
-        if vertices.len() < (N + 1) {
+        if buf.len() < (N + 1) {
             return Err(Error::DegeneratePolytope);
         }
 
         Ok(ConvexPolytope {
-            bounding_radius: Self::bounding_radius(&vertices),
-            vertices,
+            bounding_radius: Self::bounding_radius(&buf),
+            vertices: buf,
         })
     }
 
@@ -221,7 +234,9 @@ impl<const N: usize> ConvexPolytope<N> {
     }
 }
 
-impl<const N: usize> SupportMapping<Cartesian<N>> for ConvexPolytope<N> {
+impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
+    for ConvexPolytope<N, MAX_VERTICES>
+{
     #[inline]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
         match N {
@@ -240,7 +255,9 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for ConvexPolytope<N> {
     }
 }
 
-impl<const N: usize> BoundingSphereRadius for ConvexPolytope<N> {
+impl<const N: usize, const MAX_VERTICES: usize> BoundingSphereRadius
+    for ConvexPolytope<N, MAX_VERTICES>
+{
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
         self.bounding_radius
@@ -269,7 +286,7 @@ mod tests {
     }
 
     #[fixture]
-    fn equilateral_triangle() -> ConvexPolytope<2> {
+    fn equilateral_triangle() -> ConvexPolytope<2, 32> {
         ConvexPolytope::with_vertices(vec![
             [1.0, 0.0].into(),
             [0.5, f64::sqrt(3.0) / 2.0].into(),
@@ -288,9 +305,12 @@ mod tests {
     }
 
     #[rstest]
-    fn test_bounding_radius_regular_polygons(#[values(1, 3, 8, 64)] n: usize) {
+    fn test_bounding_radius_regular_polygons(#[values(1, 3, 8, 32)] n: usize) {
         assert_eq!(ConvexPolygon::regular(n).bounding_radius.get(), 0.5);
-        assert_eq!(ConvexPolytope::regular(n).bounding_radius.get(), 0.5);
+        assert_eq!(
+            ConvexPolytope::<2, 32>::regular(n).bounding_radius.get(),
+            0.5
+        );
     }
 
     #[test]
