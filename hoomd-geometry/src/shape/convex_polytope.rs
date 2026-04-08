@@ -136,10 +136,7 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<2, MAX_VERTICES> {
             return Err(Error::TooManyVertices);
         }
 
-        let mut verts: ArrayVec<Cartesian<2>, MAX_VERTICES> = ArrayVec::new();
-        for v in buf {
-            verts.push(v);
-        }
+        let verts: ArrayVec<Cartesian<2>, MAX_VERTICES> = buf.into_iter().collect();
 
         Ok(ConvexPolytope {
             bounding_radius: Self::bounding_radius(&verts),
@@ -151,9 +148,9 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<2, MAX_VERTICES> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_geometry::shape::ConvexPolytope;
+    /// use hoomd_geometry::shape::ConvexPolygon;
     ///
-    /// let equilateral_triangle: ConvexPolytope<2> = ConvexPolytope::regular(3);
+    /// let equilateral_triangle = ConvexPolygon::regular(3);
     /// ```
     #[inline]
     #[must_use]
@@ -184,7 +181,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     /// use hoomd_geometry::shape::ConvexPolytope;
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
-    /// let equilateral_triangle: ConvexPolytope<2> = ConvexPolytope::with_vertices(vec![
+    /// let equilateral_triangle = ConvexPolytope::<2>::with_vertices(vec![
     ///     [1.0, 0.0].into(),
     ///     [0.5, f64::sqrt(3.0) / 2.0].into(),
     ///     [-0.5, f64::sqrt(3.0) / 2.0].into(),
