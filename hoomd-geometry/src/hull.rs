@@ -299,8 +299,8 @@ mod tests {
     fn test_circle_partial_arc() {
         let mut vertices: Vec<Cartesian<2>> = (0..10)
             .map(|i| {
-                let angle =
-                    -std::f64::consts::FRAC_PI_4 + (std::f64::consts::FRAC_PI_2 * f64::from(i) / 9.0);
+                let angle = -std::f64::consts::FRAC_PI_4
+                    + (std::f64::consts::FRAC_PI_2 * f64::from(i) / 9.0);
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
