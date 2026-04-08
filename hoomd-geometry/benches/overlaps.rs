@@ -24,7 +24,7 @@ use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 #[inline(never)]
 fn asm_collide3d() {
     let mut rng = StdRng::seed_from_u64(1);
-    let (p0, p1) = create_dipyramid_pair::<4, _>(&mut rng, 10.0);
+    let (p0, p1) = create_dipyramid_pair::<4, 6, _>(&mut rng, 10.0);
     let (t, r) = create_offset_3d(&mut rng);
     collide3d(&p0, &p1, &t, &r);
 }
@@ -91,13 +91,13 @@ fn create_simplex_pair<R: Rng>(rng: &mut R) -> (Simplex3, Simplex3) {
     )
 }
 /// Create a pair of N-dipyramids with random half-heights between 0 and `h_max`
-fn create_dipyramid_pair<const N: usize, R: Rng>(
+fn create_dipyramid_pair<const N: usize, const MAX: usize, R: Rng>(
     rng: &mut R,
     h_max: f64,
-) -> (ConvexPolytope<3>, ConvexPolytope<3>) {
-    let base = ConvexPolytope::<2>::regular(N);
+) -> (ConvexPolytope<3, MAX>, ConvexPolytope<3, MAX>) {
+    let base = ConvexPolytope::<2, N>::regular(N);
     (
-        ConvexPolytope::<3>::with_vertices(
+        ConvexPolytope::<3, MAX>::with_vertices(
             base.vertices()
                 .iter()
                 .map(|x| Cartesian::from([x[0], x[1], 0.0]))
@@ -107,7 +107,7 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
                 ]),
         )
         .unwrap(),
-        ConvexPolytope::<3>::with_vertices(
+        ConvexPolytope::<3, MAX>::with_vertices(
             base.vertices()
                 .iter()
                 .map(|x| Cartesian::from([x[0], x[1], 0.0]))
@@ -120,8 +120,11 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
     )
 }
 
-fn create_polygon_pair<const N: usize>() -> (ConvexPolytope<2>, ConvexPolytope<2>) {
-    (ConvexPolytope::regular(N), ConvexPolytope::regular(N))
+fn create_polygon_pair<const N: usize>() -> (ConvexPolytope<2, N>, ConvexPolytope<2, N>) {
+    (
+        ConvexPolytope::<2, N>::regular(N),
+        ConvexPolytope::<2, N>::regular(N),
+    )
 }
 
 fn create_ellipsoid_pair<const N: usize, R: Rng>(
@@ -290,7 +293,7 @@ mod polytopes {
             .counter(ItemsCount::from(1_u32))
             .with_inputs(|| {
                 (
-                    shapes_to_convex(create_dipyramid_pair::<N, _>(&mut rng, 10.0)),
+                    shapes_to_convex(create_dipyramid_pair::<N, 52, _>(&mut rng, 10.0)),
                     create_offset_3d(&mut rng),
                 )
             })
