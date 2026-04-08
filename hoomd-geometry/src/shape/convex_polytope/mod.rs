@@ -283,7 +283,7 @@ mod tests {
     }
 
     #[fixture]
-    fn equilateral_triangle() -> ConvexPolytope<2, 32> {
+    fn equilateral_triangle() -> ConvexPolygon {
         ConvexPolytope::with_vertices(vec![
             [1.0, 0.0].into(),
             [0.5, f64::sqrt(3.0) / 2.0].into(),
