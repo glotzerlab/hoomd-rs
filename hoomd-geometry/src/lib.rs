@@ -457,10 +457,6 @@ pub enum Error {
     #[error("a ConvexPolytope must have at least (N+1) vertices")]
     DegeneratePolytope,
 
-    /// Convex Polytopes must be convex
-    #[error("a ConvexPolytope must be convex")]
-    PolytopeNotConvex,
-
     /// The point is outside the shape.
     #[error("cannot map a point that is outside the shape")]
     PointOutsideShape,
