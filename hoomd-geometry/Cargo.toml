@@ -22,6 +22,7 @@ serde_with.workspace = true
 thiserror.workspace = true
 robust.workspace = true
 
+arrayvec.workspace = true
 hoomd-manifold.workspace = true
 hoomd-vector.workspace = true
 hoomd-linear-algebra.workspace = true
