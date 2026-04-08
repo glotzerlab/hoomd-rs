@@ -68,7 +68,7 @@ fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) 
 ///
 /// Returns [`Error`] if the input vertices do not form a convex body with 3 or more points.
 #[inline]
-pub fn hull_2d_grahamscan(vertices: &mut Vec<Cartesian<2>>) -> Result<(), Error> {
+pub fn construct_convex_hull_2d(vertices: &mut Vec<Cartesian<2>>) -> Result<(), Error> {
     // No need to try and triangulate if the hull is degenerate
     if vertices.len() < 3 {
         return Err(Error::DegeneratePolytope);
@@ -171,7 +171,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -194,7 +194,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -221,7 +221,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // Hull should have 4 corners (interior edge points excluded)
         assert_eq!(vertices.len(), 4);
         let hull = [
@@ -253,7 +253,7 @@ mod tests {
             pts.push([0.0, f64::from(i) / 19.0]);
         }
         let mut vertices: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -274,7 +274,7 @@ mod tests {
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // All points on circle should be in hull
         assert_eq!(vertices.len(), n);
     }
@@ -290,7 +290,7 @@ mod tests {
             .collect();
         // Add interior points
         vertices.extend([[0.0, 0.0], [0.3, 0.3], [-0.2, 0.1], [0.1, -0.4]].map(Cartesian::from));
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // Only boundary points should be in hull
         assert_eq!(vertices.len(), n_boundary);
     }
@@ -304,7 +304,7 @@ mod tests {
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // All points on partial arc should be in hull
         assert_eq!(vertices.len(), 10);
     }
@@ -316,7 +316,7 @@ mod tests {
             .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
             .collect();
         let mut vertices = original.clone();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // Hull should have at least 3 points
         assert!(vertices.len() >= 3);
         // All hull points should be in original set
@@ -336,7 +336,7 @@ mod tests {
                 ])
             })
             .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         assert!(vertices.len() >= 3);
     }
 
@@ -347,13 +347,13 @@ mod tests {
             let mut vertices1: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-            hull_2d_grahamscan(&mut vertices1).unwrap();
+            construct_convex_hull_2d(&mut vertices1).unwrap();
 
             let mut rng = StdRng::seed_from_u64(123);
             let mut vertices2: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-            hull_2d_grahamscan(&mut vertices2).unwrap();
+            construct_convex_hull_2d(&mut vertices2).unwrap();
 
             assert_eq!(vertices1.len(), vertices2.len());
         }
@@ -372,7 +372,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         assert!(vertices.len() >= 3);
 
         let hull = [
@@ -399,7 +399,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // Should handle duplicates gracefully
         assert!(vertices.len() >= 3);
 
@@ -419,7 +419,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // Should pick leftmost of bottom points and include apex
         assert!(vertices.len() >= 3);
 
@@ -438,7 +438,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // [0, 0] should be the anchor point
         assert!(hull_contains(&vertices, [0.0, 0.0], 1e-10));
 
@@ -451,7 +451,7 @@ mod tests {
         let mut pts: Vec<[f64; 2]> = (0..10).map(|i| [f64::from(i) * 2.0 / 9.0, 0.0]).collect();
         pts.push([1.0, 1.0]); // Apex
         let mut vertices: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // Leftmost [0,0] and rightmost [2,0] should be in hull with apex
         assert!(vertices.len() >= 3);
     }
@@ -469,7 +469,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // Should only keep furthest point in each direction
         assert!(vertices.len() >= 3);
 
@@ -500,7 +500,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // Should keep only outermost points
         assert!(vertices.len() >= 3);
     }
@@ -515,7 +515,7 @@ mod tests {
                 vertices.push(Cartesian::from([r * angle.cos(), r * angle.sin()]));
             }
         }
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         // Outer points should form the hull
         assert!(vertices.len() >= 8); // At least 8 outer points
     }
@@ -526,7 +526,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 3);
 
         let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [0.5, 1.0].into()];
@@ -540,7 +540,7 @@ mod tests {
                 .into_iter()
                 .map(Cartesian::from)
                 .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -558,7 +558,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        hull_2d_grahamscan(&mut vertices).unwrap();
+        construct_convex_hull_2d(&mut vertices).unwrap();
         assert_eq!(vertices.len(), 4);
 
         let hull = [
