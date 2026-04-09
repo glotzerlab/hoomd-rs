@@ -9,5 +9,5 @@ for package in derive linear-algebra simulation utility rand vector gsd manifold
 do
   echo '------------------------------------------------------'
   echo "hoomd-${package}:"
-  cargo public-api diff latest -p "hoomd-${package}"
+  cargo public-api diff latest -p "hoomd-${package}" -sss
 done
