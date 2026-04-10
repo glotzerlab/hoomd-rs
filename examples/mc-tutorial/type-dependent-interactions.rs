@@ -18,7 +18,8 @@ use hoomd_interaction::{
     },
 };
 use hoomd_mc::{
-    QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune, TuneOptions, UniformIn
+    QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune, TuneOptions,
+    UniformIn,
 };
 use hoomd_microstate::{AppendMicrostate, Site};
 use hoomd_microstate::{

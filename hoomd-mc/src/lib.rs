@@ -407,11 +407,20 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
         macrostate: &MA,
         options: &TuneOptions,
     ) {
-        #[expect(deprecated, reason="must continue to use until this method replaces `tune`")]
-        self.tune(microstate, hamiltonian, macrostate, options.target_acceptance,
-        options.samples, options.steps);
+        #[expect(
+            deprecated,
+            reason = "must continue to use until this method replaces `tune`"
+        )]
+        self.tune(
+            microstate,
+            hamiltonian,
+            macrostate,
+            options.target_acceptance,
+            options.samples,
+            options.steps,
+        );
     }
-    
+
     /// Tune the trial move maximum size to achieve a given acceptance ratio.
     ///
     /// Use [`tune_with_options`] and `TuneOptions:default()` unless you have a
@@ -424,7 +433,7 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
     ///
     /// [`tune`]: Tune::tune
     /// [`tune_with_options`]: Tune::tune_with_options
-    #[deprecated(since="1.1.0", note="use `tune_with_options`")]
+    #[deprecated(since = "1.1.0", note = "use `tune_with_options`")]
     fn tune(
         &mut self,
         microstate: &Microstate<B, S, X, C>,
@@ -442,19 +451,17 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
     /// - `samples`: 8,000
     /// - `steps`: 32
     #[inline]
-    #[deprecated(since="1.1.0", note="use `tune_with_options(..., &TuneOptions::default())`")]
+    #[deprecated(
+        since = "1.1.0",
+        note = "use `tune_with_options(..., &TuneOptions::default())`"
+    )]
     fn tune_default(
         &mut self,
         microstate: &Microstate<B, S, X, C>,
         hamiltonian: &H,
         macrostate: &MA,
     ) {
-        self.tune_with_options(
-            microstate,
-            hamiltonian,
-            macrostate,
-            &TuneOptions::default(),
-        );
+        self.tune_with_options(microstate, hamiltonian, macrostate, &TuneOptions::default());
     }
 }
 

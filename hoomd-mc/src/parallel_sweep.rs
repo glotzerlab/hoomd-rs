@@ -463,7 +463,12 @@ where
     /// let hamiltonian = PairwiseCutoff(HardSphere { diameter: 1.0 });
     /// let macrostate = Isothermal { temperature: 1.0 };
     ///
-    /// translate_sweep.tune_with_options(&microstate, &hamiltonian, &macrostate, &TuneOptions::default());
+    /// translate_sweep.tune_with_options(
+    ///     &microstate,
+    ///     &hamiltonian,
+    ///     &macrostate,
+    ///     &TuneOptions::default(),
+    /// );
     ///
     /// translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
     ///
