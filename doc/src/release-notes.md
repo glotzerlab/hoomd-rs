@@ -14,6 +14,7 @@
   tunes trial move sizes while only applying trial moves to bodies that match
   a filter. Use `tune_with_options_and_filter` with the same filter given to
   `apply_with_filter` to accurately tune move sizes.
+* `[tutorial]`: Added *"Seeded Self-Assembly"* tutorial.
 
 *Changed:*
 
