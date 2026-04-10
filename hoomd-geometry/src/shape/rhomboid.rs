@@ -10,7 +10,7 @@ use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 /// This shape is a general case of rhombus where pairs of sides are not equal.
 /// We enforce the convention that the center of the shape is at the origin.
 pub struct Rhomboid {
-    /// The extents [``L_x``, ``L_y``] of each edge of the Rhomboid along.
+    /// The extents [``L_x``, ``L_y``] of each edge along the Cartesian axes ``x`` and ``y``.
     extents: [PositiveReal; 2],
     /// The shear applied to the shape in the x direction relative to ``L_y``
     xy: f64,
@@ -93,7 +93,7 @@ impl Volume for Rhomboid {
 }
 
 impl SupportMapping<Cartesian<2>> for Rhomboid {
-    #[inline]
+    #[inline] // TODO: incorrect!!
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
         let mut iter = n
             .into_iter()
