@@ -93,13 +93,21 @@ impl Volume for Rhomboid {
 }
 
 impl SupportMapping<Cartesian<2>> for Rhomboid {
-    #[inline] // TODO: incorrect!!
+    #[inline]
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
-        let mut iter = n
-            .into_iter()
-            .zip(self.extents)
-            .map(|(n_i, l_i)| l_i.get() / 2.0 * n_i.signum());
-        std::array::from_fn(|_| iter.next().expect("2==2")).into()
+        // {self}^T * n = [lx * nx, ly * xy * nx + ly * ny]
+        let d0 = self.lx().get() * n[0];
+        let d1 = self.ly().get() * self.xy() * n[0] + self.ly().get() * n[1];
+
+        // {self} * [sign(d0)/2, sign(d1)/2]
+        let s0 = d0.signum() * 0.5;
+        let s1 = d1.signum() * 0.5;
+
+        [
+            self.lx().get() * s0 + self.ly().get() * self.xy() * s1,
+            self.ly().get() * s1,
+        ]
+        .into()
     }
 }
 
