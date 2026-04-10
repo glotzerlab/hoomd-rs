@@ -23,9 +23,10 @@ use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
 use tinyvec::ArrayVec;
 
-impl<const N: usize> MaximumAllowableInteractionRange for Triclinic {
+impl MaximumAllowableInteractionRange for Triclinic {
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
+        todo!();
         let minimum_l = self
             .edge_lengths // TODO: Change this to L_i's
             .iter()
@@ -46,7 +47,7 @@ where
     }
 }
 
-impl<S> GenerateGhosts<S> for Periodic<Hypercuboid<2>>
+impl<S> GenerateGhosts<S> for Periodic<Triclinic>
 where
     S: Position<Position = Cartesian<2>> + Copy + Default,
 {
@@ -62,6 +63,4 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-    todo!();
-}
+mod tests {}
