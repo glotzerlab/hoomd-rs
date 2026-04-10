@@ -62,6 +62,7 @@ where
     ///         [0.5, f64::sqrt(3.0) / 2.0, 0.0].into(),
     ///         [0.0, 0.0, 1.0].into(),
     ///     ],
+    ///     _qr: None
     /// };
     /// let periodic = Periodic::new(0.25, box_)?;
     /// let point = Point::new(Cartesian::from([1.0, f64::sqrt(3.0), 2.5]));
