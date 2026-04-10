@@ -117,6 +117,7 @@ fn QT_times() {
     unimplemented!()
 }
 
+#[inline]
 pub fn qr_solve<const N: usize, const M: usize>(
     a: &Matrix<N, M>,
     mut b: Matrix<N, 1>,
