@@ -612,189 +612,190 @@ mod tests {
             let periodic = Periodic::new(1.0, cuboid).expect("hard-coded range should be valid");
 
             // no ghosts for points outside the boundary
-            let ghosts = periodic.generate_ghosts(&Point::new([10.5, 0.0, 0.0].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([10.5, 0.0, 0.0])));
             assert!(ghosts.is_empty());
-            let ghosts = periodic.generate_ghosts(&Point::new([0.0, 5.5, 0.0].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, 5.5, 0.0])));
             assert!(ghosts.is_empty());
 
             // faces
-            let ghosts = periodic.generate_ghosts(&Point::new([9.5, 0.0, 0.0].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, 0.0, 0.0])));
             assert_eq!(ghosts.len(), 1);
-            assert_relative_eq!(ghosts[0].position, [-10.5, 0.0, 0.0].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([-10.5, 0.0, 0.0]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([-9.5, 0.0, 0.0].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([-9.5, 0.0, 0.0])));
             assert_eq!(ghosts.len(), 1);
-            assert_relative_eq!(ghosts[0].position, [10.5, 0.0, 0.0].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([10.5, 0.0, 0.0]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([0.0, 4.5, 0.0].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, 4.5, 0.0])));
             assert_eq!(ghosts.len(), 1);
-            assert_relative_eq!(ghosts[0].position, [0.0, -5.5, 0.0].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([0.0, -5.5, 0.0]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([0.0, -4.5, 0.0].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, -4.5, 0.0])));
             assert_eq!(ghosts.len(), 1);
-            assert_relative_eq!(ghosts[0].position, [0.0, 5.5, 0.0].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([0.0, 5.5, 0.0]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([0.0, 0.0, 19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, 0.0, 19.5])));
             assert_eq!(ghosts.len(), 1);
-            assert_relative_eq!(ghosts[0].position, [0.0, 0.0, -20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([0.0, 0.0, -20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([0.0, 0.0, -19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, 0.0, -19.5])));
             assert_eq!(ghosts.len(), 1);
-            assert_relative_eq!(ghosts[0].position, [0.0, 0.0, 20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([0.0, 0.0, 20.5]));
 
             // edges
-            let ghosts = periodic.generate_ghosts(&Point::new([9.5, 4.5, 0.0].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, 4.5, 0.0])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [-10.5, 4.5, 0.0].into());
-            assert_relative_eq!(ghosts[1].position, [9.5, -5.5, 0.0].into());
-            assert_relative_eq!(ghosts[2].position, [-10.5, -5.5, 0.0].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([-10.5, 4.5, 0.0]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([9.5, -5.5, 0.0]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([-10.5, -5.5, 0.0]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([9.5, -4.5, 0.0].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, -4.5, 0.0])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [-10.5, -4.5, 0.0].into());
-            assert_relative_eq!(ghosts[1].position, [9.5, 5.5, 0.0].into());
-            assert_relative_eq!(ghosts[2].position, [-10.5, 5.5, 0.0].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([-10.5, -4.5, 0.0]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([9.5, 5.5, 0.0]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([-10.5, 5.5, 0.0]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([-9.5, 4.5, 0.0].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([-9.5, 4.5, 0.0])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [10.5, 4.5, 0.0].into());
-            assert_relative_eq!(ghosts[1].position, [-9.5, -5.5, 0.0].into());
-            assert_relative_eq!(ghosts[2].position, [10.5, -5.5, 0.0].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([10.5, 4.5, 0.0]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([-9.5, -5.5, 0.0]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([10.5, -5.5, 0.0]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([-9.5, -4.5, 0.0].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([-9.5, -4.5, 0.0])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [10.5, -4.5, 0.0].into());
-            assert_relative_eq!(ghosts[1].position, [-9.5, 5.5, 0.0].into());
-            assert_relative_eq!(ghosts[2].position, [10.5, 5.5, 0.0].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([10.5, -4.5, 0.0]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([-9.5, 5.5, 0.0]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([10.5, 5.5, 0.0]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([9.5, 0.0, 19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, 0.0, 19.5])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [-10.5, 0.0, 19.5].into());
-            assert_relative_eq!(ghosts[1].position, [9.5, 0.0, -20.5].into());
-            assert_relative_eq!(ghosts[2].position, [-10.5, 0.0, -20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([-10.5, 0.0, 19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([9.5, 0.0, -20.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([-10.5, 0.0, -20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([-9.5, 0.0, 19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([-9.5, 0.0, 19.5])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [10.5, 0.0, 19.5].into());
-            assert_relative_eq!(ghosts[1].position, [-9.5, 0.0, -20.5].into());
-            assert_relative_eq!(ghosts[2].position, [10.5, 0.0, -20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([10.5, 0.0, 19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([-9.5, 0.0, -20.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([10.5, 0.0, -20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([0.0, 4.5, 19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, 4.5, 19.5])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [0.0, -5.5, 19.5].into());
-            assert_relative_eq!(ghosts[1].position, [0.0, 4.5, -20.5].into());
-            assert_relative_eq!(ghosts[2].position, [0.0, -5.5, -20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([0.0, -5.5, 19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([0.0, 4.5, -20.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([0.0, -5.5, -20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([0.0, -4.5, 19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, -4.5, 19.5])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [0.0, 5.5, 19.5].into());
-            assert_relative_eq!(ghosts[1].position, [0.0, -4.5, -20.5].into());
-            assert_relative_eq!(ghosts[2].position, [0.0, 5.5, -20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([0.0, 5.5, 19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([0.0, -4.5, -20.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([0.0, 5.5, -20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([9.5, 0.0, -19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, 0.0, -19.5])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [-10.5, 0.0, -19.5].into());
-            assert_relative_eq!(ghosts[1].position, [9.5, 0.0, 20.5].into());
-            assert_relative_eq!(ghosts[2].position, [-10.5, 0.0, 20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([-10.5, 0.0, -19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([9.5, 0.0, 20.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([-10.5, 0.0, 20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([-9.5, 0.0, -19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([-9.5, 0.0, -19.5])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [10.5, 0.0, -19.5].into());
-            assert_relative_eq!(ghosts[1].position, [-9.5, 0.0, 20.5].into());
-            assert_relative_eq!(ghosts[2].position, [10.5, 0.0, 20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([10.5, 0.0, -19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([-9.5, 0.0, 20.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([10.5, 0.0, 20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([0.0, 4.5, -19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, 4.5, -19.5])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [0.0, -5.5, -19.5].into());
-            assert_relative_eq!(ghosts[1].position, [0.0, 4.5, 20.5].into());
-            assert_relative_eq!(ghosts[2].position, [0.0, -5.5, 20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([0.0, -5.5, -19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([0.0, 4.5, 20.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([0.0, -5.5, 20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([0.0, -4.5, -19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, -4.5, -19.5])));
             assert_eq!(ghosts.len(), 3);
-            assert_relative_eq!(ghosts[0].position, [0.0, 5.5, -19.5].into());
-            assert_relative_eq!(ghosts[1].position, [0.0, -4.5, 20.5].into());
-            assert_relative_eq!(ghosts[2].position, [0.0, 5.5, 20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([0.0, 5.5, -19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([0.0, -4.5, 20.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([0.0, 5.5, 20.5]));
 
             // vertices
-            let ghosts = periodic.generate_ghosts(&Point::new([9.5, 4.5, 19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, 4.5, 19.5])));
             assert_eq!(ghosts.len(), 7);
-            assert_relative_eq!(ghosts[0].position, [-10.5, 4.5, 19.5].into());
-            assert_relative_eq!(ghosts[1].position, [9.5, -5.5, 19.5].into());
-            assert_relative_eq!(ghosts[2].position, [9.5, 4.5, -20.5].into());
-            assert_relative_eq!(ghosts[3].position, [-10.5, -5.5, 19.5].into());
-            assert_relative_eq!(ghosts[4].position, [-10.5, 4.5, -20.5].into());
-            assert_relative_eq!(ghosts[5].position, [9.5, -5.5, -20.5].into());
-            assert_relative_eq!(ghosts[6].position, [-10.5, -5.5, -20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([-10.5, 4.5, 19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([9.5, -5.5, 19.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([9.5, 4.5, -20.5]));
+            assert_relative_eq!(ghosts[3].position, Cartesian::from([-10.5, -5.5, 19.5]));
+            assert_relative_eq!(ghosts[4].position, Cartesian::from([-10.5, 4.5, -20.5]));
+            assert_relative_eq!(ghosts[5].position, Cartesian::from([9.5, -5.5, -20.5]));
+            assert_relative_eq!(ghosts[6].position, Cartesian::from([-10.5, -5.5, -20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([9.5, 4.5, -19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, 4.5, -19.5])));
             assert_eq!(ghosts.len(), 7);
-            assert_relative_eq!(ghosts[0].position, [-10.5, 4.5, -19.5].into());
-            assert_relative_eq!(ghosts[1].position, [9.5, -5.5, -19.5].into());
-            assert_relative_eq!(ghosts[2].position, [9.5, 4.5, 20.5].into());
-            assert_relative_eq!(ghosts[3].position, [-10.5, -5.5, -19.5].into());
-            assert_relative_eq!(ghosts[4].position, [-10.5, 4.5, 20.5].into());
-            assert_relative_eq!(ghosts[5].position, [9.5, -5.5, 20.5].into());
-            assert_relative_eq!(ghosts[6].position, [-10.5, -5.5, 20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([-10.5, 4.5, -19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([9.5, -5.5, -19.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([9.5, 4.5, 20.5]));
+            assert_relative_eq!(ghosts[3].position, Cartesian::from([-10.5, -5.5, -19.5]));
+            assert_relative_eq!(ghosts[4].position, Cartesian::from([-10.5, 4.5, 20.5]));
+            assert_relative_eq!(ghosts[5].position, Cartesian::from([9.5, -5.5, 20.5]));
+            assert_relative_eq!(ghosts[6].position, Cartesian::from([-10.5, -5.5, 20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([9.5, -4.5, 19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, -4.5, 19.5])));
             assert_eq!(ghosts.len(), 7);
-            assert_relative_eq!(ghosts[0].position, [-10.5, -4.5, 19.5].into());
-            assert_relative_eq!(ghosts[1].position, [9.5, 5.5, 19.5].into());
-            assert_relative_eq!(ghosts[2].position, [9.5, -4.5, -20.5].into());
-            assert_relative_eq!(ghosts[3].position, [-10.5, 5.5, 19.5].into());
-            assert_relative_eq!(ghosts[4].position, [-10.5, -4.5, -20.5].into());
-            assert_relative_eq!(ghosts[5].position, [9.5, 5.5, -20.5].into());
-            assert_relative_eq!(ghosts[6].position, [-10.5, 5.5, -20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([-10.5, -4.5, 19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([9.5, 5.5, 19.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([9.5, -4.5, -20.5]));
+            assert_relative_eq!(ghosts[3].position, Cartesian::from([-10.5, 5.5, 19.5]));
+            assert_relative_eq!(ghosts[4].position, Cartesian::from([-10.5, -4.5, -20.5]));
+            assert_relative_eq!(ghosts[5].position, Cartesian::from([9.5, 5.5, -20.5]));
+            assert_relative_eq!(ghosts[6].position, Cartesian::from([-10.5, 5.5, -20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([9.5, -4.5, -19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, -4.5, -19.5])));
             assert_eq!(ghosts.len(), 7);
-            assert_relative_eq!(ghosts[0].position, [-10.5, -4.5, -19.5].into());
-            assert_relative_eq!(ghosts[1].position, [9.5, 5.5, -19.5].into());
-            assert_relative_eq!(ghosts[2].position, [9.5, -4.5, 20.5].into());
-            assert_relative_eq!(ghosts[3].position, [-10.5, 5.5, -19.5].into());
-            assert_relative_eq!(ghosts[4].position, [-10.5, -4.5, 20.5].into());
-            assert_relative_eq!(ghosts[5].position, [9.5, 5.5, 20.5].into());
-            assert_relative_eq!(ghosts[6].position, [-10.5, 5.5, 20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([-10.5, -4.5, -19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([9.5, 5.5, -19.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([9.5, -4.5, 20.5]));
+            assert_relative_eq!(ghosts[3].position, Cartesian::from([-10.5, 5.5, -19.5]));
+            assert_relative_eq!(ghosts[4].position, Cartesian::from([-10.5, -4.5, 20.5]));
+            assert_relative_eq!(ghosts[5].position, Cartesian::from([9.5, 5.5, 20.5]));
+            assert_relative_eq!(ghosts[6].position, Cartesian::from([-10.5, 5.5, 20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([-9.5, 4.5, 19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([-9.5, 4.5, 19.5])));
             assert_eq!(ghosts.len(), 7);
-            assert_relative_eq!(ghosts[0].position, [10.5, 4.5, 19.5].into());
-            assert_relative_eq!(ghosts[1].position, [-9.5, -5.5, 19.5].into());
-            assert_relative_eq!(ghosts[2].position, [-9.5, 4.5, -20.5].into());
-            assert_relative_eq!(ghosts[3].position, [10.5, -5.5, 19.5].into());
-            assert_relative_eq!(ghosts[4].position, [10.5, 4.5, -20.5].into());
-            assert_relative_eq!(ghosts[5].position, [-9.5, -5.5, -20.5].into());
-            assert_relative_eq!(ghosts[6].position, [10.5, -5.5, -20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([10.5, 4.5, 19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([-9.5, -5.5, 19.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([-9.5, 4.5, -20.5]));
+            assert_relative_eq!(ghosts[3].position, Cartesian::from([10.5, -5.5, 19.5]));
+            assert_relative_eq!(ghosts[4].position, Cartesian::from([10.5, 4.5, -20.5]));
+            assert_relative_eq!(ghosts[5].position, Cartesian::from([-9.5, -5.5, -20.5]));
+            assert_relative_eq!(ghosts[6].position, Cartesian::from([10.5, -5.5, -20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([-9.5, 4.5, -19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([-9.5, 4.5, -19.5])));
             assert_eq!(ghosts.len(), 7);
-            assert_relative_eq!(ghosts[0].position, [10.5, 4.5, -19.5].into());
-            assert_relative_eq!(ghosts[1].position, [-9.5, -5.5, -19.5].into());
-            assert_relative_eq!(ghosts[2].position, [-9.5, 4.5, 20.5].into());
-            assert_relative_eq!(ghosts[3].position, [10.5, -5.5, -19.5].into());
-            assert_relative_eq!(ghosts[4].position, [10.5, 4.5, 20.5].into());
-            assert_relative_eq!(ghosts[5].position, [-9.5, -5.5, 20.5].into());
-            assert_relative_eq!(ghosts[6].position, [10.5, -5.5, 20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([10.5, 4.5, -19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([-9.5, -5.5, -19.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([-9.5, 4.5, 20.5]));
+            assert_relative_eq!(ghosts[3].position, Cartesian::from([10.5, -5.5, -19.5]));
+            assert_relative_eq!(ghosts[4].position, Cartesian::from([10.5, 4.5, 20.5]));
+            assert_relative_eq!(ghosts[5].position, Cartesian::from([-9.5, -5.5, 20.5]));
+            assert_relative_eq!(ghosts[6].position, Cartesian::from([10.5, -5.5, 20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([-9.5, -4.5, 19.5].into()));
+            let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([-9.5, -4.5, 19.5])));
             assert_eq!(ghosts.len(), 7);
-            assert_relative_eq!(ghosts[0].position, [10.5, -4.5, 19.5].into());
-            assert_relative_eq!(ghosts[1].position, [-9.5, 5.5, 19.5].into());
-            assert_relative_eq!(ghosts[2].position, [-9.5, -4.5, -20.5].into());
-            assert_relative_eq!(ghosts[3].position, [10.5, 5.5, 19.5].into());
-            assert_relative_eq!(ghosts[4].position, [10.5, -4.5, -20.5].into());
-            assert_relative_eq!(ghosts[5].position, [-9.5, 5.5, -20.5].into());
-            assert_relative_eq!(ghosts[6].position, [10.5, 5.5, -20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([10.5, -4.5, 19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([-9.5, 5.5, 19.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([-9.5, -4.5, -20.5]));
+            assert_relative_eq!(ghosts[3].position, Cartesian::from([10.5, 5.5, 19.5]));
+            assert_relative_eq!(ghosts[4].position, Cartesian::from([10.5, -4.5, -20.5]));
+            assert_relative_eq!(ghosts[5].position, Cartesian::from([-9.5, 5.5, -20.5]));
+            assert_relative_eq!(ghosts[6].position, Cartesian::from([10.5, 5.5, -20.5]));
 
-            let ghosts = periodic.generate_ghosts(&Point::new([-9.5, -4.5, -19.5].into()));
+            let ghosts =
+                periodic.generate_ghosts(&Point::new(Cartesian::from([-9.5, -4.5, -19.5])));
             assert_eq!(ghosts.len(), 7);
-            assert_relative_eq!(ghosts[0].position, [10.5, -4.5, -19.5].into());
-            assert_relative_eq!(ghosts[1].position, [-9.5, 5.5, -19.5].into());
-            assert_relative_eq!(ghosts[2].position, [-9.5, -4.5, 20.5].into());
-            assert_relative_eq!(ghosts[3].position, [10.5, 5.5, -19.5].into());
-            assert_relative_eq!(ghosts[4].position, [10.5, -4.5, 20.5].into());
-            assert_relative_eq!(ghosts[5].position, [-9.5, 5.5, 20.5].into());
-            assert_relative_eq!(ghosts[6].position, [10.5, 5.5, 20.5].into());
+            assert_relative_eq!(ghosts[0].position, Cartesian::from([10.5, -4.5, -19.5]));
+            assert_relative_eq!(ghosts[1].position, Cartesian::from([-9.5, 5.5, -19.5]));
+            assert_relative_eq!(ghosts[2].position, Cartesian::from([-9.5, -4.5, 20.5]));
+            assert_relative_eq!(ghosts[3].position, Cartesian::from([10.5, 5.5, -19.5]));
+            assert_relative_eq!(ghosts[4].position, Cartesian::from([10.5, -4.5, 20.5]));
+            assert_relative_eq!(ghosts[5].position, Cartesian::from([-9.5, 5.5, 20.5]));
+            assert_relative_eq!(ghosts[6].position, Cartesian::from([10.5, 5.5, 20.5]));
         }
     }
 }

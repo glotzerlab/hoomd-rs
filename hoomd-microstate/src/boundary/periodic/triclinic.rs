@@ -11,7 +11,7 @@ use crate::{
     },
     property::Position,
 };
-use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
+use hoomd_geometry::{IsPointInside, shape::Hypercuboid, shape::Hyperparallelepiped};
 use hoomd_geometry::{IsPointInside, shape::Triclinic};
 use hoomd_linear_algebra::{MatMul, matrix::Matrix, matrix::Matrix33, matrix::qr};
 use hoomd_utility::valid::PositiveReal;
