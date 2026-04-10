@@ -21,19 +21,18 @@ use hoomd_linear_algebra::{
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
-use arrayvec::ArrayVec;
 
 impl MaximumAllowableInteractionRange for Triclinic {
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
         todo!();
-        let minimum_l = self
-            .edge_lengths // TODO: Change this to L_i's
-            .iter()
-            .map(PositiveReal::get)
-            .reduce(f64::min)
-            .expect("cuboid should have dimension 1 or greater");
-        minimum_l / 2.0
+        // let minimum_l = self
+        //     .edge_lengths // TODO: Change this to L_i's
+        //     .iter()
+        //     .map(PositiveReal::get)
+        //     .reduce(f64::min)
+        //     .expect("cuboid should have dimension 1 or greater");
+        // minimum_l / 2.0
     }
 }
 
