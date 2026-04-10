@@ -34,7 +34,7 @@ impl<const N: usize> MaximumAllowableInteractionRange for Triclinic {
 
 impl<P, const N: usize> Wrap<P> for Periodic<Triclinic>
 where
-    P: Position<Vector = Cartesian<N>>,
+    P: Position<Position = Cartesian<N>>,
 {
     #[inline]
     fn wrap(&self, properties: P) -> Result<P, Error> {
@@ -44,7 +44,7 @@ where
 
 impl<S> GenerateGhosts<S> for Periodic<Hypercuboid<2>>
 where
-    S: Position<Vector = Cartesian<2>> + Copy + Default,
+    S: Position<Position = Cartesian<2>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
