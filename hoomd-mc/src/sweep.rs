@@ -341,7 +341,12 @@ where
     /// let hamiltonian = PairwiseCutoff(HardSphere { diameter: 1.0 });
     /// let macrostate = Isothermal { temperature: 1.0 };
     ///
-    /// translate_sweep.tune_with_options(&microstate, &hamiltonian, &macrostate, &TuneOptions::default());
+    /// translate_sweep.tune_with_options(
+    ///     &microstate,
+    ///     &hamiltonian,
+    ///     &macrostate,
+    ///     &TuneOptions::default(),
+    /// );
     ///
     /// # Ok(())
     /// # }
@@ -376,6 +381,7 @@ mod tests {
     use super::*;
     use crate::Translate;
     use approxim::assert_relative_eq;
+    use assert2::check;
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_interaction::{External, SiteEnergy, TotalEnergy, Zero};
     use hoomd_microstate::{boundary::Closed, property::Point};
@@ -521,5 +527,34 @@ mod tests {
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
         assert_eq!(counter.accepted, 0);
         assert_eq!(counter.rejected, 1);
+    }
+
+    #[test]
+    fn filter() -> anyhow::Result<()> {
+        let cuboid = Hypercuboid::with_equal_edges(4.0.try_into()?);
+        let square = Closed(cuboid);
+
+        let mut microstate = Microstate::builder()
+            .boundary(square)
+            .bodies([
+                Body::point([0.0, 0.0].into()),
+                Body::point([0.0, 0.0].into()),
+                Body::point([0.0, 0.0].into()),
+            ])
+            .try_build()?;
+        let hamiltonian = Zero;
+        let translate = Translate::with_maximum_distance(0.1.try_into()?);
+        let translate_sweep = Sweep(translate);
+        let macrostate = Isothermal { temperature: 1.0 };
+
+        let counter =
+            translate_sweep.apply_with_filter(&mut microstate, &hamiltonian, &macrostate, |body| {
+                body.tag != 0
+            });
+        check!(counter.accepted == 2);
+        check!(counter.rejected == 0);
+        check!(microstate.bodies()[0].item.properties.position == [0.0, 0.0].into());
+
+        Ok(())
     }
 }
