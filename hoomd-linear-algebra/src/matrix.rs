@@ -764,7 +764,7 @@ impl Matrix<2, 2> {
     ///
     /// `svd` sets all singular values to be positive.
     ///
-    /// [Blinn 1996]: https://dx.doi/10.1109/38.486688
+    /// [Blinn 1996]: https://doi.org/10.1109/38.486688
     ///
     /// # Examples
     /// ```
@@ -838,7 +838,7 @@ impl Matrix<3, 3> {
     /// As a result, the third singular value may be negative. For a conventional
     /// SVD with non-negative singular values, the sign can be absorbed into U.
     ///
-    /// [McAdams 2011]: http://digital.library.wisc.edu/1793/60736
+    /// [McAdams 2011]: https://digital.library.wisc.edu/1793/60736
     ///
     /// # Examples
     /// ```

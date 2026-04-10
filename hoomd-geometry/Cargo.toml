@@ -9,7 +9,7 @@ repository.workspace = true
 license.workspace = true
 keywords.workspace = true
 categories.workspace = true
-description = "Performant, general computational geometry methods in Rust."
+description = "Construct and manipulate shapes in space. Compute their properties, sample points in them, and evaluate whether shapes intersect. Part of hoomd-rs."
 
 [package.metadata.docs.rs]
 rustdoc-args = [ "--html-in-header", "katex.html" ]
