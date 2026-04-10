@@ -342,11 +342,11 @@ Adjust the colors, render with Tachyon, and you should see something like:
 This tutorial showed you how to perform patchy particle self-assembly
 simulations using a shape overlap potential with attractive patches.
 
-Navigate to the top of the page and refresh to see the simulation in action
-again. Notice that the disks quickly form random chains and clusters. Over
-time, hexagons will appear and the kagome structure will begin to grow. Run
-the simulation long enough, and the system will equilibrate to a single large
-crystal as shown in [10.1039/D2SM01593E].
+Navigate to the top of the page to see the simulation in action. Notice that
+the disks quickly form random chains and clusters. Over time, hexagons will
+appear and the kagome structure will begin to grow. Run the simulation long
+enough, and the system will equilibrate to a single large crystal as shown in
+[10.1039/D2SM01593E].
 
 
 ## Complete Code

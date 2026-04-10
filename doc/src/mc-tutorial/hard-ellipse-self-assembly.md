@@ -370,15 +370,14 @@ This tutorial showed you how to perform hard-ellipse self-assembly simulations
 using a shape overlap potential, periodic boundary conditions, and `QuickInsert`
 to add bodies.
 
-Navigate to the top of the page and refresh to see the simulation in action
-again. Notice that ellipses are first added in a large batch. Once all the
-overlaps are removed, another batch appears. After all all ellipses are in the
-microstate and not overlapping, the simulation compresses to a higher packing
-fraction. After that, it speeds up as it begins using the more efficient hard
-particle overlap Hamiltonian. Watch the simulation long enough and you should
-see domains form where all the ellipses point in roughly the same direction
-while at the same time there is no translational order. This is the nematic
-phase.
+Navigate to the top of the page to see the simulation in action. Notice that
+ellipses are first added in a large batch. Once all the overlaps are removed,
+another batch appears. After all all ellipses are in the microstate and not
+overlapping, the simulation compresses to a higher packing fraction. After
+that, it speeds up as it begins using the more efficient hard particle overlap
+Hamiltonian. Watch the simulation long enough and you should see domains form
+where all the ellipses point in roughly the same direction while at the same
+time there is no translational order. This is the nematic phase.
 
 ## Complete Code
 
