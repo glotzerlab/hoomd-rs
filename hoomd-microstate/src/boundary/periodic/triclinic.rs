@@ -11,16 +11,7 @@ use crate::{
     },
     property::Position,
 };
-use hoomd_geometry::{
-    IsPointInside,
-    shape::{Hypercuboid, Hyperparallelepiped, Triclinic},
-};
-use hoomd_linear_algebra::{
-    MatMul,
-    matrix::{Matrix, Matrix33, qr},
-};
-use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, Cross, InnerProduct};
+use hoomd_vector::Cartesian;
 
 impl MaximumAllowableInteractionRange for Triclinic {
     #[inline]
