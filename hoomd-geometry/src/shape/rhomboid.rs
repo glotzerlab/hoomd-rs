@@ -95,11 +95,11 @@ impl Volume for Rhomboid {
 impl SupportMapping<Cartesian<2>> for Rhomboid {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
-        // {self}^T * n = [lx * nx, ly * xy * nx + ly * ny]
+        // {self}^T @ n = [lx * nx, ly * xy * nx + ly * ny]
         let d0 = self.lx().get() * n[0];
         let d1 = self.ly().get() * self.xy() * n[0] + self.ly().get() * n[1];
 
-        // {self} * [sign(d0)/2, sign(d1)/2]
+        // {self} @ [sign(d0)/2, sign(d1)/2]
         let s0 = d0.signum() * 0.5;
         let s1 = d1.signum() * 0.5;
 
