@@ -62,7 +62,7 @@ where
     ///         [0.5, f64::sqrt(3.0) / 2.0, 0.0].into(),
     ///         [0.0, 0.0, 1.0].into(),
     ///     ],
-    ///     _qr: None
+    ///     _qr: None,
     /// };
     /// let periodic = Periodic::new(0.25, box_)?;
     /// let point = Point::new(Cartesian::from([1.0, f64::sqrt(3.0), 2.5]));
@@ -94,13 +94,13 @@ impl<S> GenerateGhosts<S> for Periodic<Hyperparallelepiped<3>>
 where
     S: Position<Position = Cartesian<3>> + Copy + Default,
 {
-    // #[inline]
+    #[inline]
     fn maximum_interaction_range(&self) -> f64 {
         self.maximum_interaction_range
     }
 
     // /// Place periodic images of sites near the edge of the periodic boundary.
-    // #[inline]
+    #[inline]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         // let mut result = ArrayVec::new();
 
