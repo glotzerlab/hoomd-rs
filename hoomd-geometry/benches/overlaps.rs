@@ -5,7 +5,6 @@
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
-#![expect(clippy::unwrap_used, reason = "benches can use unwrap where needed")]
 #![expect(clippy::wildcard_imports, reason = "simplifies code")]
 
 //! Benchmark overlaps
@@ -18,20 +17,10 @@ use hoomd_geometry::{
     },
     xenocollide::{collide2d, collide3d},
 };
-use hoomd_vector::{Angle, Cartesian, Versor};
+use hoomd_vector::{Angle, Cartesian, InnerProduct, Versor};
 use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 
-#[inline(never)]
-fn asm_collide3d() {
-    let mut rng = StdRng::seed_from_u64(1);
-    let (p0, p1) = create_dipyramid_pair::<6, _>(&mut rng, 10.0);
-    let (t, r) = create_offset_3d(&mut rng);
-    collide3d(&p0, &p1, &t, &r);
-}
-
 fn main() {
-    asm_collide3d();
-
     divan::main();
 }
 
@@ -39,124 +28,33 @@ fn shapes_to_convex<S>(tup: (S, S)) -> (Convex<S>, Convex<S>) {
     (Convex(tup.0), Convex(tup.1))
 }
 
-fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypersphere<N>, Hypersphere<N>) {
-    (
-        Hypersphere::<N> {
-            radius: rng
-                .random_range(0.0..10.0)
-                .try_into()
-                .expect("test value is a positive real"),
-        },
-        Hypersphere::<N> {
-            radius: rng
-                .random_range(0.0..10.0)
-                .try_into()
-                .expect("test value is a positive real"),
-        },
+fn create_dipyramid(n: usize) -> ConvexPolytope<3> {
+    let base = ConvexPolytope::<2>::regular(n);
+    ConvexPolytope::<3>::with_vertices(
+        base.vertices()
+            .iter()
+            .map(|x| Cartesian::from([x[0], x[1], 0.0]))
+            .chain([[0.0, 0.0, 0.5].into(), [0.0, 0.0, -0.5].into()]),
     )
+    .expect("constructed polytope should be valid")
 }
 
-fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypercuboid<N>, Hypercuboid<N>) {
-    (
-        Hypercuboid {
-            edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
-                (x + 11.0)
-                    .try_into()
-                    .expect("test value is a positive real")
-            }),
-        },
-        Hypercuboid {
-            edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
-                (x + 11.0)
-                    .try_into()
-                    .expect("test value is a positive real")
-            }),
-        },
-    )
-}
-fn create_simplex_pair<R: Rng>(rng: &mut R) -> (Simplex3, Simplex3) {
-    (
-        Simplex3::from([
-            rng.random::<Cartesian<3>>() * 10.0,
-            rng.random::<Cartesian<3>>() * 10.0,
-            rng.random::<Cartesian<3>>() * 10.0,
-            rng.random::<Cartesian<3>>() * 10.0,
-        ]),
-        Simplex3::from([
-            rng.random::<Cartesian<3>>() * 10.0,
-            rng.random::<Cartesian<3>>() * 10.0,
-            rng.random::<Cartesian<3>>() * 10.0,
-            rng.random::<Cartesian<3>>() * 10.0,
-        ]),
-    )
-}
-/// Create a pair of dipyramids with N total vertices (N-2 base + 2 apex).
-fn create_dipyramid_pair<const N: usize, R: Rng>(
-    rng: &mut R,
-    h_max: f64,
-) -> (ConvexPolytope<3, N>, ConvexPolytope<3, N>) {
-    let base = ConvexPolytope::<2, N>::regular(N - 2);
-    (
-        ConvexPolytope::<3, N>::with_vertices(
-            base.vertices()
-                .iter()
-                .map(|x| Cartesian::from([x[0], x[1], 0.0]))
-                .chain([
-                    [0.0, 0.0, rng.random_range(0.0..h_max)].into(),
-                    [0.0, 0.0, -rng.random_range(0.0..h_max)].into(),
-                ]),
-        )
-        .unwrap(),
-        ConvexPolytope::<3, N>::with_vertices(
-            base.vertices()
-                .iter()
-                .map(|x| Cartesian::from([x[0], x[1], 0.0]))
-                .chain([
-                    [0.0, 0.0, rng.random_range(0.0..h_max)].into(),
-                    [0.0, 0.0, -rng.random_range(0.0..h_max)].into(),
-                ]),
-        )
-        .unwrap(),
-    )
+fn sample_offset_angle<R: Rng>(rng: &mut R, r_min: f64, r_max: f64) -> (Cartesian<2>, Angle) {
+    (sample_offset(rng, r_min, r_max), rng.random())
 }
 
-fn create_polygon_pair<const N: usize>() -> (ConvexPolytope<2, N>, ConvexPolytope<2, N>) {
-    (
-        ConvexPolytope::<2, N>::regular(N),
-        ConvexPolytope::<2, N>::regular(N),
-    )
+fn sample_offset_versor<R: Rng>(rng: &mut R, r_min: f64, r_max: f64) -> (Cartesian<3>, Versor) {
+    (sample_offset(rng, r_min, r_max), rng.random())
 }
 
-fn create_ellipsoid_pair<const N: usize, R: Rng>(
-    rng: &mut R,
-) -> (Hyperellipsoid<N>, Hyperellipsoid<N>) {
-    (
-        Hyperellipsoid::with_semi_axes((rng.random::<Cartesian<N>>() * 10.0).coordinates.map(
-            |x| {
-                (x + 11.0)
-                    .try_into()
-                    .expect("test value is a positive real")
-            },
-        )),
-        Hyperellipsoid::with_semi_axes((rng.random::<Cartesian<N>>() * 10.0).coordinates.map(
-            |x| {
-                (x + 11.0)
-                    .try_into()
-                    .expect("test value is a positive real")
-            },
-        )),
-    )
-}
-
-fn create_offset_2d<R: Rng>(rng: &mut R) -> (Cartesian<2>, Angle) {
-    (
-        rng.random::<Cartesian<2>>() * 10.0,
-        Angle::from(rng.random_range((-2.0 * std::f64::consts::PI)..(2.0 * std::f64::consts::PI))),
-    )
-}
-
-fn create_offset<const N: usize, R: Rng>(rng: &mut R) -> Cartesian<N> {
-    rng.random::<Cartesian<N>>() * 10.0
+fn sample_offset<const N: usize, R: Rng>(rng: &mut R, r_min: f64, r_max: f64) -> Cartesian<N> {
+    loop {
+        let v = rng.random::<Cartesian<N>>() * r_max;
+        let v_norm = v.norm();
+        if v_norm >= r_min && v_norm < r_max {
+            break v;
+        }
+    }
 }
 fn create_offset_3d<R: Rng>(rng: &mut R) -> (Cartesian<3>, Versor) {
     (rng.random::<Cartesian<3>>() * 10.0, rng.random())
@@ -173,46 +71,40 @@ mod sphere {
     #[divan::bench(consts = DIMENSIONS)]
     fn fast_nd<const N: usize>(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Hypersphere::<N> {
+            radius: 0.5.try_into().expect("hard-coded value is positive"),
+        };
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    create_sphere_pair::<N, _>(&mut rng),
-                    create_offset::<N, _>(&mut rng),
-                )
-            })
-            .bench_local_values(|((s0, s1), t)| black_box(s0.intersects(&s1, &t)));
+            .with_inputs(|| sample_offset::<N, _>(&mut rng, 0.9, 1.0))
+            .bench_local_values(|t| black_box(shape.intersects(&shape, &t)));
     }
 
     #[divan::bench]
     fn xenocollide_2d(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Convex(Hypersphere::<2> {
+            radius: 0.5.try_into().expect("hard-coded value is positive"),
+        });
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    shapes_to_convex(create_sphere_pair::<2, _>(&mut rng)),
-                    create_offset_2d(&mut rng),
-                )
-            })
-            .bench_local_values(|((s0, s1), (t, r))| black_box(collide2d(&s0, &s1, &t, &r)));
+            .with_inputs(|| sample_offset_angle(&mut rng, 0.9, 1.0))
+            .bench_local_values(|(t, r)| black_box(collide2d(&shape, &shape, &t, &r)));
     }
 
     #[divan::bench(sample_size = 10_000)]
     fn xenocollide_3d(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Convex(Hypersphere::<3> {
+            radius: 0.5.try_into().expect("hard-coded value is positive"),
+        });
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    shapes_to_convex(create_sphere_pair::<3, _>(&mut rng)),
-                    create_offset_3d(&mut rng),
-                )
-            })
-            .bench_local_values(|((s0, s1), (t, r))| black_box(collide3d(&s0, &s1, &t, &r)));
+            .with_inputs(|| sample_offset_versor(&mut rng, 0.9, 1.0))
+            .bench_local_values(|(t, r)| black_box(collide3d(&shape, &shape, &t, &r)));
     }
 }
 
@@ -223,82 +115,67 @@ mod cuboid {
     #[divan::bench(consts = DIMENSIONS)]
     fn aligned_nd<const N: usize>(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Hypercuboid::with_equal_edges(
+            0.5.try_into().expect("hard coded value should be positive"),
+        );
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    create_cuboid_pair::<N, _>(&mut rng),
-                    create_offset::<N, _>(&mut rng),
-                )
-            })
-            .bench_local_values(|((s0, s1), t)| black_box(s0.intersects_aligned(&s1, &t)));
+            .with_inputs(|| sample_offset::<N, _>(&mut rng, 0.8, 1.5))
+            .bench_local_values(|t| black_box(shape.intersects_aligned(&shape, &t)));
     }
 
     #[divan::bench]
     fn xenocollide_2d(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Convex(Hypercuboid::with_equal_edges(
+            0.5.try_into().expect("hard coded value should be positive"),
+        ));
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    shapes_to_convex(create_cuboid_pair::<2, _>(&mut rng)),
-                    create_offset_2d(&mut rng),
-                )
-            })
-            .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
+            .with_inputs(|| sample_offset_angle(&mut rng, 0.8, 1.5))
+            .bench_local_values(|(t, r)| black_box(collide2d(&shape, &shape, &t, &r)));
     }
 
     #[divan::bench]
     fn xenocollide_3d(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Convex(Hypercuboid::with_equal_edges(
+            0.5.try_into().expect("hard coded value should be positive"),
+        ));
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    shapes_to_convex(create_cuboid_pair::<3, _>(&mut rng)),
-                    create_offset_3d(&mut rng),
-                )
-            })
-            .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
+            .with_inputs(|| sample_offset_versor(&mut rng, 0.8, 1.5))
+            .bench_local_values(|(t, r)| black_box(collide3d(&shape, &shape, &t, &r)));
     }
 }
 
 #[divan::bench_group()]
 mod polytopes {
-
     use super::*;
 
     #[divan::bench(consts = NUM_VERTICES)]
     fn polygon_2d<const N: usize>(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Convex(ConvexPolytope::<2>::regular(N));
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    shapes_to_convex(create_polygon_pair::<N>()),
-                    create_offset_2d(&mut rng),
-                )
-            })
-            .bench_local_values(|((p0, p1), (t, r))| black_box(collide2d(&p0, &p1, &t, &r)));
+            .with_inputs(|| sample_offset_angle(&mut rng, 0.9, 1.0))
+            .bench_local_values(|(t, r)| black_box(collide2d(&shape, &shape, &t, &r)));
     }
 
     #[divan::bench(consts = DIPYRAMID_VERTICES)]
     fn dipyramid_3d<const N: usize>(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Convex(create_dipyramid(N));
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    shapes_to_convex(create_dipyramid_pair::<N, _>(&mut rng, 10.0)),
-                    create_offset_3d(&mut rng),
-                )
-            })
-            .bench_local_values(|((p0, p1), (t, r))| black_box(collide3d(&p0, &p1, &t, &r)));
+            .with_inputs(|| create_offset_3d(&mut rng))
+            .bench_local_values(|(t, r)| black_box(collide3d(&shape, &shape, &t, &r)));
     }
 }
 
@@ -309,26 +186,33 @@ mod simplex {
     #[divan::bench]
     fn xenocollide_3d(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Convex(Simplex3::from([
+            Cartesian::from([-0.5, -0.5, -0.5]),
+            [-0.5, -0.5, 0.5].into(),
+            [-0.5, 0.5, 0.5].into(),
+            [0.5, 0.5, 0.5].into(),
+        ]));
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    shapes_to_convex(create_simplex_pair(&mut rng)),
-                    create_offset_3d(&mut rng),
-                )
-            })
-            .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
+            .with_inputs(|| sample_offset_versor(&mut rng, 0.8, 1.5))
+            .bench_local_values(|(t, r)| black_box(collide3d(&shape, &shape, &t, &r)));
     }
 
     #[divan::bench]
     fn fast_3d(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Simplex3::from([
+            Cartesian::from([-0.5, -0.5, -0.5]),
+            [-0.5, -0.5, 0.5].into(),
+            [-0.5, 0.5, 0.5].into(),
+            [0.5, 0.5, 0.5].into(),
+        ]);
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| (create_simplex_pair(&mut rng), create_offset_3d(&mut rng)))
-            .bench_local_values(|((t0, t1), (t, r))| black_box(t0.intersects_at(&t1, &t, &r)));
+            .with_inputs(|| sample_offset_versor(&mut rng, 0.8, 1.5))
+            .bench_local_values(|(t, r)| black_box(shape.intersects_at(&shape, &t, &r)));
     }
 }
 
@@ -339,46 +223,48 @@ mod ellipsoid {
     #[divan::bench]
     fn xenocollide_2d(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Convex(Hyperellipsoid::<2>::with_semi_axes([
+            0.5.try_into().expect("hard-coded value should be positive"),
+            0.25.try_into()
+                .expect("hard-coded value should be positive"),
+        ]));
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    shapes_to_convex(create_ellipsoid_pair::<2, _>(&mut rng)),
-                    create_offset_2d(&mut rng),
-                )
-            })
-            .bench_local_values(|((t0, t1), (t, r))| black_box(collide2d(&t0, &t1, &t, &r)));
+            .with_inputs(|| sample_offset_angle(&mut rng, 0.4, 1.0))
+            .bench_local_values(|(t, r)| black_box(collide2d(&shape, &shape, &t, &r)));
     }
 
     #[divan::bench]
     fn fast_2d(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Hyperellipsoid::<2>::with_semi_axes([
+            0.5.try_into().expect("hard-coded value should be positive"),
+            0.25.try_into()
+                .expect("hard-coded value should be positive"),
+        ]);
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    create_ellipsoid_pair::<2, _>(&mut rng),
-                    create_offset_2d(&mut rng),
-                )
-            })
-            .bench_local_values(|((e0, e1), (t, r))| black_box(e0.intersects_at(&e1, &t, &r)));
+            .with_inputs(|| sample_offset_angle(&mut rng, 0.4, 1.0))
+            .bench_local_values(|(t, r)| black_box(shape.intersects_at(&shape, &t, &r)));
     }
 
     #[divan::bench]
     fn xenocollide_3d(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
+        let shape = Hyperellipsoid::<3>::with_semi_axes([
+            0.5.try_into().expect("hard-coded value should be positive"),
+            0.25.try_into()
+                .expect("hard-coded value should be positive"),
+            0.25.try_into()
+                .expect("hard-coded value should be positive"),
+        ]);
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    shapes_to_convex(create_ellipsoid_pair::<3, _>(&mut rng)),
-                    create_offset_3d(&mut rng),
-                )
-            })
-            .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
+            .with_inputs(|| sample_offset_versor(&mut rng, 0.4, 1.0))
+            .bench_local_values(|(t, r)| black_box(collide3d(&shape, &shape, &t, &r)));
     }
 }
 
