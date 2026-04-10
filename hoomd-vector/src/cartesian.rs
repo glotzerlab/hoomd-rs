@@ -515,14 +515,6 @@ impl<const N: usize> Neg for Cartesian<N> {
 }
 
 impl<const N: usize> Cartesian<N> {
-    pub fn recip(&self) -> Cartesian<N> {
-        self.coordinates.map(f64::recip).into()
-    }
-
-    pub fn round(&self) -> Cartesian<N> {
-        self.coordinates.map(f64::round).into()
-    }
-
     pub fn map<F>(self, f: F) -> Cartesian<N>
     where
         F: FnMut(f64) -> f64,
