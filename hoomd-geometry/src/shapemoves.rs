@@ -111,7 +111,7 @@ impl<const N: usize> Shear<N> for Hyperparallelepiped<N> {
 #[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     #[test]
     fn test_cuboid_scale() {
         let scale_factor: PositiveReal = 5.0.try_into().unwrap();
