@@ -17,7 +17,8 @@ use hoomd_interaction::{
     univariate::{Expanded, OverlapPenalty, UnivariateEnergy},
 };
 use hoomd_mc::{
-    BodyDistribution, QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune, TuneOptions,
+    BodyDistribution, QuickCompress, QuickInsert, Sweep, Translate, Trial,
+    Tune, TuneOptions,
 };
 use hoomd_microstate::{
     AppendMicrostate, Body, Microstate, SiteKey, Transform,

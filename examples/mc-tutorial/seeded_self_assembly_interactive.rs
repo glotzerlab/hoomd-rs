@@ -25,8 +25,8 @@ struct Bottom;
 struct Ghost;
 
 pub(crate) fn main() -> anyhow::Result<()> {
-    let simulation = SeededSelfAssembly::new()
-        .context("failed to setup simulation")?;
+    let simulation =
+        SeededSelfAssembly::new().context("failed to setup simulation")?;
 
     let inner_radius =
         (simulation.hamiltonian.0.hard_disk.diameter / 2.0) as f32;
@@ -127,16 +127,19 @@ fn sync_sites(
         &mut commands,
         site_representation,
         site_query,
-        sites.iter().filter(|site| site.body_tag >= simulation.seed_size).map(|site| {
-            (
-                Vec3::new(
-                    site.properties.position[0] as f32,
-                    site.properties.position[1] as f32,
-                    0.0,
-                ),
-                1.0_f32,
-            )
-        }),
+        sites
+            .iter()
+            .filter(|site| site.body_tag >= simulation.seed_size)
+            .map(|site| {
+                (
+                    Vec3::new(
+                        site.properties.position[0] as f32,
+                        site.properties.position[1] as f32,
+                        0.0,
+                    ),
+                    1.0_f32,
+                )
+            }),
     );
 }
 
@@ -211,16 +214,23 @@ fn sync_ghosts(
         &mut commands,
         ghost_representation,
         ghost_query,
-        ghosts.iter().chain(sites.iter().filter(|site| site.body_tag < simulation.seed_size)).map(|site| {
-            (
-                Vec3::new(
-                    site.properties.position[0] as f32,
-                    site.properties.position[1] as f32,
-                    0.0,
-                ),
-                1.0_f32,
+        ghosts
+            .iter()
+            .chain(
+                sites
+                    .iter()
+                    .filter(|site| site.body_tag < simulation.seed_size),
             )
-        }),
+            .map(|site| {
+                (
+                    Vec3::new(
+                        site.properties.position[0] as f32,
+                        site.properties.position[1] as f32,
+                        0.0,
+                    ),
+                    1.0_f32,
+                )
+            }),
     );
 }
 

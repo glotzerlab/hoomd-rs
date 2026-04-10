@@ -12,7 +12,8 @@ use hoomd_interaction::{
     univariate::OverlapPenalty,
 };
 use hoomd_mc::{
-    QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune, TuneOptions, UniformIn
+    QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune,
+    TuneOptions, UniformIn,
 };
 use hoomd_microstate::{
     Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,

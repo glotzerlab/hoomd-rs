@@ -10,15 +10,18 @@ use hoomd_geometry::{
     shape::{Circle, Rectangle},
 };
 use hoomd_interaction::{
-    DeltaEnergyInsert, MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, pairwise::{
+    DeltaEnergyInsert, MaximumInteractionRange, PairwiseCutoff, SitePairEnergy,
+    pairwise::{
         AngularMask, Anisotropic, HardSphere, Isotropic, angular_mask::Patch,
-    }, univariate::{Boxcar, Expanded, OverlapPenalty}
+    },
+    univariate::{Boxcar, Expanded, OverlapPenalty},
 };
 use hoomd_mc::{
-    QuickCompress, QuickInsert, Rotate, Sweep, Translate, TuneOptions, UniformIn
+    QuickCompress, QuickInsert, Rotate, Sweep, Translate, TuneOptions,
+    UniformIn,
 };
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, boundary::Periodic, property::OrientedPoint
+    Body, Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
@@ -35,16 +38,28 @@ type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 // ANCHOR: place_seed
 impl SeededSelfAssembly {
     /// Place a crystal seed in the microstate.
-    fn place_seed(microstate:  &mut Microstate<BodyProperties, SiteProperties, VecCell<SiteKey, 2>, Periodic<Rectangle>>,
-                  hamiltonian: &PairwiseCutoff<SitePairInteraction>) -> anyhow::Result<()> {
+    fn place_seed(
+        microstate: &mut Microstate<
+            BodyProperties,
+            SiteProperties,
+            VecCell<SiteKey, 2>,
+            Periodic<Rectangle>,
+        >,
+        hamiltonian: &PairwiseCutoff<SitePairInteraction>,
+    ) -> anyhow::Result<()> {
         let r = 1.03;
-        let hexagon: Vec<_> = (0..6).map(|i| {
-            let theta = 2.0 * PI * (i as f64) / 6.0;
-            OrientedPoint {
-                position: Cartesian::from([r * theta.cos(), r * theta.sin()]),
-                orientation: Angle::from(theta),
+        let hexagon: Vec<_> = (0..6)
+            .map(|i| {
+                let theta = 2.0 * PI * (i as f64) / 6.0;
+                OrientedPoint {
+                    position: Cartesian::from([
+                        r * theta.cos(),
+                        r * theta.sin(),
+                    ]),
+                    orientation: Angle::from(theta),
                 }
-            }).collect();
+            })
+            .collect();
 
         for oriented_point in &hexagon {
             microstate.add_body(Body {
@@ -59,7 +74,11 @@ impl SeededSelfAssembly {
             let theta = 2.0 * PI * (i as f64) / 6.0;
             for oriented_point in &hexagon {
                 let new_oriented_point = OrientedPoint {
-                    position: oriented_point.position + Cartesian::from([2.0 * r * theta.cos(), 2.0 * r * theta.sin()]),
+                    position: oriented_point.position
+                        + Cartesian::from([
+                            2.0 * r * theta.cos(),
+                            2.0 * r * theta.sin(),
+                        ]),
                     ..*oriented_point
                 };
                 let new_body = Body {
@@ -67,7 +86,8 @@ impl SeededSelfAssembly {
                     sites: vec![SiteProperties::default()],
                 };
 
-                let delta_e = hamiltonian.delta_energy_insert(microstate, &new_body);
+                let delta_e =
+                    hamiltonian.delta_energy_insert(microstate, &new_body);
                 if delta_e.is_finite() {
                     microstate.add_body(new_body)?;
                 }
@@ -75,7 +95,7 @@ impl SeededSelfAssembly {
         }
 
         Ok(())
-        }
+    }
     // ANCHOR_END: place_second_ring
 
     // ANCHOR: simulation_new
@@ -90,9 +110,7 @@ impl SeededSelfAssembly {
         let patch_interaction_range = 1.12;
         let patch_half_angle = 37.0_f64.to_radians();
         let patch_energy = -5.8;
-        let macrostate = Isothermal {
-            temperature: 1.0,
-        };
+        let macrostate = Isothermal { temperature: 1.0 };
 
         let hard_disk = HardSphere { diameter: sigma };
 
@@ -162,7 +180,8 @@ impl SeededSelfAssembly {
             boundary: microstate.boundary().clone(),
             template_sites: vec![SiteProperties::default()],
         };
-        let quick_insert = QuickInsert::new(distribution, n_disks - microstate.bodies().len());
+        let quick_insert =
+            QuickInsert::new(distribution, n_disks - microstate.bodies().len());
         // ANCHOR_END: quick_insert
 
         // ANCHOR: simulation_new_remainder
@@ -367,15 +386,13 @@ fn main() -> anyhow::Result<()> {
     use hoomd_utility::data::ParquetLogger;
     // ANCHOR_END: main
     // ANCHOR: log_open
-    let mut parquet_logger = ParquetLogger::<LogRecord>::create(
-        "seeded-self-assembly.parquet",
-    )?;
+    let mut parquet_logger =
+        ParquetLogger::<LogRecord>::create("seeded-self-assembly.parquet")?;
     // ANCHOR_END: log_open
 
     // ANCHOR: run_simulation
     let mut simulation = SeededSelfAssembly::new()?;
-    let mut hoomd_gsd_file =
-        HoomdGsdFile::create("seeded-self-assembly.gsd")?;
+    let mut hoomd_gsd_file = HoomdGsdFile::create("seeded-self-assembly.gsd")?;
 
     for _ in 0..1_000_000 {
         simulation.advance()?;
