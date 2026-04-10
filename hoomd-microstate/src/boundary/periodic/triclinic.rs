@@ -3,7 +3,7 @@
 
 //! Implement periodic boundary conditions for cuboids in cartesian space.
 
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
 
 use crate::{
     boundary::{
@@ -21,7 +21,7 @@ use hoomd_linear_algebra::{
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
 
 impl MaximumAllowableInteractionRange for Triclinic {
     #[inline]
