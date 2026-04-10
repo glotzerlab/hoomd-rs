@@ -158,16 +158,8 @@ pub fn qr_solve<const N: usize, const M: usize>(
 
 #[cfg(test)]
 mod tests {
-    use std::convert::identity;
-
     use super::Matrix;
-    use crate::{
-        MatMul,
-        matrix::{
-            qr::{get_R, qr_solve},
-            test_utils::assert_matrixes_ulps_eq,
-        },
-    };
+    use crate::matrix::{qr::qr_solve, test_utils::assert_matrixes_ulps_eq};
 
     #[test]
     fn test_qr_square() {
