@@ -11,18 +11,18 @@ use crate::{
     },
     property::Position,
 };
+use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
 use hoomd_geometry::{IsPointInside, shape::Triclinic};
+use hoomd_linear_algebra::{MatMul, matrix::Matrix, matrix::Matrix33, matrix::qr};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
-use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
-use hoomd_linear_algebra::{MatMul, matrix::Matrix, matrix::Matrix33, matrix::qr};
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
 use tinyvec::ArrayVec;
 
 impl<const N: usize> MaximumAllowableInteractionRange for Triclinic {
-     #[inline]
+    #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-     let minimum_l = self
+        let minimum_l = self
             .edge_lengths //TODO: Change this to L_i's
             .iter()
             .map(PositiveReal::get)
@@ -59,5 +59,5 @@ where
 
 #[cfg(test)]
 mod tests {
-    todo()!
+    todo!();
 }
