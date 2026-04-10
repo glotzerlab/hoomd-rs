@@ -30,15 +30,19 @@ impl Rhomboid {
         self.xy
     }
 
+    /// Compute the vertices of the Rhomboid assuming it is centered at the origin.
     #[inline]
     #[must_use]
     pub fn vertices(&self) -> [Cartesian<2>; 4] {
-        let ly_xy = self.ly().get() * self.xy();
+        let half_lx = self.lx().get() * 0.5;
+        let half_ly = self.ly().get() * 0.5;
+        let half_ly_xy = half_ly * self.xy();
+
         [
-            [0.0, 0.0].into(),
-            [self.lx().get(), 0.0].into(),
-            [self.lx().get() + ly_xy, self.ly().get()].into(),
-            [ly_xy, self.ly().get()].into(),
+            [-half_lx - half_ly_xy, -half_ly].into(),
+            [half_lx - half_ly_xy, -half_ly].into(),
+            [half_lx + half_ly_xy, half_ly].into(),
+            [-half_lx + half_ly_xy, half_ly].into(),
         ]
     }
 }
