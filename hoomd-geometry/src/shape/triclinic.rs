@@ -103,8 +103,7 @@ impl Triclinic {
         let mut dist = [PositiveReal::default(); 3];
         dist[0] = self.Lx()
             / (f64::sqrt(
-                1.0 + self.xy() * self.xy()
-                    + (self.xy() * self.yz() - self.xz()) * (self.xy() * self.yz() - self.xz()),
+                1.0 + self.xy() * self.xy() + (self.xy() * self.yz() - self.xz()).powi(2),
             ))
             .try_into()
             .unwrap();

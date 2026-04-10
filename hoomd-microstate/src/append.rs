@@ -3,7 +3,7 @@
 
 //! Implement `AppendMicrostate` for built-in site and boundary types.
 
-use hoomd_geometry::shape::Hypercuboid;
+use hoomd_geometry::shape::{Hypercuboid, Triclinic};
 use hoomd_gsd::hoomd::{AppendError, Dimensions, Frame, HoomdGsdFile};
 use hoomd_vector::{Angle, Cartesian, Versor};
 
@@ -149,6 +149,23 @@ impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Periodic<Hypercuboid<3>>>
     }
 }
 
+impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Periodic<Triclinic>> for HoomdGsdFile {
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, Point<Cartesian<3>>, X, Periodic<Triclinic>>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().shape().to_gsd_box())?
+            .configuration_dimensions(Dimensions::Three)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position),
+            )
+    }
+}
+
 impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Closed<Hypercuboid<3>>>
     for HoomdGsdFile
 {
@@ -185,6 +202,30 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<
             X,
             Periodic<Hypercuboid<3>>,
         >,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().shape().to_gsd_box())?
+            .configuration_dimensions(Dimensions::Three)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position),
+            )?
+            .particles_orientation(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.orientation),
+            )
+    }
+}
+
+impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Triclinic>>
+    for HoomdGsdFile
+{
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Triclinic>>,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().shape().to_gsd_box())?
