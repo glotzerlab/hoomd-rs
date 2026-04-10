@@ -19,7 +19,6 @@ use crate::{IsPointInside, Scale, SupportMapping, Volume};
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 
-/// TODO:
 pub struct Triclinic {
     /// The extents of each edge of the cuboid. [L_x, L_y, L_z]
     #[serde_as(as = "[_; 3]")]
@@ -85,6 +84,33 @@ impl Triclinic {
             ],
             tilt_factors: [box_dimensions[3], box_dimensions[4], box_dimensions[5]],
         }
+    }
+
+    pub fn get_edge_vectors(&self) -> [Cartesian<3>; 3] {
+        let mut edge_vectors = [Cartesian::<3>::default(); 3];
+        edge_vectors[0] = [self.Lx().get(), 0., 0.].into();
+        edge_vectors[1] = [self.Ly().get() * self.xy(), self.Ly().get(), 0.].into();
+        edge_vectors[2] = [
+            self.Lz().get() * self.xz(),
+            self.Lz().get() * self.yz(),
+            self.Lz().get(),
+        ]
+        .into();
+        edge_vectors
+    }
+
+    pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
+        let mut dist = [PositiveReal::default(); 3];
+        dist[0] = self.Lx()
+            / (f64::sqrt(
+                1.0 + self.xy() * self.xy()
+                    + (self.xy() * self.yz() - self.xz()) * (self.xy() * self.yz() - self.xz()),
+            ))
+            .try_into()
+            .unwrap();
+        dist[1] = self.Ly() / (f64::sqrt(1.0 + self.yz() * self.yz())).try_into().unwrap();
+        dist[2] = self.Lz();
+        dist
     }
 }
 

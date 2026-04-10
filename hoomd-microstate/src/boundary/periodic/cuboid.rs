@@ -192,8 +192,8 @@ where
             new_site
         };
 
-        let near_left = r[0] < min[0] + self.maximum_interaction_range;
         let near_right = r[0] > max[0] - self.maximum_interaction_range;
+        let near_left = r[0] < min[0] + self.maximum_interaction_range;
         let near_top = r[1] > max[1] - self.maximum_interaction_range;
         let near_bottom = r[1] < min[1] + self.maximum_interaction_range;
         let near_front = r[2] > max[2] - self.maximum_interaction_range;

@@ -11,44 +11,68 @@ use crate::{
     },
     property::Position,
 };
-use hoomd_geometry::{
-    IsPointInside,
-    shape::{Hypercuboid, Hyperparallelepiped, Triclinic},
-};
-use hoomd_linear_algebra::{
-    MatMul,
-    matrix::{Matrix, Matrix33, qr},
-};
-use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, Cross, InnerProduct};
+use hoomd_geometry::{IsPointInside, shape::Triclinic};
+
+use hoomd_vector::Cartesian;
 
 impl MaximumAllowableInteractionRange for Triclinic {
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-        todo!();
-        // let minimum_l = self
-        //     .edge_lengths // TODO: Change this to L_i's
-        //     .iter()
-        //     .map(PositiveReal::get)
-        //     .reduce(f64::min)
-        //     .expect("cuboid should have dimension 1 or greater");
-        // minimum_l / 2.0
+        let plane_distances = self.get_nearest_plane_distance();
+        plane_distances
+            .iter()
+            .fold(0.0, |acc, x| f64::min(acc, x.get()))
     }
 }
 
-impl<P, const N: usize> Wrap<P> for Periodic<Triclinic>
+impl Periodic<Triclinic> {
+    pub fn to_fractional(&self, pos: &Cartesian<3>) -> Cartesian<3> {
+        let l: Cartesian<3> = self.shape.extents.map(|x| x.get()).into();
+        let mut frac = *pos;
+        frac[0] -= (self.shape.xz() - self.shape.yz() * self.shape.xy()) * pos[2]
+            + self.shape.xy() * pos[1];
+        frac[1] -= self.shape.yz() * pos[2];
+        for i in 0..3 {
+            frac[i] /= l[i];
+        }
+        frac
+    }
+
+    pub fn to_absolute(&self, frac: &Cartesian<3>) -> Cartesian<3> {
+        let mut pos = Cartesian::<3>::default();
+        for i in 0..3 {
+            pos[i] = self.shape.extents[i].get() * frac[i];
+        }
+        pos[0] += self.shape.xy() * frac[1] + self.shape.xz() * frac[2];
+        pos[1] += self.shape.yz() * frac[2];
+        pos
+    }
+}
+
+impl<P> Wrap<P> for Periodic<Triclinic>
 where
-    P: Position<Position = Cartesian<N>>,
+    P: Position<Position = Cartesian<3>>,
 {
     #[inline]
-    fn wrap(&self, properties: P) -> Result<P, Error> {
-        todo!();
+    fn wrap(&self, mut properties: P) -> Result<P, Error> {
+        let r = properties.position_mut();
+        let mut fractional = self.to_fractional(r);
+        for i in 0..3 {
+            fractional[i] -= fractional[i].round();
+            fractional[i] = if fractional[i] == 0.5 {
+                -0.5
+            } else {
+                fractional[i]
+            };
+        }
+        *r = self.to_absolute(&fractional);
+        Ok(properties)
     }
 }
 
 impl<S> GenerateGhosts<S> for Periodic<Triclinic>
 where
-    S: Position<Vector = Cartesian<3>> + Copy + Default,
+    S: Position<Position = Cartesian<3>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
@@ -64,27 +88,30 @@ where
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();
-        let max = self.shape.maximal_extents();
-        let min = self.shape.minimal_extents();
 
         if !self.shape.is_point_inside(r) {
             return result;
         }
 
+        let edge_vectors = self.shape.get_edge_vectors();
+
         let new_site = |x, y, z| {
             let mut new_site = *site_properties;
-            new_site.position_mut()[0] += x * self.shape.edge_lengths[0].get(); // Todo: convert tiltfactor/extents
-            new_site.position_mut()[1] += y * self.shape.edge_lengths[1].get();
-            new_site.position_mut()[2] += z * self.shape.edge_lengths[2].get();
+            *new_site.position_mut() += x * edge_vectors[0];
+            *new_site.position_mut() += y * edge_vectors[1];
+            *new_site.position_mut() += z * edge_vectors[2];
             new_site
         };
 
-        let near_left = r[0] < min[0] + self.maximum_interaction_range;
-        let near_right = r[0] > max[0] - self.maximum_interaction_range;
-        let near_top = r[1] > max[1] - self.maximum_interaction_range;
-        let near_bottom = r[1] < min[1] + self.maximum_interaction_range;
-        let near_front = r[2] > max[2] - self.maximum_interaction_range;
-        let near_back = r[2] < min[2] + self.maximum_interaction_range;
+        let plane_distances = self.shape.get_nearest_plane_distance();
+        let frac = self.to_absolute(r);
+
+        let near_right = frac[0] - 0.5 > self.maximum_interaction_range / plane_distances[0].get();
+        let near_left = frac[0] + 0.5 < self.maximum_interaction_range / plane_distances[0].get();
+        let near_top = frac[1] - 0.5 > self.maximum_interaction_range / plane_distances[1].get();
+        let near_bottom = frac[1] + 0.5 < self.maximum_interaction_range / plane_distances[1].get();
+        let near_front = frac[2] - 0.5 > self.maximum_interaction_range / plane_distances[2].get();
+        let near_back = frac[2] + 0.5 < self.maximum_interaction_range / plane_distances[2].get();
 
         if near_right {
             result.push(new_site(-1.0, 0.0, 0.0));
