@@ -3,7 +3,7 @@
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Rotate, Rotation};
 
-use crate::{BoundingSphereRadius, IntersectsAt};
+use crate::{BoundingSphereRadius, IntersectsAt, Volume};
 
 /// An axis-aligned parallelogram defined by a 2 x 2 upper triangular matrix.
 ///
@@ -44,6 +44,14 @@ impl Rhomboid {
             [half_lx + half_ly_xy, half_ly].into(),
             [-half_lx + half_ly_xy, half_ly].into(),
         ]
+    }
+}
+
+impl Volume for Rhomboid {
+    #[inline]
+    fn volume(&self) -> f64 {
+        // When A is triangular, det(A) = det(diag(A))
+        self.lx().get() * self.ly().get()
     }
 }
 
