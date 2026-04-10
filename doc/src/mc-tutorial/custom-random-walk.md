@@ -243,10 +243,10 @@ compiles your customizations into machine code and can inline them into the main
 simulation loop. This means that your custom simulations run *just as fast* as
 they do when using the built-in types.
 
-Navigate to the top of the page and refresh to see the simulation in action
-again. Notice that no points leave the boundary. Try pausing the simulation and
-advancing one step at a time. You should see that every particle moves left,
-right, down, or up on every step.
+Navigate to the top of the page to see the simulation in action. Notice that
+no points leave the boundary. Try pausing the simulation and advancing one step
+at a time. You should see that every body moves left, right, down, or up on
+every step.
 
 You can also run the example in batch mode and then open
 the generated `trajectory.gsd` in [Ovito] or another visualization tool:
