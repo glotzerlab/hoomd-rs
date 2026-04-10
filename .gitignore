@@ -15,3 +15,4 @@ mc_*.json
 *.Rmd
 *.postcard
 *.py
+.lycheecache

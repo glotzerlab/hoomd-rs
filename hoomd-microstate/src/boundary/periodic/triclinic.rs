@@ -3,7 +3,7 @@
 
 //! Implement periodic boundary conditions for cuboids in cartesian space.
 
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
 
 use crate::{
     boundary::{
@@ -11,30 +11,34 @@ use crate::{
     },
     property::Position,
 };
-use hoomd_geometry::{IsPointInside, shape::Triclinic};
+use hoomd_geometry::{
+    IsPointInside,
+    shape::{Hypercuboid, Hyperparallelepiped, Triclinic},
+};
+use hoomd_linear_algebra::{
+    MatMul,
+    matrix::{Matrix, Matrix33, qr},
+};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::Cartesian;
-use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
-use hoomd_linear_algebra::{MatMul, matrix::Matrix, matrix::Matrix33, matrix::qr};
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
-use tinyvec::ArrayVec;
 
-impl<const N: usize> MaximumAllowableInteractionRange for Triclinic {
-     #[inline]
+impl MaximumAllowableInteractionRange for Triclinic {
+    #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-     let minimum_l = self
-            .edge_lengths //TODO: Change this to L_i's
-            .iter()
-            .map(PositiveReal::get)
-            .reduce(f64::min)
-            .expect("cuboid should have dimension 1 or greater");
-        minimum_l / 2.0
+        todo!();
+        // let minimum_l = self
+        //     .edge_lengths // TODO: Change this to L_i's
+        //     .iter()
+        //     .map(PositiveReal::get)
+        //     .reduce(f64::min)
+        //     .expect("cuboid should have dimension 1 or greater");
+        // minimum_l / 2.0
     }
 }
 
 impl<P, const N: usize> Wrap<P> for Periodic<Triclinic>
 where
-    P: Position<Vector = Cartesian<N>>,
+    P: Position<Position = Cartesian<N>>,
 {
     #[inline]
     fn wrap(&self, properties: P) -> Result<P, Error> {
@@ -169,6 +173,4 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-    todo()!
-}
+mod tests {}

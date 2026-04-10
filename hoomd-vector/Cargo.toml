@@ -1,7 +1,7 @@
 [package]
 name = "hoomd-vector"
 categories.workspace = true
-description = "Vector and quaternion math library."
+description = "Vector and quaternion math types and operations for use in hoomd-rs simulations."
 edition.workspace = true
 homepage.workspace = true
 documentation.workspace = true

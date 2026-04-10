@@ -13,7 +13,7 @@ tutorial shows you how to represents **sites** with hard convex polyhedra.
 When compressed to a sufficiently high packing fraction, systems of hard
 tetrahedra **self-assemble** into a quasicrystal: [10.1038/nature08641].
 
-[10.1038/nature08641]: http://doi.org/10.1038/nature08641
+[10.1038/nature08641]: https://doi.org/10.1038/nature08641
 
 * Objectives:
   * Explain how to model system of hard convex polytopes.

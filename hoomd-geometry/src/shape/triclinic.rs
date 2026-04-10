@@ -119,7 +119,8 @@ impl Triclinic {
     /// use hoomd_geometry::shape::Triclinic;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic::with_box_dimensions([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
+    /// let triclinic =
+    ///     Triclinic::with_box_dimensions([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
     ///
     /// let gsd_box = triclinic.to_gsd_box();
     /// assert_eq!(gsd_box, [5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
@@ -177,7 +178,8 @@ impl Scale for Triclinic {
     /// use hoomd_geometry::{Scale, shape::Triclinic};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic::with_box_dimensions([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
+    /// let triclinic =
+    ///     Triclinic::with_box_dimensions([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
     ///
     /// let scaled_triclinic = triclinic.scale_length(0.5.try_into()?);
     ///
@@ -209,7 +211,8 @@ impl Scale for Triclinic {
     /// use hoomd_geometry::{Scale, shape::Triclinic};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic::with_box_dimensions([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
+    /// let triclinic =
+    ///     Triclinic::with_box_dimensions([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
     ///
     /// let scaled_triclinic = triclinic.scale_volume(8.0.try_into()?);
     ///
