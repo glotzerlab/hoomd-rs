@@ -9,7 +9,6 @@
 
 use super::Matrix;
 use crate::GeneralMatrix;
-use crate::SquareMatrix;
 use std::cmp::min;
 
 /// .
