@@ -1030,8 +1030,10 @@ pub mod test_utils {
 mod tests {
     use std::{fmt::Debug, ops::Index};
 
-    use super::test_utils::{assert_diags_ulps_eq, assert_matrixes_ulps_eq};
-    use super::*;
+    use super::{
+        test_utils::{assert_diags_ulps_eq, assert_matrixes_ulps_eq},
+        *,
+    };
     use crate::matrix::{Matrix, Matrix22, Matrix33, Matrix44};
     use approx::{assert_relative_eq, assert_ulps_eq, ulps_eq};
 

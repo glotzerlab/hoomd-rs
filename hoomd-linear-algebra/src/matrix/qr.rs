@@ -1,10 +1,10 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//TODO: Figure out to handle fat matrices... Should I just multiple extra columns by reflectors? But we don't have space in the matrix to store them?
-//c.f. https://math.stackexchange.com/questions/3293263/why-should-qr-decomposition-not-be-possible-for-a-fat-matrix
+// TODO: Figure out to handle fat matrices... Should I just multiple extra columns by reflectors? But we don't have space in the matrix to store them?
+// c.f. https://math.stackexchange.com/questions/3293263/why-should-qr-decomposition-not-be-possible-for-a-fat-matrix
 
-//TODO: Decide whether to return the taus or not. They can be calculated from the matrix, though it is more efficient to store them separately.
+// TODO: Decide whether to return the taus or not. They can be calculated from the matrix, though it is more efficient to store them separately.
 // tau = 2 / ||u||^2 where u is the reflector vector with a leading 1.
 
 use super::Matrix;
@@ -30,17 +30,17 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
         if x_norm_2 != 0.0 {
             let alpha = qr[(i, i)];
             beta = -alpha.signum() * (x_norm_2 + alpha * alpha).sqrt();
-            //TODO: scale beta in extreme cases
+            // TODO: scale beta in extreme cases
             tau = (beta - alpha) / beta;
             for j in i + 1..N {
                 qr[(j, i)] /= alpha - beta;
             }
-            //TODO: unscale beta
+            // TODO: unscale beta
             qr[(i, i)] = 1.0; //Temporary. Rescale to beta later. Could be optimized out.
         }
 
         if tau == 0.0 {
-            //either in last column or remainder of column is zero
+            // either in last column or remainder of column is zero
             taus.push(tau);
             continue;
         } else {
@@ -97,23 +97,23 @@ fn get_R<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> {
 }
 
 fn times_Q() {
-    //Note: Typically you shouldn't need to form Q explicitly!
-    //TODO
+    // Note: Typically you shouldn't need to form Q explicitly!
+    // TODO
     unimplemented!()
 }
 
 fn times_QT() {
-    //TODO
+    // TODO
     unimplemented!()
 }
 
 fn Q_times() {
-    //TODO
+    // TODO
     unimplemented!()
 }
 
 fn QT_times() {
-    //TODO
+    // TODO
     unimplemented!()
 }
 
@@ -160,8 +160,13 @@ mod tests {
     use std::convert::identity;
 
     use super::Matrix;
-    use crate::MatMul;
-    use crate::matrix::{qr::get_R, qr::qr_solve, test_utils::assert_matrixes_ulps_eq};
+    use crate::{
+        MatMul,
+        matrix::{
+            qr::{get_R, qr_solve},
+            test_utils::assert_matrixes_ulps_eq,
+        },
+    };
 
     #[test]
     fn test_qr_square() {
@@ -212,10 +217,10 @@ mod tests {
         // }
 
         // assert_matrixes_ulps_eq::<4, 4, _, _>(&a, &q.matmul(&r));
-        //assert_matrixes_ulps_eq::<4, 4, _, _>(&a, &r.Q_times(&qr, &taus));
-        //assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.transpose().times_Q(&qr, &taus));
-        //assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.times_Q_T(&qr, &taus));
-        //assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.Q_T_times(&qr, &taus));
+        // assert_matrixes_ulps_eq::<4, 4, _, _>(&a, &r.Q_times(&qr, &taus));
+        // assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.transpose().times_Q(&qr, &taus));
+        // assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.times_Q_T(&qr, &taus));
+        // assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.Q_T_times(&qr, &taus));
 
         let b = Matrix::<4, 1> {
             rows: [[0.], [16.], [12.], [28.]],

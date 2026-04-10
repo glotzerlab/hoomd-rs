@@ -34,7 +34,7 @@ impl<const N: usize> Default for Hyperparallelepiped<N> {
 
 impl<const N: usize> Hyperparallelepiped<N> {
     pub fn calc_qr(mut self) {
-        //bundle up vtors
+        // bundle up vtors
         self._qr = Some(
             Matrix::<N, N> {
                 rows: self.edge_vectors.map(|v| v.coordinates),
@@ -124,7 +124,8 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
     /// use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let cuboid = Hyperparallelepiped { //TODO
+    /// let cuboid = Hyperparallelepiped {
+    ///     // TODO
     ///     edge_lengths: [6.0.try_into()?, 8.0.try_into()?],
     /// };
     ///

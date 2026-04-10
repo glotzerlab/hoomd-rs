@@ -11,7 +11,10 @@ use crate::{
 };
 use arrayvec::ArrayVec;
 use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
-use hoomd_linear_algebra::{MatMul, matrix::Matrix, matrix::Matrix33, matrix::qr};
+use hoomd_linear_algebra::{
+    MatMul,
+    matrix::{Matrix, Matrix33, qr},
+};
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
 
 impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N> {
