@@ -454,7 +454,7 @@ pub use hull::construct_convex_hull_2d;
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
     /// Polytopes require at least one vertex.
-    #[error("a ConvexPolytope must have at least (N+1) vertices")]
+    #[error("a ConvexPolytope must have at least one vertex")]
     DegeneratePolytope,
 
     /// The point is outside the shape.

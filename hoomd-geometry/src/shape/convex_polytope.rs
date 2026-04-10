@@ -197,18 +197,18 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     where
         I: IntoIterator<Item = Cartesian<N>>,
     {
-        let mut buf: ArrayVec<Cartesian<N>, MAX_VERTICES> = ArrayVec::new();
+        let mut array_vec: ArrayVec<Cartesian<N>, MAX_VERTICES> = ArrayVec::new();
         for v in vertices {
-            buf.try_push(v).map_err(|_| Error::TooManyVertices)?;
+            array_vec.try_push(v).map_err(|_| Error::TooManyVertices)?;
         }
 
-        if buf.len() < (N + 1) {
+        if array_vec.is_empty() {
             return Err(Error::DegeneratePolytope);
         }
 
         Ok(ConvexPolytope {
-            bounding_radius: Self::bounding_radius(&buf),
-            vertices: buf,
+            bounding_radius: Self::bounding_radius(&array_vec),
+            vertices: array_vec,
         })
     }
 
