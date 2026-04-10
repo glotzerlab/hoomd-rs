@@ -398,7 +398,7 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
     /// to increase or decrease the acceptance ratio as needed over
     /// `steps` iterations.
     ///
-    /// [`tune`]: Tune::tune
+    /// [`tune_with_options`]: Tune::tune_with_options
     #[inline]
     fn tune_with_options(
         &mut self,
