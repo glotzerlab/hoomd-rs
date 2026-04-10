@@ -32,15 +32,7 @@ type BodyProperties = OrientedPoint<PositionVector, Orientation>;
 type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 // ANCHOR_END: type_aliases
 
-// ANCHOR: site_pair_interaction
-#[derive(MaximumInteractionRange, SitePairEnergy)]
-struct SitePairInteraction {
-    hard_disk: HardSphere,
-    angular_mask: Anisotropic<AngularMask<Boxcar, PositionVector>>,
-}
-// ANCHOR_END: site_pair_interaction
-
-// ANCHOR: simulation_new
+// ANCHOR: place_seed
 impl SeededSelfAssembly {
     /// Place a crystal seed in the microstate.
     fn place_seed(microstate:  &mut Microstate<BodyProperties, SiteProperties, VecCell<SiteKey, 2>, Periodic<Rectangle>>,
@@ -60,7 +52,9 @@ impl SeededSelfAssembly {
                 sites: vec![SiteProperties::default()],
             })?;
         }
+        // ANCHOR_END: place_seed
 
+        // ANCHOR: place_second_ring
         for i in 0..6 {
             let theta = 2.0 * PI * (i as f64) / 6.0;
             for oriented_point in &hexagon {
@@ -82,11 +76,11 @@ impl SeededSelfAssembly {
 
         Ok(())
         }
-    
-    /// Construct a new patchy particle self-assembly simulation.
+    // ANCHOR_END: place_second_ring
+
+    // ANCHOR: simulation_new
+    /// Construct a new seeded self-assembly simulation.
     fn new() -> anyhow::Result<SeededSelfAssembly> {
-        // ANCHOR_END: simulation_new
-        // ANCHOR: parameters
         let initial_packing_fraction = 0.3;
         let target_packing_fraction = 0.3;
         let n_disks = 512;
@@ -99,13 +93,9 @@ impl SeededSelfAssembly {
         let macrostate = Isothermal {
             temperature: 1.0,
         };
-        // ANCHOR_END: parameters
 
-        // ANCHOR: hard_disk
         let hard_disk = HardSphere { diameter: sigma };
-        // ANCHOR_END: hard_disk
 
-        // ANCHOR: patch
         let boxcar = Boxcar {
             epsilon: patch_energy,
             left: 0.0,
@@ -125,16 +115,12 @@ impl SeededSelfAssembly {
             interaction: AngularMask::new(boxcar, masks),
             r_cut: patch_interaction_range,
         };
-        // ANCHOR_END: patch
 
-        // ANCHOR: hamiltonian
         let hamiltonian = PairwiseCutoff(SitePairInteraction {
             hard_disk,
             angular_mask,
         });
-        // ANCHOR_END: hamiltonian
 
-        // ANCHOR: compress_hamiltonian
         let overlap_penalty = Isotropic {
             interaction: Expanded {
                 delta: sigma,
@@ -144,9 +130,7 @@ impl SeededSelfAssembly {
         };
 
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
-        // ANCHOR_END: compress_hamiltonian
 
-        // ANCHOR: remainder_initialize
         let circle = Circle {
             radius: (sigma / 2.0).try_into()?,
         };
@@ -163,13 +147,25 @@ impl SeededSelfAssembly {
                 hamiltonian.maximum_interaction_range().try_into()?,
             )
             .build();
+        // ANCHOR_END: simulation_new
+        // ANCHOR: microstate
         let mut microstate = Microstate::builder()
             .boundary(periodic_square)
             .spatial_data(vec_cell)
             .try_build()?;
 
         Self::place_seed(&mut microstate, &hamiltonian)?;
+        // ANCHOR_END: microstate
 
+        // ANCHOR: quick_insert
+        let distribution = UniformIn {
+            boundary: microstate.boundary().clone(),
+            template_sites: vec![SiteProperties::default()],
+        };
+        let quick_insert = QuickInsert::new(distribution, n_disks - microstate.bodies().len());
+        // ANCHOR_END: quick_insert
+
+        // ANCHOR: simulation_new_remainder
         let translate =
             Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
@@ -177,12 +173,6 @@ impl SeededSelfAssembly {
         let rotate =
             Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
         let rotate_sweep = Sweep(rotate);
-
-        let distribution = UniformIn {
-            boundary: microstate.boundary().clone(),
-            template_sites: vec![SiteProperties::default()],
-        };
-        let quick_insert = QuickInsert::new(distribution, n_disks - microstate.bodies().len());
 
         let target_box_volume =
             n_disks as f64 * circle.volume() / target_packing_fraction;
@@ -203,6 +193,95 @@ impl SeededSelfAssembly {
         })
     }
 }
+// ANCHOR_END: simulation_new_remainder
+
+// ANCHOR: initialize
+impl SeededSelfAssembly {
+    fn initialize(&mut self) -> anyhow::Result<()> {
+        if self.quick_insert.is_complete() {
+            self.quick_compress.apply(
+                &mut self.microstate,
+                &self.overlap_penalty_hamiltonian,
+                |body| body.tag >= self.seed_size,
+            );
+        } else {
+            self.quick_insert
+                .apply(&mut self.microstate, &self.overlap_penalty_hamiltonian);
+        }
+
+        self.translate_sweep.apply_with_filter(
+            &mut self.microstate,
+            &self.overlap_penalty_hamiltonian,
+            &Isothermal { temperature: 1.0 },
+            |body| body.tag >= self.seed_size,
+        );
+
+        self.rotate_sweep.apply_with_filter(
+            &mut self.microstate,
+            &self.overlap_penalty_hamiltonian,
+            &Isothermal { temperature: 1.0 },
+            |body| body.tag >= self.seed_size,
+        );
+        // ANCHOR_END: initialize
+
+        // ANCHOR: tune
+        if self.quick_compress.is_complete() {
+            self.translate_sweep.tune_with_options_and_filter(
+                &self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+                &TuneOptions::default(),
+                |body| body.tag >= self.seed_size,
+            );
+            self.rotate_sweep.tune_with_options_and_filter(
+                &self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+                &TuneOptions::default(),
+                |body| body.tag >= self.seed_size,
+            );
+
+            self.phase = Phase::Equilibrate;
+            println!(
+                "Initialization complete at step {}.",
+                self.microstate.step()
+            );
+        }
+        // ANCHOR_END: tune
+
+        // ANCHOR: initialize_remainder
+        if self.step() >= 20_000 {
+            let n = self.microstate.bodies().len();
+            let target_n = self.quick_insert.target();
+            let volume = self.microstate.boundary().volume();
+            let target_volume = self.quick_compress.target_volume();
+            return Err(anyhow!(
+                "inserted {n}/{target_n} bodies and compressed to {volume} / {target_volume}"
+            ));
+        }
+
+        Ok(())
+    }
+    // ANCHOR_END: initialize_remainder
+
+    // ANCHOR: equilibrate
+    fn equilibrate(&mut self) {
+        self.translate_sweep.apply_with_filter(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+            |body| body.tag >= self.seed_size,
+        );
+
+        self.rotate_sweep.apply_with_filter(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+            |body| body.tag >= self.seed_size,
+        );
+    }
+}
+// ANCHOR_END: equilibrate
 
 #[cfg_attr(feature = "bevy", derive(Resource))]
 struct SeededSelfAssembly {
@@ -238,14 +317,10 @@ enum Phase {
     Initialize,
     Equilibrate,
 }
-// ANCHOR_END: remainder_initialize
 
-// ANCHOR: simulation
 impl Simulation for SeededSelfAssembly {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-        // ANCHOR_END: simulation
-        // ANCHOR: remainder_simulation
         match self.phase {
             Phase::Initialize => {
                 self.initialize().context("failed to initialize")?
@@ -264,88 +339,12 @@ impl Simulation for SeededSelfAssembly {
     }
 }
 
-impl SeededSelfAssembly {
-    fn initialize(&mut self) -> anyhow::Result<()> {
-        if self.quick_insert.is_complete() {
-            self.quick_compress.apply(
-                &mut self.microstate,
-                &self.overlap_penalty_hamiltonian,
-                |_| true,
-            );
-        } else {
-            self.quick_insert
-                .apply(&mut self.microstate, &self.overlap_penalty_hamiltonian);
-        }
-
-        self.translate_sweep.apply_with_filter(
-            &mut self.microstate,
-            &self.overlap_penalty_hamiltonian,
-            &Isothermal { temperature: 1.0 },
-            |b| b.tag >= self.seed_size,
-        );
-
-        self.rotate_sweep.apply_with_filter(
-            &mut self.microstate,
-            &self.overlap_penalty_hamiltonian,
-            &Isothermal { temperature: 1.0 },
-            |b| b.tag >= self.seed_size,
-        );
-
-        if self.quick_compress.is_complete() {
-            self.translate_sweep.tune_with_options_and_filter(
-                &self.microstate,
-                &self.hamiltonian,
-                &self.macrostate,
-                &TuneOptions::default(),
-                |b| b.tag >= self.seed_size,
-            );
-            self.rotate_sweep.tune_with_options_and_filter(
-                &self.microstate,
-                &self.hamiltonian,
-                &self.macrostate,
-                &TuneOptions::default(),
-                |b| b.tag >= self.seed_size,
-            );
-
-            self.phase = Phase::Equilibrate;
-            println!(
-                "Initialization complete at step {}.",
-                self.microstate.step()
-            );
-        }
-
-        if self.step() >= 20_000 {
-            let n = self.microstate.bodies().len();
-            let target_n = self.quick_insert.target();
-            let volume = self.microstate.boundary().volume();
-            let target_volume = self.quick_compress.target_volume();
-            return Err(anyhow!(
-                "inserted {n}/{target_n} bodies and compressed to {volume} / {target_volume}"
-            ));
-        }
-
-        Ok(())
-    }
-
-    fn equilibrate(&mut self) {
-        self.translate_sweep.apply_with_filter(
-            &mut self.microstate,
-            &self.hamiltonian,
-            &self.macrostate,
-            |b| b.tag >= self.seed_size,
-        );
-
-        self.rotate_sweep.apply_with_filter(
-            &mut self.microstate,
-            &self.hamiltonian,
-            &self.macrostate,
-            |b| b.tag >= self.seed_size,
-        );
-    }
+#[derive(MaximumInteractionRange, SitePairEnergy)]
+struct SitePairInteraction {
+    hard_disk: HardSphere,
+    angular_mask: Anisotropic<AngularMask<Boxcar, PositionVector>>,
 }
-// ANCHOR_END: remainder_simulation
 
-// ANCHOR: log_record
 /// A single entry in the log.
 #[derive(ParquetRecordWriter)]
 pub struct LogRecord {
@@ -358,11 +357,9 @@ pub struct LogRecord {
     /// Temperature.
     temperature: f64,
 }
-// ANCHOR_END: log_record
 
 // Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
 #[cfg(not(feature = "bevy"))]
-// ANCHOR: main
 fn main() -> anyhow::Result<()> {
     use hoomd_gsd::hoomd::HoomdGsdFile;
     use hoomd_interaction::TotalEnergy;
@@ -406,7 +403,6 @@ fn main() -> anyhow::Result<()> {
     // ANCHOR: exit
     Ok(())
 }
-// ANCHOR_END: exit
 // ANCHOR_END: all
 
 #[cfg(feature = "bevy")]
