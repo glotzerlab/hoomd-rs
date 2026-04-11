@@ -136,6 +136,8 @@ mod tests {
     use super::*;
     use crate::shape::ConvexPolygon;
     use approxim::assert_relative_eq;
+    use hoomd_vector::InnerProduct;
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
 
     /// Construct a ConvexPolygon from the Rhomboid's vertices and verify that
@@ -173,5 +175,30 @@ mod tests {
     #[case::se([1.0, -1.0])]
     fn support_mapping_sheared(#[case] n: [f64; 2]) {
         check_support_mapping(3.0, 2.0, 1.5, n);
+    }
+
+    #[test]
+    fn support_mapping_random_cases() {
+        let mut rng = StdRng::seed_from_u64(42);
+
+        for _ in 0..10_000 {
+            let lx: f64 = rng.random_range(0.1..10.0);
+            let ly: f64 = rng.random_range(0.1..10.0);
+            let xy: f64 = rng.random_range(-2.0..2.0);
+
+            let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
+
+            let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
+                .expect("rhomboid vertices form a polygon");
+
+            for _ in 0..10 {
+                let n: Cartesian<2> = rng.random();
+                assert_relative_eq!(
+                    rhomboid.support_mapping(&n),
+                    polygon.support_mapping(&n),
+                    epsilon = 1e-12,
+                );
+            }
+        }
     }
 }
