@@ -114,9 +114,10 @@ impl SupportMapping<Cartesian<2>> for Rhomboid {
 impl BoundingSphereRadius for Rhomboid {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        // || maximal_extent || / 2.0 = { lx + ly * xy, ly } || / 2.0
+        // || maximal_extent || / 2.0 = { lx + ly * |xy|, ly } || / 2.0
         (0.5 * f64::sqrt(
-            (self.lx().get() + self.ly().get() * self.xy()).powi(2) + self.ly().get().powi(2),
+            (self.lx().get() + self.ly().get() * self.xy().abs()).powi(2)
+                + self.ly().get().powi(2),
         ))
         .try_into()
         .expect("Norm is always positive.")
