@@ -219,16 +219,9 @@ mod tests {
             let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
                 .expect("rhomboid vertices form a polygon");
 
-            let expected = polygon
-                .vertices()
-                .iter()
-                .map(Cartesian::norm_squared)
-                .fold(0.0_f64, f64::max)
-                .sqrt();
-
             assert_relative_eq!(
                 rhomboid.bounding_sphere_radius().get(),
-                expected,
+                polygon.bounding_sphere_radius().get(),
                 epsilon = 1e-12,
             );
         }
