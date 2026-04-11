@@ -10,6 +10,7 @@ use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 ///
 /// This shape is a general case of rhombus where pairs of sides are not equal.
 /// We enforce the convention that the center of the shape is at the origin.
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Rhomboid {
     /// The extents [``L_x``, ``L_y``] of each edge along the Cartesian axes ``x`` and ``y``.
     extents: [PositiveReal; 2],
@@ -117,8 +118,7 @@ impl BoundingSphereRadius for Rhomboid {
     fn bounding_sphere_radius(&self) -> PositiveReal {
         // || maximal_extent || / 2.0 = { lx + ly * |xy|, ly } || / 2.0
         (0.5 * f64::sqrt(
-            (self.lx().get() + self.ly().get() * self.xy().abs()).powi(2)
-                + self.ly().get().powi(2),
+            (self.lx().get() + self.ly().get() * self.xy().abs()).powi(2) + self.ly().get().powi(2),
         ))
         .try_into()
         .expect("Norm is always positive.")
