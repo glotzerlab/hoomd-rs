@@ -115,9 +115,11 @@ impl BoundingSphereRadius for Rhomboid {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
         // || maximal_extent || / 2.0 = { lx + ly * xy, ly } || / 2.0
-        f64::sqrt((self.lx().get() + self.ly().get() * self.xy()).powi(2) + self.ly().get().powi(2))
-            .try_into()
-            .expect("Norm is always positive.")
+        (0.5 * f64::sqrt(
+            (self.lx().get() + self.ly().get() * self.xy()).powi(2) + self.ly().get().powi(2),
+        ))
+        .try_into()
+        .expect("Norm is always positive.")
     }
 }
 
@@ -199,6 +201,35 @@ mod tests {
                     epsilon = 1e-12,
                 );
             }
+        }
+    }
+
+    #[test]
+    fn bounding_sphere_radius_random() {
+        let mut rng = StdRng::seed_from_u64(123);
+
+        for _ in 0..10_000 {
+            let lx: f64 = rng.random_range(0.1..10.0);
+            let ly: f64 = rng.random_range(0.1..10.0);
+            let xy: f64 = rng.random_range(-2.0..2.0);
+
+            let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
+
+            let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
+                .expect("rhomboid vertices form a polygon");
+
+            let expected = polygon
+                .vertices()
+                .iter()
+                .map(Cartesian::norm_squared)
+                .fold(0.0_f64, f64::max)
+                .sqrt();
+
+            assert_relative_eq!(
+                rhomboid.bounding_sphere_radius().get(),
+                expected,
+                epsilon = 1e-12,
+            );
         }
     }
 }
