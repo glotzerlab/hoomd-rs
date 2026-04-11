@@ -130,3 +130,48 @@ where
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shape::ConvexPolygon;
+    use approxim::assert_relative_eq;
+    use rstest::rstest;
+
+    /// Construct a ConvexPolygon from the Rhomboid's vertices and verify that
+    /// both shapes return the same support mapping for a given direction.
+    fn check_support_mapping(lx: f64, ly: f64, xy: f64, n: [f64; 2]) {
+        let rhomboid: Rhomboid = (
+            lx.try_into().expect("lx > 0"),
+            ly.try_into().expect("ly > 0"),
+            xy,
+        )
+            .into();
+
+        let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
+            .expect("rhomboid vertices form a polygon");
+        assert_relative_eq!(
+            rhomboid.support_mapping(&n.into()),
+            polygon.support_mapping(&n.into()),
+            epsilon = 1e-12,
+        );
+    }
+
+    #[rstest]
+    #[case::right([1.0, 1e-6])]
+    #[case::up([1e-6, 1.0])]
+    #[case::left([-1.0, 1e-6])]
+    #[case::down([1e-6, -1.0])]
+    fn support_mapping_unsheared_square(#[case] n: [f64; 2]) {
+        check_support_mapping(2.0, 2.0, 0.0, n);
+    }
+
+    #[rstest]
+    #[case::ne([1.0, 1.0])]
+    #[case::nw([-1.0, 1.0])]
+    #[case::sw([-1.0, -1.0])]
+    #[case::se([1.0, -1.0])]
+    fn support_mapping_sheared(#[case] n: [f64; 2]) {
+        check_support_mapping(3.0, 2.0, 1.5, n);
+    }
+}
