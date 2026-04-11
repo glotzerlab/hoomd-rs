@@ -1,4 +1,5 @@
-// TODO: Oblique?
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Rotate, Rotation};
@@ -139,9 +140,15 @@ mod tests {
     use super::*;
     use crate::shape::ConvexPolygon;
     use approxim::assert_relative_eq;
-    use hoomd_vector::InnerProduct;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
+
+    fn random_rhomboid(rng: &mut StdRng) -> Rhomboid {
+        let lx: f64 = rng.random_range(0.1..10.0);
+        let ly: f64 = rng.random_range(0.1..10.0);
+        let xy: f64 = rng.random_range(-2.0..2.0);
+        (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into()
+    }
 
     /// Construct a ConvexPolygon from the Rhomboid's vertices and verify that
     /// both shapes return the same support mapping for a given direction.
@@ -185,12 +192,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(42);
 
         for _ in 0..10_000 {
-            let lx: f64 = rng.random_range(0.1..10.0);
-            let ly: f64 = rng.random_range(0.1..10.0);
-            let xy: f64 = rng.random_range(-2.0..2.0);
-
-            let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
-
+            let rhomboid = random_rhomboid(&mut rng);
             let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
                 .expect("rhomboid vertices form a polygon");
 
@@ -210,12 +212,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(123);
 
         for _ in 0..10_000 {
-            let lx: f64 = rng.random_range(0.1..10.0);
-            let ly: f64 = rng.random_range(0.1..10.0);
-            let xy: f64 = rng.random_range(-2.0..2.0);
-
-            let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
-
+            let rhomboid = random_rhomboid(&mut rng);
             let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
                 .expect("rhomboid vertices form a polygon");
 
