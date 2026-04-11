@@ -42,20 +42,29 @@ impl Rhomboid {
         self.xy
     }
 
+    /// A @ [x, y] = [lx·x + ly·xy·y, ly·y]
+    #[inline]
+    fn matmul(&self, v: [f64; 2]) -> [f64; 2] {
+        [
+            self.lx().get() * v[0] + self.ly().get() * self.xy() * v[1],
+            self.ly().get() * v[1],
+        ]
+    }
+
+    /// A^T @ [x, y] = [lx·x, ly·xy·x + ly·y]
+    #[inline]
+    fn matmul_t(&self, v: [f64; 2]) -> [f64; 2] {
+        [
+            self.lx().get() * v[0],
+            self.ly().get() * self.xy() * v[0] + self.ly().get() * v[1],
+        ]
+    }
+
     /// Compute the vertices of the Rhomboid assuming it is centered at the origin.
     #[inline]
     #[must_use]
     pub fn vertices(&self) -> [Cartesian<2>; 4] {
-        let half_lx = self.lx().get() * 0.5;
-        let half_ly = self.ly().get() * 0.5;
-        let half_ly_xy = half_ly * self.xy();
-
-        [
-            [-half_lx - half_ly_xy, -half_ly].into(),
-            [half_lx - half_ly_xy, -half_ly].into(),
-            [half_lx + half_ly_xy, half_ly].into(),
-            [-half_lx + half_ly_xy, half_ly].into(),
-        ]
+        [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]].map(|c| self.matmul(c).into())
     }
     /// Represent a 2D triclinic box in the GSD box format.
     ///
@@ -97,19 +106,9 @@ impl Volume for Rhomboid {
 impl SupportMapping<Cartesian<2>> for Rhomboid {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
-        // {self}^T @ n = [lx * nx, ly * xy * nx + ly * ny]
-        let d0 = self.lx().get() * n[0];
-        let d1 = self.ly().get() * self.xy() * n[0] + self.ly().get() * n[1];
-
-        // {self} @ [sign(d0)/2, sign(d1)/2]
-        let s0 = d0.signum() * 0.5;
-        let s1 = d1.signum() * 0.5;
-
-        [
-            self.lx().get() * s0 + self.ly().get() * self.xy() * s1,
-            self.ly().get() * s1,
-        ]
-        .into()
+        let d = self.matmul_t([n[0], n[1]]);
+        let s = [d[0].signum() * 0.5, d[1].signum() * 0.5];
+        self.matmul(s).into()
     }
 }
 
