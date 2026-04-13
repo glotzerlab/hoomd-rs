@@ -11,7 +11,7 @@
 //! Benchmark 2D convex hull (Graham scan)
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
-use hoomd_geometry::construct_convex_hull_2d;
+use hoomd_geometry::shape::ConvexSurfaceMesh2d;
 use hoomd_vector::Cartesian;
 use rand::{RngExt, SeedableRng, rngs::StdRng};
 
@@ -62,7 +62,7 @@ mod random {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_random_points(N, &mut rng))
-            .bench_local_values(|mut pts| black_box(construct_convex_hull_2d(&mut pts)));
+            .bench_local_values(|pts| black_box(ConvexSurfaceMesh2d::construct_convex_hull(pts)));
     }
 }
 
@@ -75,7 +75,7 @@ mod boundaries {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_circle_points(N))
-            .bench_local_values(|mut pts| black_box(construct_convex_hull_2d(&mut pts)));
+            .bench_local_values(|pts| black_box(ConvexSurfaceMesh2d::construct_convex_hull(pts)));
     }
 
     #[divan::bench(consts = NUM_POINTS)]
@@ -83,6 +83,6 @@ mod boundaries {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_square_boundary(N / 4 + 1))
-            .bench_local_values(|mut pts| black_box(construct_convex_hull_2d(&mut pts)));
+            .bench_local_values(|pts| black_box(ConvexSurfaceMesh2d::construct_convex_hull(pts)));
     }
 }
