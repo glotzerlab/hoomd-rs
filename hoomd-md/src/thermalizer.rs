@@ -278,7 +278,7 @@ mod tests {
 
         fn create_body_3d(
             inertia: Cartesian<3>,
-            angular_mom: Cartesian<3>,
+            angmom: Cartesian<3>,
         ) -> Body<OrientedDynamicsPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
             Body {
                 properties: OrientedDynamicsPoint {
@@ -287,7 +287,7 @@ mod tests {
                     momentum: Cartesian::<3>::default(),
                     net_force: Cartesian::<3>::default(),
                     moment_of_inertia: inertia,
-                    angular_momentum: angular_mom,
+                    angular_momentum: angmom,
                     net_torque: Cartesian::<3>::default(),
                     mass: 1.0,
                 },

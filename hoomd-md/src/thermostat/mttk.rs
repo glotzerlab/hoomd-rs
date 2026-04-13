@@ -3,10 +3,10 @@
 
 #![allow(non_snake_case)]
 
+use crate::thermostat::Thermostat;
 use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
-use crate::thermostat::Thermostat;
 use rand_distr::{Distribution, Normal};
 
 /// [`MTTKThermostat`] implement the Nos$`\text{\'e}`$-Hoover thermostat
@@ -39,18 +39,18 @@ use rand_distr::{Distribution, Normal};
 /// ```math
 /// \begin{align}
 ///
-/// &G_\mathrm{old} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{old}}{k_BT_\mathrm{setpoint}} - 1 \right) \\ \nonumber \\ 
-/// 
-/// &\xi \left\{ t+\frac{\delta t} {4} \right\} = \xi \{ t \} + G_\mathrm{old}\frac{\delta t}{4} \\ \nonumber \\ 
-/// 
-/// &\alpha = \exp\left[ -\xi \left\{ t+\frac{\delta t} {4} \right\} \frac{dt}{2} \right]  \quad\; \text{calculate rescaling factor} \\ \nonumber \\ 
-/// 
-/// &k_B T_\mathrm{new} = k_B T_\mathrm{old} \times \alpha^2 \quad\quad\quad\; \text{adjust temperature} \\ \nonumber \\ 
-/// 
-/// &\eta \left\{ t+\frac{\delta t} {2} \right\} = \eta \{ t \} + \xi \left\{ t+\frac{\delta t} {4} \right\} \frac{\delta t}{2} \\ \nonumber \\ 
-/// 
-/// &G_\mathrm{new} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{new} }{k_BT_\mathrm{setpoint}} - 1 \right) \\ \nonumber \\ 
-/// 
+/// &G_\mathrm{old} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{old}}{k_BT_\mathrm{setpoint}} - 1 \right) \\ \nonumber \\
+///
+/// &\xi \left\{ t+\frac{\delta t} {4} \right\} = \xi \{ t \} + G_\mathrm{old}\frac{\delta t}{4} \\ \nonumber \\
+///
+/// &\alpha = \exp\left[ -\xi \left\{ t+\frac{\delta t} {4} \right\} \frac{dt}{2} \right]  \quad\; \text{calculate rescaling factor} \\ \nonumber \\
+///
+/// &k_B T_\mathrm{new} = k_B T_\mathrm{old} \times \alpha^2 \quad\quad\quad\; \text{adjust temperature} \\ \nonumber \\
+///
+/// &\eta \left\{ t+\frac{\delta t} {2} \right\} = \eta \{ t \} + \xi \left\{ t+\frac{\delta t} {4} \right\} \frac{\delta t}{2} \\ \nonumber \\
+///
+/// &G_\mathrm{new} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{new} }{k_BT_\mathrm{setpoint}} - 1 \right) \\ \nonumber \\
+///
 /// &\xi \left\{ t+\frac{\delta t} {2} \right\} = \xi \left\{ t+\frac{\delta t} {4} \right\} + G_\mathrm{new} \frac{\delta t}{4}
 ///         
 /// \end{align}
@@ -197,5 +197,45 @@ where
         P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
         self.integrate_step_one(microstate, macrostate, &dt, &mut compute_properties)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+
+    #[rstest]
+    fn test_init() -> anyhow::Result<()> {
+        // Blanket Implementation
+        let tau = 1.0;
+        let mttk = MTTKThermostat::new(tau.try_into()?);
+
+        assert_eq!(tau, mttk.tau.get());
+        assert_eq!(0.0, mttk.xi);
+        assert_eq!(0.0, mttk.eta);
+        assert_eq!(0.0, mttk.energy);
+
+        // Instantiation
+        let custom_mttk = MTTKThermostat {
+            tau: tau.try_into()?,
+            xi: 1.0,
+            eta: 2.0,
+            energy: 3.0,
+        };
+
+        assert_eq!(tau, custom_mttk.tau.get());
+        assert_eq!(1.0, custom_mttk.xi);
+        assert_eq!(2.0, custom_mttk.eta);
+        assert_eq!(3.0, custom_mttk.energy);
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[should_panic(expected = "tau should be positive: NotPositive(-1.0)")]
+    fn test_invalid_tau() {
+        let tau = -1.0;
+        let _ = MTTKThermostat::new(tau.try_into().expect("tau should be positive"));
     }
 }
