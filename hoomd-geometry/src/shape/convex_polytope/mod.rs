@@ -20,7 +20,7 @@ use hoomd_vector::{Cartesian, InnerProduct};
 /// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexPolyhedron};
 ///
 /// # fn main() -> Result<(), hoomd_geometry::Error> {
-/// let tetrahedron = ConvexPolyhedron::with_vertices(vec![
+/// let tetrahedron = ConvexPolyhedron::with_vertices([
 ///     [1.0, 1.0, 1.0].into(),
 ///     [1.0, -1.0, -1.0].into(),
 ///     [-1.0, 1.0, -1.0].into(),
@@ -95,7 +95,7 @@ pub type ConvexPolygon = ConvexPolytope<2, 32>;
 /// ```
 /// use hoomd_geometry::shape::{ConvexPolyhedron, Simplex3};
 /// # fn main() -> Result<(), hoomd_geometry::Error> {
-/// let poly = ConvexPolyhedron::with_vertices(vec![
+/// let poly = ConvexPolyhedron::with_vertices([
 ///     [1.0, 1.0, 1.0].into(),
 ///     [1.0, -1.0, -1.0].into(),
 ///     [-1.0, 1.0, -1.0].into(),
@@ -146,7 +146,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     /// use hoomd_geometry::shape::ConvexPolytope;
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
-    /// let equilateral_triangle = ConvexPolytope::<2>::with_vertices(vec![
+    /// let equilateral_triangle = ConvexPolytope::<2>::with_vertices([
     ///     [1.0, 0.0].into(),
     ///     [0.5, f64::sqrt(3.0) / 2.0].into(),
     ///     [-0.5, f64::sqrt(3.0) / 2.0].into(),
@@ -238,7 +238,7 @@ mod tests {
 
     #[fixture]
     fn simplex3() -> ConvexPolyhedron {
-        ConvexPolyhedron::with_vertices(vec![
+        ConvexPolyhedron::with_vertices([
             [1.0, 1.0, 1.0].into(),
             [1.0, -1.0, -1.0].into(),
             [-1.0, 1.0, -1.0].into(),
@@ -249,7 +249,7 @@ mod tests {
 
     #[fixture]
     fn equilateral_triangle() -> ConvexPolygon {
-        ConvexPolytope::with_vertices(vec![
+        ConvexPolytope::with_vertices([
             [1.0, 0.0].into(),
             [0.5, f64::sqrt(3.0) / 2.0].into(),
             [-0.5, f64::sqrt(3.0) / 2.0].into(),
