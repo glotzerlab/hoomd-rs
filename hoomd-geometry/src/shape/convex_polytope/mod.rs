@@ -10,7 +10,18 @@ use arrayvec::ArrayVec;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 
-/// A faceted solid defined by the convex hull of its vertices.
+/// A faceted solid defined by the convex hull of a set of points.
+///
+/// [`ConvexPolytope`] stores the given point set without any modification.
+/// Therefore, it can be constructed quickly. The *implicit* convex
+/// hull is formed by [`SupportMapping`] during intersection tests of
+/// `Convex(ConvexPolytope)` with other `Convex(_)` types.
+///
+/// The elements of [`vertices`] are *not necessarily* the vertices of the
+/// convex hull. They are exactly the points given at construction and might
+/// include duplicate, collinear, coplanar, and/or interior points.
+///
+/// [`vertices`]: Self::vertices
 ///
 /// # Examples
 ///
