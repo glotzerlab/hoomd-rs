@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{BoundingSphereRadius, Error, SupportMapping, construct_convex_hull_2d};
+use crate::{BoundingSphereRadius, Error, SupportMapping};
 use arrayvec::ArrayVec;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
@@ -67,7 +67,7 @@ pub struct ConvexPolytope<const N: usize, const MAX_VERTICES: usize = 64> {
     /// The vertices of the shape.
     vertices: ArrayVec<Cartesian<N>, MAX_VERTICES>,
     /// The radius of a bounding sphere of the geometry.
-    pub(crate) bounding_radius: PositiveReal,
+    bounding_radius: PositiveReal,
 }
 
 /// A faceted convex body in two dimensions.
@@ -109,41 +109,6 @@ pub type ConvexPolygon = ConvexPolytope<2, 32>;
 pub type ConvexPolyhedron = ConvexPolytope<3, 32>;
 
 impl<const MAX_VERTICES: usize> ConvexPolytope<2, MAX_VERTICES> {
-    /// Create a 2D convex polygon with the given vertices.
-    ///
-    /// The vertices are reduced to their convex hull using a Graham scan.
-    ///
-    /// # Errors
-    ///
-    /// Returns `[Error::DegeneratePolytope]` when the hull has fewer than 3 vertices.
-    /// Returns `[Error::TooManyVertices]` when more than `MAX_VERTICES` vertices are provided. If this is the case, increase `MAX_VERTICES` as needed.
-    #[inline]
-    pub fn convex_hull_from_vertices<I>(
-        vertices: I,
-    ) -> Result<ConvexPolytope<2, MAX_VERTICES>, Error>
-    where
-        I: IntoIterator<Item = Cartesian<2>>,
-    {
-        let mut buf: Vec<Cartesian<2>> = vertices.into_iter().collect();
-
-        if buf.len() < 3 {
-            return Err(Error::DegeneratePolytope);
-        }
-
-        construct_convex_hull_2d(&mut buf)?;
-
-        if buf.len() > MAX_VERTICES {
-            return Err(Error::TooManyVertices);
-        }
-
-        let verts: ArrayVec<Cartesian<2>, MAX_VERTICES> = buf.into_iter().collect();
-
-        Ok(ConvexPolytope {
-            bounding_radius: Self::bounding_radius(&verts),
-            vertices: verts,
-        })
-    }
-
     /// Create a regular *n*-gon with *n* vertices and circumradius 0.5.
     ///
     /// # Example
@@ -220,7 +185,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     }
 
     /// Compute the bounding radius.
-    fn bounding_radius(vertices: &[Cartesian<N>]) -> PositiveReal {
+    pub(crate) fn bounding_radius(vertices: &[Cartesian<N>]) -> PositiveReal {
         vertices
             .iter()
             .map(Cartesian::norm_squared)

@@ -1,11 +1,91 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+//! N-Dimensional generalization of a convex polyhedron.
+
+use serde::{Deserialize, Serialize};
+
 use std::cmp::Ordering;
 
-use crate::Error;
+use crate::{BoundingSphereRadius, Error, SupportMapping, shape::ConvexPolytope};
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 use itertools::Itertools;
+
+/// The vertices and edges that make up a convex polygon.
+///
+/// [`ConvexPolygon`] and [`ConvexSurfaceMesh2d`] can both represent
+/// 2d convex polygons. The first is defined *implicitly* as the convex hull
+/// of a set of points. It stores the given point set without any modification,
+/// and can therefore be constructed quickly. The *implicit* convex hull is
+/// formed by [`SupportMapping`] during intersection tests of
+/// `Convex(ConvexPolygon)` with other `Convex(_)` types.
+///
+/// In contrast, [`ConvexSurfaceMesh2d`] *explicitly* computes the convex hull
+/// on construction. After construction, the [`vertices`] of the shape include
+/// only the points on the convex hull in a counter-clockwise order.
+/// TODO: explicit edges?
+/// TODO: discuss native `IntersectsAt` on the `benchmark-reconciliation` branch.
+///
+/// [`vertices`]: Self::vertices
+///
+/// # Examples
+///
+/// Construction and basic methods:
+/// ```
+/// use approxim::assert_relative_eq;
+/// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexSurfaceMesh2d};
+///
+/// # fn main() -> Result<(), hoomd_geometry::Error> {
+/// let triangle = ConvexSurfaceMesh2d::from_point_set([
+///     [1.0, -1.0].into(),
+///     [-1.0, -1.0].into(),
+///     [0.0, 1.0].into(),
+/// ])?;
+///
+/// let bounding_radius = triangle.bounding_sphere_radius();
+///
+/// assert_relative_eq!(bounding_radius.get(), 2.0_f64.sqrt());
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Intersection tests:
+/// ```
+/// use hoomd_geometry::{Convex, IntersectsAt, shape::ConvexSurfaceMesh2d};
+/// use hoomd_vector::{Angle, Cartesian};
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), hoomd_geometry::Error> {
+/// let rectangle = ConvexSurfaceMesh2d::from_point_set([
+///     [-2.0, -1.0].into(),
+///     [2.0, -1.0].into(),
+///     [2.0, 1.0].into(),
+///     [-2.0, 1.0].into(),
+/// ])?;
+/// let rectangle = Convex(rectangle);
+///
+/// assert!(!rectangle.intersects_at(
+///     &rectangle,
+///     &[0.0, 2.1].into(),
+///     &Angle::default()
+/// ));
+/// assert!(rectangle.intersects_at(
+///     &rectangle,
+///     &[0.0, 2.1].into(),
+///     &Angle::from(PI / 2.0)
+/// ));
+/// # Ok(())
+/// # }
+/// ```
+/// TODO: demonstrate the native `IntersectsAt` on the `benchmark-reconciliation` branch.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ConvexSurfaceMesh2d {
+    /// The vertices of the polygon in counter-clockwise order.
+    vertices: Vec<Cartesian<2>>,
+    /// The radius of a bounding sphere of the geometry.
+    bounding_radius: PositiveReal,
+}
 
 /// Find the lowest, leftmost point from a slice of Cartesian vectors.
 #[inline]
@@ -16,13 +96,14 @@ fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> Option<usize> {
     })
 }
 
-/// Get the key for a lexographical sort of points with respect to an anchor.
+/// Get the key for a lexicographic order of points with respect to an anchor.
 #[inline]
 fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
     let diff = p - anchor;
     (f64::atan2(diff[1], diff[0]), diff.dot(&diff))
 }
-/// Determines whether a point `test` is to the left, right, or colinear with `edge`.
+
+/// Determines whether a point `test` is to the left, right, or collinear with `edge`.
 ///
 /// # Warning
 ///
@@ -55,82 +136,140 @@ fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) 
     }
 }
 
-/// Compute the convex hull of points in two dimensions using a Graham scan.
-///
-/// Mutates the input vector in-place, rearranging and truncating to contain
-/// only the hull vertices.
-///
-/// # Returns
-///
-/// `()` if the hull was computed, [`Error`] if a hull could not be generated.
-///
-/// # Errors
-///
-/// Returns [`Error`] if the input vertices do not form a convex body with 3 or more points.
-#[inline]
-pub fn construct_convex_hull_2d(vertices: &mut Vec<Cartesian<2>>) -> Result<(), Error> {
-    // No need to try and triangulate if the hull is degenerate
-    if vertices.len() < 3 {
-        return Err(Error::DegeneratePolytope);
+impl ConvexSurfaceMesh2d {
+    /// Create an convex surface mesh from the convex hull of the given set of points.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_geometry::shape::ConvexSurfaceMesh2d;
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let equilateral_triangle = ConvexSurfaceMesh2d::from_point_set(vec![
+    ///     [1.0, 0.0].into(),
+    ///     [0.5, f64::sqrt(3.0) / 2.0].into(),
+    ///     [-0.5, f64::sqrt(3.0) / 2.0].into(),
+    /// ])?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// # Errors
+    ///
+    /// * `[Error::DegeneratePolytope]` when there are fewer than 3 non-collinear points..
+    #[inline]
+    pub fn from_point_set<I>(points: I) -> Result<Self, Error>
+    where
+        I: IntoIterator<Item = Cartesian<2>>,
+    {
+        let vertices = Self::construct_convex_hull(points.into_iter().collect())?;
+
+        Ok(Self {
+            bounding_radius: ConvexPolytope::<2>::bounding_radius(&vertices),
+            vertices,
+        })
     }
-
-    let anchor_idx = find_lowest_leftmost(vertices).ok_or(Error::DegeneratePolytope)?;
-
-    // Move the anchor to the front of the list of vertices, as it is always in the hull
-    vertices.swap(0, anchor_idx);
-    let anchor = vertices[0];
-
-    // Sort the remainder of the slice in-place
-    vertices[1..].sort_unstable_by(|&a, &b| {
-        let (a0, a1) = get_graham_key(a, anchor);
-        let (b0, b1) = get_graham_key(b, anchor);
-        a0.total_cmp(&b0).then(a1.total_cmp(&b1))
-    });
-
-    // Now vertices[..2] is an edge on the hull. Initialize counters for the hull length
-    // and number of vertices on the hull
-    let mut n_vertices_on_hull = 2;
-    let mut next_candidate = 2;
-
-    // Repeat until all interior points are gone
-    while next_candidate < vertices.len() {
-        let c = vertices[next_candidate];
-        while n_vertices_on_hull >= 2 {
-            let p = vertices[n_vertices_on_hull - 2];
-            let n = vertices[n_vertices_on_hull - 1];
-
-            if predicate_orient2d((p, n), c) <= 0 {
-                // Point n is inside the hull, remove it by shrinking the hull
-                n_vertices_on_hull -= 1;
-            } else {
-                break;
-            }
+    
+    
+    /// Compute the convex hull of points in two dimensions.
+    ///
+    /// The resulting vector contains a subset of the given points, including
+    /// only the non-degenerate points on the convex hull. The output
+    /// vertices are arranged in a counter-clockwise order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error`] if the input vertices do not form a convex body with 3 or more points.
+    #[inline]
+    pub fn construct_convex_hull(mut points: Vec<Cartesian<2>>) -> Result<Vec<Cartesian<2>>, Error> {
+        // No need to try and triangulate if the hull is degenerate
+        if points.len() < 3 {
+            return Err(Error::DegeneratePolytope);
         }
-        // Swap the vertex c onto the end of the hull, extending it by one
-        vertices.swap(next_candidate, n_vertices_on_hull);
-        n_vertices_on_hull += 1;
-        next_candidate += 1;
+
+        let anchor_idx = find_lowest_leftmost(&points).ok_or(Error::DegeneratePolytope)?;
+
+        // Move the anchor to the front of the list of vertices, as it is always in the hull
+        points.swap(0, anchor_idx);
+        let anchor = points[0];
+
+        // Sort the remainder of the slice in-place
+        points[1..].sort_unstable_by(|&a, &b| {
+            let (a0, a1) = get_graham_key(a, anchor);
+            let (b0, b1) = get_graham_key(b, anchor);
+            a0.total_cmp(&b0).then(a1.total_cmp(&b1))
+        });
+
+        // Now vertices[..2] is an edge on the hull. Initialize counters for the hull length
+        // and number of vertices on the hull
+        let mut n_vertices_on_hull = 2;
+        let mut next_candidate = 2;
+
+        // Repeat until all interior points are gone
+        while next_candidate < points.len() {
+            let c = points[next_candidate];
+            while n_vertices_on_hull >= 2 {
+                let p = points[n_vertices_on_hull - 2];
+                let n = points[n_vertices_on_hull - 1];
+
+                if predicate_orient2d((p, n), c) <= 0 {
+                    // Point n is inside the hull, remove it by shrinking the hull
+                    n_vertices_on_hull -= 1;
+                } else {
+                    break;
+                }
+            }
+            // Swap the vertex c onto the end of the hull, extending it by one
+            points.swap(next_candidate, n_vertices_on_hull);
+            n_vertices_on_hull += 1;
+            next_candidate += 1;
+        }
+
+        points.truncate(n_vertices_on_hull);
+        if points.len() >= 3 {
+            Ok(points)
+        } else {
+            Err(Error::DegeneratePolytope)
+        }
     }
 
-    vertices.truncate(n_vertices_on_hull);
-    if vertices.len() >= 3 {
-        Ok(())
-    } else {
-        Err(Error::DegeneratePolytope)
+    /// The vertices of the convex polygon in counter-clockwise order.
+    #[inline]
+    #[must_use]
+    pub fn vertices(&self) -> &[Cartesian<2>] {
+        &self.vertices
+    }
+}
+
+impl SupportMapping<Cartesian<2>> for ConvexSurfaceMesh2d
+{
+    #[inline]
+    fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
+            *self
+                .vertices
+                .iter()
+                .max_by(|a, b| {
+                    a.dot(n)
+                        .partial_cmp(&b.dot(n))
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .expect("there should be at least 3 vertices")
+    }
+}
+
+impl BoundingSphereRadius for ConvexSurfaceMesh2d
+{
+    #[inline]
+    fn bounding_sphere_radius(&self) -> PositiveReal {
+        self.bounding_radius
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use approxim::assert_relative_eq;
+    use assert2::check;
     use super::*;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
-
-    /// Helper to check if a point is approximately in the hull
-    fn hull_contains(hull: &[Cartesian<2>], point: [f64; 2], tol: f64) -> bool {
-        hull.iter()
-            .any(|h| (h[0] - point[0]).abs() < tol && (h[1] - point[1]).abs() < tol)
-    }
 
     #[rstest]
     #[case::single_point(vec![[1.0, 2.0]], 0)]
@@ -167,11 +306,11 @@ mod tests {
 
     #[rstest]
     fn test_square_corners() {
-        let mut vertices: Vec<Cartesian<2>> = vec![[1.0, 1.0], [1.0, 0.0], [0.0, 0.0], [0.0, 1.0]]
+        let points: Vec<Cartesian<2>> = vec![[1.0, 1.0], [1.0, 0.0], [0.0, 0.0], [0.0, 1.0]]
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -185,7 +324,7 @@ mod tests {
 
     #[rstest]
     fn test_square_corners_big() {
-        let mut vertices: Vec<Cartesian<2>> = vec![
+        let points: Vec<Cartesian<2>> = vec![
             [101.0, 101.0],
             [101.0, 100.0],
             [100.0, 101.0],
@@ -194,7 +333,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -208,7 +347,7 @@ mod tests {
 
     #[rstest]
     fn test_square_with_edge_points() {
-        let mut vertices: Vec<Cartesian<2>> = vec![
+        let points: Vec<Cartesian<2>> = vec![
             [0.0, 0.0],
             [0.5, 0.0],
             [1.0, 0.0], // bottom edge
@@ -221,7 +360,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // Hull should have 4 corners (interior edge points excluded)
         assert_eq!(vertices.len(), 4);
         let hull = [
@@ -252,8 +391,8 @@ mod tests {
         for i in 0..20 {
             pts.push([0.0, f64::from(i) / 19.0]);
         }
-        let mut vertices: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let points: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -268,13 +407,13 @@ mod tests {
     #[rstest]
     fn test_circle_uniform() {
         let n = 20;
-        let mut vertices: Vec<Cartesian<2>> = (0..n)
+        let points: Vec<Cartesian<2>> = (0..n)
             .map(|i| {
                 let angle = 2.0 * std::f64::consts::PI * i as f64 / n as f64;
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // All points on circle should be in hull
         assert_eq!(vertices.len(), n);
     }
@@ -282,29 +421,29 @@ mod tests {
     #[rstest]
     fn test_circle_with_interior_points() {
         let n_boundary = 12;
-        let mut vertices: Vec<Cartesian<2>> = (0..n_boundary)
+        let mut points: Vec<Cartesian<2>> = (0..n_boundary)
             .map(|i| {
                 let angle = 2.0 * std::f64::consts::PI * i as f64 / n_boundary as f64;
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
         // Add interior points
-        vertices.extend([[0.0, 0.0], [0.3, 0.3], [-0.2, 0.1], [0.1, -0.4]].map(Cartesian::from));
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        points.extend([[0.0, 0.0], [0.3, 0.3], [-0.2, 0.1], [0.1, -0.4]].map(Cartesian::from));
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // Only boundary points should be in hull
         assert_eq!(vertices.len(), n_boundary);
     }
 
     #[rstest]
     fn test_circle_partial_arc() {
-        let mut vertices: Vec<Cartesian<2>> = (0..10)
+        let points: Vec<Cartesian<2>> = (0..10)
             .map(|i| {
                 let angle = -std::f64::consts::FRAC_PI_4
                     + (std::f64::consts::FRAC_PI_2 * f64::from(i) / 9.0);
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // All points on partial arc should be in hull
         assert_eq!(vertices.len(), 10);
     }
@@ -315,8 +454,8 @@ mod tests {
         let original: Vec<Cartesian<2>> = (0..50)
             .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
             .collect();
-        let mut vertices = original.clone();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let points = original.clone();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // Hull should have at least 3 points
         assert!(vertices.len() >= 3);
         // All hull points should be in original set
@@ -328,7 +467,7 @@ mod tests {
     #[rstest]
     fn test_random_gaussian() {
         let mut rng = StdRng::seed_from_u64(42);
-        let mut vertices: Vec<Cartesian<2>> = (0..100)
+        let points: Vec<Cartesian<2>> = (0..100)
             .map(|_| {
                 Cartesian::from([
                     rng.random::<f64>() * 2.0 - 1.0,
@@ -336,7 +475,7 @@ mod tests {
                 ])
             })
             .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         assert!(vertices.len() >= 3);
     }
 
@@ -344,16 +483,16 @@ mod tests {
     fn test_random_deterministic_output() {
         for _ in 0..3 {
             let mut rng = StdRng::seed_from_u64(123);
-            let mut vertices1: Vec<Cartesian<2>> = (0..30)
+            let points1: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-            construct_convex_hull_2d(&mut vertices1).unwrap();
+        let vertices1 = ConvexSurfaceMesh2d::construct_convex_hull(points1).expect("hard-coded points should lie on a convex hull");
 
             let mut rng = StdRng::seed_from_u64(123);
-            let mut vertices2: Vec<Cartesian<2>> = (0..30)
+            let points2: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-            construct_convex_hull_2d(&mut vertices2).unwrap();
+        let vertices2 = ConvexSurfaceMesh2d::construct_convex_hull(points2).expect("hard-coded points should lie on a convex hull");
 
             assert_eq!(vertices1.len(), vertices2.len());
         }
@@ -361,7 +500,7 @@ mod tests {
 
     #[rstest]
     fn test_duplicate_lowest_points() {
-        let mut vertices: Vec<Cartesian<2>> = vec![
+        let points: Vec<Cartesian<2>> = vec![
             [0.0, 0.0],
             [0.0, 0.0],
             [0.0, 0.0], // Three duplicates of lowest
@@ -372,7 +511,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         assert!(vertices.len() >= 3);
 
         let hull = [
@@ -386,7 +525,7 @@ mod tests {
 
     #[rstest]
     fn test_many_duplicates_few_unique() {
-        let mut vertices: Vec<Cartesian<2>> = vec![
+        let points: Vec<Cartesian<2>> = vec![
             [0.0, 0.0],
             [0.0, 0.0],
             [0.0, 0.0],
@@ -399,7 +538,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // Should handle duplicates gracefully
         assert!(vertices.len() >= 3);
 
@@ -409,7 +548,7 @@ mod tests {
 
     #[rstest]
     fn test_collinear_bottom_edge() {
-        let mut vertices: Vec<Cartesian<2>> = vec![
+        let points: Vec<Cartesian<2>> = vec![
             [0.0, 0.0],
             [0.5, 0.0],
             [1.0, 0.0],
@@ -419,7 +558,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // Should pick leftmost of bottom points and include apex
         assert!(vertices.len() >= 3);
 
@@ -429,7 +568,7 @@ mod tests {
 
     #[rstest]
     fn test_leftmost_selected() {
-        let mut vertices: Vec<Cartesian<2>> = vec![
+        let points: Vec<Cartesian<2>> = vec![
             [0.5, 0.0],
             [1.0, 0.0],
             [0.0, 0.0], // All y=0, but [0,0] is leftmost
@@ -438,27 +577,25 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // [0, 0] should be the anchor point
-        assert!(hull_contains(&vertices, [0.0, 0.0], 1e-10));
-
         let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [0.5, 1.0].into()];
         itertools::assert_equal(&vertices, &hull);
     }
 
     #[rstest]
     fn test_many_bottom_points() {
-        let mut pts: Vec<[f64; 2]> = (0..10).map(|i| [f64::from(i) * 2.0 / 9.0, 0.0]).collect();
-        pts.push([1.0, 1.0]); // Apex
-        let mut vertices: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let mut points: Vec<[f64; 2]> = (0..10).map(|i| [f64::from(i) * 2.0 / 9.0, 0.0]).collect();
+        points.push([1.0, 1.0]); // Apex
+        let points: Vec<Cartesian<2>> = points.into_iter().map(Cartesian::from).collect();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // Leftmost [0,0] and rightmost [2,0] should be in hull with apex
         assert!(vertices.len() >= 3);
     }
 
     #[rstest]
     fn test_collinear_from_anchor() {
-        let mut vertices: Vec<Cartesian<2>> = vec![
+        let points: Vec<Cartesian<2>> = vec![
             [0.0, 0.0], // Anchor (lowest leftmost)
             [1.0, 1.0],
             [2.0, 2.0],
@@ -469,7 +606,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // Should only keep furthest point in each direction
         assert!(vertices.len() >= 3);
 
@@ -484,7 +621,7 @@ mod tests {
 
     #[rstest]
     fn test_radial_collinear_multiple_directions() {
-        let mut vertices: Vec<Cartesian<2>> = vec![
+        let points: Vec<Cartesian<2>> = vec![
             [0.0, 0.0], // Anchor
             [1.0, 0.0],
             [2.0, 0.0],
@@ -500,33 +637,33 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // Should keep only outermost points
         assert!(vertices.len() >= 3);
     }
 
     #[rstest]
     fn test_star_pattern() {
-        let mut vertices: Vec<Cartesian<2>> = vec![Cartesian::from([0.0, 0.0])]; // Anchor
+        let mut points: Vec<Cartesian<2>> = vec![Cartesian::from([0.0, 0.0])]; // Anchor
         // Create points along 8 rays
         for i in 0..8 {
             let angle = 2.0 * std::f64::consts::PI * f64::from(i) / 8.0;
             for r in [0.5, 1.0, 1.5] {
-                vertices.push(Cartesian::from([r * angle.cos(), r * angle.sin()]));
+                points.push(Cartesian::from([r * angle.cos(), r * angle.sin()]));
             }
         }
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         // Outer points should form the hull
         assert!(vertices.len() >= 8); // At least 8 outer points
     }
 
     #[rstest]
     fn test_minimum_triangle() {
-        let mut vertices: Vec<Cartesian<2>> = vec![[0.0, 0.0], [1.0, 0.0], [0.5, 1.0]]
+        let points: Vec<Cartesian<2>> = vec![[0.0, 0.0], [1.0, 0.0], [0.5, 1.0]]
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 3);
 
         let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [0.5, 1.0].into()];
@@ -535,12 +672,12 @@ mod tests {
 
     #[rstest]
     fn test_negative_coordinates() {
-        let mut vertices: Vec<Cartesian<2>> =
+        let points: Vec<Cartesian<2>> =
             vec![[1.0, 1.0], [1.0, -1.0], [-1.0, 1.0], [-1.0, -1.0]]
                 .into_iter()
                 .map(Cartesian::from)
                 .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -554,11 +691,11 @@ mod tests {
 
     #[rstest]
     fn test_large_coordinates() {
-        let mut vertices: Vec<Cartesian<2>> = vec![[0.0, 0.0], [1e6, 0.0], [1e6, 1e6], [0.0, 1e6]]
+        let points: Vec<Cartesian<2>> = vec![[0.0, 0.0], [1e6, 0.0], [1e6, 1e6], [0.0, 1e6]]
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        construct_convex_hull_2d(&mut vertices).unwrap();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -568,5 +705,45 @@ mod tests {
             [0.0, 1e6].into(),
         ];
         itertools::assert_equal(&vertices, &hull);
+    }
+
+    #[rstest]
+    fn test_degenerate() {
+        let points: Vec<Cartesian<2>> =
+            vec![[0.0, 0.0], [0.5, 0.5], [0.25, 0.25], [1.0, 1.0]]
+                .into_iter()
+                .map(Cartesian::from)
+                .collect();
+        let result = ConvexSurfaceMesh2d::construct_convex_hull(points);
+        check!(result == Err(Error::DegeneratePolytope));
+    }
+
+
+    #[test]
+    fn support_mapping_2d() {
+        let cuboid = ConvexSurfaceMesh2d::from_point_set([
+            [-1.0, -2.0].into(),
+            [1.0, -2.0].into(),
+            [1.0, 2.0].into(),
+            [-1.0, 2.0].into(),
+        ])
+        .expect("hard-coded vertices form a polygon");
+
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, 0.1])),
+            [1.0, 2.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, -0.1])),
+            [1.0, -2.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-0.1, 1.0])),
+            [-1.0, 2.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-0.1, -1.0])),
+            [-1.0, -2.0].into()
+        );
     }
 }

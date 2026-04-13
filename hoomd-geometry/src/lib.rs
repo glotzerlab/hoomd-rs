@@ -445,10 +445,6 @@ pub trait MapPoint<P> {
     fn map_point(&self, point: P, other: &Self) -> Result<P, Error>;
 }
 
-/// TODO
-mod hull;
-pub use hull::construct_convex_hull_2d;
-
 /// Enumerate possible sources of error in fallible geometry methods.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
