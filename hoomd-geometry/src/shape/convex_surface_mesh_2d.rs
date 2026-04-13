@@ -14,7 +14,7 @@ use itertools::Itertools;
 
 /// The vertices and edges that make up a convex polygon.
 ///
-/// [`ConvexPolygon`] and [`ConvexSurfaceMesh2d`] can both represent
+/// [`ConvexPolytope::<2>`] and [`ConvexSurfaceMesh2d`] can both represent
 /// 2d convex polygons. The first is defined *implicitly* as the convex hull
 /// of a set of points. It stores the given point set without any modification,
 /// and can therefore be constructed quickly. The *implicit* convex hull is
@@ -182,6 +182,8 @@ impl ConvexSurfaceMesh2d {
     /// # Errors
     ///
     /// Returns [`Error`] if the input vertices do not form a convex body with 3 or more points.
+    ///
+    /// [`Error`]: enum@Error
     ///
     /// # Example
     /// ```
