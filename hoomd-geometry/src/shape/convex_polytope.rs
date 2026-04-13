@@ -17,9 +17,9 @@ use hoomd_vector::{Cartesian, InnerProduct};
 /// hull is formed by [`SupportMapping`] during intersection tests of
 /// `Convex(ConvexPolytope)` with other `Convex(_)` types.
 ///
-/// The elements of [`vertices`] are *not necessarily* the vertices of the
-/// convex hull. They are exactly the points given at construction and might
-/// include duplicate, collinear, coplanar, and/or interior points.
+/// Every vertex in the convex hull is an elements of [`vertices`]. [`vertices`]
+/// may also include duplicate, collinear, coplanar, and/or interior points.
+/// They are exactly the points given at construction.
 ///
 /// [`vertices`]: Self::vertices
 ///
