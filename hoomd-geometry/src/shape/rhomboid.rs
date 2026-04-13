@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, Rotate, Rotation};
+use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, RotationMatrix};
 
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 
@@ -126,10 +126,34 @@ impl BoundingSphereRadius for Rhomboid {
 
 impl<R> IntersectsAt<Rhomboid, Cartesian<2>, R> for Rhomboid
 where
-    R: Rotate<Cartesian<2>> + Rotation,
+    R: Rotate<Cartesian<2>> + Rotation + Copy,
+    RotationMatrix<2>: From<R>,
 {
     #[inline]
     fn intersects_at(&self, other: &Rhomboid, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
+        // Separating Axis Theorem for two parallelograms.
+        let u_a: Cartesian<2> = [self.lx().get(), 0.0].into();
+        let v_a: Cartesian<2> = [self.ly().get() * self.xy(), self.ly().get()].into();
+
+        let r = RotationMatrix::<2>::from(*o_ij);
+        let u_b = r.rotate(&[other.lx().get(), 0.0].into());
+        let v_b = r.rotate(&[other.ly().get() * other.xy(), other.ly().get()].into());
+
+        let edges = [u_a, v_a, u_b, v_b];
+
+        for edge in edges {
+            // Perpendicular normal to the edge
+            let axis: Cartesian<2> = [-edge[1], edge[0]].into();
+
+            let projected_distance = v_ij.dot(&axis).abs();
+            let r_a = (u_a.dot(&axis).abs() + v_a.dot(&axis).abs()) * 0.5;
+            let r_b = (u_b.dot(&axis).abs() + v_b.dot(&axis).abs()) * 0.5;
+
+            if projected_distance > r_a + r_b {
+                return false;
+            }
+        }
+
         true
     }
 }
@@ -138,7 +162,9 @@ where
 mod tests {
     use super::*;
     use crate::shape::ConvexPolygon;
+    use crate::{Convex, IntersectsAt};
     use approxim::assert_relative_eq;
+    use hoomd_vector::Angle;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
 
@@ -220,6 +246,24 @@ mod tests {
                 polygon.bounding_sphere_radius().get(),
                 epsilon = 1e-12,
             );
+        }
+    }
+
+    #[test]
+    fn intersects_at_random() {
+        let mut rng = StdRng::seed_from_u64(456);
+
+        for _ in 0..10_000 {
+            let a = random_rhomboid(&mut rng);
+            let b = random_rhomboid(&mut rng);
+
+            let v_ij: Cartesian<2> =
+                rng.random::<Cartesian<2>>() * 20.0 - Cartesian::from([10.0; 2]);
+            let o_ij = Angle::from(rng.random_range(-std::f64::consts::PI..std::f64::consts::PI));
+
+            let sat = a.intersects_at(&b, &v_ij, &o_ij.inverted());
+            let xc = Convex(a).intersects_at(&Convex(b), &v_ij, &o_ij);
+            assert_eq!(sat, xc);
         }
     }
 }
