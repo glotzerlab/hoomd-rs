@@ -19,7 +19,9 @@ use hoomd_interaction::{
     pairwise::{HardSphere, Isotropic},
     univariate::{Expanded, OverlapPenalty},
 };
-use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial, Tune};
+use hoomd_mc::{
+    Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial, Tune, TuneOptions,
+};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -198,7 +200,12 @@ where
         )?;
         microstate.sort_sites();
 
-        translate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
+        translate_sweep.tune_with_options(
+            &microstate,
+            &hamiltonian,
+            &Isothermal { temperature: 1.0 },
+            &TuneOptions::default(),
+        );
         *parallel_translate_sweep
             .local_trial_mut()
             .maximum_distance_mut() = *translate_sweep.0.maximum_distance();
