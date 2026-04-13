@@ -182,7 +182,7 @@ mod tests {
         let bussi = BussiThermostat::new(tau.try_into()?);
 
         assert_eq!(tau, bussi.tau.get());
-        assert_eq!(0.0, bussi.cumu_energy_drift);
+        assert_eq!(0.0, *bussi.get_energy());
 
         // Instantiation
         let custom_bussi = BussiThermostat {

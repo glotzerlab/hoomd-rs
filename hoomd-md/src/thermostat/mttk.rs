@@ -212,9 +212,9 @@ mod tests {
         let mttk = MTTKThermostat::new(tau.try_into()?);
 
         assert_eq!(tau, mttk.tau.get());
-        assert_eq!(0.0, mttk.xi);
-        assert_eq!(0.0, mttk.eta);
-        assert_eq!(0.0, mttk.energy);
+        assert_eq!(0.0, *mttk.get_velocity());
+        assert_eq!(0.0, *mttk.get_position());
+        assert_eq!(0.0, *mttk.get_energy());
 
         // Instantiation
         let custom_mttk = MTTKThermostat {

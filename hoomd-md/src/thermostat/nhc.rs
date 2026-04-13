@@ -243,7 +243,7 @@ mod tests {
         assert_eq!(tau, nhc.tau.get());
         assert_eq!([0.0; N_CHAINS], nhc.get_position_arr().as_slice());
         assert_eq!([0.0; N_CHAINS], nhc.get_velocity_arr().as_slice());
-        assert_eq!(0.0, nhc.energy);
+        assert_eq!(0.0, *nhc.get_energy());
 
         // Instantiation
         let custom_nhc = NHCThermostat::<N_CHAINS> {
