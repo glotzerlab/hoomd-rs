@@ -172,8 +172,7 @@ impl ConvexSurfaceMesh2d {
             vertices,
         })
     }
-    
-    
+
     /// Compute the convex hull of points in two dimensions.
     ///
     /// The resulting vector contains a subset of the given points, including
@@ -200,7 +199,9 @@ impl ConvexSurfaceMesh2d {
     /// # }
     /// ```
     #[inline]
-    pub fn construct_convex_hull(mut points: Vec<Cartesian<2>>) -> Result<Vec<Cartesian<2>>, Error> {
+    pub fn construct_convex_hull(
+        mut points: Vec<Cartesian<2>>,
+    ) -> Result<Vec<Cartesian<2>>, Error> {
         // No need to try and triangulate if the hull is degenerate
         if points.len() < 3 {
             return Err(Error::DegeneratePolytope);
@@ -260,24 +261,22 @@ impl ConvexSurfaceMesh2d {
     }
 }
 
-impl SupportMapping<Cartesian<2>> for ConvexSurfaceMesh2d
-{
+impl SupportMapping<Cartesian<2>> for ConvexSurfaceMesh2d {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
-            *self
-                .vertices
-                .iter()
-                .max_by(|a, b| {
-                    a.dot(n)
-                        .partial_cmp(&b.dot(n))
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-                .expect("there should be at least 3 vertices")
+        *self
+            .vertices
+            .iter()
+            .max_by(|a, b| {
+                a.dot(n)
+                    .partial_cmp(&b.dot(n))
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .expect("there should be at least 3 vertices")
     }
 }
 
-impl BoundingSphereRadius for ConvexSurfaceMesh2d
-{
+impl BoundingSphereRadius for ConvexSurfaceMesh2d {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
         self.bounding_radius
@@ -286,9 +285,9 @@ impl BoundingSphereRadius for ConvexSurfaceMesh2d
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use approxim::assert_relative_eq;
     use assert2::check;
-    use super::*;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
 
@@ -331,7 +330,8 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -354,7 +354,8 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -381,7 +382,8 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // Hull should have 4 corners (interior edge points excluded)
         assert_eq!(vertices.len(), 4);
         let hull = [
@@ -413,7 +415,8 @@ mod tests {
             pts.push([0.0, f64::from(i) / 19.0]);
         }
         let points: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -434,7 +437,8 @@ mod tests {
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // All points on circle should be in hull
         assert_eq!(vertices.len(), n);
     }
@@ -450,7 +454,8 @@ mod tests {
             .collect();
         // Add interior points
         points.extend([[0.0, 0.0], [0.3, 0.3], [-0.2, 0.1], [0.1, -0.4]].map(Cartesian::from));
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // Only boundary points should be in hull
         assert_eq!(vertices.len(), n_boundary);
     }
@@ -464,7 +469,8 @@ mod tests {
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // All points on partial arc should be in hull
         assert_eq!(vertices.len(), 10);
     }
@@ -476,7 +482,8 @@ mod tests {
             .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
             .collect();
         let points = original.clone();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // Hull should have at least 3 points
         assert!(vertices.len() >= 3);
         // All hull points should be in original set
@@ -496,7 +503,8 @@ mod tests {
                 ])
             })
             .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         assert!(vertices.len() >= 3);
     }
 
@@ -507,13 +515,15 @@ mod tests {
             let points1: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-        let vertices1 = ConvexSurfaceMesh2d::construct_convex_hull(points1).expect("hard-coded points should lie on a convex hull");
+            let vertices1 = ConvexSurfaceMesh2d::construct_convex_hull(points1)
+                .expect("hard-coded points should lie on a convex hull");
 
             let mut rng = StdRng::seed_from_u64(123);
             let points2: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-        let vertices2 = ConvexSurfaceMesh2d::construct_convex_hull(points2).expect("hard-coded points should lie on a convex hull");
+            let vertices2 = ConvexSurfaceMesh2d::construct_convex_hull(points2)
+                .expect("hard-coded points should lie on a convex hull");
 
             assert_eq!(vertices1.len(), vertices2.len());
         }
@@ -532,7 +542,8 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         assert!(vertices.len() >= 3);
 
         let hull = [
@@ -559,7 +570,8 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // Should handle duplicates gracefully
         assert!(vertices.len() >= 3);
 
@@ -579,7 +591,8 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // Should pick leftmost of bottom points and include apex
         assert!(vertices.len() >= 3);
 
@@ -598,7 +611,8 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // [0, 0] should be the anchor point
         let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [0.5, 1.0].into()];
         itertools::assert_equal(&vertices, &hull);
@@ -609,7 +623,8 @@ mod tests {
         let mut points: Vec<[f64; 2]> = (0..10).map(|i| [f64::from(i) * 2.0 / 9.0, 0.0]).collect();
         points.push([1.0, 1.0]); // Apex
         let points: Vec<Cartesian<2>> = points.into_iter().map(Cartesian::from).collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // Leftmost [0,0] and rightmost [2,0] should be in hull with apex
         assert!(vertices.len() >= 3);
     }
@@ -627,7 +642,8 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // Should only keep furthest point in each direction
         assert!(vertices.len() >= 3);
 
@@ -658,7 +674,8 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // Should keep only outermost points
         assert!(vertices.len() >= 3);
     }
@@ -673,7 +690,8 @@ mod tests {
                 points.push(Cartesian::from([r * angle.cos(), r * angle.sin()]));
             }
         }
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         // Outer points should form the hull
         assert!(vertices.len() >= 8); // At least 8 outer points
     }
@@ -684,7 +702,8 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 3);
 
         let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [0.5, 1.0].into()];
@@ -693,12 +712,12 @@ mod tests {
 
     #[rstest]
     fn test_negative_coordinates() {
-        let points: Vec<Cartesian<2>> =
-            vec![[1.0, 1.0], [1.0, -1.0], [-1.0, 1.0], [-1.0, -1.0]]
-                .into_iter()
-                .map(Cartesian::from)
-                .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let points: Vec<Cartesian<2>> = vec![[1.0, 1.0], [1.0, -1.0], [-1.0, 1.0], [-1.0, -1.0]]
+            .into_iter()
+            .map(Cartesian::from)
+            .collect();
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -716,7 +735,8 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points).expect("hard-coded points should lie on a convex hull");
+        let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
+            .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
         let hull = [
@@ -730,15 +750,13 @@ mod tests {
 
     #[rstest]
     fn test_degenerate() {
-        let points: Vec<Cartesian<2>> =
-            vec![[0.0, 0.0], [0.5, 0.5], [0.25, 0.25], [1.0, 1.0]]
-                .into_iter()
-                .map(Cartesian::from)
-                .collect();
+        let points: Vec<Cartesian<2>> = vec![[0.0, 0.0], [0.5, 0.5], [0.25, 0.25], [1.0, 1.0]]
+            .into_iter()
+            .map(Cartesian::from)
+            .collect();
         let result = ConvexSurfaceMesh2d::construct_convex_hull(points);
         check!(result == Err(Error::DegeneratePolytope));
     }
-
 
     #[test]
     fn support_mapping_2d() {
