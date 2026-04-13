@@ -139,12 +139,20 @@ fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) 
 impl ConvexSurfaceMesh2d {
     /// Create an convex surface mesh from the convex hull of the given set of points.
     ///
+    /// The resulting shape contains a subset of the given points, including
+    /// only the non-degenerate points on the convex hull. The result's vertices
+    /// are arranged in a counter-clockwise order.
+    ///
+    /// # Errors
+    ///
+    /// * `[Error::DegeneratePolytope]` when there are fewer than 3 non-collinear points.
+    ///
     /// # Example
     /// ```
     /// use hoomd_geometry::shape::ConvexSurfaceMesh2d;
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
-    /// let equilateral_triangle = ConvexSurfaceMesh2d::from_point_set(vec![
+    /// let equilateral_triangle = ConvexSurfaceMesh2d::from_point_set([
     ///     [1.0, 0.0].into(),
     ///     [0.5, f64::sqrt(3.0) / 2.0].into(),
     ///     [-0.5, f64::sqrt(3.0) / 2.0].into(),
@@ -152,9 +160,6 @@ impl ConvexSurfaceMesh2d {
     /// # Ok(())
     /// # }
     /// ```
-    /// # Errors
-    ///
-    /// * `[Error::DegeneratePolytope]` when there are fewer than 3 non-collinear points..
     #[inline]
     pub fn from_point_set<I>(points: I) -> Result<Self, Error>
     where
@@ -172,12 +177,28 @@ impl ConvexSurfaceMesh2d {
     /// Compute the convex hull of points in two dimensions.
     ///
     /// The resulting vector contains a subset of the given points, including
-    /// only the non-degenerate points on the convex hull. The output
-    /// vertices are arranged in a counter-clockwise order.
+    /// only the non-degenerate points on the convex hull. The output vertices
+    /// are arranged in a counter-clockwise order.
     ///
     /// # Errors
     ///
     /// Returns [`Error`] if the input vertices do not form a convex body with 3 or more points.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_geometry::shape::ConvexSurfaceMesh2d;
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let points = vec![
+    ///     [1.0, 0.0].into(),
+    ///     [0.5, f64::sqrt(3.0) / 2.0].into(),
+    ///     [-0.5, f64::sqrt(3.0) / 2.0].into(),
+    /// ];
+    ///
+    /// let hull_vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     pub fn construct_convex_hull(mut points: Vec<Cartesian<2>>) -> Result<Vec<Cartesian<2>>, Error> {
         // No need to try and triangulate if the hull is degenerate
