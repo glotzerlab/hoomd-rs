@@ -9,11 +9,12 @@ import init from 'https://glotzerlab.github.io/hoomd-rs/mc-tutorial/seeded-self-
 ## Overview
 
 The [Patchy Particle Self-Assembly] tutorial uses a temperature ramp to improve
-the quality of the self-assembled structures. You can also improve self-assembly
-by seeding a small portion of the final crystal in the simulation.
+the quality of the self-assembled structures. This tutorial demonstrates another
+technique to do the same. It places a small portion of the final crystal (a
+seed) and keeps it fixed during the simulation.
 
-This example employs the same model used in [Patchy Particle Self-Assembly], so
-refer to that tutorial for a complete description of the simulation model.
+Refer to the [Patchy Particle Self-Assembly] tutorial for a complete description
+of the simulation model.
 
 [Patchy Particle Self-Assembly]: patchy-particle-self-assembly.md
 
@@ -58,9 +59,8 @@ Then place another hexagonal ring of of these hexagons:
 {{#rustdoc_include ../../../examples/mc-tutorial/seeded-self-assembly.rs:place_second_ring}}
 ```
 
-Constructing the second ring in this way duplicates some of the points. Avoid
-adding those duplicates by inserting only those bodies that do not overlap with
-existing bodies.
+Constructing the second ring in this way duplicates some of the points. Add
+bodies to the microstate only when they do not overlap with existing bodies.
 
 ### Populate the Simulation Model Struct
 
