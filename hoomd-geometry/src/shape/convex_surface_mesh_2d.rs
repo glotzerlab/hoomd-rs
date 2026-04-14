@@ -9,7 +9,8 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, SupportMapping, Volume, shape::ConvexPolytope
+    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, SupportMapping,
+    Volume, shape::ConvexPolytope,
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
@@ -1085,8 +1086,12 @@ mod tests {
 
     #[fixture]
     fn triangle() -> ConvexSurfaceMesh2d {
-        ConvexSurfaceMesh2d::from_point_set([[-0.5, -0.5].into(), [0.5, -0.5].into(), [0.5, 0.5].into()])
-            .expect("hard-coded vertices form a valid polygon")
+        ConvexSurfaceMesh2d::from_point_set([
+            [-0.5, -0.5].into(),
+            [0.5, -0.5].into(),
+            [0.5, 0.5].into(),
+        ])
+        .expect("hard-coded vertices form a valid polygon")
     }
 
     #[rstest]
@@ -1251,4 +1256,3 @@ mod tests {
         );
     }
 }
-

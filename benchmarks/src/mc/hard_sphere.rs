@@ -19,9 +19,7 @@ use hoomd_interaction::{
     pairwise::{HardSphere, Isotropic},
     univariate::{Expanded, OverlapPenalty},
 };
-use hoomd_mc::{
-    Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial,
-};
+use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
