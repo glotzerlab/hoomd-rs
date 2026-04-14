@@ -20,7 +20,7 @@ use hoomd_interaction::{
     univariate::{Expanded, OverlapPenalty},
 };
 use hoomd_mc::{
-    Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial, Tune, TuneOptions,
+    Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial,
 };
 use hoomd_microstate::{
     Microstate, SiteKey,
