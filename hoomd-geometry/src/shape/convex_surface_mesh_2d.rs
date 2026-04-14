@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 
 use std::cmp::Ordering;
 
-use crate::{BoundingSphereRadius, Error, IsPointInside, SupportMapping, Volume, shape::ConvexPolytope};
+use crate::{
+    BoundingSphereRadius, Error, IsPointInside, SupportMapping, Volume, shape::ConvexPolytope,
+};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 use itertools::Itertools;
@@ -283,7 +285,7 @@ impl SupportMapping<Cartesian<2>> for ConvexSurfaceMesh2d {
     ///     [-1.5, -1.0].into(),
     ///     [1.5, -1.0].into(),
     ///     [-1.5, 1.0].into(),
-    ///     [1.5, 1.0].into()
+    ///     [1.5, 1.0].into(),
     /// ])?;
     /// let rounded_rectangle = Convex(Sphero {
     ///     shape: rectangle,
@@ -382,7 +384,8 @@ impl Volume for ConvexSurfaceMesh2d {
 
         let mut previous = self.vertices.len() - 1;
         for current in 0..self.vertices.len() {
-            volume += self.vertices[previous][0] * self.vertices[current][1] - self.vertices[current][0] * self.vertices[previous][1];
+            volume += self.vertices[previous][0] * self.vertices[current][1]
+                - self.vertices[current][0] * self.vertices[previous][1];
 
             previous = current;
         }
@@ -428,7 +431,7 @@ impl IsPointInside<Cartesian<2>> for ConvexSurfaceMesh2d {
 
             previous = current;
         }
-                
+
         true
     }
 }
