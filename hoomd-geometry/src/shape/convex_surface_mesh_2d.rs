@@ -26,7 +26,10 @@ use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMa
 /// In contrast, [`ConvexSurfaceMesh2d`] *explicitly* computes the convex hull
 /// on construction. After construction, the [`vertices`] of the shape include
 /// only the points on the convex hull in a counter-clockwise order.
-/// TODO: discuss native `IntersectsAt` on the `benchmark-reconciliation` branch.
+/// Using this representation, [`ConvexSurfaceMesh2d`] is able to provide
+/// implementations of [`Volume`], [`IsPointInside`], and [`IntersectsAt`].
+/// The native `ConvexSurfaceMesh2d`--`ConvexSurfaceMesh2d` intersection test
+/// is much faster than the generic `Convex(ConvexPolygon)` intersection test.
 ///
 /// [`vertices`]: Self::vertices
 ///
@@ -59,7 +62,6 @@ use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMa
 ///     [2.0, 1.0].into(),
 ///     [-2.0, 1.0].into(),
 /// ])?;
-/// let rectangle = Convex(rectangle);
 ///
 /// assert!(!rectangle.intersects_at(
 ///     &rectangle,
@@ -74,7 +76,6 @@ use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMa
 /// # Ok(())
 /// # }
 /// ```
-/// TODO: demonstrate the native `IntersectsAt` on the `benchmark-reconciliation` branch.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConvexSurfaceMesh2d {
     /// The vertices of the polygon in counter-clockwise order.
@@ -261,8 +262,6 @@ impl ConvexSurfaceMesh2d {
 
 impl SupportMapping<Cartesian<2>> for ConvexSurfaceMesh2d {
     /// Find the point on a shape that is the furthest in a given direction.
-    ///
-    /// TODO: that the inherent `IntersectsAt` implementation is faster.
     ///
     /// [`ConvexSurfaceMesh2d`] implements [`SupportMapping`] to enable
     /// intersection tests between mixed convex types.
@@ -535,7 +534,6 @@ fn b_edge_separates(
         let p = b.vertices[current];
         let edge = p - b.vertices[previous];
 
-        // SAFETY: Vertices must be counter-clockwise ordered (TODO).
         let n = -edge.perpendicular();
 
         let p_in_frame_a = o_b.rotate(&p) + *v_ab;
