@@ -27,7 +27,7 @@ approxim.workspace = true
 divan.workspace = true
 rand.workspace = true
 rstest.workspace = true
-nalgebra = "=0.34.1"
+nalgebra = "=0.34.2"
 
 
 [[bench]]
