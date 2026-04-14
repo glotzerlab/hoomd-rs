@@ -1,13 +1,13 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! N-Dimensional generalization of a convex polyhedron.
+//! Convex polygon represented by vertices and edges.
 
 use serde::{Deserialize, Serialize};
 
 use std::cmp::Ordering;
 
-use crate::{BoundingSphereRadius, Error, SupportMapping, shape::ConvexPolytope};
+use crate::{BoundingSphereRadius, Error, SupportMapping, Volume, shape::ConvexPolytope};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 use itertools::Itertools;
@@ -31,10 +31,9 @@ use itertools::Itertools;
 ///
 /// # Examples
 ///
-/// Construction and basic methods:
+/// Construction:
 /// ```
-/// use approxim::assert_relative_eq;
-/// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexSurfaceMesh2d};
+/// use hoomd_geometry::shape::ConvexSurfaceMesh2d;
 ///
 /// # fn main() -> Result<(), hoomd_geometry::Error> {
 /// let triangle = ConvexSurfaceMesh2d::from_point_set([
@@ -42,10 +41,6 @@ use itertools::Itertools;
 ///     [-1.0, -1.0].into(),
 ///     [0.0, 1.0].into(),
 /// ])?;
-///
-/// let bounding_radius = triangle.bounding_sphere_radius();
-///
-/// assert_relative_eq!(bounding_radius.get(), 2.0_f64.sqrt());
 /// # Ok(())
 /// # }
 /// ```
@@ -145,7 +140,7 @@ impl ConvexSurfaceMesh2d {
     ///
     /// # Errors
     ///
-    /// * `[Error::DegeneratePolytope]` when there are fewer than 3 non-collinear points.
+    /// * [`Error::DegeneratePolytope`] when there are fewer than 3 non-collinear points.
     ///
     /// # Example
     /// ```
@@ -264,6 +259,56 @@ impl ConvexSurfaceMesh2d {
 }
 
 impl SupportMapping<Cartesian<2>> for ConvexSurfaceMesh2d {
+    /// Find the point on a shape that is the furthest in a given direction.
+    ///
+    /// TODO: that the inherent `IntersectsAt` implementation is faster.
+    ///
+    /// [`ConvexSurfaceMesh2d`] implements [`SupportMapping`] to enable
+    /// intersection tests between mixed convex types.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{
+    ///     Convex, IntersectsAt,
+    ///     shape::{Circle, ConvexSurfaceMesh2d, Sphero},
+    /// };
+    /// use hoomd_vector::{Angle, Cartesian};
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let circle = Convex(Circle {
+    ///     radius: 0.5.try_into()?,
+    /// });
+    /// let rectangle = ConvexSurfaceMesh2d::from_point_set([
+    ///     [-1.5, -1.0].into(),
+    ///     [1.5, -1.0].into(),
+    ///     [-1.5, 1.0].into(),
+    ///     [1.5, 1.0].into()
+    /// ])?;
+    /// let rounded_rectangle = Convex(Sphero {
+    ///     shape: rectangle,
+    ///     rounding_radius: 0.5.try_into()?,
+    /// });
+    ///
+    /// assert!(rounded_rectangle.intersects_at(
+    ///     &circle,
+    ///     &[2.4, 0.0].into(),
+    ///     &Angle::default()
+    /// ));
+    /// assert!(!rounded_rectangle.intersects_at(
+    ///     &circle,
+    ///     &[0.0, 2.4].into(),
+    ///     &Angle::default()
+    /// ));
+    /// assert!(circle.intersects_at(
+    ///     &rounded_rectangle,
+    ///     &[0.0, 2.4].into(),
+    ///     &Angle::from(PI / 2.0)
+    /// ));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
         *self
@@ -279,9 +324,71 @@ impl SupportMapping<Cartesian<2>> for ConvexSurfaceMesh2d {
 }
 
 impl BoundingSphereRadius for ConvexSurfaceMesh2d {
+    /// Radius of a circle that bounds the shape.
+    ///
+    /// The circle has the same local origin as the shape `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexSurfaceMesh2d};
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let triangle = ConvexSurfaceMesh2d::from_point_set([
+    ///     [1.0, -1.0].into(),
+    ///     [-1.0, -1.0].into(),
+    ///     [0.0, 1.0].into(),
+    /// ])?;
+    ///
+    /// let bounding_radius = triangle.bounding_sphere_radius();
+    ///
+    /// assert_relative_eq!(bounding_radius.get(), 2.0_f64.sqrt());
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
         self.bounding_radius
+    }
+}
+
+impl Volume for ConvexSurfaceMesh2d {
+    /// Compute the area of the convex polygon.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{Volume, shape::ConvexSurfaceMesh2d};
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let triangle = ConvexSurfaceMesh2d::from_point_set([
+    ///     [-1.0, -1.0].into(),
+    ///     [1.0, -1.0].into(),
+    ///     [1.0, 1.0].into(),
+    /// ])?;
+    ///
+    /// let area = triangle.volume();
+    ///
+    /// assert_relative_eq!(area, 2.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn volume(&self) -> f64 {
+        // Compute the polygon area with the shoelace formula:
+        // https://mathworld.wolfram.com/PolygonArea.html
+        let mut volume = 0.0;
+
+        let mut previous = self.vertices.len() - 1;
+        for current in 0..self.vertices.len() {
+            volume += self.vertices[previous][0] * self.vertices[current][1] - self.vertices[current][0] * self.vertices[previous][1];
+
+            previous = current;
+        }
+
+        0.5 * volume
     }
 }
 
