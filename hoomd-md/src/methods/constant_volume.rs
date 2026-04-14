@@ -1497,6 +1497,6 @@ mod tests {
                 plane_normal: f_dir.to_unit()?.0,
             },
             torque: ConstantTorque { alpha: 1.0, direction: 1.0 }
-        }
+        };
     }
 }
