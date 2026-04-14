@@ -21,9 +21,7 @@ use hoomd_interaction::{
     pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
     univariate::OverlapPenalty,
 };
-use hoomd_mc::{
-    Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial,
-};
+use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},

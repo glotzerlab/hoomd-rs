@@ -17,9 +17,7 @@ use hoomd_interaction::{
     pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
     univariate::OverlapPenalty,
 };
-use hoomd_mc::{
-    Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial,
-};
+use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -213,7 +211,9 @@ where
         let maximum_translation = 0.2;
         let maximum_rotation = 2.0 * PI / 6.0;
 
-        let hexagon = ConvexSurfaceMesh2d::from_point_set(ConvexPolygon::regular(6).vertices().iter().copied())?;
+        let hexagon = ConvexSurfaceMesh2d::from_point_set(
+            ConvexPolygon::regular(6).vertices().iter().copied(),
+        )?;
         let hamiltonian = PairwiseCutoff(HardShape(hexagon.clone()));
 
         let translate = Translate::with_maximum_distance(maximum_translation.try_into()?);
