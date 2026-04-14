@@ -167,7 +167,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     /// ```
     /// # Errors
     ///
-    /// `[Error::DegeneratePolytope]` when no vertices are provided.
+    /// [`Error::DegeneratePolytope`] when no vertices are provided.
     #[inline]
     pub fn with_vertices<I>(vertices: I) -> Result<ConvexPolytope<N, MAX_VERTICES>, Error>
     where
