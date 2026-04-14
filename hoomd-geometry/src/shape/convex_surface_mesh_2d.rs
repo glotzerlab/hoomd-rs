@@ -3,16 +3,16 @@
 
 //! Convex polygon represented by vertices and edges.
 
-use serde::{Deserialize, Serialize};
-
 use std::cmp::Ordering;
+
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     BoundingSphereRadius, Error, IsPointInside, SupportMapping, Volume, shape::ConvexPolytope,
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
-use itertools::Itertools;
 
 /// The vertices and edges that make up a convex polygon.
 ///
