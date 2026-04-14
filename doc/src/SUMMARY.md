@@ -23,6 +23,7 @@
   - [Patchy Particle Self-Assembly](mc-tutorial/patchy-particle-self-assembly.md)
   - [Seeded Self-Assembly](mc-tutorial/seeded-self-assembly.md)
   - [Type-dependent Interactions](mc-tutorial/type-dependent-interactions.md)
+  - [Polydisperse Interactions](mc-tutorial/polydisperse-hard-disk-model.md)
 - [Molecular Dynamics Tutorial](md-tutorial/index.md)
   - [NVE Lennard-Jones fluid](md-tutorial/nve-lj-fluid.md)
 - [Workflow Tutorial](workflow-tutorial/index.md)
