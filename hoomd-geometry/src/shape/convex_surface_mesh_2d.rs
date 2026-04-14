@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use std::cmp::Ordering;
 
-use crate::{BoundingSphereRadius, Error, SupportMapping, Volume, shape::ConvexPolytope};
+use crate::{BoundingSphereRadius, Error, IsPointInside, SupportMapping, Volume, shape::ConvexPolytope};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 use itertools::Itertools;
@@ -24,7 +24,6 @@ use itertools::Itertools;
 /// In contrast, [`ConvexSurfaceMesh2d`] *explicitly* computes the convex hull
 /// on construction. After construction, the [`vertices`] of the shape include
 /// only the points on the convex hull in a counter-clockwise order.
-/// TODO: explicit edges?
 /// TODO: discuss native `IntersectsAt` on the `benchmark-reconciliation` branch.
 ///
 /// [`vertices`]: Self::vertices
@@ -389,6 +388,48 @@ impl Volume for ConvexSurfaceMesh2d {
         }
 
         0.5 * volume
+    }
+}
+
+impl IsPointInside<Cartesian<2>> for ConvexSurfaceMesh2d {
+    /// Check if a point is inside the convex polygon.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, shape::ConvexSurfaceMesh2d};
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let triangle = ConvexSurfaceMesh2d::from_point_set([
+    ///     [1.0, -1.0].into(),
+    ///     [-1.0, -1.0].into(),
+    ///     [0.0, 1.0].into(),
+    /// ])?;
+    ///
+    /// assert!(triangle.is_point_inside(&[0.0, 0.0].into()));
+    /// assert!(triangle.is_point_inside(&[-0.9, -0.9].into()));
+    /// assert!(!triangle.is_point_inside(&[-1.5, 2.0].into()));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn is_point_inside(&self, point: &Cartesian<2>) -> bool {
+        let mut previous = self.vertices.len() - 1;
+        for current in 0..self.vertices.len() {
+            let a = self.vertices[current];
+            let b = self.vertices[previous];
+            let edge = a - b;
+            let n = -edge.perpendicular();
+
+            let v = *point - a;
+            if v.dot(&n) > 0.0 {
+                return false;
+            }
+
+            previous = current;
+        }
+                
+        true
     }
 }
 
