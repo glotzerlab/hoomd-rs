@@ -22,8 +22,7 @@ use hoomd_interaction::{
     univariate::OverlapPenalty,
 };
 use hoomd_mc::{
-    Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial, Tune,
-    TuneOptions,
+    Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial,
 };
 use hoomd_microstate::{
     Microstate, SiteKey,
