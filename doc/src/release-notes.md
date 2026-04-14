@@ -4,6 +4,9 @@
 
 *Added:*
 
+* `[hoomd-geometry]`: Add `ConvexSurfaceMesh2d` shape that stores the vertices and
+  edges of a convex polygon. Initialize a `ConvexSurfaceMesh2d` as the convex hull
+  of a point set (#259).
 * `[hoomd-geometry]`: Implement `IntersectsAt` for `ConvexSurfaceMesh2d` intersection tests.
   The separating planes method is faster for small *n* than the Xenocollide
   algorithm implemented for `Convex<ConvexPolygon>` (#260).
@@ -21,8 +24,10 @@
 
 *Changed:*
 
-* Remove unnecessary trait bounds on `IntersectsAt` implementation (#260).
-* Adjust benchmark parameters to make accurate comparisons with HOOMD-blue (#260).
+* `[benchmarks]`: Adjust benchmark parameters to make accurate comparisons with HOOMD-blue (#260).
+* `[hoomd-geometry]`: Store `ConvexPolytope` vertices using an `ArrayVec` so that
+  `ConvexPolytope` can now be stored on the stack (#259).
+* `[hoomd-geometry]`: Remove unnecessary trait bounds on `IntersectsAt` implementation (#260).
 
 *Changed:*
 
