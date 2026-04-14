@@ -342,11 +342,11 @@ site-site interaction types. Specifically, it demonstrated the addition
 of a site type field and showed how you can use that when computing
 the interaction energies.
 
-Navigate to the top of the page and refresh to see the simulation in action
-again. Notice that the sites quickly phase separate. Wait long enough and the
-system should form two stripes. Due to the differently shaped potentials, the
-*A* and *B* domains are distinct. The *A* sites form a hexagonal solid and *B*
-form a lower density fluid.
+Navigate to the top of the page to see the simulation in action. Notice that
+the sites quickly phase separate. Wait long enough and the system should form
+two stripes. Due to the differently shaped potentials, the *A* and *B* domains
+are distinct. The *A* sites form a hexagonal solid and *B* form a lower density
+fluid.
 
 ## Complete Code
 

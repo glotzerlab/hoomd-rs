@@ -456,4 +456,8 @@ pub enum Error {
     /// The point is outside the shape.
     #[error("cannot map a point that is outside the shape")]
     PointOutsideShape,
+
+    /// Too many vertices were provided.
+    #[error("too many vertices")]
+    TooManyVertices,
 }

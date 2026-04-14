@@ -106,6 +106,13 @@ path = "mc-tutorial/patchy-particle-self-assembly.rs"
 path = "mc-tutorial"
 
 [[example]]
+name = "seeded-self-assembly"
+path = "mc-tutorial/seeded-self-assembly.rs"
+
+[package.metadata.example.seeded-self-assembly]
+path = "mc-tutorial"
+
+[[example]]
 name = "type-dependent-interactions"
 path = "mc-tutorial/type-dependent-interactions.rs"
 

@@ -334,11 +334,11 @@ This tutorial showed you how to perform hard disk self-assembly simulations
 using periodic boundary conditions and `QuickCompress` to achieve a target
 packing fraction.
 
-Navigate to the top of the page and refresh to see the simulation in action
-again. Notice that the disks start on an evenly spaced grid and are quickly
-scaled to a higher packing fraction. The many grain boundaries are caused by the
-quick compression. Over time, local trial moves will heal these grain boundaries
-leaving a single crystal.
+Navigate to the top of the page to see the simulation in action. Notice that
+the disks start on an evenly spaced grid and are quickly scaled to a higher
+packing fraction. The many grain boundaries are caused by the quick compression.
+Over time, local trial moves will heal these grain boundaries leaving a single
+crystal.
 
 [Ovito]: https://www.ovito.org/
 

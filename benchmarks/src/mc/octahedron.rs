@@ -23,6 +23,7 @@ use hoomd_interaction::{
 };
 use hoomd_mc::{
     Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial, Tune,
+    TuneOptions,
 };
 use hoomd_microstate::{
     Microstate, SiteKey,
@@ -249,12 +250,22 @@ where
         )?;
         microstate.sort_sites();
 
-        translate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
+        translate_sweep.tune_with_options(
+            &microstate,
+            &hamiltonian,
+            &Isothermal { temperature: 1.0 },
+            &TuneOptions::default(),
+        );
         *parallel_translate_sweep
             .local_trial_mut()
             .maximum_distance_mut() = *translate_sweep.0.maximum_distance();
 
-        rotate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
+        rotate_sweep.tune_with_options(
+            &microstate,
+            &hamiltonian,
+            &Isothermal { temperature: 1.0 },
+            &TuneOptions::default(),
+        );
         *parallel_rotate_sweep
             .local_trial_mut()
             .maximum_rotation_mut() = *rotate_sweep.0.maximum_rotation();
