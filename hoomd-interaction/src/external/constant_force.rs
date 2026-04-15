@@ -3,13 +3,13 @@
 
 //! Implement [`ConstantForce`]
 
-use crate::{ExternalBodyTorque, ExternalSiteForce, SiteForceAndTorque};
+use crate::SiteForceAndTorque;
 
 
 use serde::{Deserialize, Serialize};
 
-use hoomd_microstate::{property::{Mass, MomentOfInertia, Orientation, Position}, Microstate, Site};
-use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
+use hoomd_microstate::{property::Position, Microstate, Site};
+use hoomd_vector::{InnerProduct, Unit, WedgeProduct};
 
 use super::super::SiteEnergy;
 
@@ -88,7 +88,7 @@ where
         self.alpha * self.plane_normal.get().dot(&(*r - self.plane_origin))
     }
 
-    /// Compute the force vector.
+    /// The force vector that acts on all sites.
     ///
     /// # Example
     ///
@@ -126,28 +126,32 @@ where
     }
 }
 
-impl<V, S> ExternalSiteForce<V, S> for ConstantForce<V>
-where
-    V: InnerProduct,
-    S: Position<Position = V>,
-{
-    #[inline]
-    fn site_single_force(&self, _site_properties: &S) -> V {
-        self.force()
-    }
-}
+// REVIEW: `ExternalSiteForce` is not used. Should it exist?
 
-impl<V, B, R> ExternalBodyTorque<V, B> for ConstantForce<V>
-where
-    V: Vector + WedgeProduct + InnerProduct,
-    B: Orientation<Rotation=R> + MomentOfInertia + Mass,
-    R: Rotate<V>
-{
-    #[inline]
-    fn body_single_torque(&self, _body_properties: &B) -> V::Bivector {
-        todo!()
-    }
-}
+// impl<V, S> ExternalSiteForce<V, S> for ConstantForce<V>
+// where
+//     V: InnerProduct,
+//     S: Position<Position = V>,
+// {
+//     #[inline]
+//     fn site_single_force(&self, _site_properties: &S) -> V {
+//         self.force()
+//     }
+// }
+
+// REVIEW: `ExternalBodyTorque` is not used. Should it exist?
+
+// impl<V, B, R> ExternalBodyTorque<V, B> for ConstantForce<V>
+// where
+//     V: Vector + WedgeProduct + InnerProduct,
+//     B: Orientation<Rotation=R> + MomentOfInertia + Mass,
+//     R: Rotate<V>
+// {
+//     #[inline]
+//     fn body_single_torque(&self, _body_properties: &B) -> V::Bivector {
+//         todo!()
+//     }
+// }
 
 impl<V, B, S, X, C> SiteForceAndTorque<V, B, S, X, C> for ConstantForce<V>
 where
@@ -155,10 +159,9 @@ where
     S: Position<Position = V>,
     V::Bivector: Default
 {
-    /// Calculate the force and torque.
     #[inline]
-    fn net_force_and_torque_on_site(&self, _microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
-        let force = self.site_single_force(&site.properties);
+    fn net_force_and_torque_on_site(&self, _microstate: &Microstate<B, S, X, C>, _site: &Site<S>) -> (V, V::Bivector) {
+        let force = self.force();
         let torque = V::Bivector::default();
         (force, torque)
     }
