@@ -592,7 +592,6 @@ where
         let mut total_force = V::default();
         for other_site in microstate
             .iter_sites_near(site.properties.position(), self.0.maximum_interaction_range())
-            .into_iter()
             .filter(|s| site.body_tag != s.body_tag)
         {
             total_force += self.0.site_pair_force(&site.properties, &other_site.properties);
@@ -682,7 +681,6 @@ where
         let mut total_virial = V::Tensor::zeros();
         for other_site in microstate
             .iter_sites_near(site.properties.position(), self.0.maximum_interaction_range())
-            .into_iter()
             .filter(|s| site.body_tag != s.body_tag)
         {   
             let rvec = *site.properties.position() - *other_site.properties.position();
