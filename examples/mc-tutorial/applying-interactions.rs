@@ -3,7 +3,7 @@
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     DeltaEnergyOne, External, MaximumInteractionRange, PairwiseCutoff,
-    TotalEnergy, external::ConstantForce, pairwise::Isotropic, univariate::Boxcar,
+    TotalEnergy, external::Linear, pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
@@ -49,7 +49,7 @@ impl Fill {
         // ANCHOR_END: parameters
 
         // ANCHOR: external
-        let linear = External(ConstantForce {
+        let linear = External(Linear {
             alpha,
             plane_origin: Cartesian::default(),
             plane_normal: [0.0, 1.0].try_into()?,
@@ -112,7 +112,7 @@ impl Fill {
 // ANCHOR: hamiltonian_struct
 #[derive(TotalEnergy, DeltaEnergyOne, MaximumInteractionRange)]
 struct Hamiltonian {
-    linear: External<ConstantForce<Cartesian<2>>>,
+    linear: External<Linear<Cartesian<2>>>,
     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
 }
 // ANCHOR_END: hamiltonian_struct
