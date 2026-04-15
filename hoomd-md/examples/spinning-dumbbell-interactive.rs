@@ -65,7 +65,7 @@ impl Dumbbell {
         let square = Rectangle::with_equal_edges(box_length.try_into()?);
         // let boundary = Closed(square);
         let boundary = Periodic::new(2.5, square)?;
-        let mut microstate = Microstate::builder().boundary(boundary);
+        let mut microstate = Microstate::builder().boundary(boundary).try_build()?;
 
         let dumbbell_body = Body {
             properties: OrientedDynamicsPoint {
