@@ -578,15 +578,6 @@ impl Versor {
         &self.0
     }
 
-    /// Take the conjugate of the versor.
-    #[inline]
-    #[must_use]
-    pub fn conjugate(self) -> Self {
-        let Versor(quaternion) = self;
-
-        Versor(quaternion.conjugate())
-    }
-
     /// A metric quantifying the angle (in radians) of the spherical arc separating two Versors.
     ///
     /// $`d : \mathbb{H} \times \mathbb{H} \to \mathbb{R}^+, \quad d(q_0, q_1) = \arccos(|q_0 \cdot q_1|)`$
@@ -783,7 +774,9 @@ impl Rotation for Versor {
     /// ```
     #[inline]
     fn inverted(self) -> Self {
-        self.conjugate()
+        let Versor(quaternion) = self;
+
+        Versor(quaternion.conjugate())
     }
 }
 

@@ -11,7 +11,7 @@ use hoomd_microstate::{
     }
 };
 use hoomd_vector::{
-    Angle, Cartesian, InnerProduct, Quaternion, Rotate, Vector, Versor,
+    Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Vector, Versor
 };
 use crate::{thermostat::Thermostat, methods::{TranslationalMotion, RotationalMotion, ForceUpdate, ForceAndTorqueUpdate, TorqueUpdate}};
 use hoomd_spatial::PointUpdate;
@@ -496,7 +496,7 @@ where
 
             // Rotate torque into body frame based on principal axes
             // TODO: check that this is correct
-            let mut t_inframe = q.conjugate().rotate(&t);
+            let mut t_inframe = q.inverted().rotate(&t);
 
             let mut q_quaternion = *q.get();
             // convert angular momentum from a vector to qauternion.
@@ -724,7 +724,7 @@ where
 
             // Rotate torque into body frame based on principal axes
             // TODO: check that this is correct
-            let mut t_inframe = q.conjugate().rotate(&t);
+            let mut t_inframe = q.inverted().rotate(&t);
 
             // convert orientation from versor to quaternion
             let q_quaternion = *q.get();
