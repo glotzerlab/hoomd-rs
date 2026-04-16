@@ -154,6 +154,8 @@ mod cuboid {
 
 #[divan::bench_group()]
 mod polytopes {
+    use hoomd_geometry::shape::ConvexSurfaceMesh2d;
+
     use super::*;
 
     #[divan::bench(consts = NUM_VERTICES)]
@@ -165,6 +167,18 @@ mod polytopes {
             .counter(ItemsCount::from(1_u32))
             .with_inputs(|| sample_offset_angle(&mut rng, 0.9, 1.0))
             .bench_local_values(|(t, r)| black_box(collide2d(&shape, &shape, &t, &r)));
+    }
+
+    #[divan::bench(consts = NUM_VERTICES)]
+    fn polygon_2d_fast<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+        let regular = ConvexPolytope::<2>::regular(N);
+        let shape = ConvexSurfaceMesh2d::from_point_set(regular.vertices().iter().copied()).expect("regular polygon should be a valid surface mesh");
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| sample_offset_angle(&mut rng, 0.9, 1.0))
+            .bench_local_values(|(t, r)| black_box(shape.intersects_at(&shape, &t, &r)));
     }
 
     #[divan::bench(consts = DIPYRAMID_VERTICES)]
