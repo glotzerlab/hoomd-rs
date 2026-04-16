@@ -380,17 +380,11 @@ impl Volume for ConvexSurfaceMesh2d {
     fn volume(&self) -> f64 {
         // Compute the polygon area with the shoelace formula:
         // https://mathworld.wolfram.com/PolygonArea.html
-        let mut volume = 0.0;
-
-        let mut previous = self.vertices.len() - 1;
-        for current in 0..self.vertices.len() {
-            volume += self.vertices[previous][0] * self.vertices[current][1]
-                - self.vertices[current][0] * self.vertices[previous][1];
-
-            previous = current;
-        }
-
-        0.5 * volume
+        0.5 * self
+            .vertices
+            .iter()
+            .circular_tuple_windows()
+            .fold(0.0, |total, (a, b)| total + a[0] * b[1] - b[0] * a[1])
     }
 }
 
@@ -417,19 +411,14 @@ impl IsPointInside<Cartesian<2>> for ConvexSurfaceMesh2d {
     /// ```
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<2>) -> bool {
-        let mut previous = self.vertices.len() - 1;
-        for current in 0..self.vertices.len() {
-            let a = self.vertices[current];
-            let b = self.vertices[previous];
-            let edge = a - b;
+        for (a, b) in self.vertices.iter().circular_tuple_windows() {
+            let edge = *b - *a;
             let n = -edge.perpendicular();
 
-            let v = *point - a;
+            let v = *point - *a;
             if v.dot(&n) > 0.0 {
                 return false;
             }
-
-            previous = current;
         }
 
         true
