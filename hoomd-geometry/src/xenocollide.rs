@@ -32,7 +32,7 @@
 //! # }
 //! ```
 use crate::SupportMapping;
-use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
+use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, RotationMatrix};
 
 /// Maximum allowed iterations for Xenocollide in 2D
 const XENOCOLLIDE_2D_MAX_ITER: usize = 1024;
@@ -77,13 +77,14 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
 
     /// Create a new `MinkowskiDifference`
     #[inline]
-    fn new<R: Rotation>(
+    fn new<R>(
         sa: &'a A,
         sb: &'a B,
         v_ij: &'a Cartesian<N>,
         r: R,
     ) -> MinkowskiDifference<'a, N, A, B>
     where
+        R: Copy,
         RotationMatrix<N>: From<R>,
     {
         let q_ij = RotationMatrix::<N>::from(r);
@@ -100,11 +101,7 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
 
 /// Detect collision between two convex 2D objects via Minkowski Portal Refinement.
 #[inline]
-pub fn collide2d<
-    R: Copy + Rotation,
-    A: SupportMapping<Cartesian<2>>,
-    B: SupportMapping<Cartesian<2>>,
->(
+pub fn collide2d<R: Copy, A: SupportMapping<Cartesian<2>>, B: SupportMapping<Cartesian<2>>>(
     sa: &A,
     sb: &B,
     v_ij: &Cartesian<2>,
@@ -197,13 +194,16 @@ where
 
 /// Detect collision between two convex 3D objects via Minkowski Portal Refinement.
 #[inline(never)]
-pub fn collide3d<R: Rotation, A: SupportMapping<Cartesian<3>>, B: SupportMapping<Cartesian<3>>>(
+pub fn collide3d<R, A, B>(
     sa: &A,
     sb: &B,
     v_ij: &Cartesian<3>, // Probably ok to take ownership?
     q_ij: &R,
 ) -> bool
 where
+    A: SupportMapping<Cartesian<3>>,
+    B: SupportMapping<Cartesian<3>>,
+    R: Copy,
     RotationMatrix<3>: From<R>,
 {
     const TOLERANCE: f64 = 2e-12;
@@ -366,7 +366,7 @@ mod tests {
 
     use crate::shape::{Circle, Hypercuboid, Hypersphere};
     use hoomd_utility::valid::PositiveReal;
-    use hoomd_vector::{Angle, Versor};
+    use hoomd_vector::{Angle, Rotation, Versor};
 
     #[rstest(
         v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123_f64.next_down()], [0.0, 5.123_000_001]],
@@ -389,7 +389,7 @@ mod tests {
 
         let overlaps = collide2d(&s0, &s1, &v.into(), &o_ij);
 
-        assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), &o_ij));
+        assert_eq!(overlaps, s0.intersects_at(&s1, &Cartesian::from(v), &o_ij));
     }
     #[rstest(
         v => [[0.1, 0.1, 0.1], [999.9, 0.0, -10.9], [0.0, 5.123, 0.0], [0.0, 0.0, 5.123_000_001]],
@@ -415,7 +415,7 @@ mod tests {
 
         assert_eq!(
             overlaps,
-            s0.intersects_at(&s1, &v.into(), &o_ij),
+            s0.intersects_at(&s1, &Cartesian::from(v), &o_ij),
             "Xenocollide result did not match standard implementation!"
         );
     }

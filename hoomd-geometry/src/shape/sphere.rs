@@ -12,7 +12,7 @@ use crate::{
     SupportMapping, Volume,
 };
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, distribution::Ball};
+use hoomd_vector::{Cartesian, InnerProduct, Rotation, distribution::Ball};
 
 /// The (single, double, ...)-factorial function
 pub fn factorial(n: usize, ntuple: usize) -> usize {
@@ -236,18 +236,19 @@ impl<const N: usize> Volume for Hypersphere<N> {
 
 impl<const N: usize, R> IntersectsAtGlobal<Hypersphere<N>, Cartesian<N>, R> for Hypersphere<N>
 where
-    R: Rotation + Rotate<Cartesian<N>>,
+    R: Rotation,
 {
     #[inline]
     fn intersects_at_global(
         &self,
         other: &Hypersphere<N>,
         r_self: &Cartesian<N>,
-        o_self: &R,
+        _o_self: &R,
         r_other: &Cartesian<N>,
-        o_other: &R,
+        _o_other: &R,
     ) -> bool {
-        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
+        let v_ij = *r_other - *r_self;
+        let o_ij = R::identity();
 
         self.intersects_at(other, &v_ij, &o_ij)
     }
@@ -256,7 +257,6 @@ where
 impl<const N: usize, V, R> IntersectsAt<Hypersphere<N>, V, R> for Hypersphere<N>
 where
     V: InnerProduct,
-    R: Rotation + Rotate<V>,
 {
     #[inline]
     fn intersects_at(&self, other: &Hypersphere<N>, v_ij: &V, _o_ij: &R) -> bool {
@@ -594,28 +594,28 @@ mod tests {
         let sphere1 = Sphere::with_radius(4.0.try_into()?);
         let identity = Versor::default();
 
-        check!(sphere0.intersects_at(&sphere1, &[0.0, 0.0, 5.9].into(), &identity));
-        check!(sphere0.intersects_at(&sphere1, &[0.0, 5.9, 0.0].into(), &identity));
-        check!(sphere0.intersects_at(&sphere1, &[5.9, 0.0, 0.0].into(), &identity));
-        check!(sphere0.intersects_at(&sphere1, &[3.4, 3.4, 3.4].into(), &identity));
+        check!(sphere0.intersects_at(&sphere1, &Cartesian::from([0.0, 0.0, 5.9]), &identity));
+        check!(sphere0.intersects_at(&sphere1, &Cartesian::from([0.0, 5.9, 0.0]), &identity));
+        check!(sphere0.intersects_at(&sphere1, &Cartesian::from([5.9, 0.0, 0.0]), &identity));
+        check!(sphere0.intersects_at(&sphere1, &Cartesian::from([3.4, 3.4, 3.4]), &identity));
 
-        check!(!sphere0.intersects_at(&sphere1, &[0.0, 0.0, 6.1].into(), &identity));
-        check!(!sphere0.intersects_at(&sphere1, &[0.0, 6.1, 0.0].into(), &identity));
-        check!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
-        check!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &Cartesian::from([0.0, 0.0, 6.1]), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &Cartesian::from([0.0, 6.1, 0.0]), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &Cartesian::from([6.1, 0.0, 0.0]), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &Cartesian::from([3.52, 3.52, 3.52]), &identity));
 
         let sphere0 = Convex(sphere0);
         let sphere1 = Convex(sphere1);
 
-        check!(sphere0.intersects_at(&sphere1, &[0.0, 0.0, 5.9].into(), &identity));
-        check!(sphere0.intersects_at(&sphere1, &[0.0, 5.9, 0.0].into(), &identity));
-        check!(sphere0.intersects_at(&sphere1, &[5.9, 0.0, 0.0].into(), &identity));
-        check!(sphere0.intersects_at(&sphere1, &[3.4, 3.4, 3.4].into(), &identity));
+        check!(sphere0.intersects_at(&sphere1, &Cartesian::from([0.0, 0.0, 5.9]), &identity));
+        check!(sphere0.intersects_at(&sphere1, &Cartesian::from([0.0, 5.9, 0.0]), &identity));
+        check!(sphere0.intersects_at(&sphere1, &Cartesian::from([5.9, 0.0, 0.0]), &identity));
+        check!(sphere0.intersects_at(&sphere1, &Cartesian::from([3.4, 3.4, 3.4]), &identity));
 
-        check!(!sphere0.intersects_at(&sphere1, &[0.0, 0.0, 6.1].into(), &identity));
-        check!(!sphere0.intersects_at(&sphere1, &[0.0, 6.1, 0.0].into(), &identity));
-        check!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
-        check!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &Cartesian::from([0.0, 0.0, 6.1]), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &Cartesian::from([0.0, 6.1, 0.0]), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &Cartesian::from([6.1, 0.0, 0.0]), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &Cartesian::from([3.52, 3.52, 3.52]), &identity));
 
         Ok(())
     }
