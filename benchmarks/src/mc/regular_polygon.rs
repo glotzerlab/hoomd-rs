@@ -211,9 +211,7 @@ where
         let maximum_translation = 0.2;
         let maximum_rotation = 2.0 * PI / 6.0;
 
-        let hexagon = ConvexSurfaceMesh2d::from_point_set(
-            ConvexPolygon::regular(6).vertices().iter().copied(),
-        )?;
+        let hexagon = ConvexSurfaceMesh2d::try_from(ConvexPolygon::regular(6))?;
         let hamiltonian = PairwiseCutoff(HardShape(hexagon.clone()));
 
         let translate = Translate::with_maximum_distance(maximum_translation.try_into()?);

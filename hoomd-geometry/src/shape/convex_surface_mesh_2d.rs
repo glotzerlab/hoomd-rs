@@ -554,6 +554,34 @@ fn is_separating(a: &ConvexSurfaceMesh2d, p: &Cartesian<2>, n: &Cartesian<2>) ->
 
     true
 }
+
+impl<const MAX_VERTICES: usize> TryFrom<ConvexPolytope<2, MAX_VERTICES>> for ConvexSurfaceMesh2d {
+    type Error = Error;
+
+    /// Construct the convex hull of a [`ConvexPolytope<2>`].
+    ///
+    /// # Errors
+    ///
+    /// * [`Error::DegeneratePolytope`] when there are fewer than 3 non-collinear points.
+    ///
+    /// # Example
+    ///
+    /// Invalid conversion
+    /// ```
+    /// use hoomd_geometry::shape::{ConvexPolygon, ConvexSurfaceMesh2d};
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let equilateral_triangle = ConvexPolygon::regular(3);
+    /// let mesh = ConvexSurfaceMesh2d::try_from(equilateral_triangle)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn try_from(v: ConvexPolytope<2, MAX_VERTICES>) -> Result<ConvexSurfaceMesh2d, Error> {
+        Self::from_point_set(v.vertices().iter().copied())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::f64::consts::PI;
