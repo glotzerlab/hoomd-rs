@@ -173,7 +173,7 @@ mod polytopes {
     fn polygon_2d_fast<const N: usize>(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
         let regular = ConvexPolytope::<2>::regular(N);
-        let shape = ConvexSurfaceMesh2d::from_point_set(regular.vertices().iter().copied())
+        let shape = ConvexSurfaceMesh2d::try_from(regular)
             .expect("regular polygon should be a valid surface mesh");
 
         bencher
