@@ -166,7 +166,7 @@ To make a new release:
 
 On that branch, take the following steps (committing after each step when needed):
 
-- [ ] Run `prek autoupdate`.
+- [ ] Run `prek autoupdate --freeze`.
 - [ ] Check for new or duplicate contributors since the last release:
   ```shell
   comm -13 (git log $(git describe --tags --abbrev=0) --format="%aN <%aE>" | sort | uniq | psub) (git log --format="%aN <%aE>" | sort | uniq | psub)
