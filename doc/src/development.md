@@ -174,9 +174,9 @@ On that branch, take the following steps (committing after each step when needed
   Add entries to `.mailmap` to remove duplicates.
 - [ ] Review `release-notes.md` and revise if needed.
 - [ ] Add highlights to release notes (*if needed*).
-- [ ] Run `./check_links.sh` and fix any broken links.
+- [ ] Run `./check_links.sh` and fix any broken links. If `README.md` has changed,
+      this command will copy it to all the crates. Commit the updated README files.
 - [ ] Run `bump-my-version bump {type}`. Set `{type}` to `patch`, `minor`, or `major`.
-- [ ] Run `./build_api_documentation.sh` and commit the copied README files.
 - [ ] Run `cargo check`
 - [ ] Run `cargo update`
 - [ ] Run `cargo bundle-licenses --format yaml --output THIRDPARTY.yaml`
