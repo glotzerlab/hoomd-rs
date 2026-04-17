@@ -251,11 +251,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shape::{ConvexPolygon, ConvexSurfaceMesh2d};
-    use crate::{Convex, IntersectsAt};
+    use crate::shape::{ConvexPolygon, ConvexSurfaceMesh2d, Hypercuboid};
+    use crate::{Convex, IntersectsAt, IsPointInside};
     use approxim::assert_relative_eq;
     use hoomd_vector::Angle;
-    use rand::{RngExt, SeedableRng, rngs::StdRng};
+    use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
     use std::f64::consts::PI;
 
@@ -429,6 +429,65 @@ mod tests {
         assert_relative_eq!(scaled.volume(), 9.0 * original_volume);
         assert_relative_eq!(scaled.lx().get() / scaled.ly().get(), original_lx_over_ly);
         assert_eq!(scaled.xy(), rhomboid.xy());
+    }
+
+    #[test]
+    fn is_point_inside_matches_rectangle_when_unsheared() {
+        let mut rng = StdRng::seed_from_u64(789);
+
+        for _ in 0..10_000 {
+            let lx: f64 = rng.random_range(0.1..10.0);
+            let ly: f64 = rng.random_range(0.1..10.0);
+
+            let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), 0.0).into();
+            let rect = Hypercuboid {
+                edge_lengths: [lx.try_into().unwrap(), ly.try_into().unwrap()],
+            };
+
+            let point: Cartesian<2> =
+                rng.random::<Cartesian<2>>() * 20.0 - Cartesian::from([10.0; 2]);
+
+            assert_eq!(
+                rhomboid.is_point_inside(&point),
+                rect.is_point_inside(&point),
+                "Mismatch at ({}, {}) for lx={lx}, ly={ly}",
+                point[0],
+                point[1],
+            );
+        }
+    }
+
+    #[test]
+    fn is_point_inside_area_fraction_sheared() {
+        let mut rng = StdRng::seed_from_u64(1011);
+
+        for _ in 0..10 {
+            let lx: f64 = rng.random_range(0.5..5.0);
+            let ly: f64 = rng.random_range(0.5..5.0);
+            let xy: f64 = rng.random_range(-2.0..2.0);
+
+            let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
+            let area = rhomboid.volume();
+
+            // Bounding box for sampling
+            let bx = lx + ly * xy.abs();
+            let by = ly;
+            let bbox_area = bx * by;
+
+            let n_samples = 100_000_usize;
+            let mut inside_count = 0_usize;
+
+            for _ in 0..n_samples {
+                let x = rng.random_range(-bx / 2.0..bx / 2.0);
+                let y = rng.random_range(-by / 2.0..by / 2.0);
+                if rhomboid.is_point_inside(&[x, y].into()) {
+                    inside_count += 1;
+                }
+            }
+
+            let estimated_area = (inside_count as f64 / n_samples as f64) * bbox_area;
+            assert_relative_eq!(estimated_area, area, max_relative = 0.02);
+        }
     }
 
     #[test]
