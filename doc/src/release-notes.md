@@ -29,16 +29,10 @@
   `ConvexPolytope` can now be stored on the stack (#259).
 * `[hoomd-geometry]`: Remove unnecessary trait bounds on `IntersectsAt` implementation (#260).
 
-*Changed:*
-
 *Deprecated:*
 
 * `[hoomd-mc]`: Deprecated `Tune::tune`. Use `tune_with_options` (#268).
 * `[hoomd-mc]`: Deprecated `Tune::tune_default`. Use `tune_with_options(..., &TuneOptions::default())` (#268).
-
-*Removed:*
-
-*Fixed:*
 
 ## 1.0.2 (2026-03-20)
 
