@@ -70,15 +70,6 @@ impl<const N: usize> Scale for Hyperellipsoid<N> {
     }
 }
 
-impl<const N: usize> Scale for ConvexPolytope<N> {
-    #[inline]
-    fn scale(&mut self, scale_factor: PositiveReal) {
-        for vertex in &mut self.vertices {
-            *vertex *= scale_factor;
-        }
-    }
-}
-
 impl Scale for Simplex3 {
     #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
