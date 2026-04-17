@@ -174,10 +174,9 @@ On that branch, take the following steps (committing after each step when needed
   Add entries to `.mailmap` to remove duplicates.
 - [ ] Review `release-notes.md` and revise if needed.
 - [ ] Add highlights to release notes (*if needed*).
-- [ ] Run `./build_api_documentation.sh` and commit the updated files (it copies
-  files from the root to all crates for rustdoc).
 - [ ] Run `./check_links.sh` and fix any broken links.
 - [ ] Run `bump-my-version bump {type}`. Set `{type}` to `patch`, `minor`, or `major`.
+- [ ] Run `./build_api_documentation.sh` and commit the copied README files.
 - [ ] Run `cargo check`
 - [ ] Run `cargo update`
 - [ ] Run `cargo bundle-licenses --format yaml --output THIRDPARTY.yaml`
