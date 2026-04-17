@@ -6,7 +6,8 @@ use hoomd_vector::{Cartesian, Metric, Rotate, Rotation, RotationMatrix};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, Scale, SupportMapping, Volume,
+    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale, SupportMapping,
+    Volume,
 };
 
 /// An axis-aligned parallelogram defined by a 2 x 2 upper triangular matrix.
@@ -123,6 +124,20 @@ impl Scale for Rhomboid {
             .try_into()
             .expect("sqrt of positive real is positive");
         self.scale_length(v)
+    }
+}
+
+impl IsPointInside<Cartesian<2>> for Rhomboid {
+    #[inline]
+    fn is_point_inside(&self, point: &Cartesian<2>) -> bool {
+        let [x, y] = point.coordinates;
+        if y.abs() >= self.ly().get() / 2.0 {
+            return false;
+        }
+        if (x - self.xy() * y).abs() >= self.lx().get() / 2.0 {
+            return false;
+        }
+        true
     }
 }
 
