@@ -23,6 +23,76 @@ search = "/{current_version}/"
 replace = "/{new_version}/"
 
 [[tool.bumpversion.files]]
+filename = "hoomd-bevy/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-derive/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-geometry/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-gsd/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-interaction/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-linear-algebra/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-manifold/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-mc/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-microstate/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-rand/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-simulation/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-spatial/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-utility/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-vector/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
 filename = "doc/src/release-notes.md"
 regex = true
 search = 'Next release$'
