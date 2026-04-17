@@ -131,29 +131,6 @@ where
 {
     #[inline]
     fn intersects_at(&self, other: &Rhomboid, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
-        // Separating Axis Theorem for two parallelograms.
-        let u_a: Cartesian<2> = [self.lx().get(), 0.0].into();
-        let v_a: Cartesian<2> = [self.ly().get() * self.xy(), self.ly().get()].into();
-
-        let r = RotationMatrix::<2>::from(*o_ij);
-        let u_b = r.rotate(&[other.lx().get(), 0.0].into());
-        let v_b = r.rotate(&[other.ly().get() * other.xy(), other.ly().get()].into());
-
-        let edges = [u_a, v_a, u_b, v_b];
-
-        for edge in edges {
-            // Perpendicular normal to the edge
-            let axis: Cartesian<2> = [-edge[1], edge[0]].into();
-
-            let projected_distance = v_ij.dot(&axis).abs();
-            let r_a = (u_a.dot(&axis).abs() + v_a.dot(&axis).abs()) * 0.5;
-            let r_b = (u_b.dot(&axis).abs() + v_b.dot(&axis).abs()) * 0.5;
-
-            if projected_distance > r_a + r_b {
-                return false;
-            }
-        }
-
         true
     }
 }
