@@ -74,9 +74,9 @@ impl Rhomboid {
     /// use hoomd_geometry::shape::Rhomboid;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomb = Rhomboid::from((1.0.try_into(), 2.0.try_into(), 1.5))?;
+    /// let rhomb = Rhomboid::from((1.0.try_into()?, 2.0.try_into()?, 1.5));
     ///
-    /// let gsd_box = triclinic.to_gsd_box();
+    /// let gsd_box = rhomb.to_gsd_box();
     /// assert_eq!(gsd_box, [1.0, 2.0, 0.0, 1.5, 0.0, 0.0]);
     /// # Ok(())
     /// # }
@@ -129,8 +129,65 @@ where
     R: Rotate<Cartesian<2>> + Rotation + Copy,
     RotationMatrix<2>: From<R>,
 {
+    /// Test rhomboid intersections using the separating axis theorem.
+    ///
+    /// Rhomboids have two unique edge directions each, giving four potential
+    /// separating axes. Each axis check is O(1) with no iteration over
+    /// vertices, making this significantly faster than the generic
+    /// Xenocollide-based `Convex(Rhomboid)` intersection test.
+    ///
+    /// The four axes are the normals to each rhomboid's two edges:
+    /// - Axis 1: P1's horizontal edge normal `[0, 1]`
+    /// - Axis 3: P2's horizontal edge normal (rotated)
+    /// - Axis 2: P1's skewed edge normal `[-Ly1, Ly1·xy1]`
+    /// - Axis 4: P2's skewed edge normal (rotated)
     #[inline]
     fn intersects_at(&self, other: &Rhomboid, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
+        let max_separation =
+            self.bounding_sphere_radius().get() + other.bounding_sphere_radius().get();
+        if v_ij.dot(v_ij) >= max_separation * max_separation {
+            return false;
+        }
+
+        let o_j = RotationMatrix::from(*o_ij);
+        let [c, s] = [o_j.rows()[0][0], o_j.rows()[1][0]];
+
+        let (lx1, ly1, xy1) = (self.lx().get(), self.ly().get(), self.xy());
+        let (lx2, ly2, xy2) = (other.lx().get(), other.ly().get(), other.xy());
+        let [tx, ty] = [v_ij[0], v_ij[1]];
+
+        // Axis 1: P1's horizontal edge normal [0, 1].
+        // All comparisons are scaled by 2 to avoid halving the projection radii.
+        let d1 = 2.0 * ty.abs();
+        let r1 = ly1 + (lx2 * s).abs() + ly2 * (xy2 * s + c).abs();
+        if d1 > r1 {
+            return false;
+        }
+
+        // Axis 3: P2's horizontal edge normal (tested early for early exit).
+        let d3 = 2.0 * (ty * c - tx * s).abs();
+        let r3 = (lx1 * s).abs() + ly1 * (c - xy1 * s).abs() + ly2;
+        if d3 > r3 {
+            return false;
+        }
+
+        // Axis 2: P1's skewed edge normal.
+        let d2 = 2.0 * (xy1 * ty - tx).abs();
+        let r2 = lx1
+            + (lx2 * (xy1 * s - c)).abs()
+            + ly2 * (c * (xy1 - xy2) + s * (xy1 * xy2 + 1.0)).abs();
+        if d2 > r2 {
+            return false;
+        }
+
+        // Axis 4: P2's skewed edge normal (rotated).
+        let d4 = 2.0 * (c * (xy2 * ty - tx) - s * (xy2 * tx + ty)).abs();
+        let r4 =
+            lx1 * (c + xy2 * s).abs() + ly1 * (c * (xy2 - xy1) - s * (xy1 * xy2 + 1.0)).abs() + lx2;
+        if d4 > r4 {
+            return false;
+        }
+
         true
     }
 }
@@ -138,12 +195,13 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shape::ConvexPolygon;
+    use crate::shape::{ConvexPolygon, ConvexSurfaceMesh2d};
     use crate::{Convex, IntersectsAt};
     use approxim::assert_relative_eq;
     use hoomd_vector::Angle;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
+    use std::f64::consts::PI;
 
     fn random_rhomboid(rng: &mut StdRng) -> Rhomboid {
         let lx: f64 = rng.random_range(0.1..10.0);
@@ -226,11 +284,85 @@ mod tests {
         }
     }
 
+    /// Compare the Rhomboid SAT against the ConvexSurfaceMesh2d separating-planes
+    /// implementation (an independently tested ground truth).
+    fn check_sat_against_mesh(
+        lx1: f64,
+        ly1: f64,
+        xy1: f64,
+        lx2: f64,
+        ly2: f64,
+        xy2: f64,
+        tx: f64,
+        ty: f64,
+        theta: f64,
+    ) {
+        let a: Rhomboid = (lx1.try_into().unwrap(), ly1.try_into().unwrap(), xy1).into();
+        let b: Rhomboid = (lx2.try_into().unwrap(), ly2.try_into().unwrap(), xy2).into();
+
+        let v_ij = Cartesian::from([tx, ty]);
+        let o_ij = Angle::from(theta);
+
+        let sat = a.intersects_at(&b, &v_ij, &o_ij);
+
+        let mesh_a = ConvexSurfaceMesh2d::from_point_set(a.vertices().iter().copied()).unwrap();
+        let mesh_b = ConvexSurfaceMesh2d::from_point_set(b.vertices().iter().copied()).unwrap();
+        let mesh = mesh_a.intersects_at(&mesh_b, &v_ij, &o_ij);
+
+        assert_eq!(
+            sat, mesh,
+            "SAT={sat}, mesh={mesh}\n\
+             a=({lx1}, {ly1}, {xy1})\n\
+             b=({lx2}, {ly2}, {xy2})\n\
+             t=({tx}, {ty})\n\
+             theta={theta}"
+        );
+    }
+
+    #[test]
+    fn intersects_at_squares_no_rotation() {
+        // Two identical 2x2 squares at various displacements, no rotation.
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.0, 0.0, 0.0);
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.5, 0.5, 0.0);
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 1.9, 0.0, 0.0);
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 2.1, 0.0, 0.0);
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.0, 1.9, 0.0);
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.0, 2.1, 0.0);
+    }
+
+    #[test]
+    fn intersects_at_squares_rotated() {
+        // Two identical 2x2 squares at various rotations.
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.5, 0.5, PI / 4.0);
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 1.5, 0.0, PI / 4.0);
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.0, 1.5, PI / 2.0);
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 1.3, 1.3, PI / 3.0);
+    }
+
+    #[test]
+    fn intersects_at_sheared_no_rotation() {
+        // Sheared rhomboids without rotation.
+        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 0.0, 0.0, 0.0);
+        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 1.0, 0.0, 0.0);
+        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 2.0, 0.0, 0.0);
+        check_sat_against_mesh(1.0, 3.0, 1.5, 2.0, 1.0, -0.5, 1.0, 0.5, 0.0);
+        check_sat_against_mesh(1.0, 5.0, 2.0, 1.0, 5.0, 2.0, 1.0, 0.0, 0.0);
+    }
+
+    #[test]
+    fn intersects_at_sheared_rotated() {
+        // Sheared rhomboids with rotation — the most complex case.
+        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 0.5, 0.5, PI / 4.0);
+        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 1.0, 0.0, PI / 3.0);
+        check_sat_against_mesh(1.0, 3.0, 1.5, 2.0, 1.0, -0.5, 0.5, 0.5, PI / 6.0);
+        check_sat_against_mesh(1.0, 5.0, 2.0, 1.0, 5.0, -2.0, 0.5, 0.0, PI / 2.0);
+    }
+
     #[test]
     fn intersects_at_random() {
         let mut rng = StdRng::seed_from_u64(456);
 
-        for _ in 0..10_000 {
+        for i in 0..10_000 {
             let a = random_rhomboid(&mut rng);
             let b = random_rhomboid(&mut rng);
 
@@ -238,9 +370,30 @@ mod tests {
                 rng.random::<Cartesian<2>>() * 20.0 - Cartesian::from([10.0; 2]);
             let o_ij = Angle::from(rng.random_range(-std::f64::consts::PI..std::f64::consts::PI));
 
-            let sat = a.intersects_at(&b, &v_ij, &o_ij.inverted());
-            let xc = Convex(a).intersects_at(&Convex(b), &v_ij, &o_ij);
-            assert_eq!(sat, xc);
+            let sat = a.intersects_at(&b, &v_ij, &o_ij);
+
+            let mesh_a = ConvexSurfaceMesh2d::from_point_set(a.vertices().iter().copied()).unwrap();
+            let mesh_b = ConvexSurfaceMesh2d::from_point_set(b.vertices().iter().copied()).unwrap();
+            let mesh = mesh_a.intersects_at(&mesh_b, &v_ij, &o_ij);
+
+            assert_eq!(
+                sat,
+                mesh,
+                "Mismatch at iteration {i}\n\
+                 a=({}, {}, {})\n\
+                 b=({}, {}, {})\n\
+                 t=({}, {})\n\
+                 theta={}",
+                a.lx().get(),
+                a.ly().get(),
+                a.xy(),
+                b.lx().get(),
+                b.ly().get(),
+                b.xy(),
+                v_ij[0],
+                v_ij[1],
+                o_ij.theta,
+            );
         }
     }
 }
