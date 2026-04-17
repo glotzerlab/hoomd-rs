@@ -1,4 +1,4 @@
-![hoomd-rs](https://raw.githubusercontent.com/glotzerlab/hoomd-rs/refs/tags/1.0.2/doc/src/images/hoomdrust-logo-horizontal.svg)
+![hoomd-rs](https://raw.githubusercontent.com/glotzerlab/hoomd-rs/refs/tags/1.1.0/doc/src/images/hoomdrust-logo-horizontal.svg)
 
 [![Crates.io Version](https://img.shields.io/crates/v/hoomd-mc?color=a44300)](https://crates.io/crates/hoomd-mc)
 [![Read the Docs](https://img.shields.io/readthedocs/hoomd-rs/latest.svg)](https://hoomd-rs.readthedocs.io/)
@@ -81,7 +81,7 @@ to run the examples locally.
 [HOOMD-blue]: https://hoomd-blue.readthedocs.io
 [Rust]: https://www.rust-lang.org/
 [Template workflow]: https://github.com/glotzerlab/hoomd-workflow/
-[examples]: https://github.com/glotzerlab/hoomd-rs/tree/1.0.2/examples
+[examples]: https://github.com/glotzerlab/hoomd-rs/tree/1.1.0/examples
 
 [Documentation]: https://hoomd-rs.readthedocs.io
 
