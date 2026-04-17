@@ -5,7 +5,9 @@ use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Metric, Rotate, Rotation, RotationMatrix};
 use serde::{Deserialize, Serialize};
 
-use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
+use crate::{
+    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, Scale, SupportMapping, Volume,
+};
 
 /// An axis-aligned parallelogram defined by a 2 x 2 upper triangular matrix.
 ///
@@ -104,6 +106,26 @@ impl Volume for Rhomboid {
     }
 }
 
+impl Scale for Rhomboid {
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        Rhomboid {
+            extents: [self.extents[0] * v, self.extents[1] * v],
+            xy: self.xy,
+        }
+    }
+
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v
+            .get()
+            .sqrt()
+            .try_into()
+            .expect("sqrt of positive real is positive");
+        self.scale_length(v)
+    }
+}
+
 impl SupportMapping<Cartesian<2>> for Rhomboid {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
@@ -151,7 +173,7 @@ where
         let (lx2, ly2, xy2) = (other.lx().get(), other.ly().get(), other.xy());
         let [tx, ty] = [v_ij[0], v_ij[1]];
 
-        // Shared subexpressions (safe to compute before any early return):
+        // Shared subexpressions for overlap checks.
         let s_lx2_abs = (s * lx2).abs();
         let term_a_abs = (xy2 * s + c).abs(); // used in axes 1 & 4
 
@@ -375,6 +397,23 @@ mod tests {
         check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 1.0, 0.0, PI / 3.0);
         check_sat_against_mesh(1.0, 3.0, 1.5, 2.0, 1.0, -0.5, 0.5, 0.5, PI / 6.0);
         check_sat_against_mesh(1.0, 5.0, 2.0, 1.0, 5.0, -2.0, 0.5, 0.0, PI / 2.0);
+    }
+
+    #[test]
+    fn scale_preserves_aspect_ratio_and_volume() {
+        let rhomboid: Rhomboid = (3.0.try_into().unwrap(), 2.0.try_into().unwrap(), 1.5).into();
+        let original_volume = rhomboid.volume();
+        let original_lx_over_ly = rhomboid.lx().get() / rhomboid.ly().get();
+
+        let scaled = rhomboid.scale_length(2.0.try_into().unwrap());
+        assert_relative_eq!(scaled.volume(), 4.0 * original_volume);
+        assert_relative_eq!(scaled.lx().get() / scaled.ly().get(), original_lx_over_ly);
+        assert_eq!(scaled.xy(), rhomboid.xy());
+
+        let scaled = rhomboid.scale_volume(9.0.try_into().unwrap());
+        assert_relative_eq!(scaled.volume(), 9.0 * original_volume);
+        assert_relative_eq!(scaled.lx().get() / scaled.ly().get(), original_lx_over_ly);
+        assert_eq!(scaled.xy(), rhomboid.xy());
     }
 
     #[test]
