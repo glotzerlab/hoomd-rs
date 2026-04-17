@@ -151,35 +151,33 @@ where
         let (lx2, ly2, xy2) = (other.lx().get(), other.ly().get(), other.xy());
         let [tx, ty] = [v_ij[0], v_ij[1]];
 
+        // Shared subexpressions (safe to compute before any early return):
+        let s_lx2_abs = (s * lx2).abs();
+        let term_a_abs = (xy2 * s + c).abs(); // used in axes 1 & 4
+
         // Axis 1: P1's horizontal edge normal [0, 1].
         // All comparisons are scaled by 2 to avoid halving the projection radii.
-        let d1 = 2.0 * ty.abs();
-        let r1 = ly1 + (lx2 * s).abs() + ly2 * (xy2 * s + c).abs();
-        if d1 > r1 {
+        if 2.0 * ty.abs() > ly1 + s_lx2_abs + ly2 * term_a_abs {
             return false;
         }
+        let term_b_abs = (c - xy1 * s).abs(); // used in axes 2 & 3
 
-        // Axis 3: P2's horizontal edge normal (tested early for early exit).
-        let d3 = 2.0 * (ty * c - tx * s).abs();
-        let r3 = (lx1 * s).abs() + ly1 * (c - xy1 * s).abs() + ly2;
-        if d3 > r3 {
+        // Axis 3: P2's horizontal edge normal.
+        let d3_term = ty * c - tx * s;
+        let s_lx1_abs = (s * lx1).abs();
+        if 2.0 * d3_term.abs() > s_lx1_abs + ly1 * term_b_abs + ly2 {
             return false;
         }
+        let term_c_abs = (c * (xy1 - xy2) + s * (xy1 * xy2 + 1.0)).abs(); // axes 2 & 4
 
         // Axis 2: P1's skewed edge normal.
-        let d2 = 2.0 * (xy1 * ty - tx).abs();
-        let r2 = lx1
-            + (lx2 * (xy1 * s - c)).abs()
-            + ly2 * (c * (xy1 - xy2) + s * (xy1 * xy2 + 1.0)).abs();
-        if d2 > r2 {
+        if 2.0 * (xy1 * ty - tx).abs() > lx1 + lx2 * term_b_abs + ly2 * term_c_abs {
             return false;
         }
 
         // Axis 4: P2's skewed edge normal (rotated).
-        let d4 = 2.0 * (c * (xy2 * ty - tx) - s * (xy2 * tx + ty)).abs();
-        let r4 =
-            lx1 * (c + xy2 * s).abs() + ly1 * (c * (xy2 - xy1) - s * (xy1 * xy2 + 1.0)).abs() + lx2;
-        if d4 > r4 {
+        let cross_term = tx * c + ty * s;
+        if 2.0 * (xy2 * d3_term - cross_term).abs() > lx1 * term_a_abs + ly1 * term_c_abs + lx2 {
             return false;
         }
 
