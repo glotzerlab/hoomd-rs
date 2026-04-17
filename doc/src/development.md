@@ -166,7 +166,7 @@ To make a new release:
 
 On that branch, take the following steps (committing after each step when needed):
 
-- [ ] Run `prek autoupdate`.
+- [ ] Run `prek autoupdate --freeze`.
 - [ ] Check for new or duplicate contributors since the last release:
   ```shell
   comm -13 (git log $(git describe --tags --abbrev=0) --format="%aN <%aE>" | sort | uniq | psub) (git log --format="%aN <%aE>" | sort | uniq | psub)
@@ -174,9 +174,8 @@ On that branch, take the following steps (committing after each step when needed
   Add entries to `.mailmap` to remove duplicates.
 - [ ] Review `release-notes.md` and revise if needed.
 - [ ] Add highlights to release notes (*if needed*).
-- [ ] Run `./build_api_documentation.sh` and commit the updated files (it copies
-  files from the root to all crates for rustdoc).
-- [ ] Run `./check_links.sh` and fix any broken links.
+- [ ] Run `./check_links.sh` and fix any broken links. If `README.md` has changed,
+      this command will copy it to all the crates. Commit the updated README files.
 - [ ] Run `bump-my-version bump {type}`. Set `{type}` to `patch`, `minor`, or `major`.
 - [ ] Run `cargo check`
 - [ ] Run `cargo update`

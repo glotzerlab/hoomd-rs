@@ -1,6 +1,22 @@
 # Release notes
 
-## Next release
+## 1.1.0 (2026-04-17)
+
+*Highlights:*
+
+**hoomd-rs** 1.1 adds a new shape type, `ConvexSurfaceMesh2d`. Provide a set
+of points and `ConvexSurfaceMesh2d` will construct the vertices and edges
+of the convex hull. Intersection tests between two `ConvexSurfaceMesh2d`
+shapes take approximately half the time of intersection tests between
+two `Convex(ConvexPolygon)` shapes. Therefore, you should prefer
+`ConvexSurfaceMesh2d` for simulations of hard convex polygons. Use
+`ConvexPolygon` when you have mixed shape types or are modeling spheropolygons.
+`ConvexSurfaceMesh2d` implements `Volume` and `IsPointInside`, making it
+viable for use as a closed boundary condition.
+
+**hoomd-rs** 1.1 also adds `apply_with_filter` and related methods to `Sweep`.
+Use `apply_with_filter` to model systems where some bodies remain fixed in
+space. The new *Seeded Self-Assembly* tutorial demonstrates `apply_with_filter`.
 
 *Added:*
 
@@ -20,7 +36,7 @@
   tunes trial move sizes while only applying trial moves to bodies that match
   a filter. Use `tune_with_options_and_filter` with the same filter given to
   `apply_with_filter` to accurately tune move sizes (#268).
-* `[tutorial]`: Added *"Seeded Self-Assembly"* tutorial (#268).
+* `[tutorial]`: Added *Seeded Self-Assembly* tutorial (#268).
 
 *Changed:*
 
@@ -29,16 +45,10 @@
   `ConvexPolytope` can now be stored on the stack (#259).
 * `[hoomd-geometry]`: Remove unnecessary trait bounds on `IntersectsAt` implementation (#260).
 
-*Changed:*
-
 *Deprecated:*
 
 * `[hoomd-mc]`: Deprecated `Tune::tune`. Use `tune_with_options` (#268).
 * `[hoomd-mc]`: Deprecated `Tune::tune_default`. Use `tune_with_options(..., &TuneOptions::default())` (#268).
-
-*Removed:*
-
-*Fixed:*
 
 ## 1.0.2 (2026-03-20)
 
