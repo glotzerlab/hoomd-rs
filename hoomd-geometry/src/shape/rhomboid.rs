@@ -2,15 +2,16 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, RotationMatrix};
+use hoomd_vector::{Cartesian, Metric, Rotate, Rotation, RotationMatrix};
+use serde::{Deserialize, Serialize};
 
-use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
 
 /// An axis-aligned parallelogram defined by a 2 x 2 upper triangular matrix.
 ///
 /// This shape is a general case of rhombus where pairs of sides are not equal.
 /// We enforce the convention that the center of the shape is at the origin.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Rhomboid {
     /// The extents [``L_x``, ``L_y``] of each edge along the Cartesian axes ``x`` and ``y``.
     extents: [PositiveReal; 2],
@@ -143,12 +144,6 @@ where
     /// - Axis 4: P2's skewed edge normal (rotated)
     #[inline]
     fn intersects_at(&self, other: &Rhomboid, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
-        let max_separation =
-            self.bounding_sphere_radius().get() + other.bounding_sphere_radius().get();
-        if v_ij.dot(v_ij) >= max_separation * max_separation {
-            return false;
-        }
-
         let o_j = RotationMatrix::from(*o_ij);
         let [c, s] = [o_j.rows()[0][0], o_j.rows()[1][0]];
 
@@ -189,6 +184,32 @@ where
         }
 
         true
+    }
+}
+
+impl<R> IntersectsAtGlobal<Rhomboid, Cartesian<2>, R> for Rhomboid
+where
+    R: Rotate<Cartesian<2>> + Rotation + Copy,
+    RotationMatrix<2>: From<R>,
+{
+    #[inline]
+    fn intersects_at_global(
+        &self,
+        other: &Rhomboid,
+        r_self: &Cartesian<2>,
+        o_self: &R,
+        r_other: &Cartesian<2>,
+        o_other: &R,
+    ) -> bool {
+        let max_separation =
+            self.bounding_sphere_radius().get() + other.bounding_sphere_radius().get();
+        if r_self.distance_squared(r_other) >= max_separation.powi(2) {
+            return false;
+        }
+
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
+
+        self.intersects_at(other, &v_ij, &o_ij)
     }
 }
 
