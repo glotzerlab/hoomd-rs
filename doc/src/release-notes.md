@@ -2,6 +2,22 @@
 
 ## Next release
 
+*Highlights:*
+
+**hoomd-rs** 1.1 adds a new shape type, `ConvexSurfaceMesh2d`. Provide a set
+of points and `ConvexSurfaceMesh2d` will construct the vertices and edges
+of the convex hull. Intersection tests between two `ConvexSurfaceMesh2d`
+shapes take approximately half the time of intersection tests between
+two `Convex(ConvexPolygon)` shapes. Therefore, you should prefer
+`ConvexSurfaceMesh2d` for simulations of hard convex polygons. Use
+`ConvexPolygon` when you have mixed shape types or are modeling spheropolygons.
+`ConvexSurfaceMesh2d` implements `Volume` and `IsPointInside`, making it
+viable for use as a closed boundary condition.
+
+**hoomd-rs** 1.1 also adds `apply_with_filter` and related methods to `Sweep`.
+Use `apply_with_filter` to model systems where some bodies remain fixed in
+space. The new *Seeded Self-Assembly* tutorial demonstrates `apply_with_filter`.
+
 *Added:*
 
 * `[hoomd-geometry]`: Add `ConvexSurfaceMesh2d` shape that stores the vertices and
@@ -20,7 +36,7 @@
   tunes trial move sizes while only applying trial moves to bodies that match
   a filter. Use `tune_with_options_and_filter` with the same filter given to
   `apply_with_filter` to accurately tune move sizes (#268).
-* `[tutorial]`: Added *"Seeded Self-Assembly"* tutorial (#268).
+* `[tutorial]`: Added *Seeded Self-Assembly* tutorial (#268).
 
 *Changed:*
 
