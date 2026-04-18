@@ -170,9 +170,7 @@ where
     /// Test rhomboid intersections using the separating axis theorem.
     ///
     /// Rhomboids have two unique edge directions each, giving four potential
-    /// separating axes. Each axis check is O(1) with no iteration over
-    /// vertices, making this significantly faster than the generic
-    /// Xenocollide-based `Convex(Rhomboid)` intersection test.
+    /// separating axes.
     ///
     /// The four axes are the normals to each rhomboid's two edges:
     /// - Axis 1: P1's horizontal edge normal `[0, 1]`
@@ -256,7 +254,6 @@ mod tests {
     use approxim::assert_relative_eq;
     use hoomd_vector::Angle;
     use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
-    use rstest::rstest;
     use rstest_reuse::{self, apply, template};
     use std::f64::consts::PI;
 
@@ -305,15 +302,13 @@ mod tests {
     }
 
     #[apply(rhomboid_shapes)]
-    fn support_mapping_cardinal(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
+    fn support_mapping_fixed_directions(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
+        // Cardinal directions.
         check_support_value(lx, ly, xy, [1.0, 0.0]);
         check_support_value(lx, ly, xy, [0.0, 1.0]);
         check_support_value(lx, ly, xy, [-1.0, 0.0]);
         check_support_value(lx, ly, xy, [0.0, -1.0]);
-    }
-
-    #[apply(rhomboid_shapes)]
-    fn support_mapping_diagonal(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
+        // Diagonal directions.
         check_support_value(lx, ly, xy, [1.0, 1.0]);
         check_support_value(lx, ly, xy, [-1.0, 1.0]);
         check_support_value(lx, ly, xy, [-1.0, -1.0]);
