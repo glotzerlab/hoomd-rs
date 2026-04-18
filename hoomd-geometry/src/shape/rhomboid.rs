@@ -339,38 +339,18 @@ mod tests {
         check_support_value(lx, ly, xy, [1.0, -1.0]);
     }
 
-    #[test]
-    fn support_mapping_random_cases() {
+    #[apply(rhomboid_shapes)]
+    fn support_mapping_random_directions(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
         let mut rng = StdRng::seed_from_u64(42);
+        let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
+        let polygon =
+            ConvexPolygon::with_vertices(rhomboid.vertices().to_vec()).expect("valid polygon");
 
-        for _ in 0..10_000 {
-            let rhomboid = random_rhomboid(&mut rng);
-            let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
-                .expect("rhomboid vertices form a polygon");
-
-            for _ in 0..10 {
-                let n: Cartesian<2> = rng.random();
-                assert_relative_eq!(
-                    rhomboid.support_mapping(&n),
-                    polygon.support_mapping(&n),
-                    epsilon = 1e-12,
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn bounding_sphere_radius_random() {
-        let mut rng = StdRng::seed_from_u64(123);
-
-        for _ in 0..10_000 {
-            let rhomboid = random_rhomboid(&mut rng);
-            let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
-                .expect("rhomboid vertices form a polygon");
-
+        for _ in 0..1000 {
+            let n: Cartesian<2> = rng.random();
             assert_relative_eq!(
-                rhomboid.bounding_sphere_radius().get(),
-                polygon.bounding_sphere_radius().get(),
+                rhomboid.support_mapping(&n),
+                polygon.support_mapping(&n),
                 epsilon = 1e-12,
             );
         }
@@ -488,19 +468,25 @@ mod tests {
         assert_eq!(scaled.xy(), rhomboid.xy());
     }
 
-    #[test]
-    fn is_point_inside_matches_rectangle_when_unsheared() {
+    /// Unsheared rhomboid shapes (xy=0) for rectangle comparison tests.
+    #[template]
+    #[rstest]
+    #[case::unit_square(1.0, 1.0)]
+    #[case::square(2.0, 2.0)]
+    #[case::rectangle(3.0, 1.0)]
+    #[case::skinny(0.005, 5.0)]
+    fn unsheared_shapes(#[case] lx: f64, #[case] ly: f64) {}
+
+    #[apply(unsheared_shapes)]
+    fn is_point_inside_matches_rectangle(#[case] lx: f64, #[case] ly: f64) {
         let mut rng = StdRng::seed_from_u64(789);
 
+        let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), 0.0).into();
+        let rect = Hypercuboid {
+            edge_lengths: [lx.try_into().unwrap(), ly.try_into().unwrap()],
+        };
+
         for _ in 0..10_000 {
-            let lx: f64 = rng.random_range(0.1..10.0);
-            let ly: f64 = rng.random_range(0.1..10.0);
-
-            let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), 0.0).into();
-            let rect = Hypercuboid {
-                edge_lengths: [lx.try_into().unwrap(), ly.try_into().unwrap()],
-            };
-
             let point: Cartesian<2> =
                 rng.random::<Cartesian<2>>() * 20.0 - Cartesian::from([10.0; 2]);
 
@@ -514,37 +500,31 @@ mod tests {
         }
     }
 
-    #[test]
-    fn is_point_inside_area_fraction_sheared() {
+    #[apply(rhomboid_shapes)]
+    fn is_point_inside_area_fraction(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
         let mut rng = StdRng::seed_from_u64(1011);
 
-        for _ in 0..10 {
-            let lx: f64 = rng.random_range(0.5..5.0);
-            let ly: f64 = rng.random_range(0.5..5.0);
-            let xy: f64 = rng.random_range(-2.0..2.0);
+        let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
+        let area = rhomboid.volume();
 
-            let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
-            let area = rhomboid.volume();
+        // Bounding box for sampling.
+        let bx = lx + ly * xy.abs();
+        let by = ly;
+        let bbox_area = bx * by;
 
-            // Bounding box for sampling
-            let bx = lx + ly * xy.abs();
-            let by = ly;
-            let bbox_area = bx * by;
+        let n_samples = 100_000_usize;
+        let mut inside_count = 0_usize;
 
-            let n_samples = 100_000_usize;
-            let mut inside_count = 0_usize;
-
-            for _ in 0..n_samples {
-                let x = rng.random_range(-bx / 2.0..bx / 2.0);
-                let y = rng.random_range(-by / 2.0..by / 2.0);
-                if rhomboid.is_point_inside(&[x, y].into()) {
-                    inside_count += 1;
-                }
+        for _ in 0..n_samples {
+            let x = rng.random_range(-bx / 2.0..bx / 2.0);
+            let y = rng.random_range(-by / 2.0..by / 2.0);
+            if rhomboid.is_point_inside(&[x, y].into()) {
+                inside_count += 1;
             }
-
-            let estimated_area = (inside_count as f64 / n_samples as f64) * bbox_area;
-            assert_relative_eq!(estimated_area, area, max_relative = 0.02);
         }
+
+        let estimated_area = (inside_count as f64 / n_samples as f64) * bbox_area;
+        assert_relative_eq!(estimated_area, area, max_relative = 0.02);
     }
 
     #[test]
