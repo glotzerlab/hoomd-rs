@@ -131,10 +131,13 @@ impl IsPointInside<Cartesian<2>> for Rhomboid {
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<2>) -> bool {
         let [x, y] = point.coordinates;
-        if y.abs() >= self.ly().get() / 2.0 {
+        let ly_half = self.ly().get() / 2.0;
+        if y < -ly_half || y >= ly_half {
             return false;
         }
-        if (x - self.xy() * y).abs() >= self.lx().get() / 2.0 {
+        let lx_half = self.lx().get() / 2.0;
+        let x_skew = x - self.xy() * y;
+        if x_skew < -lx_half || x_skew >= lx_half {
             return false;
         }
         true
@@ -170,13 +173,8 @@ where
     /// Test rhomboid intersections using the separating axis theorem.
     ///
     /// Rhomboids have two unique edge directions each, giving four potential
-    /// separating axes.
-    ///
-    /// The four axes are the normals to each rhomboid's two edges:
-    /// - Axis 1: P1's horizontal edge normal `[0, 1]`
-    /// - Axis 3: P2's horizontal edge normal (rotated)
-    /// - Axis 2: P1's skewed edge normal `[-Ly1, Ly1·xy1]`
-    /// - Axis 4: P2's skewed edge normal (rotated)
+    /// separating axes. All comparisons are scaled by 2 to avoid halving the
+    /// projection radii.
     #[inline]
     fn intersects_at(&self, other: &Rhomboid, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
         let o_j = RotationMatrix::from(*o_ij);
@@ -186,33 +184,39 @@ where
         let (lx2, ly2, xy2) = (other.lx().get(), other.ly().get(), other.xy());
         let [tx, ty] = [v_ij[0], v_ij[1]];
 
-        // Shared subexpressions for overlap checks.
-        let s_lx2_abs = (s * lx2).abs();
-        let term_a_abs = (xy2 * s + c).abs(); // used in axes 1 & 4
+        // The SAT check projects the distance between centers onto the normals of each
+        // shape's edges. For a rhomboid with extents (lx, ly) and shear xy, the
+        // edge vectors are [lx, 0] and [ly*xy, ly]. The corresponding normals
+        // are [0, 1] and [-1, xy].
+
+        // Shared subexpression for projections involving the skewed edges of both shapes.
+        let det_part = c * (xy1 - xy2) + s * (xy1 * xy2 + 1.0);
 
         // Axis 1: P1's horizontal edge normal [0, 1].
-        // All comparisons are scaled by 2 to avoid halving the projection radii.
-        if 2.0 * ty.abs() > ly1 + s_lx2_abs + ly2 * term_a_abs {
+        let r2_on_n11 = (s * lx2).abs() + (s * xy2 + c).abs() * ly2;
+        if 2.0 * ty.abs() > ly1 + r2_on_n11 {
             return false;
         }
-        let term_b_abs = (c - xy1 * s).abs(); // used in axes 2 & 3
 
-        // Axis 3: P2's horizontal edge normal.
-        let d3_term = ty * c - tx * s;
-        let s_lx1_abs = (s * lx1).abs();
-        if 2.0 * d3_term.abs() > s_lx1_abs + ly1 * term_b_abs + ly2 {
+        // Axis 3: P2's horizontal edge normal (rotated).
+        let dist_n21 = ty * c - tx * s;
+        let r1_on_n21 = (s * lx1).abs() + (c - s * xy1).abs() * ly1;
+        if 2.0 * dist_n21.abs() > r1_on_n21 + ly2 {
             return false;
         }
-        let term_c_abs = (c * (xy1 - xy2) + s * (xy1 * xy2 + 1.0)).abs(); // axes 2 & 4
 
-        // Axis 2: P1's skewed edge normal.
-        if 2.0 * (xy1 * ty - tx).abs() > lx1 + lx2 * term_b_abs + ly2 * term_c_abs {
+        // Axis 2: P1's skewed edge normal [-1, xy1].
+        let dist_n12 = xy1 * ty - tx;
+        let r2_on_n12 = (c - s * xy1).abs() * lx2 + det_part.abs() * ly2;
+        if 2.0 * dist_n12.abs() > lx1 + r2_on_n12 {
             return false;
         }
 
         // Axis 4: P2's skewed edge normal (rotated).
         let cross_term = tx * c + ty * s;
-        if 2.0 * (xy2 * d3_term - cross_term).abs() > lx1 * term_a_abs + ly1 * term_c_abs + lx2 {
+        let dist_n22 = xy2 * dist_n21 - cross_term;
+        let r1_on_n22 = (c + s * xy2).abs() * lx1 + det_part.abs() * ly1;
+        if 2.0 * dist_n22.abs() > r1_on_n22 + lx2 {
             return false;
         }
 
@@ -254,6 +258,7 @@ mod tests {
     use approxim::assert_relative_eq;
     use hoomd_vector::Angle;
     use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
+    use rstest::rstest;
     use rstest_reuse::{self, apply, template};
     use std::f64::consts::PI;
 
