@@ -282,25 +282,6 @@ mod tests {
         (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into()
     }
 
-    /// Construct a ConvexPolygon from the Rhomboid's vertices and verify that
-    /// both shapes return the same support mapping for a given direction.
-    fn check_support_mapping(lx: f64, ly: f64, xy: f64, n: [f64; 2]) {
-        let rhomboid: Rhomboid = (
-            lx.try_into().expect("lx > 0"),
-            ly.try_into().expect("ly > 0"),
-            xy,
-        )
-            .into();
-
-        let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
-            .expect("rhomboid vertices form a polygon");
-
-        let r = rhomboid.support_mapping(&n.into());
-        let p = polygon.support_mapping(&n.into());
-
-        assert_relative_eq!(r, p, epsilon = 1e-12);
-    }
-
     /// Check that the support value (dot product with direction) matches the polygon.
     /// This avoids tie-breaking differences when multiple vertices maximize the dot product.
     fn check_support_value(lx: f64, ly: f64, xy: f64, n: [f64; 2]) {
@@ -409,10 +390,10 @@ mod tests {
     #[rstest]
     #[case::coincident(0.0, 0.0, 0.0)]
     #[case::half_overlap(0.5, 0.5, 0.0)]
-    #[case::near_touch_x(1.9, 0.0, 0.0)]
-    #[case::past_touch_x(2.1, 0.0, 0.0)]
-    #[case::near_touch_y(0.0, 1.9, 0.0)]
-    #[case::past_touch_y(0.0, 2.1, 0.0)]
+    #[case::near_touch_x(1.999_999, 0.0, 0.0)]
+    #[case::past_touch_x(2.000_001, 0.0, 0.0)]
+    #[case::near_touch_y(0.0, 1.999_999, 0.0)]
+    #[case::past_touch_y(0.0, 2.000_001, 0.0)]
     #[case::diagonal_45(1.0, 1.0, PI / 4.0)]
     #[case::rotated_60(1.3, 0.7, PI / 3.0)]
     #[case::rotated_90(0.0, 1.5, PI / 2.0)]
