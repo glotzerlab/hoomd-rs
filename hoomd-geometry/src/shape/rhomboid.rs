@@ -257,7 +257,23 @@ mod tests {
     use hoomd_vector::Angle;
     use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
+    use rstest_reuse::{self, apply, template};
     use std::f64::consts::PI;
+
+    /// Common rhomboid shapes used across multiple tests.
+    #[template]
+    #[rstest]
+    #[case::unit_square(1.0, 1.0, 0.0)]
+    #[case::square(2.0, 2.0, 0.0)]
+    #[case::rectangle(3.0, 1.0, 0.0)]
+    #[case::skinny(0.005, 5.0, 0.0)]
+    #[case::mild_shear(2.0, 2.0, 0.5)]
+    #[case::sheared(3.0, 2.0, 1.5)]
+    #[case::sheared_2(1.0, 3.0, 1.0)]
+    #[case::strong_shear(1.0, 5.0, 25.0)]
+    #[case::negative_shear(2.0, 2.0, -5.5)]
+    #[case::unit_shear(1.0, 1.0, 1.0)]
+    fn rhomboid_shapes(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {}
 
     fn random_rhomboid(rng: &mut StdRng) -> Rhomboid {
         let lx: f64 = rng.random_range(0.1..10.0);
@@ -278,29 +294,49 @@ mod tests {
 
         let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
             .expect("rhomboid vertices form a polygon");
-        assert_relative_eq!(
-            rhomboid.support_mapping(&n.into()),
-            polygon.support_mapping(&n.into()),
-            epsilon = 1e-12,
-        );
+
+        let r = rhomboid.support_mapping(&n.into());
+        let p = polygon.support_mapping(&n.into());
+
+        assert_relative_eq!(r, p, epsilon = 1e-12);
     }
 
-    #[rstest]
-    #[case::right([1.0, 1e-6])]
-    #[case::up([1e-6, 1.0])]
-    #[case::left([-1.0, 1e-6])]
-    #[case::down([1e-6, -1.0])]
-    fn support_mapping_unsheared_square(#[case] n: [f64; 2]) {
-        check_support_mapping(2.0, 2.0, 0.0, n);
+    /// Check that the support value (dot product with direction) matches the polygon.
+    /// This avoids tie-breaking differences when multiple vertices maximize the dot product.
+    fn check_support_value(lx: f64, ly: f64, xy: f64, n: [f64; 2]) {
+        let rhomboid: Rhomboid = (
+            lx.try_into().expect("lx > 0"),
+            ly.try_into().expect("ly > 0"),
+            xy,
+        )
+            .into();
+
+        let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
+            .expect("rhomboid vertices form a polygon");
+
+        let r = rhomboid.support_mapping(&n.into());
+        let p = polygon.support_mapping(&n.into());
+
+        let support_rhomboid = r[0] * n[0] + r[1] * n[1];
+        let support_polygon = p[0] * n[0] + p[1] * n[1];
+
+        assert_relative_eq!(support_rhomboid, support_polygon, epsilon = 1e-12);
     }
 
-    #[rstest]
-    #[case::ne([1.0, 1.0])]
-    #[case::nw([-1.0, 1.0])]
-    #[case::sw([-1.0, -1.0])]
-    #[case::se([1.0, -1.0])]
-    fn support_mapping_sheared(#[case] n: [f64; 2]) {
-        check_support_mapping(3.0, 2.0, 1.5, n);
+    #[apply(rhomboid_shapes)]
+    fn support_mapping_cardinal(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
+        check_support_value(lx, ly, xy, [1.0, 0.0]);
+        check_support_value(lx, ly, xy, [0.0, 1.0]);
+        check_support_value(lx, ly, xy, [-1.0, 0.0]);
+        check_support_value(lx, ly, xy, [0.0, -1.0]);
+    }
+
+    #[apply(rhomboid_shapes)]
+    fn support_mapping_diagonal(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
+        check_support_value(lx, ly, xy, [1.0, 1.0]);
+        check_support_value(lx, ly, xy, [-1.0, 1.0]);
+        check_support_value(lx, ly, xy, [-1.0, -1.0]);
+        check_support_value(lx, ly, xy, [1.0, -1.0]);
     }
 
     #[test]
@@ -340,6 +376,19 @@ mod tests {
         }
     }
 
+    #[apply(rhomboid_shapes)]
+    fn bounding_sphere_radius_matches_polygon(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
+        let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
+        let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
+            .expect("rhomboid vertices form a polygon");
+
+        assert_relative_eq!(
+            rhomboid.bounding_sphere_radius().get(),
+            polygon.bounding_sphere_radius().get(),
+            epsilon = 1e-12,
+        );
+    }
+
     /// Compare the Rhomboid SAT against the ConvexSurfaceMesh2d separating-planes
     /// implementation (an independently tested ground truth).
     fn check_sat_against_mesh(
@@ -375,43 +424,51 @@ mod tests {
         );
     }
 
-    #[test]
-    fn intersects_at_squares_no_rotation() {
-        // Two identical 2x2 squares at various displacements, no rotation.
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.0, 0.0, 0.0);
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.5, 0.5, 0.0);
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 1.9, 0.0, 0.0);
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 2.1, 0.0, 0.0);
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.0, 1.9, 0.0);
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.0, 2.1, 0.0);
+    /// Shape pairs for intersection tests with displacement and rotation.
+    #[template]
+    #[rstest]
+    #[case::coincident(0.0, 0.0, 0.0)]
+    #[case::half_overlap(0.5, 0.5, 0.0)]
+    #[case::near_touch_x(1.9, 0.0, 0.0)]
+    #[case::past_touch_x(2.1, 0.0, 0.0)]
+    #[case::near_touch_y(0.0, 1.9, 0.0)]
+    #[case::past_touch_y(0.0, 2.1, 0.0)]
+    #[case::diagonal_45(1.0, 1.0, PI / 4.0)]
+    #[case::rotated_60(1.3, 0.7, PI / 3.0)]
+    #[case::rotated_90(0.0, 1.5, PI / 2.0)]
+    fn square_displacements(#[case] tx: f64, #[case] ty: f64, #[case] theta: f64) {}
+
+    #[apply(square_displacements)]
+    fn intersects_at_identical_squares(#[case] tx: f64, #[case] ty: f64, #[case] theta: f64) {
+        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, tx, ty, theta);
+    }
+
+    /// Displacements for mirror-sheared pairs (xy2 = -xy1).
+    #[template]
+    #[rstest]
+    #[case::coincident(0.0, 0.0, 0.0)]
+    #[case::shifted_x(1.0, 0.0, 0.0)]
+    #[case::shifted_x2(2.0, 0.0, 0.0)]
+    #[case::shifted_y(0.0, 1.0, 0.0)]
+    #[case::diagonal(1.0, 1.0, 0.0)]
+    #[case::rotated_45(0.5, 0.5, PI / 4.0)]
+    #[case::rotated_60(1.0, 0.0, PI / 3.0)]
+    fn mirror_shear_displacements(#[case] tx: f64, #[case] ty: f64, #[case] theta: f64) {}
+
+    #[apply(mirror_shear_displacements)]
+    fn intersects_at_mirror_sheared(#[case] tx: f64, #[case] ty: f64, #[case] theta: f64) {
+        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, tx, ty, theta);
     }
 
     #[test]
-    fn intersects_at_squares_rotated() {
-        // Two identical 2x2 squares at various rotations.
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.5, 0.5, PI / 4.0);
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 1.5, 0.0, PI / 4.0);
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 0.0, 1.5, PI / 2.0);
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, 1.3, 1.3, PI / 3.0);
-    }
-
-    #[test]
-    fn intersects_at_sheared_no_rotation() {
-        // Sheared rhomboids without rotation.
-        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 0.0, 0.0, 0.0);
-        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 1.0, 0.0, 0.0);
-        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 2.0, 0.0, 0.0);
+    fn intersects_at_mixed_shapes() {
+        // Different shapes, various displacements and rotations.
         check_sat_against_mesh(1.0, 3.0, 1.5, 2.0, 1.0, -0.5, 1.0, 0.5, 0.0);
         check_sat_against_mesh(1.0, 5.0, 2.0, 1.0, 5.0, 2.0, 1.0, 0.0, 0.0);
-    }
-
-    #[test]
-    fn intersects_at_sheared_rotated() {
-        // Sheared rhomboids with rotation — the most complex case.
-        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 0.5, 0.5, PI / 4.0);
-        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, 1.0, 0.0, PI / 3.0);
         check_sat_against_mesh(1.0, 3.0, 1.5, 2.0, 1.0, -0.5, 0.5, 0.5, PI / 6.0);
         check_sat_against_mesh(1.0, 5.0, 2.0, 1.0, 5.0, -2.0, 0.5, 0.0, PI / 2.0);
+        check_sat_against_mesh(3.0, 1.0, -1.0, 1.0, 2.0, 0.5, 1.5, 0.3, PI / 5.0);
+        check_sat_against_mesh(2.0, 1.0, 0.8, 1.5, 2.5, -0.3, 0.0, 1.0, PI / 8.0);
     }
 
     #[test]
