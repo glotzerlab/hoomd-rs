@@ -18,7 +18,6 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 workspace = true
 
 [dependencies]
-hoomd-linear-algebra.workspace = true
 serde.workspace = true
 
 hoomd-derive.workspace = true
