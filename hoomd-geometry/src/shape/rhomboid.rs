@@ -253,8 +253,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shape::{ConvexPolygon, ConvexSurfaceMesh2d, Hypercuboid};
-    use crate::{Convex, IntersectsAt, IsPointInside};
+    use crate::{
+        Convex, IntersectsAt, IsPointInside,
+        shape::{ConvexPolygon, ConvexSurfaceMesh2d, Hypercuboid},
+    };
     use approxim::assert_relative_eq;
     use hoomd_vector::Angle;
     use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
