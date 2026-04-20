@@ -21,4 +21,4 @@ Resolves #???
 - [ ] I have reviewed the [**Contributor Guidelines**](https://github.com/glotzerlab/hoomd-rs/blob/trunk/CONTRIBUTING.md).
 - [ ] I agree with the terms of the [**hoomd-rs Contributor Agreement**](https://github.com/glotzerlab/hoomd-rs/blob/trunk/ContributorAgreement.md).
 - [ ] My name is on the list of contributors (`doc/src/credits.md`) in the pull request source branch.
-- [ ] I have summarized these changes in `CHANGELOG.md` following the established format.
+- [ ] I have summarized these changes in `release-notes.md` following the established format.

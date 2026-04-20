@@ -30,10 +30,10 @@ bevy_egui.workspace = true
 [dev-dependencies]
 hoomd-geometry.workspace = true
 hoomd-bevy.workspace = true
-bevy = { workspace = true }
+
+anyhow.workspace = true
 approxim.workspace = true
+bevy.workspace = true
 divan.workspace = true
-rstest.workspace = true
 rand.workspace = true
-ratatui = "0.28.0"
-anyhow = "1.0.98"
+rstest.workspace = true
