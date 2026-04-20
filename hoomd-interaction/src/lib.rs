@@ -948,17 +948,6 @@ pub trait PairSiteTorque<V: Wedge, S> {
     fn site_pair_torque(&self, a: &S, b: &S) -> V::Bivector;
 }
 
-/// Compute the non-pairwise torque on a body.
-///
-/// The generic type names are:
-/// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
-/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-pub trait ExternalBodyTorque<V: Wedge, B> {
-    /// Evaluate the torque on a body.
-    fn body_single_torque(&self, body_properties: &B) -> V::Bivector;
-}
-
-
 /// Sum two [`NetBodyTorque`] on a body.
 /// TODO: Should move it to other script.
 /// TODO: Add example in the doc. 
