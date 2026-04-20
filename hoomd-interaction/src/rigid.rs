@@ -9,28 +9,26 @@
 //!
 //! TODO: Expand documentation.
 
-use std::ops::{AddAssign, Sub};
+use std::ops::AddAssign;
 
 use crate::{
-    NetBodyForce, NetBodyForceAndTorque, NetBodyForceAndVirial, NetBodyTorque, SiteForceAndTorque,
-    SiteForceAndVirial,
+    NetBodyForce, NetBodyForceAndTorque, NetBodyTorque, SiteForceAndTorque,
 };
-use hoomd_linear_algebra::GeneralMatrix;
 use hoomd_microstate::{
     Microstate, Transform,
     property::{Orientation, Position},
 };
-use hoomd_vector::{Rotate, RotationMatrix, TensorProduct, Vector, WedgeProduct};
+use hoomd_vector::{Rotate, RotationMatrix, Vector, WedgeProduct};
 
 /// Rigid body interactions.
 ///
 /// The generic type names are:
-/// * `E`: The evaluator that implements [`SiteForceAndTorque`] and [`SiteForceAndVirial`].
+/// * `E`: The evaluator that implements [`SiteForceAndTorque`].
 /// 
 /// Given an evaluator,
-/// [`Rigid`] provides methods for summing the forces, torques, or virials on every 
+/// [`Rigid`] provides methods for summing the forces and torques on every 
 /// [`Site`](hoomd_microstate::Site) to determine net forces, 
-/// torques, or virials on every [`Body`](hoomd_microstate::Body).
+/// and torques on every [`Body`](hoomd_microstate::Body).
 ///
 /// Use [`Rigid`] by wrapping it around [`CutoffPair`](crate::cutoff_pair::CutoffPair), 
 /// [`External`](crate::External) or your own custom type.
@@ -417,137 +415,3 @@ where
     }
 }
 
-impl<V, B, S, X, C, E, R> NetBodyForceAndVirial<V, B, S, X, C> for Rigid<E>
-where
-    V: Vector + Default + TensorProduct,
-    B: Transform<S> + Orientation<Rotation = R>,
-    S: Position<Position = V>,
-    E: SiteForceAndVirial<V, B, S, X, C>,
-    R: Rotate<V>,
-    V::Tensor: GeneralMatrix + AddAssign + Sub<Output = V::Tensor>,
-{
-    /// Compute the net force and virial.
-    ///
-    /// The virial calculation will reuse the results of force
-    /// calculation to reduce the costs.
-    ///
-    /// `microstate` describes the system configuration and `body_index` specifies
-    /// the body with index $`i`$ within the system for which the net force and torque
-    /// $`\mathbf{f}_i`$, $`\mathbf{W}_i`$ are calculated.
-    ///
-    /// First, the total force and virial acting on each constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ are calculated in [`SiteForceAndVirial`](crate::cutoff_pair::CutoffPair).
-    ///
-    /// Then, the net force and virial acting on the [`Body`](hoomd_microstate::Body)
-    /// $`i`$ are calculated
-    /// ```math
-    /// \begin{align}
-    ///     &\mathbf{f}_{i} = \sum_{\alpha} \mathbf{f}_{i, \alpha} \\
-    ///     &\mathbf{W}_{i} = \sum_{\alpha} \mathbf{W}_{i, \alpha} - \mathbf{f}_{i, \alpha} \otimes q_i\mathbf{r}_{\mathrm{body}, \alpha}q_i^*
-    /// \end{align}
-    /// ```
-    /// Where $`q_i`$ is the orientation of the [`Body`](hoomd_microstate::Body)
-    /// $`i`$ and $`\mathbf{r}_{\mathrm{body}, \alpha}`$
-    /// is the position of the constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ in the body frame.
-    ///
-    /// # Example
-    /// ```
-    /// use hoomd_interaction::{
-    ///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyForceAndVirial
-    /// };
-    /// use hoomd_linear_algebra::{
-    ///     GeneralMatrix,
-    ///     matrix::Matrix,
-    /// };
-    ///
-    /// use hoomd_microstate::{
-    ///     Body, Microstate,
-    ///     boundary::Open,
-    ///     property::{OrientedPoint, Point},
-    /// };
-    /// use hoomd_vector::{Cartesian, Versor};
-    ///
-    /// use approxim::assert_abs_diff_eq;
-    ///
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut microstate = Microstate::new();
-    /// microstate.extend_bodies([
-    ///     Body {
-    ///         properties: OrientedPoint {
-    ///             position: Cartesian::from([0.0, 0.0, 0.0]),
-    ///             orientation: Versor::default(),
-    ///         },
-    ///         sites: vec![Point {
-    ///             position: Cartesian::<3>::default(),
-    ///         }],
-    ///         },
-    ///     Body {
-    ///         properties: OrientedPoint {
-    ///             position: Cartesian::from([1.0, 0.0, 0.0]),
-    ///             orientation: Versor::default(),
-    ///         },
-    ///         sites: vec![Point {
-    ///             position: Cartesian::<3>::default(),
-    ///         }],
-    ///         },
-    /// ])?;
-    ///
-    /// let force = Rigid(PairwiseCutoff(
-    ///     Isotropic{ 
-    ///         interaction: LennardJones::<12, 6> {
-    ///                 epsilon: 1.0,
-    ///                 sigma: 2.0_f64.powf(-1.0 / 6.0),
-    ///         }, 
-    ///         r_cut: 6.0,
-    /// }));
-    ///
-    /// let (net_force, net_virial) = force.net_force_and_virial_on_body(&microstate, 0);
-    ///
-    /// assert_abs_diff_eq!(net_force, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
-    /// assert_abs_diff_eq!(
-    ///     net_virial.rows[0][0],
-    ///     0.0,
-    ///     epsilon = 1e-14
-    /// );
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Note
-    ///
-    /// Due to the rigid body constraint, the term $`- \mathbf{f}_{i, \alpha} \otimes q_i\mathbf{r}_{\mathrm{body}, \alpha}q_i^*`$
-    /// appear in the summand above represents the correction term to obtain
-    /// the true net virial $`\mathbf{W}_{i}`$ following the Eq. 14, 23, 24
-    /// and Algorithm 2 demonstrated in the [Glaser et al. 2019].
-    ///
-    /// [Glaser et al. 2019]: https://doi.org/10.1016/j.commatsci.2019.109430
-    #[inline]
-    fn net_force_and_virial_on_body(
-        &self,
-        microstate: &Microstate<B, S, X, C>,
-        body_index: usize,
-    ) -> (V, V::Tensor) {
-        let mut total_force = V::default();
-        let mut total_virial = V::Tensor::zeros();
-        let q = microstate.bodies()[body_index]
-            .item
-            .properties
-            .orientation(); // the body's orientation in the system frame
-
-        for (site_index, site) in microstate.iter_body_sites(body_index).enumerate() {
-            let site_body_frame = &microstate.bodies()[body_index].item.sites[site_index];
-            let r_body_frame = site_body_frame.position(); // the site's position in the body frame (which we need in order to not have wrapping issues)
-            let r = q.rotate(r_body_frame); // the moment arm in the system frame
-            let (force, virial) = self.0.net_force_and_virial_on_site(microstate, site);
-
-            // calculate the virial correction due to rigid body constraint.
-            let virial_correction = force.tensor_product(&r);
-
-            total_force += force;
-            total_virial += virial - virial_correction;
-        }
-        (total_force, total_virial)
-    }
-}

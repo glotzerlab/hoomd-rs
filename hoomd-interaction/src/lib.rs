@@ -901,30 +901,6 @@ pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, X, C> {
     fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> (V, V::Bivector);
 }
 
-/// Compute both the net force and virial on a single [`Body::properties`](hoomd_microstate::Body).
-///
-/// The generic type names are:
-/// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
-/// * `V:TensorProduct`: The type produced via [`TensorProduct`](hoomd_vector::TensorProduct).
-/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-pub trait NetBodyForceAndVirial<V: TensorProduct, B, S, X, C> {
-    /// Compute the net force and virial.
-    #[must_use]
-    fn net_force_and_virial_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> (V, V::Tensor);
-}
-
-/** Compute the net force and virial on a site.
-*/
-pub trait SiteForceAndVirial<V: TensorProduct, B, S, X, C> {
-    /** Compute the net force and virial on a site.
-    TODO
-    */
-    #[must_use]
-    fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Tensor);
-}
-
 /** TODO: Documentation */
 pub trait SiteForceAndTorque<V: WedgeProduct, B, S, X, C> {
     /** TODO: Documentation */
