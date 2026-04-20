@@ -3,7 +3,7 @@
 
 //! Implement [`ConstantForce`]
 
-use crate::SiteForceAndTorque;
+use crate::NetSiteForceAndTorque;
 
 
 use serde::{Deserialize, Serialize};
@@ -126,14 +126,14 @@ where
     }
 }
 
-impl<V, B, S, X, C> SiteForceAndTorque<V, B, S, X, C> for ConstantForce<V>
+impl<V, B, S, X, C> NetSiteForceAndTorque<V, B, S, X, C> for ConstantForce<V>
 where
     V: InnerProduct + Wedge,
     S: Position<Position = V>,
     V::Bivector: Default
 {
     #[inline]
-    fn net_force_and_torque_on_site(&self, _microstate: &Microstate<B, S, X, C>, _site: &Site<S>) -> (V, V::Bivector) {
+    fn net_site_force_and_torque(&self, _microstate: &Microstate<B, S, X, C>, _site: &Site<S>) -> (V, V::Bivector) {
         let force = self.force();
         let torque = V::Bivector::default();
         (force, torque)

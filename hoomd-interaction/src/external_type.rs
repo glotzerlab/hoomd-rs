@@ -9,7 +9,7 @@ use crate::{
     DeltaEnergyOne,
     DeltaEnergyRemove,
     SiteEnergy,
-    SiteForceAndTorque,
+    NetSiteForceAndTorque,
     TotalEnergy,
     MaximumInteractionRange
 };
@@ -547,10 +547,10 @@ where
     }
 }
 
-impl<V, B, S, X, C, E> SiteForceAndTorque<V, B, S, X, C> for External<E>
+impl<V, B, S, X, C, E> NetSiteForceAndTorque<V, B, S, X, C> for External<E>
 where
     V: Wedge,
-    E: SiteForceAndTorque<V, B, S, X, C>
+    E: NetSiteForceAndTorque<V, B, S, X, C>
 {
     /// Calculate the net force and torque.
     /// 
@@ -558,8 +558,8 @@ where
     /// within the system for which the net force and torque
     /// $`\mathbf{f}_\alpha`$, $`\boldsymbol{\tau}_{\alpha}`$ are calculated.
     #[inline]
-    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
-        self.0.net_force_and_torque_on_site(microstate, site)
+    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
+        self.0.net_site_force_and_torque(microstate, site)
     }
 }
 

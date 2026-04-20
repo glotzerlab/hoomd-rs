@@ -12,7 +12,7 @@
 use std::ops::AddAssign;
 
 use crate::{
-    NetBodyForce, NetBodyForceAndTorque, NetBodyTorque, SiteForceAndTorque,
+    NetBodyForce, NetBodyForceAndTorque, NetBodyTorque, NetSiteForceAndTorque,
 };
 use hoomd_microstate::{
     Microstate, Transform,
@@ -23,7 +23,7 @@ use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge};
 /// Rigid body interactions.
 ///
 /// The generic type names are:
-/// * `E`: The evaluator that implements [`SiteForceAndTorque`].
+/// * `E`: The evaluator that implements [`NetSiteForceAndTorque`].
 /// 
 /// Given an evaluator,
 /// [`Rigid`] provides methods for summing the forces and torques on every 
@@ -54,7 +54,7 @@ where
     V: Vector + Default + Wedge,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: SiteForceAndTorque<V, B, S, X, C>,
+    E: NetSiteForceAndTorque<V, B, S, X, C>,
 {
     /// Compute the net force.
     ///
@@ -63,8 +63,8 @@ where
     /// $`\mathbf{f}_i`$ is calculated.
     ///
     /// First, the net force acting on each constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ are calculated in [`CutoffPair::net_force_and_torque_on_site`](crate::cutoff_pair::CutoffPair)
-    /// and [`External::net_force_and_torque_on_site`](crate::External).
+    /// $`\alpha`$ are calculated in [`CutoffPair::net_site_force_and_torque`](crate::cutoff_pair::CutoffPair)
+    /// and [`External::net_site_force_and_torque`](crate::External).
     ///
     /// Then, the net force acting on the [`Body`](hoomd_microstate::Body)
     /// $`i`$ are calculated
@@ -138,7 +138,7 @@ where
     fn net_force_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V {
         let mut total = V::default();
         for site in microstate.iter_body_sites(body_index) {
-            let (f_on_site, _) = self.0.net_force_and_torque_on_site(microstate, site);
+            let (f_on_site, _) = self.0.net_site_force_and_torque(microstate, site);
             total += f_on_site;
         }
         total
@@ -150,7 +150,7 @@ where
     V: Vector + Wedge,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
-    E: SiteForceAndTorque<V, B, S, X, C>,
+    E: NetSiteForceAndTorque<V, B, S, X, C>,
     R: Rotate<V>,
     RotationMatrix<N>: From<R>,
     V::Bivector: Default + AddAssign,
@@ -162,8 +162,8 @@ where
     /// $`\boldsymbol{\tau}_i`$ is calculated.
     ///
     /// First, the net force and torque acting on each constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ are calculated in [`CutoffPair::net_force_and_torque_on_site`](crate::cutoff_pair::CutoffPair).
-    /// and [`External::net_force_and_torque_on_site`](crate::External).
+    /// $`\alpha`$ are calculated in [`CutoffPair::net_site_force_and_torque`](crate::cutoff_pair::CutoffPair).
+    /// and [`External::net_site_force_and_torque`](crate::External).
     ///
     /// Then, the net force and torque acting on the [`Body`](hoomd_microstate::Body)
     /// $`i`$ are calculated
@@ -261,7 +261,7 @@ where
             let r_body_frame = site_body_frame.position(); // the site's position in the body frame (which we need in order to not have wrapping issues)
             let r = q.rotate(r_body_frame); // the moment arm in the system frame
 
-            let (f_on_site, t_on_site) = self.0.net_force_and_torque_on_site(microstate, site); // the force on the site is in the system frame
+            let (f_on_site, t_on_site) = self.0.net_site_force_and_torque(microstate, site); // the force on the site is in the system frame
 
             // Calculate Torque in the system frame
             let t_from_f_on_site = r.wedge(&f_on_site);
@@ -282,7 +282,7 @@ where
     V: Vector + Wedge + Default,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
-    E: SiteForceAndTorque<V, B, S, X, C>,
+    E: NetSiteForceAndTorque<V, B, S, X, C>,
     R: Rotate<V>,
     RotationMatrix<N>: From<R>,
     V::Bivector: Default + AddAssign,
@@ -297,8 +297,8 @@ where
     /// $`\mathbf{f}_i`$, $`\boldsymbol{\tau}_i`$ are calculated.
     ///
     /// First, the net force acting on each constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ are calculated in [`CutoffPair::net_force_and_torque_on_site`](crate::cutoff_pair::CutoffPair).
-    /// and [`External::net_force_and_torque_on_site`](crate::External).
+    /// $`\alpha`$ are calculated in [`CutoffPair::net_site_force_and_torque`](crate::cutoff_pair::CutoffPair).
+    /// and [`External::net_site_force_and_torque`](crate::External).
     ///
     /// Then, the net force and torque acting on the [`Body`](hoomd_microstate::Body)
     /// $`i`$ are calculated
@@ -398,7 +398,7 @@ where
             let site_body_frame = &microstate.bodies()[body_index].item.sites[site_index];
             let r_body_frame = site_body_frame.position(); // the site's position in the body frame (which we need in order to not have wrapping issues)
             let r = q.rotate(r_body_frame); // the moment arm in the system frame
-            let (f_on_site, t_on_site) = self.0.net_force_and_torque_on_site(microstate, site); // the force on the site in the system frame
+            let (f_on_site, t_on_site) = self.0.net_site_force_and_torque(microstate, site); // the force on the site in the system frame
 
             // Calculate Torque in the system frame
             let t_from_f_on_site = r.wedge(&f_on_site);

@@ -902,10 +902,10 @@ pub trait NetBodyForceAndTorque<const N: usize, V: Wedge, B, S, X, C> {
 }
 
 /** TODO: Documentation */
-pub trait SiteForceAndTorque<V: Wedge, B, S, X, C> {
+pub trait NetSiteForceAndTorque<V: Wedge, B, S, X, C> {
     /** TODO: Documentation */
     #[must_use]
-    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector);
+    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector);
 }
 
 /// Compute the non-pairwise force on a single site.

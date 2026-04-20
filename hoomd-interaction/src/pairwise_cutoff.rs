@@ -14,7 +14,7 @@ use hoomd_spatial::PointsNearBall;
 use hoomd_vector::{InnerProduct, Metric, Vector, Wedge};
 use crate::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
-    TotalEnergy, SitePairForce, SiteForceAndTorque, pairwise::Isotropic, univariate::UnivariateForce,
+    TotalEnergy, SitePairForce, NetSiteForceAndTorque, pairwise::Isotropic, univariate::UnivariateForce,
 };
 
 /// Short-ranged pairwise interactions between sites.
@@ -412,7 +412,7 @@ impl<E> PairwiseCutoff<E> {
     }
 }
 
-impl<V, B, S, X, C, E> SiteForceAndTorque<V, B, S, X, C> for PairwiseCutoff<Isotropic<E>>
+impl<V, B, S, X, C, E> NetSiteForceAndTorque<V, B, S, X, C> for PairwiseCutoff<Isotropic<E>>
 where
     V: Vector + Default + InnerProduct + Metric + Wedge,
     B: Transform<S>,
@@ -433,7 +433,7 @@ where
     /// the [`Isotropic::site_pair_force`](crate::pairwise::Isotropic).
     /// 
     /// Then, the net force and torque acting on each constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ are calculated in [`SiteForceAndTorque`](crate::cutoff_pair::PairwiseCutoff).
+    /// $`\alpha`$ are calculated in [`NetSiteForceAndTorque`](crate::cutoff_pair::PairwiseCutoff).
     /// 
     /// ```math
     /// \begin{align}
@@ -445,7 +445,7 @@ where
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, SiteForceAndTorque
+    ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetSiteForceAndTorque
     /// };
     /// use hoomd_microstate::{
     ///     Body, Microstate, Site, property::{Point, OrientedPoint}
@@ -487,7 +487,7 @@ where
     /// });
     ///
     /// let sites = microstate.sites();
-    /// let (force_on_zero, torque_on_zero) = force.net_force_and_torque_on_site(&microstate, &sites[0]);
+    /// let (force_on_zero, torque_on_zero) = force.net_site_force_and_torque(&microstate, &sites[0]);
     ///
     /// assert_abs_diff_eq!(force_on_zero, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-13);
     /// assert_eq!(torque_on_zero,  Cartesian::from([0.0, 0.0, 0.0]));
@@ -501,7 +501,7 @@ where
     /// [`Site`](hoomd_microstate::Site) $`\alpha`$ and $`\beta`$, meaning 
     /// $`\boldsymbol{\tau}_{\alpha \beta}`$ is always zero.
     #[inline]
-    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, <V as Wedge>::Bivector) {
+    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, <V as Wedge>::Bivector) {
         // Calculate net force from all of the pairwise interactions
         let mut total_force = V::default();
         for other_site in microstate
