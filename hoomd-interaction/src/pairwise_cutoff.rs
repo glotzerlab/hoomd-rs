@@ -11,7 +11,7 @@ use hoomd_microstate::{
     Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
 };
 use hoomd_spatial::PointsNearBall;
-use hoomd_vector::{InnerProduct, Metric, TensorProduct, Vector, Wedge};
+use hoomd_vector::{InnerProduct, Metric, Outer, Vector, Wedge};
 use hoomd_linear_algebra::GeneralMatrix;
 use crate::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,

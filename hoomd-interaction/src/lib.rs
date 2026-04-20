@@ -96,7 +96,7 @@ mod zero;
 
 pub use external_type::External;
 
-use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge, TensorProduct};
+use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge, Outer};
 pub use hoomd_derive::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
     TotalEnergy,

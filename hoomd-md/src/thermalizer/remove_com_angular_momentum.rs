@@ -8,7 +8,7 @@ use hoomd_microstate::{
     property::{Mass, Momentum, NetForce, Position},
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Cartesian, InnerProduct, TensorProduct, Wedge};
+use hoomd_vector::{Cartesian, InnerProduct, Outer, Wedge};
 
 /// Remove the center-of-mass angular momentum.
 pub struct ComAngularMomentumRemover;
@@ -81,7 +81,7 @@ where
 
             let p_to_com_lengthsq = p_to_com.norm_squared();
             com_moment_of_inertia += (Matrix::with_diagonal([(); 3].map(|_| p_to_com_lengthsq))
-                - p_to_com.tensor_product(&p_to_com))
+                - p_to_com.outer(&p_to_com))
                 * *mass; // m * [||r||^2 x delta_ij - r_i (tensor prodcut) r_j]
         }
 

@@ -421,46 +421,45 @@ pub trait Wedge {
     fn wedge(&self, other: &Self) -> Self::Bivector;
 }
 
-/// Operate on elements of a tensor product space.
-/// 
-/// The [`TensorProduct`] subtrait defines the tensor product method, which returns
-/// the tensor resulting from matrix-style multiplication of two elements.
-/// TODO: confirm whether the elements must be vectors
-pub trait TensorProduct: Vector {
-    /// Type of the resulting tensor.
-    type Tensor;
-    /// Compute the tensor product between two elements.
+/// The vector outer product.
+pub trait Outer {
+    /// Result type.
+    type Output;
+    
+    /// Compute the outer product of two vectors.
     /// 
     /// ```math
-    /// a \otimes b = \begin{bmatrix} a_{0}
+    /// a \otimes b = \begin{bmatrix} a_0
+    ///  \\ a_1
     ///  \\ \vdots 
     ///  \\ a_{n}
     /// \end{bmatrix}
     /// \begin{bmatrix}
-    /// b_{0} & \dots & b_{n}
+    /// b_0 & b_1 & \dots & b_{n}
     /// \end{bmatrix}
     /// =
     /// \begin{bmatrix}
-    /// a_{0}b_{0} & \dots & a_{0}b_{n} \\
-    /// \vdots & \ddots & \vdots \\
-    /// a_{n}b_{0} & \dots & a_{n}b_{n}
+    /// a_0 b_0 & a_0 b_1 & \dots & a_0 b_n \\
+    /// a_1 b_0 & a_1 b_1 & \dots & a_1 b_n \\
+    /// \vdots & \vdots & \ddots & \vdots \\
+    /// a_n b_0 & a_n b_1 & \dots & a_n b_n
     /// \end{bmatrix}
     /// ```
     /// 
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Matrix, TensorProduct}
+    /// use hoomd_vector::{Cartesian, Outer};
+    /// use hoomd_linear_algebra::matrix::Matrix;
     /// 
-    /// # fn main() {
-    /// let a = Cartesian::from([1.0, 1.0]);
-    /// let b = Cartesian::from([0.0, 1.0]);
+    /// let a = Cartesian::from([2.0, 1.0]);
+    /// let b = Cartesian::from([4.0, 3.0]);
+    ///
     /// let m = Matrix {
-    ///     rows: [[0.0, 1.0], [0.0, 1.0]]
-    /// }
-    /// assert_eq!(a.tensor_product(b), m)
-    /// # }
+    ///     rows: [[8.0, 6.0], [6.0, 3.0]]
+    /// };
+    /// assert_eq!(a.outer(&b), m);
     /// ```
-    fn tensor_product(&self, other: &Self) -> Self::Tensor;
+    fn outer(&self, other: &Self) -> Self::Output;
 }
 
 /// Operates on elements of a metric space.
