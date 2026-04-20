@@ -452,6 +452,21 @@ impl WedgeProduct for Cartesian<3> {
     type Bivector = Cartesian<3>;
 
     #[inline]
+    /// Compute the wedge product of two vectors.
+    /// 
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, WedgeProduct};
+    ///
+    /// let a = Cartesian::from([1.0, 0.0, 0.0]);
+    /// let b = Cartesian::from([0.0, 1.0, 0.0]);
+    /// assert_eq!(a.wedge_product(&b), [0.0, 0.0, 1.0].into());
+    /// ```
     fn wedge_product(&self, other: &Self) -> Self::Bivector {
         self.cross(other)
     }
@@ -533,6 +548,22 @@ impl Cartesian<2> {
 impl WedgeProduct for Cartesian<2> {
     type Bivector = f64;
 
+    /// Compute the wedge product of two vectors.
+    /// 
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, WedgeProduct};
+    /// 
+    /// let a = Cartesian::from([2.0, 1.0]);
+    /// let b = Cartesian::from([3.0, 1.0]);
+    ///
+    /// assert_eq!(a.wedge_product(&b), -1.0);
+    /// ```
     #[inline]
     fn wedge_product(&self, other: &Self) -> Self::Bivector {
         self[0] * other[1] - self[1] * other[0]
