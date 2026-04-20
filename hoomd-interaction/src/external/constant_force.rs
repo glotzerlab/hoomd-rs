@@ -126,33 +126,6 @@ where
     }
 }
 
-// REVIEW: `ExternalSiteForce` is not used. Should it exist?
-
-// impl<V, S> ExternalSiteForce<V, S> for ConstantForce<V>
-// where
-//     V: InnerProduct,
-//     S: Position<Position = V>,
-// {
-//     #[inline]
-//     fn site_single_force(&self, _site_properties: &S) -> V {
-//         self.force()
-//     }
-// }
-
-// REVIEW: `ExternalBodyTorque` is not used. Should it exist?
-
-// impl<V, B, R> ExternalBodyTorque<V, B> for ConstantForce<V>
-// where
-//     V: Vector + Wedge + InnerProduct,
-//     B: Orientation<Rotation=R> + MomentOfInertia + Mass,
-//     R: Rotate<V>
-// {
-//     #[inline]
-//     fn body_single_torque(&self, _body_properties: &B) -> V::Bivector {
-//         todo!()
-//     }
-// }
-
 impl<V, B, S, X, C> SiteForceAndTorque<V, B, S, X, C> for ConstantForce<V>
 where
     V: InnerProduct + Wedge,

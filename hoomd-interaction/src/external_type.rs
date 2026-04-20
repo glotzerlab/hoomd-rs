@@ -3,22 +3,18 @@
 
 //! Implement `External`
 
-use std::ops::Add;
-
 use serde::{Deserialize, Serialize};
 use crate::{
     DeltaEnergyInsert,
     DeltaEnergyOne,
     DeltaEnergyRemove,
-    ExternalBodyTorque,
-    NetBodyTorque,
     SiteEnergy,
     SiteForceAndTorque,
     TotalEnergy,
     MaximumInteractionRange
 };
-use hoomd_microstate::{boundary::Wrap, property::{Orientation, Position}, Body, Microstate, Site, Transform};
-use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge};
+use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, Transform};
+use hoomd_vector::Wedge;
 
 /// Interactions between sites and external fields.
 ///
@@ -564,28 +560,6 @@ where
     #[inline]
     fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
         self.0.net_force_and_torque_on_site(microstate, site)
-    }
-}
-
-impl<const N: usize, V, B, S, X, C, E, R> NetBodyTorque<N, V, B, S, X, C> for External<E>
-where
-    V: Vector + Wedge,
-    B: Transform<S> + Orientation<Rotation = R> + Clone,
-    S: Position<Position = V>,
-    E: ExternalBodyTorque<V, B>,
-    R: Rotate<V>,
-    RotationMatrix<N>: From<R>,
-    V::Bivector: Default + Add<Output = V::Bivector>,
-{
-    /// Calculate the net torque.
-    /// 
-    /// `microstate` describes the system configuration and the target `site` 
-    /// within the system for which the net torque
-    /// $`\boldsymbol{\tau}_{\alpha}`$ is calculated.
-    #[inline]
-    fn net_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V::Bivector {
-        let body_properties = microstate.bodies()[body_index].item.properties.clone();  // TODO: check if we need to clone here
-        self.0.body_single_torque(&body_properties)
     }
 }
 
