@@ -551,16 +551,6 @@ where
     }
 }
 
-impl<E, S> SiteEnergy<S> for External<E>
-where
-    E: SiteEnergy<S>,
-{
-    #[inline]
-    fn site_energy(&self, site_properties: &S) -> f64 {
-        self.0.site_energy(site_properties)
-    }
-}
-
 impl<V, B, S, X, C, E> SiteForceAndTorque<V, B, S, X, C> for External<E>
 where
     V: Wedge,
