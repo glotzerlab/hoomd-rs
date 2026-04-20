@@ -59,7 +59,7 @@ mod tests {
         Body,
         property::{AngularMomentum, DynamicsPoint, Momentum, OrientedDynamicsPoint, Point},
     };
-    use hoomd_vector::{Cartesian, Versor, WedgeProduct};
+    use hoomd_vector::{Cartesian, Versor, Wedge};
     use rstest::*;
 
     // When draw n samples from gaussian of N(mu, sigma)
@@ -251,8 +251,8 @@ mod tests {
             let modified_mom1 = microstate.bodies()[0].item.properties.momentum;
             let modified_mom2 = microstate.bodies()[1].item.properties.momentum;
 
-            let modified_angmom1 = (pos1 - com_pos).wedge_product(&modified_mom1);
-            let modified_angmom2 = (pos2 - com_pos).wedge_product(&modified_mom2);
+            let modified_angmom1 = (pos1 - com_pos).wedge(&modified_mom1);
+            let modified_angmom2 = (pos2 - com_pos).wedge(&modified_mom2);
 
             assert_abs_diff_eq!(
                 modified_angmom1 + modified_angmom2,

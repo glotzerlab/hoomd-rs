@@ -8,7 +8,7 @@ use super::point::Point;
 use super::{AngularMomentum, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Position};
 use crate::Transform;
 use crate::property::Orientation;
-use hoomd_vector::{Rotate, Rotation, Vector, WedgeProduct};
+use hoomd_vector::{Rotate, Rotation, Vector, Wedge};
 
 /// The position, orientation, mass, velocity, acceleration, moment of inertia,
 /// and angular velocity of an extended body, such as  is useful for Molecular
@@ -34,7 +34,7 @@ use hoomd_vector::{Rotate, Rotation, Vector, WedgeProduct};
 /// };
 /// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct OrientedDynamicsPoint<V: WedgeProduct, R> {
+pub struct OrientedDynamicsPoint<V: Wedge, R> {
     /// The location of the extended body in space.
     pub position: V,
 
@@ -63,7 +63,7 @@ pub struct OrientedDynamicsPoint<V: WedgeProduct, R> {
 /// Treat [`Point`] sites as constituents of oriented rigid bodies.
 impl<V, R> Transform<Point<V>> for OrientedDynamicsPoint<V, R>
 where
-    V: Vector + WedgeProduct,
+    V: Vector + Wedge,
     R: Rotate<V>,
 {
     /// Move [`Point`] properties from the local body frame to the system frame.
@@ -84,7 +84,7 @@ where
 /// Treat [`OrientedPoint`] sites as constituents of oriented rigid bodies.
 impl<V, R> Transform<OrientedPoint<V, R>> for OrientedDynamicsPoint<V, R>
 where
-    V: Vector + WedgeProduct,
+    V: Vector + Wedge,
     R: Rotate<V> + Rotation,
 {
     /// Move [`Point`] properties from the local body frame to the system frame.
@@ -108,7 +108,7 @@ where
 
 impl<V, R> Position for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct,
+    V: Wedge,
 {
     // TODO: bring the associated type name into alignment with convention used elsewhere
     type Position = V;
@@ -126,7 +126,7 @@ where
 
 impl<V, R> Orientation for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct,
+    V: Wedge,
 {
     type Rotation = R;
 
@@ -143,7 +143,7 @@ where
 
 impl<V, R> Momentum for OrientedDynamicsPoint<V, R>
 where
-    V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy + WedgeProduct,
+    V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy + Wedge,
 {
     type Vector = V;
 
@@ -170,7 +170,7 @@ where
 
 impl<V, R> Mass for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct,
+    V: Wedge,
 {
     #[inline]
     fn mass(&self) -> &f64 {
@@ -180,7 +180,7 @@ where
 
 impl<V, R> NetForce for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct,
+    V: Wedge,
 {
     type Vector = V;
 
@@ -197,7 +197,7 @@ where
 
 impl<V, R> MomentOfInertia for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct,
+    V: Wedge,
 {
     type Vector = V::Bivector;
 
@@ -214,7 +214,7 @@ where
 
 impl<V, R> AngularMomentum for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct,
+    V: Wedge,
 {
     type AngularMomentum = V::Bivector;
 
@@ -231,7 +231,7 @@ where
 
 impl<V, R> NetTorque for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct,
+    V: Wedge,
 {
     type NetTorque = V::Bivector;
 

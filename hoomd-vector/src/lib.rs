@@ -388,7 +388,7 @@ pub trait Vector:
 ///   [`Cartesian<3>`].
 ///
 /// [bivector]: https://en.wikipedia.org/wiki/Bivector
-pub trait WedgeProduct {
+pub trait Wedge {
     /// Type of the bivector result.
     type Bivector;
 
@@ -402,23 +402,23 @@ pub trait WedgeProduct {
     ///
     /// 2D:
     /// ```
-    /// use hoomd_vector::{Cartesian, WedgeProduct};
+    /// use hoomd_vector::{Cartesian, Wedge};
     /// 
     /// let a = Cartesian::from([2.0, 1.0]);
     /// let b = Cartesian::from([3.0, 1.0]);
     ///
-    /// assert_eq!(a.wedge_product(&b), -1.0);
+    /// assert_eq!(a.wedge(&b), -1.0);
     /// ```
     ///
     /// 3D:
     /// ```
-    /// use hoomd_vector::{Cartesian, WedgeProduct};
+    /// use hoomd_vector::{Cartesian, Wedge};
     ///
     /// let a = Cartesian::from([1.0, 0.0, 0.0]);
     /// let b = Cartesian::from([0.0, 1.0, 0.0]);
-    /// assert_eq!(a.wedge_product(&b), [0.0, 0.0, 1.0].into());
+    /// assert_eq!(a.wedge(&b), [0.0, 0.0, 1.0].into());
     /// ```
-    fn wedge_product(&self, other: &Self) -> Self::Bivector;
+    fn wedge(&self, other: &Self) -> Self::Bivector;
 }
 
 /// Operate on elements of a tensor product space.

@@ -9,7 +9,7 @@ use crate::SiteForceAndTorque;
 use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::{property::Position, Microstate, Site};
-use hoomd_vector::{InnerProduct, Unit, WedgeProduct};
+use hoomd_vector::{InnerProduct, Unit, Wedge};
 
 use super::super::SiteEnergy;
 
@@ -143,7 +143,7 @@ where
 
 // impl<V, B, R> ExternalBodyTorque<V, B> for ConstantForce<V>
 // where
-//     V: Vector + WedgeProduct + InnerProduct,
+//     V: Vector + Wedge + InnerProduct,
 //     B: Orientation<Rotation=R> + MomentOfInertia + Mass,
 //     R: Rotate<V>
 // {
@@ -155,7 +155,7 @@ where
 
 impl<V, B, S, X, C> SiteForceAndTorque<V, B, S, X, C> for ConstantForce<V>
 where
-    V: InnerProduct + WedgeProduct,
+    V: InnerProduct + Wedge,
     S: Position<Position = V>,
     V::Bivector: Default
 {

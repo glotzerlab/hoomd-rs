@@ -96,7 +96,7 @@ mod zero;
 
 pub use external_type::External;
 
-use hoomd_vector::{Rotate, RotationMatrix, Vector, WedgeProduct, TensorProduct};
+use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge, TensorProduct};
 pub use hoomd_derive::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
     TotalEnergy,
@@ -877,11 +877,11 @@ pub trait NetBodyForce<V, B, S, X, C> {
 /// Compute the net torque on a single [`Body::properties`](hoomd_microstate::Body).
 ///
 /// The generic type names are:
-/// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
+/// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-pub trait NetBodyTorque<const N: usize, V: WedgeProduct, B, S, X, C> {
+pub trait NetBodyTorque<const N: usize, V: Wedge, B, S, X, C> {
     /// Compute the net torque.
     #[must_use]
     fn net_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V::Bivector;
@@ -891,18 +891,18 @@ pub trait NetBodyTorque<const N: usize, V: WedgeProduct, B, S, X, C> {
 ///
 /// The generic type names are:
 /// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
-/// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
+/// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, X, C> {
+pub trait NetBodyForceAndTorque<const N: usize, V: Wedge, B, S, X, C> {
     /// Compute the net force and torque.
     #[must_use]
     fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> (V, V::Bivector);
 }
 
 /** TODO: Documentation */
-pub trait SiteForceAndTorque<V: WedgeProduct, B, S, X, C> {
+pub trait SiteForceAndTorque<V: Wedge, B, S, X, C> {
     /** TODO: Documentation */
     #[must_use]
     fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector);
@@ -921,9 +921,9 @@ pub trait ExternalSiteForce<V, S> {
 /// Compute the non-pairwise torque on a single site.
 ///
 /// The generic type names are:
-/// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
+/// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait ExternalSiteTorque<V: WedgeProduct, S> {
+pub trait ExternalSiteTorque<V: Wedge, S> {
     /// Evaluate the torque on a single site.
     fn site_single_torque(&self, site_properties: &S) -> V::Bivector;
 }
@@ -941,9 +941,9 @@ pub trait SitePairForce<V, S> {
 /// Compute the pairwise torque on one site from another site.
 ///
 /// The generic type names are:
-/// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
+/// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait PairSiteTorque<V: WedgeProduct, S> {
+pub trait PairSiteTorque<V: Wedge, S> {
     /// Evaluate the torque torque on site a from site b.
     fn site_pair_torque(&self, a: &S, b: &S) -> V::Bivector;
 }
@@ -951,9 +951,9 @@ pub trait PairSiteTorque<V: WedgeProduct, S> {
 /// Compute the non-pairwise torque on a body.
 ///
 /// The generic type names are:
-/// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
+/// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-pub trait ExternalBodyTorque<V: WedgeProduct, B> {
+pub trait ExternalBodyTorque<V: Wedge, B> {
     /// Evaluate the torque on a body.
     fn body_single_torque(&self, body_properties: &B) -> V::Bivector;
 }
@@ -964,7 +964,7 @@ pub trait ExternalBodyTorque<V: WedgeProduct, B> {
 /// TODO: Add example in the doc. 
 impl<const N: usize, V, B, S, X, C, E1, E2, R> NetBodyTorque<N, V, B, S, X, C> for (E1, E2)
 where
-    V: Vector + WedgeProduct,
+    V: Vector + Wedge,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
     E1: NetBodyTorque<N, V, B, S, X, C>,

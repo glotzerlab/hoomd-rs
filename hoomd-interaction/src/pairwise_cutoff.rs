@@ -11,7 +11,7 @@ use hoomd_microstate::{
     Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
 };
 use hoomd_spatial::PointsNearBall;
-use hoomd_vector::{InnerProduct, Metric, TensorProduct, Vector, WedgeProduct};
+use hoomd_vector::{InnerProduct, Metric, TensorProduct, Vector, Wedge};
 use hoomd_linear_algebra::GeneralMatrix;
 use crate::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
@@ -415,7 +415,7 @@ impl<E> PairwiseCutoff<E> {
 
 impl<V, B, S, X, C, E> SiteForceAndTorque<V, B, S, X, C> for PairwiseCutoff<Isotropic<E>>
 where
-    V: Vector + Default + InnerProduct + Metric + WedgeProduct,
+    V: Vector + Default + InnerProduct + Metric + Wedge,
     B: Transform<S>,
     S: Position<Position = V>,
     E: UnivariateForce,
@@ -502,7 +502,7 @@ where
     /// [`Site`](hoomd_microstate::Site) $`\alpha`$ and $`\beta`$, meaning 
     /// $`\boldsymbol{\tau}_{\alpha \beta}`$ is always zero.
     #[inline]
-    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, <V as WedgeProduct>::Bivector) {
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, <V as Wedge>::Bivector) {
         // Calculate net force from all of the pairwise interactions
         let mut total_force = V::default();
         for other_site in microstate

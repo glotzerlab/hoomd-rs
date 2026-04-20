@@ -5,7 +5,7 @@
 
 use std::ops::Mul;
 
-use hoomd_vector::WedgeProduct;
+use hoomd_vector::Wedge;
 
 use crate::SiteForceAndTorque;
 use hoomd_microstate::{Microstate, Site};
@@ -36,7 +36,7 @@ use hoomd_microstate::{Microstate, Site};
 /// In two-dimension, the `direction` is a scalar
 /// either +1 or -1.
 #[derive(Clone, Debug, PartialEq)]
-pub struct ConstantTorque<V: WedgeProduct> {
+pub struct ConstantTorque<V: Wedge> {
     /// Interaction strength *(\[energy\])*.
     pub alpha: f64,
     /// Direction of the torque vector *(unitless)*.
@@ -46,7 +46,7 @@ pub struct ConstantTorque<V: WedgeProduct> {
 
 impl<V, B, S, X, C> SiteForceAndTorque<V, B, S, X, C> for ConstantTorque<V>
 where
-    V: WedgeProduct + Default,
+    V: Wedge + Default,
     V::Bivector: Default + Mul<f64, Output = V::Bivector> + Clone
 {
     /// Calculate the force and torque.

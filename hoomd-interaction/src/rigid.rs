@@ -18,7 +18,7 @@ use hoomd_microstate::{
     Microstate, Transform,
     property::{Orientation, Position},
 };
-use hoomd_vector::{Rotate, RotationMatrix, Vector, WedgeProduct};
+use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge};
 
 /// Rigid body interactions.
 ///
@@ -51,7 +51,7 @@ pub struct Rigid<E>(pub E);
 
 impl<V, B, S, X, C, E> NetBodyForce<V, B, S, X, C> for Rigid<E>
 where
-    V: Vector + Default + WedgeProduct,
+    V: Vector + Default + Wedge,
     B: Transform<S>,
     S: Position<Position = V>,
     E: SiteForceAndTorque<V, B, S, X, C>,
@@ -147,7 +147,7 @@ where
 
 impl<const N: usize, V, B, S, X, C, E, R> NetBodyTorque<N, V, B, S, X, C> for Rigid<E>
 where
-    V: Vector + WedgeProduct,
+    V: Vector + Wedge,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
     E: SiteForceAndTorque<V, B, S, X, C>,
@@ -177,7 +177,7 @@ where
     /// $`i`$ and $`\mathbf{r}_{\mathrm{body}, \alpha}`$
     /// is the position of the constituent [`Site`](hoomd_microstate::Site)
     /// $`\alpha`$ in the body frame. The symbol $`\wedge`$ represents
-    /// the [WedgeProduct], equivalent to [Cross](hoomd_vector::Cross) in three-dimension.
+    /// the [Wedge], equivalent to [Cross](hoomd_vector::Cross) in three-dimension.
     ///
     /// # Example
     /// ```
@@ -264,7 +264,7 @@ where
             let (f_on_site, t_on_site) = self.0.net_force_and_torque_on_site(microstate, site); // the force on the site is in the system frame
 
             // Calculate Torque in the system frame
-            let t_from_f_on_site = r.wedge_product(&f_on_site);
+            let t_from_f_on_site = r.wedge(&f_on_site);
 
             // Add to the total
             total += t_from_f_on_site;
@@ -279,7 +279,7 @@ where
 
 impl<const N: usize, V, B, S, X, C, E, R> NetBodyForceAndTorque<N, V, B, S, X, C> for Rigid<E>
 where
-    V: Vector + WedgeProduct + Default,
+    V: Vector + Wedge + Default,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
     E: SiteForceAndTorque<V, B, S, X, C>,
@@ -313,7 +313,7 @@ where
     /// $`i`$ and $`\mathbf{r}_{\mathrm{body}, \alpha}`$
     /// is the position of the constituent [`Site`](hoomd_microstate::Site)
     /// $`\alpha`$ in the body frame. The symbol $`\wedge`$ represents
-    /// the [WedgeProduct], equivalent to [Cross](hoomd_vector::Cross) in three-dimension.
+    /// the [Wedge], equivalent to [Cross](hoomd_vector::Cross) in three-dimension.
     ///
     /// # Example
     /// ```
@@ -382,7 +382,7 @@ where
         &self,
         microstate: &Microstate<B, S, X, C>,
         body_index: usize,
-    ) -> (V, <V as WedgeProduct>::Bivector) {
+    ) -> (V, <V as Wedge>::Bivector) {
         let mut total_force = V::default();
         let mut total_torque = V::Bivector::default();
 
@@ -401,7 +401,7 @@ where
             let (f_on_site, t_on_site) = self.0.net_force_and_torque_on_site(microstate, site); // the force on the site in the system frame
 
             // Calculate Torque in the system frame
-            let t_from_f_on_site = r.wedge_product(&f_on_site);
+            let t_from_f_on_site = r.wedge(&f_on_site);
 
             // Add to the total
             total_force += f_on_site;

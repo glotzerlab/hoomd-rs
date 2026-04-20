@@ -18,7 +18,7 @@ use crate::{
     MaximumInteractionRange
 };
 use hoomd_microstate::{boundary::Wrap, property::{Orientation, Position}, Body, Microstate, Site, Transform};
-use hoomd_vector::{Rotate, RotationMatrix, Vector, WedgeProduct};
+use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge};
 
 /// Interactions between sites and external fields.
 ///
@@ -563,7 +563,7 @@ where
 
 impl<V, B, S, X, C, E> SiteForceAndTorque<V, B, S, X, C> for External<E>
 where
-    V: WedgeProduct,
+    V: Wedge,
     E: SiteForceAndTorque<V, B, S, X, C>
 {
     /// Calculate the net force and torque.
@@ -579,7 +579,7 @@ where
 
 impl<const N: usize, V, B, S, X, C, E, R> NetBodyTorque<N, V, B, S, X, C> for External<E>
 where
-    V: Vector + WedgeProduct,
+    V: Vector + Wedge,
     B: Transform<S> + Orientation<Rotation = R> + Clone,
     S: Position<Position = V>,
     E: ExternalBodyTorque<V, B>,
