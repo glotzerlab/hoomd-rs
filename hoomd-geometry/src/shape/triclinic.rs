@@ -100,6 +100,7 @@ impl Triclinic {
     }
 
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
+        // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 3];
         dist[0] = self.Lx()
             / (f64::sqrt(
