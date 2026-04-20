@@ -994,7 +994,7 @@ pub mod test_utils {
     use std::{fmt::Debug, ops::Index};
 
     use super::*;
-    use approx::{assert_ulps_eq, ulps_eq};
+    use approxim::{assert_ulps_eq, ulps_eq};
 
     const EPS: f64 = 1e-13;
 
@@ -1035,7 +1035,7 @@ mod tests {
         *,
     };
     use crate::matrix::{Matrix, Matrix22, Matrix33, Matrix44};
-    use approx::{assert_relative_eq, assert_ulps_eq, ulps_eq};
+    use approxim::{assert_relative_eq, assert_ulps_eq, ulps_eq};
 
     use faer::Mat;
     use rstest::rstest;

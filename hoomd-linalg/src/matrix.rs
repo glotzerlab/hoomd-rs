@@ -528,7 +528,7 @@ mod tests {
 
     use super::*;
     use crate::matrix::{Matrix, Matrix22};
-    use approx::{assert_relative_eq, assert_ulps_eq, ulps_eq};
+    use approxim::{assert_relative_eq, assert_ulps_eq, ulps_eq};
     use faer::Mat;
     use rstest::rstest;
 
