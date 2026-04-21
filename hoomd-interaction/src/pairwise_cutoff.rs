@@ -176,7 +176,7 @@ impl<E> PairwiseCutoff<E> {
     #[inline]
     pub fn site_pair_force<V, S>(&self, a: &Site<S>, b: &Site<S>) -> V
     where
-        E: SitePairForce<V, S> + MaximumInteractionRange,
+        E: SitePairForce<S, Force = V> + MaximumInteractionRange,
         S: Position<Position = V>,
         V: Vector + Default + InnerProduct + Metric,
     {

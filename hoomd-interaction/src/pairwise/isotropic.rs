@@ -92,23 +92,28 @@ impl<E> MaximumInteractionRange for Isotropic<E> {
     }
 }
 
-impl<P, S, E> SitePairForce<P, S> for Isotropic<E>
+impl<V, S, E> SitePairForce<S> for Isotropic<E>
 where
     E: UnivariateForce,
-    P: Vector + InnerProduct + Metric,
-    S: Position<Position = P>
+    V: InnerProduct,
+    S: Position<Position = V>
 {
-    /// Calculate the pairwise force 
-    /// 
+    type Force = V;
+
+    /// Calculate the pairwise force on site `a` exerted by site `b`.
+    ///
+    ///
+    /// Isotropic forces always act along the radial direction:
     /// ```math
     /// \begin{equation}
-    /// \mathbf{f}_{\alpha\beta} = -\nabla_{r_{\alpha\beta}} U(r_{\alpha\beta})
+    /// \vec{F} = -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ab}} \hat{r}_{ab}
     /// \end{equation}
     /// ```
-    /// 
-    /// on [`Site`](hoomd_microstate::Site) $`\alpha`$ exerting by $`\beta`$.
+    ///
+    // TODO: Signs differ between equation and implementation. Should this instead compute
+    // the force on `b`?
     #[inline]
-    fn site_pair_force(&self, a: &S, b: &S) -> P {
+    fn site_pair_force(&self, a: &S, b: &S) -> V {
         let r = *a.position() - *b.position();
         let distance = r.norm();
         r * self.interaction.force(distance) / distance

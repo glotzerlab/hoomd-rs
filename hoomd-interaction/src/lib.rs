@@ -931,21 +931,26 @@ pub trait ExternalSiteTorque<V: Wedge, S> {
 /// Compute the pairwise force on one site from another site.
 ///
 /// The generic type names are:
-/// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait SitePairForce<V, S> {
-    /// Evaluate the force on site a from site b.
-    fn site_pair_force(&self, a: &S, b: &S) -> V;
+pub trait SitePairForce<S> {
+    /// The type of the result force. 
+    type Force;
+
+    /// Evaluate the force on site `a` by site `b`.
+    fn site_pair_force(&self, a: &S, b: &S) -> Self::Force;
 }
 
 /// Compute the pairwise torque on one site from another site.
 ///
 /// The generic type names are:
-/// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait PairSiteTorque<V: Wedge, S> {
-    /// Evaluate the torque torque on site a from site b.
-    fn site_pair_torque(&self, a: &S, b: &S) -> V::Bivector;
+pub trait SitePairSTorque<S>
+{
+    /// The type of the result torque. 
+    type Torque;
+    
+    /// Evaluate the torque on site `a` by site `b`.
+    fn site_pair_torque(&self, a: &S, b: &S) -> Self::Torque;
 }
 
 /// Sum two [`NetBodyTorque`] on a body.
