@@ -696,7 +696,7 @@ impl<V> Unit<V> {
 
 /// The vector cross product.
 ///
-/// The result of a vector cross product lies in the same vector space as the
+/// The result of a vector cross product is in the same vector space as the
 /// operands.
 pub trait Cross {
     /// Compute the cross product (right-handed) of two vectors:
