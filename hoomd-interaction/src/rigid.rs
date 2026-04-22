@@ -80,10 +80,6 @@ where
     /// use hoomd_interaction::{
     ///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyForce
     /// };
-    /// use hoomd_linear_algebra::{
-    ///     GeneralMatrix,
-    ///     matrix::Matrix,
-    /// };
     ///
     /// use hoomd_microstate::{
     ///     Body, Microstate,

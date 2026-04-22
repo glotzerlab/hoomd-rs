@@ -3,8 +3,6 @@
 
 //! Implement `PairwiseCutoff`
 
-use std::ops::AddAssign;
-
 use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::{
@@ -14,7 +12,7 @@ use hoomd_spatial::PointsNearBall;
 use hoomd_vector::{InnerProduct, Metric, Vector, Wedge};
 use crate::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
-    TotalEnergy, SitePairForce, NetSiteForceAndTorque, pairwise::Isotropic, univariate::UnivariateForce,
+    TotalEnergy, SitePairForce, NetSiteForceAndTorque,
 };
 
 /// Short-ranged pairwise interactions between sites.
@@ -132,6 +130,7 @@ impl<E> PairwiseCutoff<E> {
     /// 
     /// # Example
     /// ```
+    /// use approxim::assert_abs_diff_eq;
     /// use hoomd_interaction::{
     ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
     /// };
@@ -140,27 +139,20 @@ impl<E> PairwiseCutoff<E> {
     /// };
     /// use hoomd_vector::Cartesian;
     ///
-    /// use approxim::assert_abs_diff_eq;
-    ///
-    ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
     /// microstate.extend_bodies([
-    ///     Body {
-    ///         properties: Point {position: Cartesian::from([0.0, 0.0, 0.0])},
-    ///         sites: vec![Point {position: Cartesian::<3>::default()}],
-    ///         },
-    ///     Body { 
-    ///         properties: Point {position: Cartesian::from([1.0, 0.0, 0.0])},
-    ///         sites: vec![Point {position: Cartesian::<3>::default()}],
-    ///         },
+    ///     Body::point(Cartesian::from([0.0, 0.0, 0.0])),
+    ///     Body::point(Cartesian::from([1.0, 0.0, 0.0])),
     /// ])?;
+    ///
+    ///  let lennard_jones: LennardJones = LennardJones {
+    ///             epsilon: 1.0,
+    ///             sigma: 2.0_f64.powf(-1.0 / 6.0)};
     ///
     /// let force = PairwiseCutoff(
     ///     Isotropic{
-    ///         interaction: LennardJones::<12, 6> {
-    ///             epsilon: 1.0,
-    ///             sigma: 2.0_f64.powf(-1.0 / 6.0)},
+    ///         interaction: lennard_jones,
     ///         r_cut: 6.0
     /// });
     ///
@@ -174,17 +166,15 @@ impl<E> PairwiseCutoff<E> {
     /// # }
     /// ```
     #[inline]
-    pub fn site_pair_force<V, S>(&self, a: &Site<S>, b: &Site<S>) -> V
+    pub fn site_pair_force<V, S>(&self, site_i: &Site<S>, site_j: &Site<S>) -> V
     where
-        E: SitePairForce<S, Force = V> + MaximumInteractionRange,
-        S: Position<Position = V>,
-        V: Vector + Default + InnerProduct + Metric,
+        E: SitePairForce<S, Force = V>,
+        V: Default,
     {
-        let r = (a.properties.position()).distance(b.properties.position());
-        if r < self.0.maximum_interaction_range() && a.body_tag != b.body_tag {
-            self.0.site_pair_force(&a.properties, &b.properties)
-        } else {
+        if site_i.body_tag == site_j.body_tag {
             V::default()
+        } else {
+            self.0.site_pair_force(&site_i.properties, &site_j.properties)
         }
     }
 
@@ -200,7 +190,6 @@ impl<E> PairwiseCutoff<E> {
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
-    ///
     /// use hoomd_interaction::{
     ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
     /// };
@@ -412,12 +401,12 @@ impl<E> PairwiseCutoff<E> {
     }
 }
 
-impl<V, B, S, X, C, E> NetSiteForceAndTorque<V, B, S, X, C> for PairwiseCutoff<Isotropic<E>>
+impl<V, B, S, X, C, E> NetSiteForceAndTorque<V, B, S, X, C> for PairwiseCutoff<E>
 where
     V: Vector + Default + InnerProduct + Metric + Wedge,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: UnivariateForce,
+    E: SitePairForce<S, Force = V> + MaximumInteractionRange,
     V::Bivector: Default,
     X: PointsNearBall<V, SiteKey>,
 {
@@ -444,6 +433,7 @@ where
     /// 
     /// # Example
     /// ```
+    /// use approxim::assert_abs_diff_eq;
     /// use hoomd_interaction::{
     ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetSiteForceAndTorque
     /// };
@@ -452,9 +442,6 @@ where
     /// };
     /// use hoomd_vector::{Cartesian, Versor};
     /// 
-    /// use approxim::assert_abs_diff_eq;
-    ///
-    ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
     /// microstate.extend_bodies([
@@ -505,13 +492,13 @@ where
         // Calculate net force from all of the pairwise interactions
         let mut total_force = V::default();
         for other_site in microstate
-            .iter_sites_near(site.properties.position(), self.0.maximum_interaction_range())
+            .iter_sites_near(site.properties.position(), self.maximum_interaction_range())
             .filter(|s| site.body_tag != s.body_tag)
         {
             total_force += self.0.site_pair_force(&site.properties, &other_site.properties);
         }
 
-        // Assume net torque is 0
+        // TODO: Compute torque with SitePairTorque
         let total_torque = V::Bivector::default();
 
         (total_force, total_torque)

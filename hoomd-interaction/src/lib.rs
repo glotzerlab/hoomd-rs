@@ -96,7 +96,7 @@ mod zero;
 
 pub use external_type::External;
 
-use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge, Outer};
+use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge};
 pub use hoomd_derive::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
     TotalEnergy,
@@ -944,7 +944,7 @@ pub trait SitePairForce<S> {
 ///
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait SitePairSTorque<S>
+pub trait SitePairTorque<S>
 {
     /// The type of the result torque. 
     type Torque;

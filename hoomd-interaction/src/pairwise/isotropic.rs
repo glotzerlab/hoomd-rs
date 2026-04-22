@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForce, univariate::{UnivariateEnergy, UnivariateForce}};
 use hoomd_microstate::property::Position;
-use hoomd_vector::{InnerProduct, Vector, Metric};
+use hoomd_vector::{InnerProduct, Metric};
 
 /// Compute isotropic interactions between a pair of sites.
 ///
@@ -23,12 +23,12 @@ use hoomd_vector::{InnerProduct, Vector, Metric};
 /// # Example
 ///
 /// ```
+/// use approxim::assert_relative_eq;
 /// use hoomd_interaction::{
-///     SitePairEnergy, pairwise::Isotropic, univariate::LennardJones,
+///     SitePairEnergy, SitePairForce, pairwise::Isotropic, univariate::LennardJones,
 /// };
 /// use hoomd_microstate::property::Point;
 /// use hoomd_vector::Cartesian;    
-/// use approxim::assert_relative_eq;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let a = Point {
@@ -95,7 +95,7 @@ impl<E> MaximumInteractionRange for Isotropic<E> {
 impl<V, S, E> SitePairForce<S> for Isotropic<E>
 where
     E: UnivariateForce,
-    V: InnerProduct,
+    V: Default + InnerProduct,
     S: Position<Position = V>
 {
     type Force = V;
@@ -116,6 +116,10 @@ where
     fn site_pair_force(&self, a: &S, b: &S) -> V {
         let r = *a.position() - *b.position();
         let distance = r.norm();
+        if distance >= self.r_cut {
+            return V::default();
+        }
+
         r * self.interaction.force(distance) / distance
     }
 }
