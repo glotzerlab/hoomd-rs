@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement periodic boundary conditions for cuboids in cartesian space.
+//! Implement periodic boundary conditions for triclinic boxes in cartesian space.
 
 use arrayvec::ArrayVec;
 
@@ -16,6 +16,31 @@ use hoomd_geometry::{IsPointInside, shape::Triclinic};
 use hoomd_vector::Cartesian;
 
 impl MaximumAllowableInteractionRange for Triclinic {
+    /// The largest value that the maximum interaction range can take.
+    ///
+    /// For a triclinic box, the maximum allowable interaction range is
+    /// half the minimum distance to the nearest parallel planes:
+    /// ```math
+    /// r_\mathrm{max} = \frac{1}{2} \min(d_x, d_y, d_z)
+    /// ```
+    /// where $`d_i`$ are the distances to the nearest parallel planes
+    /// in each direction, accounting for tilt factors.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    /// use hoomd_microstate::boundary::MaximumAllowableInteractionRange;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic =
+    ///     Triclinic::with_box_dimensions([10.0, 10.0, 10.0, 0.0, 0.0, 0.0]);
+    ///
+    /// // For orthogonal box, max range is min(extent)/2 = 5.0
+    /// assert_eq!(triclinic.maximum_allowable_interaction_range(), 5.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
         let plane_distances = self.get_nearest_plane_distance();
@@ -27,6 +52,29 @@ impl MaximumAllowableInteractionRange for Triclinic {
 }
 
 impl Periodic<Triclinic> {
+    /// Convert an absolute position to fractional coordinates.
+    ///
+    /// The fractional coordinates are in the range [-0.5, 0.5) and account
+    /// for the triclinic tilt factors.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    /// use hoomd_microstate::boundary::Periodic;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic =
+    ///     Triclinic::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
+    /// let periodic = Periodic::new(1.0, triclinic)?;
+    ///
+    /// let pos = Cartesian::from([1.0, 0.0, 0.0]);
+    /// let frac = periodic.to_fractional(&pos);
+    /// assert_eq!(frac, Cartesian::from([0.5, 0.0, 0.0]));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn to_fractional(&self, pos: &Cartesian<3>) -> Cartesian<3> {
         let l: Cartesian<3> = self.shape.extents.map(|x| x.get()).into();
         let mut frac = *pos;
@@ -39,6 +87,28 @@ impl Periodic<Triclinic> {
         frac
     }
 
+    /// Convert fractional coordinates to absolute position.
+    ///
+    /// This is the inverse operation of `to_fractional`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    /// use hoomd_microstate::boundary::Periodic;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic =
+    ///     Triclinic::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
+    /// let periodic = Periodic::new(1.0, triclinic)?;
+    ///
+    /// let frac = Cartesian::from([0.5, 0.0, 0.0]);
+    /// let pos = periodic.to_absolute(&frac);
+    /// assert_eq!(pos, Cartesian::from([1.0, 0.0, 0.0]));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn to_absolute(&self, frac: &Cartesian<3>) -> Cartesian<3> {
         let mut pos: Cartesian<3> = Cartesian::from([1.0, 1.0, 1.0]);
         for i in 0..3 {
@@ -54,6 +124,33 @@ impl<P> Wrap<P> for Periodic<Triclinic>
 where
     P: Position<Position = Cartesian<3>>,
 {
+    /// Wrap any cartesian vector to the inside of the triclinic box.
+    ///
+    /// Points are wrapped using fractional coordinates that account for
+    /// the triclinic tilt factors. The wrapping ensures particles remain
+    /// within the periodic boundaries.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    /// use hoomd_microstate::{
+    ///     boundary::{Periodic, Wrap},
+    ///     property::Point,
+    /// };
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic =
+    ///     Triclinic::with_box_dimensions([10.0, 10.0, 10.0, 0.0, 0.0, 0.0]);
+    /// let periodic = Periodic::new(5.0, triclinic)?;
+    ///
+    /// let point = Point::new(Cartesian::from([6.0, 0.0, 0.0]));
+    /// let wrapped = periodic.wrap(point)?;
+    /// assert_eq!(wrapped.position, Cartesian::from([-4.0, 0.0, 0.0]));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn wrap(&self, mut properties: P) -> Result<P, Error> {
         let r = properties.position_mut();
@@ -84,7 +181,35 @@ where
     /// Place periodic images of sites near the edge of the periodic boundary.
     ///
     /// For triclinic boxes, `generate_ghosts` places ghosts near the 6 faces, 12 edges,
-    /// and 8 vertices of the box.
+    /// and 8 vertices of the box. The ghost positions account for the triclinic
+    /// tilt factors when determining which images are needed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    /// use hoomd_microstate::{
+    ///     boundary::{GenerateGhosts, Periodic},
+    ///     property::Point,
+    /// };
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic =
+    ///     Triclinic::with_box_dimensions([4.0, 4.0, 4.0, 0.0, 0.0, 0.0]);
+    /// let periodic = Periodic::new(1.0, triclinic)?;
+    ///
+    /// // Point near the x-face
+    /// let point = Point::new(Cartesian::from([1.9, 0.0, 0.0]));
+    /// let ghosts = periodic.generate_ghosts(&point);
+    ///
+    /// // Should generate ghost on the opposite side
+    /// assert!(!ghosts.is_empty());
+    /// assert_eq!(ghosts[0].position[0], -2.1); // wrapped around
+    /// //
+    /// # Ok(())
+    /// # }
+    /// ```
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
 

@@ -33,6 +33,30 @@ impl<const N: usize> Default for Hyperparallelepiped<N> {
 }
 
 impl<const N: usize> Hyperparallelepiped<N> {
+    /// Construct a new hyperparallelepiped from edge vectors.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Hyperparallelepiped;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let parallelepiped = Hyperparallelepiped::new([
+    ///     Cartesian::from([10.0, 0.0, 0.0]),
+    ///     Cartesian::from([0.0, 12.0, 0.0]),
+    ///     Cartesian::from([0.0, 0.0, 14.0]),
+    /// ]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn new(edge_vectors: [Cartesian<N>; N]) -> Self {
+        Self {
+            edge_vectors,
+            _qr: None,
+        }
+    }
+
     pub fn calc_qr(mut self) {
         // bundle up vtors
         self._qr = Some(
