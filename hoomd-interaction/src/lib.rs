@@ -636,6 +636,7 @@ pub trait MaximumInteractionRange {
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `X`: The spatial data structure type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
@@ -817,6 +818,7 @@ pub trait DeltaEnergyInsert<B, S, X, C> {
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `X`: The spatial data structure type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
@@ -880,6 +882,7 @@ pub trait NetBodyForce<V, B, S, X, C> {
 /// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `X`: The spatial data structure type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyTorque<const N: usize, V: Wedge, B, S, X, C> {
     /// Compute the net torque.
@@ -894,6 +897,7 @@ pub trait NetBodyTorque<const N: usize, V: Wedge, B, S, X, C> {
 /// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `X`: The spatial data structure type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyForceAndTorque<const N: usize, V: Wedge, B, S, X, C> {
     /// Compute the net force and torque.
@@ -901,9 +905,50 @@ pub trait NetBodyForceAndTorque<const N: usize, V: Wedge, B, S, X, C> {
     fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> (V, V::Bivector);
 }
 
-/** TODO: Documentation */
+/// Sum all the forces and torques that act on a given site in a microstate.
+/// 
+/// In molecular dynamics simulations, bodies move in response to the net force
+/// and torque applied to all sites in the body. As an intermediate step in that
+/// calculation, a type that describes a *force interaction model* must implement
+/// [`NetSiteForceAndTorque`] and compute the net force and torque on a given
+/// [`Site`] in the [`Microstate`].
+///
+/// The generic type names are:
+/// * `V`: The [`Vector`] space in which positions and forces are defined.
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `X`: The spatial data structure type.
+/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+///
+/// See the [Implementors](#implementors) section below for examples.
+///
+/// # Derive macro
+///
+/// TODO: Implement and describe the derive macro.
 pub trait NetSiteForceAndTorque<V: Wedge, B, S, X, C> {
-    /** TODO: Documentation */
+    /// Compute the net force and torque on a given `site`.
+    ///
+    /// The type `Self` describes the force interaction model, which may (or
+    /// may not) depend on the sites in the `microstate`. Typically `site` is
+    /// a site (not a ghost) that exists in `microstate`. Callers *may* use
+    /// this method to compute the net force and torque on a probe that is not
+    /// part of `microstate`, but must set `site.body_tag` and `site.site_tag`
+    /// accordingly.
+    ///
+    /// # Return value
+    ///
+    /// `net_site_force_and_torque` returns the force and torque in a typle:
+    /// `(force, torque)`.
+    ///
+    /// # Safety
+    ///
+    /// `net_site_force_and_torque` *assumes* that the given `site` is inside
+    /// the microstate's boundary. The computed forces may or may not be
+    /// accurate when `site` is outside the boundary.
+    ///
+    /// TODO: is this really safe enough? If we passed a `site_index`, none of
+    /// this would be a problem. We could provide a separate, fallible, API for
+    /// probe sites that wraps into the boundary first.
     #[must_use]
     fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector);
 }
@@ -936,8 +981,8 @@ pub trait SitePairForce<S> {
     /// The type of the result force. 
     type Force;
 
-    /// Evaluate the force on site `a` by site `b`.
-    fn site_pair_force(&self, a: &S, b: &S) -> Self::Force;
+    /// Evaluate the force on site `i` caused by site `j`.
+    fn site_pair_force(&self, site_properties_i: &S, site_properties_j: &S) -> Self::Force;
 }
 
 /// Compute the pairwise torque on one site from another site.
@@ -950,7 +995,7 @@ pub trait SitePairTorque<S>
     type Torque;
     
     /// Evaluate the torque on site `a` by site `b`.
-    fn site_pair_torque(&self, a: &S, b: &S) -> Self::Torque;
+    fn site_pair_torque(&self, site_properties_i: &S, site_properties_j: &S) -> Self::Torque;
 }
 
 /// Sum two [`NetBodyTorque`] on a body.

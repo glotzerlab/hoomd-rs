@@ -3,6 +3,8 @@
 
 //! Implement `PairwiseCutoff`
 
+use std::ops::AddAssign;
+
 use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::{
@@ -11,8 +13,7 @@ use hoomd_microstate::{
 use hoomd_spatial::PointsNearBall;
 use hoomd_vector::{InnerProduct, Metric, Vector, Wedge};
 use crate::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
-    TotalEnergy, SitePairForce, NetSiteForceAndTorque,
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForceAndTorque, SitePairEnergy, SitePairForce, SitePairTorque, TotalEnergy
 };
 
 /// Short-ranged pairwise interactions between sites.
@@ -406,8 +407,8 @@ where
     V: Vector + Default + InnerProduct + Metric + Wedge,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: SitePairForce<S, Force = V> + MaximumInteractionRange,
-    V::Bivector: Default,
+    E: MaximumInteractionRange + SitePairForce<S, Force = V> + SitePairTorque<S, Torque = V::Bivector>,
+    V::Bivector: AddAssign + Default,
     X: PointsNearBall<V, SiteKey>,
 {
     /// Compute the net force and torque.
@@ -489,17 +490,17 @@ where
     /// $`\boldsymbol{\tau}_{\alpha \beta}`$ is always zero.
     #[inline]
     fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, <V as Wedge>::Bivector) {
-        // Calculate net force from all of the pairwise interactions
         let mut total_force = V::default();
+        let mut total_torque = V::Bivector::default();
+        
+        
         for other_site in microstate
             .iter_sites_near(site.properties.position(), self.maximum_interaction_range())
             .filter(|s| site.body_tag != s.body_tag)
         {
             total_force += self.0.site_pair_force(&site.properties, &other_site.properties);
+            total_torque += self.0.site_pair_torque(&site.properties, &other_site.properties);
         }
-
-        // TODO: Compute torque with SitePairTorque
-        let total_torque = V::Bivector::default();
 
         (total_force, total_torque)
     }

@@ -5,9 +5,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForce, univariate::{UnivariateEnergy, UnivariateForce}};
+use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForce, SitePairTorque, univariate::{UnivariateEnergy, UnivariateForce}};
 use hoomd_microstate::property::Position;
-use hoomd_vector::{InnerProduct, Metric};
+use hoomd_vector::{InnerProduct, Metric, Wedge};
 
 /// Compute isotropic interactions between a pair of sites.
 ///
@@ -94,9 +94,9 @@ impl<E> MaximumInteractionRange for Isotropic<E> {
 
 impl<V, S, E> SitePairForce<S> for Isotropic<E>
 where
-    E: UnivariateForce,
     V: Default + InnerProduct,
-    S: Position<Position = V>
+    S: Position<Position = V>,
+    E: UnivariateForce,
 {
     type Force = V;
 
@@ -106,20 +106,33 @@ where
     /// Isotropic forces always act along the radial direction:
     /// ```math
     /// \begin{equation}
-    /// \vec{F} = -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ab}} \hat{r}_{ab}
+    /// \vec{F_{ij}} = -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ji}} \hat{r}_{ji}
     /// \end{equation}
     /// ```
-    ///
-    // TODO: Signs differ between equation and implementation. Should this instead compute
-    // the force on `b`?
     #[inline]
-    fn site_pair_force(&self, a: &S, b: &S) -> V {
-        let r = *a.position() - *b.position();
-        let distance = r.norm();
+    fn site_pair_force(&self, site_properties_i: &S, site_properties_j: &S) -> V {
+        let r_ji = *site_properties_i.position() - *site_properties_j.position();
+        let distance = r_ji.norm();
         if distance >= self.r_cut {
             return V::default();
         }
 
-        r * self.interaction.force(distance) / distance
+        r_ji * self.interaction.force(distance) / distance
+    }
+}
+
+impl<V, S, E> SitePairTorque<S> for Isotropic<E>
+where
+    V: Wedge,
+    V::Bivector: Default,
+    S: Position<Position = V>,
+    E: UnivariateForce,
+{
+    type Torque = V::Bivector;
+
+    /// The torque induced by an isotropic potential is always 0.
+    #[inline]
+    fn site_pair_torque(&self, _site_properties_i: &S, _site_properties_j: &S) -> Self::Torque {
+        Self::Torque::default()
     }
 }
