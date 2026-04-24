@@ -938,24 +938,28 @@ pub trait NetSiteForceAndTorque<V: Wedge, B, S, X, C> {
     fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector);
 }
 
-/// Compute the non-pairwise force on a single site.
+/// Compute the force on a single site as a function of its properties.
 ///
 /// The generic type names are:
-/// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait ExternalSiteForce<V, S> {
+pub trait SiteForce<S> {
+    /// The type of the result force. 
+    type Force;
+
     /// Evaluate the force on a single site.
-    fn site_single_force(&self, site_properties: &S) -> V;
+    fn site_force(&self, site_properties: &S) -> Self::Force;
 }
 
-/// Compute the non-pairwise torque on a single site.
+/// Compute the torque on a single site as a function of its properties.
 ///
 /// The generic type names are:
-/// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait ExternalSiteTorque<V: Wedge, S> {
+pub trait ExternalSiteTorque<S> {
+    /// The type of the result force. 
+    type Torque;
+    
     /// Evaluate the torque on a single site.
-    fn site_single_torque(&self, site_properties: &S) -> V::Bivector;
+    fn site_single_torque(&self, site_properties: &S) -> Self::Torque;
 }
 
 /// Compute the pairwise force on one site from another site.

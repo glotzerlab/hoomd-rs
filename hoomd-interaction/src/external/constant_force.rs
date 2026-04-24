@@ -3,13 +3,12 @@
 
 //! Implement [`ConstantForce`]
 
-use crate::NetSiteForceAndTorque;
-
-
 use serde::{Deserialize, Serialize};
 
-use hoomd_microstate::{property::Position, Microstate, Site};
-use hoomd_vector::{InnerProduct, Unit, Wedge};
+use hoomd_microstate::property::Position;
+use hoomd_vector::{InnerProduct, Unit};
+
+use crate::SiteForce;
 
 use super::super::SiteEnergy;
 
@@ -126,19 +125,18 @@ where
     }
 }
 
-impl<V, B, S, X, C> NetSiteForceAndTorque<V, B, S, X, C> for ConstantForce<V>
-where
-    V: InnerProduct + Wedge,
-    S: Position<Position = V>,
-    V::Bivector: Default
+impl<S, V> SiteForce<S> for ConstantForce<V> where
+V: InnerProduct
 {
+    type Force = V;
+
     #[inline]
-    fn net_site_force_and_torque(&self, _microstate: &Microstate<B, S, X, C>, _site: &Site<S>) -> (V, V::Bivector) {
-        let force = self.force();
-        let torque = V::Bivector::default();
-        (force, torque)
+    fn site_force(&self, _site_properties: &S) -> Self::Force {
+        self.force()
     }
 }
+
+// TODO: SiteTorque
 
 #[cfg(test)]
 mod tests {

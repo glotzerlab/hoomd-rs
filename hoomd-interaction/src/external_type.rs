@@ -5,13 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use crate::{
-    DeltaEnergyInsert,
-    DeltaEnergyOne,
-    DeltaEnergyRemove,
-    SiteEnergy,
-    NetSiteForceAndTorque,
-    TotalEnergy,
-    MaximumInteractionRange
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForceAndTorque, SiteEnergy, SiteForce, TotalEnergy
 };
 use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, Transform};
 use hoomd_vector::Wedge;
@@ -550,7 +544,8 @@ where
 impl<V, B, S, X, C, E> NetSiteForceAndTorque<V, B, S, X, C> for External<E>
 where
     V: Wedge,
-    E: NetSiteForceAndTorque<V, B, S, X, C>
+    V::Bivector: Default,
+    E: SiteForce<S, Force = V>
 {
     /// Calculate the net force and torque.
     /// 
@@ -558,8 +553,11 @@ where
     /// within the system for which the net force and torque
     /// $`\mathbf{f}_\alpha`$, $`\boldsymbol{\tau}_{\alpha}`$ are calculated.
     #[inline]
-    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
-        self.0.net_site_force_and_torque(microstate, site)
+    fn net_site_force_and_torque(&self, _microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
+        let force = self.0.site_force(&site.properties);
+        let torque = V::Bivector::default();
+
+        (force, torque)
     }
 }
 

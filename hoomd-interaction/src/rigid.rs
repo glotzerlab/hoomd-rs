@@ -124,7 +124,7 @@ where
     /// }));
     ///
     ///    
-    /// let net_force = force.net_force_on_body(&microstate, 0);
+    /// let net_force = force.net_body_force(&microstate, 0);
     ///
     /// assert_abs_diff_eq!(net_force, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
     /// # Ok(())
@@ -227,7 +227,7 @@ where
     ///         r_cut: 6.0,
     /// }));
     ///
-    /// let (net_force, net_torque) = force.net_force_and_torque_on_body(&microstate, 0);
+    /// let (net_force, net_torque) = force.net_body_force_and_torque(&microstate, 0);
     ///
     /// assert_abs_diff_eq!(net_force, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-13);
     /// assert_abs_diff_eq!(net_torque, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
