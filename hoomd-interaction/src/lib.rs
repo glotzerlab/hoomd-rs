@@ -863,38 +863,23 @@ pub trait DeltaEnergyRemove<B, S, X, C> {
     ) -> f64;
 }
 
-/// Compute the net force on a single [`Body::properties`](hoomd_microstate::Body).
+/// Sum all the forces that act on a given body in a microstate.
 ///
 /// The generic type names are:
-/// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
+/// * `V`: The [`Vector`] space in which positions and forces are defined.
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyForce<V, B, S, X, C> {
     /// Compute the net force.
     #[must_use]
-    fn net_force_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V;
+    fn net_body_force(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V;
 }
 
-/// Compute the net torque on a single [`Body::properties`](hoomd_microstate::Body).
+/// Sum all the forces and torques that act on a given body in a microstate.
 ///
 /// The generic type names are:
-/// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
-/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-/// * `X`: The spatial data structure type.
-/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-pub trait NetBodyTorque<const N: usize, V: Wedge, B, S, X, C> {
-    /// Compute the net torque.
-    #[must_use]
-    fn net_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V::Bivector;
-}
-
-/// Compute both the net force and torque on a single [`Body::properties`](hoomd_microstate::Body).
-///
-/// The generic type names are:
-/// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
-/// * `V:Wedge`: The type produced via [`Wedge`](hoomd_vector::Wedge).
+/// * `V`: The [`Vector`] space in which positions and forces are defined.
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `X`: The spatial data structure type.
@@ -902,7 +887,7 @@ pub trait NetBodyTorque<const N: usize, V: Wedge, B, S, X, C> {
 pub trait NetBodyForceAndTorque<const N: usize, V: Wedge, B, S, X, C> {
     /// Compute the net force and torque.
     #[must_use]
-    fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> (V, V::Bivector);
+    fn net_body_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> (V, V::Bivector);
 }
 
 /// Sum all the forces and torques that act on a given site in a microstate.
@@ -996,25 +981,4 @@ pub trait SitePairTorque<S>
     
     /// Evaluate the torque on site `a` by site `b`.
     fn site_pair_torque(&self, site_properties_i: &S, site_properties_j: &S) -> Self::Torque;
-}
-
-/// Sum two [`NetBodyTorque`] on a body.
-/// TODO: Should move it to other script.
-/// TODO: Add example in the doc. 
-impl<const N: usize, V, B, S, X, C, E1, E2, R> NetBodyTorque<N, V, B, S, X, C> for (E1, E2)
-where
-    V: Vector + Wedge,
-    B: Transform<S> + Orientation<Rotation = R>,
-    S: Position<Position = V>,
-    E1: NetBodyTorque<N, V, B, S, X, C>,
-    E2: NetBodyTorque<N, V, B, S, X, C>,
-    R: Rotate<V>,
-    RotationMatrix<N>: From<R>,
-    V::Bivector: Default + Add<Output = V::Bivector>,
-{
-    #[inline]
-    fn net_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V::Bivector {
-        self.0.net_torque_on_body(microstate, body_index)
-            + self.1.net_torque_on_body(microstate, body_index)
-    }
 }

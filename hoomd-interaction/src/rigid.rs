@@ -12,7 +12,7 @@
 use std::ops::AddAssign;
 
 use crate::{
-    NetBodyForce, NetBodyForceAndTorque, NetBodyTorque, NetSiteForceAndTorque,
+    NetBodyForce, NetBodyForceAndTorque, NetSiteForceAndTorque,
 };
 use hoomd_microstate::{
     Microstate, Transform,
@@ -131,144 +131,12 @@ where
     /// # }
     /// ```
     #[inline]
-    fn net_force_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V {
+    fn net_body_force(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V {
         let mut total = V::default();
         for site in microstate.iter_body_sites(body_index) {
             let (f_on_site, _) = self.0.net_site_force_and_torque(microstate, site);
             total += f_on_site;
         }
-        total
-    }
-}
-
-impl<const N: usize, V, B, S, X, C, E, R> NetBodyTorque<N, V, B, S, X, C> for Rigid<E>
-where
-    V: Vector + Wedge,
-    B: Transform<S> + Orientation<Rotation = R>,
-    S: Position<Position = V>,
-    E: NetSiteForceAndTorque<V, B, S, X, C>,
-    R: Rotate<V>,
-    RotationMatrix<N>: From<R>,
-    V::Bivector: Default + AddAssign,
-{
-    /// Compute the net torque.
-    ///
-    /// `microstate` describes the system configuration and `body_index` specifies
-    /// the body with index $`i`$ within the system for which the net torque
-    /// $`\boldsymbol{\tau}_i`$ is calculated.
-    ///
-    /// First, the net force and torque acting on each constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ are calculated in [`CutoffPair::net_site_force_and_torque`](crate::cutoff_pair::CutoffPair).
-    /// and [`External::net_site_force_and_torque`](crate::External).
-    ///
-    /// Then, the net force and torque acting on the [`Body`](hoomd_microstate::Body)
-    /// $`i`$ are calculated
-    ///
-    /// ```math
-    /// \begin{align}
-    ///     &\boldsymbol{\tau}_{i} = \sum_{\alpha} q_i\mathbf{r}_{\mathrm{body}, \alpha}q_i^* \wedge \mathbf{f}_{i, \alpha} + \boldsymbol{\tau}_{i, \alpha}
-    /// \end{align}
-    /// ```
-    /// Where $`q_i`$ is the orientation of the [`Body`](hoomd_microstate::Body)
-    /// $`i`$ and $`\mathbf{r}_{\mathrm{body}, \alpha}`$
-    /// is the position of the constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ in the body frame. The symbol $`\wedge`$ represents
-    /// the [Wedge], equivalent to [Cross](hoomd_vector::Cross) in three-dimension.
-    ///
-    /// # Example
-    /// ```
-    /// use hoomd_interaction::{
-    ///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyTorque
-    /// };
-    ///
-    /// use hoomd_microstate::{
-    ///     Body, Microstate,
-    ///     boundary::Open,
-    ///     property::{OrientedPoint, Point},
-    /// };
-    /// use hoomd_vector::{Cartesian, Versor};
-    ///
-    /// use approxim::assert_abs_diff_eq;
-    ///
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut microstate = Microstate::new();
-    /// microstate.extend_bodies([
-    ///     Body {
-    ///         properties: OrientedPoint {
-    ///             position: Cartesian::from([0.0, 0.0, 0.0]),
-    ///             orientation: Versor::default(),
-    ///         },
-    ///         sites: vec![Point {
-    ///             position: Cartesian::from([0.0, 3.0_f64.sqrt() / 2.0, 0.0]),
-    ///         }],
-    ///         },
-    ///     Body {
-    ///         properties: OrientedPoint {
-    ///             position: Cartesian::from([0.5, 0.0, 0.0]),
-    ///             orientation: Versor::default(),
-    ///         },
-    ///         sites: vec![Point {
-    ///             position: Cartesian::<3>::default(),
-    ///         }],
-    ///         },
-    /// ])?;
-    ///
-    /// let force = Rigid(PairwiseCutoff(
-    ///     Isotropic{ 
-    ///         interaction: LennardJones::<12, 6> {
-    ///                 epsilon: 1.0,
-    ///                 sigma: 2.0_f64.powf(-1.0 / 6.0),
-    ///         }, 
-    ///         r_cut: 6.0,
-    /// }));
-    /// 
-    /// let net_torque = force.net_torque_on_body(&microstate, 0);
-    ///
-    /// assert_abs_diff_eq!(net_torque, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Note
-    ///
-    /// The current implementation assumes the pure torque $`\boldsymbol{\tau}_{i, \alpha}`$ acting on the
-    /// constituent [`Site`](hoomd_microstate::Site) $`\alpha`$
-    /// (not contributed by the force) solely
-    /// results from the external field in [`External`](crate::External).
-    #[inline]
-    fn net_torque_on_body(
-        &self,
-        microstate: &Microstate<B, S, X, C>,
-        body_index: usize,
-    ) -> V::Bivector {
-        let mut total = V::Bivector::default();
-
-        let q = microstate.bodies()[body_index]
-            .item
-            .properties
-            .orientation(); // the body's orientation in the system frame
-        // let q = RotationMatrix::from(*q);    // TODO: add a "to" method (microoptimization)
-
-        // Torque based on forces on all sites around the center of mass
-        for (site_index, site) in microstate.iter_body_sites(body_index).enumerate() {
-            // Get relevant quantities
-            let site_body_frame = &microstate.bodies()[body_index].item.sites[site_index];
-            let r_body_frame = site_body_frame.position(); // the site's position in the body frame (which we need in order to not have wrapping issues)
-            let r = q.rotate(r_body_frame); // the moment arm in the system frame
-
-            let (f_on_site, t_on_site) = self.0.net_site_force_and_torque(microstate, site); // the force on the site is in the system frame
-
-            // Calculate Torque in the system frame
-            let t_from_f_on_site = r.wedge(&f_on_site);
-
-            // Add to the total
-            total += t_from_f_on_site;
-
-            // Torque from torques directly on the sites
-            total += t_on_site;
-        }
-
         total
     }
 }
@@ -374,7 +242,7 @@ where
     /// (not contributed by the force) solely
     /// results from the external field in [`External`](crate::External).
     #[inline]
-    fn net_force_and_torque_on_body(
+    fn net_body_force_and_torque(
         &self,
         microstate: &Microstate<B, S, X, C>,
         body_index: usize,
