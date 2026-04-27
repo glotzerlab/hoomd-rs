@@ -6,9 +6,9 @@
 use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::property::Position;
-use hoomd_vector::{InnerProduct, Unit};
+use hoomd_vector::{InnerProduct, Unit, Wedge};
 
-use crate::SiteForce;
+use crate::{SiteForce, SiteForceAndTorque};
 
 use super::super::SiteEnergy;
 
@@ -126,7 +126,7 @@ where
 }
 
 impl<S, V> SiteForce<S> for ConstantForce<V> where
-V: InnerProduct
+V: InnerProduct,
 {
     type Force = V;
 
@@ -136,7 +136,18 @@ V: InnerProduct
     }
 }
 
-// TODO: SiteTorque
+impl<S, V> SiteForceAndTorque<S> for ConstantForce<V> where
+V: InnerProduct + Wedge,
+V::Bivector: Default,
+{
+    type Force = V;
+    type Torque = V::Bivector;
+
+    #[inline]
+    fn site_force_and_torque(&self, _site_properties: &S) -> (Self::Force, Self::Torque) {
+        (self.force(), V::Bivector::default())
+    }
+}
 
 #[cfg(test)]
 mod tests {

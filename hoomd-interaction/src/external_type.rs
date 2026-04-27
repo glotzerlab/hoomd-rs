@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use crate::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForceAndTorque, SiteEnergy, SiteForce, TotalEnergy
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForce, NetSiteForceAndTorque, SiteEnergy, SiteForce, SiteForceAndTorque, TotalEnergy
 };
 use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, Transform};
 use hoomd_vector::Wedge;
@@ -541,23 +541,77 @@ where
     }
 }
 
+impl<V, B, S, X, C, E> NetSiteForce<V, B, S, X, C> for External<E>
+where
+    E: SiteForce<S, Force = V>
+{
+    /// Compute the net force on a given site.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::{NetSiteForce, External, external::ConstantForce};
+    /// use hoomd_microstate::{Body, Microstate, property::Point};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
+    ///
+    /// let constant_force = External(ConstantForce {
+    ///     alpha: 1.0,
+    ///     plane_origin: Cartesian::default(),
+    ///     plane_normal: [0.0, 1.0].try_into()?,
+    /// });
+    ///
+    /// let force = constant_force.net_site_force(
+    ///     &microstate,
+    ///     &microstate.sites()[0]);
+    /// assert_eq!(force, [0.0, -1.0].into());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn net_site_force(&self, _microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> V {
+        self.0.site_force(&site.properties)
+    }
+}
+
 impl<V, B, S, X, C, E> NetSiteForceAndTorque<V, B, S, X, C> for External<E>
 where
     V: Wedge,
-    V::Bivector: Default,
-    E: SiteForce<S, Force = V>
+    E: SiteForceAndTorque<S, Force = V, Torque = V::Bivector>
 {
-    /// Calculate the net force and torque.
+    /// Compute the net force and torque on a given site.
     /// 
-    /// `microstate` describes the system configuration and the target `site` 
-    /// within the system for which the net force and torque
-    /// $`\mathbf{f}_\alpha`$, $`\boldsymbol{\tau}_{\alpha}`$ are calculated.
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::{NetSiteForceAndTorque, External, external::ConstantForce};
+    /// use hoomd_microstate::{Body, Microstate, property::Point};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
+    ///
+    /// let constant_force = External(ConstantForce {
+    ///     alpha: 1.0,
+    ///     plane_origin: Cartesian::default(),
+    ///     plane_normal: [0.0, 1.0].try_into()?,
+    /// });
+    ///
+    /// let (force, torque) = constant_force.net_site_force_and_torque(
+    ///     &microstate,
+    ///     &microstate.sites()[0]);
+    /// assert_eq!(force, [0.0, -1.0].into());
+    /// assert_eq!(torque, 0.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn net_site_force_and_torque(&self, _microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
-        let force = self.0.site_force(&site.properties);
-        let torque = V::Bivector::default();
-
-        (force, torque)
+        self.0.site_force_and_torque(&site.properties)
     }
 }
 

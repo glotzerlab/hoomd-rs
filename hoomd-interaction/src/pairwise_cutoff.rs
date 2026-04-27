@@ -13,7 +13,7 @@ use hoomd_microstate::{
 use hoomd_spatial::PointsNearBall;
 use hoomd_vector::{InnerProduct, Metric, Vector, Wedge};
 use crate::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForceAndTorque, SitePairEnergy, SitePairForce, SitePairTorque, TotalEnergy
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForceAndTorque, SitePairEnergy, SitePairForceAndTorque, TotalEnergy
 };
 
 /// Short-ranged pairwise interactions between sites.
@@ -167,15 +167,16 @@ impl<E> PairwiseCutoff<E> {
     /// # }
     /// ```
     #[inline]
-    pub fn site_pair_force<V, S>(&self, site_i: &Site<S>, site_j: &Site<S>) -> V
+    pub fn site_pair_force_and_torque<V, S>(&self, site_i: &Site<S>, site_j: &Site<S>) -> (V, V::Bivector)
     where
-        E: SitePairForce<S, Force = V>,
-        V: Default,
+        E: SitePairForceAndTorque<S, Force = V, Torque=V::Bivector>,
+        V: Default + Wedge,
+        V::Bivector: Default,
     {
         if site_i.body_tag == site_j.body_tag {
-            V::default()
+            (V::default(), V::Bivector::default())
         } else {
-            self.0.site_pair_force(&site_i.properties, &site_j.properties)
+            self.0.site_pair_force_and_torque(&site_i.properties, &site_j.properties)
         }
     }
 
@@ -407,7 +408,7 @@ where
     V: Vector + Default + InnerProduct + Metric + Wedge,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: MaximumInteractionRange + SitePairForce<S, Force = V> + SitePairTorque<S, Torque = V::Bivector>,
+    E: MaximumInteractionRange + SitePairForceAndTorque<S, Force = V, Torque = V::Bivector>,
     V::Bivector: AddAssign + Default,
     X: PointsNearBall<V, SiteKey>,
 {
@@ -498,8 +499,9 @@ where
             .iter_sites_near(site.properties.position(), self.maximum_interaction_range())
             .filter(|s| site.body_tag != s.body_tag)
         {
-            total_force += self.0.site_pair_force(&site.properties, &other_site.properties);
-            total_torque += self.0.site_pair_torque(&site.properties, &other_site.properties);
+            let (force, torque) = self.0.site_pair_force_and_torque(&site.properties, &other_site.properties);
+            total_force += force;
+            total_torque += torque;
         }
 
         (total_force, total_torque)

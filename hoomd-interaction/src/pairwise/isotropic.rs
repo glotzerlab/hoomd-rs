@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForce, SitePairTorque, univariate::{UnivariateEnergy, UnivariateForce}};
+use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForceAndTorque, univariate::{UnivariateEnergy, UnivariateForce}};
 use hoomd_microstate::property::Position;
 use hoomd_vector::{InnerProduct, Metric, Wedge};
 
@@ -92,13 +92,15 @@ impl<E> MaximumInteractionRange for Isotropic<E> {
     }
 }
 
-impl<V, S, E> SitePairForce<S> for Isotropic<E>
+impl<V, S, E> SitePairForceAndTorque<S> for Isotropic<E>
 where
-    V: Default + InnerProduct,
+    V: Default + InnerProduct + Wedge,
+    V::Bivector: Default,
     S: Position<Position = V>,
     E: UnivariateForce,
 {
     type Force = V;
+    type Torque = V::Bivector;
 
     /// Calculate the pairwise force on site `a` exerted by site `b`.
     ///
@@ -110,29 +112,18 @@ where
     /// \end{equation}
     /// ```
     #[inline]
-    fn site_pair_force(&self, site_properties_i: &S, site_properties_j: &S) -> V {
+    fn site_pair_force_and_torque(&self, site_properties_i: &S, site_properties_j: &S) -> (Self::Force, Self::Torque) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();
         let distance = r_ji.norm();
-        if distance >= self.r_cut {
-            return V::default();
-        }
 
-        r_ji * self.interaction.force(distance) / distance
-    }
-}
+        let force = if distance >= self.r_cut {
+            V::default()
+        } else {
+            r_ji * self.interaction.force(distance) / distance
+        };
+        
+        let torque = Self::Torque::default();
 
-impl<V, S, E> SitePairTorque<S> for Isotropic<E>
-where
-    V: Wedge,
-    V::Bivector: Default,
-    S: Position<Position = V>,
-    E: UnivariateForce,
-{
-    type Torque = V::Bivector;
-
-    /// The torque induced by an isotropic potential is always 0.
-    #[inline]
-    fn site_pair_torque(&self, _site_properties_i: &S, _site_properties_j: &S) -> Self::Torque {
-        Self::Torque::default()
+        (force, torque)
     }
 }
