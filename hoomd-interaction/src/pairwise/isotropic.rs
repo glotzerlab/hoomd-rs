@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForceAndTorque, univariate::{UnivariateEnergy, UnivariateForce}};
+use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForce, SitePairForceAndTorque, univariate::{UnivariateEnergy, UnivariateForce}};
 use hoomd_microstate::property::Position;
 use hoomd_vector::{InnerProduct, Metric, Wedge};
 
@@ -92,6 +92,36 @@ impl<E> MaximumInteractionRange for Isotropic<E> {
     }
 }
 
+impl<V, S, E> SitePairForce<S> for Isotropic<E>
+where
+    V: Default + InnerProduct,
+    S: Position<Position = V>,
+    E: UnivariateForce,
+{
+    type Force = V;
+
+    /// Evaluate the force on site `i` caused by site `j`.
+    ///
+    ///
+    /// Isotropic forces always act along the radial direction:
+    /// ```math
+    /// \begin{equation}
+    /// \vec{F_{ij}} = -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ji}} \hat{r}_{ji}
+    /// \end{equation}
+    /// ```
+    #[inline]
+    fn site_pair_force(&self, site_properties_i: &S, site_properties_j: &S) -> Self::Force {
+        let r_ji = *site_properties_i.position() - *site_properties_j.position();
+        let distance = r_ji.norm();
+
+        if distance >= self.r_cut {
+            V::default()
+        } else {
+            r_ji * self.interaction.force(distance) / distance
+        }
+    }
+}
+
 impl<V, S, E> SitePairForceAndTorque<S> for Isotropic<E>
 where
     V: Default + InnerProduct + Wedge,
@@ -102,7 +132,7 @@ where
     type Force = V;
     type Torque = V::Bivector;
 
-    /// Calculate the pairwise force on site `a` exerted by site `b`.
+    /// Evaluate the force and torque on site `i` caused by site `j`.
     ///
     ///
     /// Isotropic forces always act along the radial direction:
@@ -111,6 +141,8 @@ where
     /// \vec{F_{ij}} = -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ji}} \hat{r}_{ji}
     /// \end{equation}
     /// ```
+    ///
+    /// Radial forces produce 0 torque.
     #[inline]
     fn site_pair_force_and_torque(&self, site_properties_i: &S, site_properties_j: &S) -> (Self::Force, Self::Torque) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();

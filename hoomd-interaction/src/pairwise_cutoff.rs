@@ -13,7 +13,7 @@ use hoomd_microstate::{
 use hoomd_spatial::PointsNearBall;
 use hoomd_vector::{InnerProduct, Metric, Vector, Wedge};
 use crate::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForceAndTorque, SitePairEnergy, SitePairForceAndTorque, TotalEnergy
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForce, NetSiteForceAndTorque, SitePairEnergy, SitePairForce, SitePairForceAndTorque, TotalEnergy
 };
 
 /// Short-ranged pairwise interactions between sites.
@@ -122,12 +122,12 @@ use crate::{
 pub struct PairwiseCutoff<E>(pub E);
 
 impl<E> PairwiseCutoff<E> {
-    /// Calculate the pairwise force $`\mathbf{f}_{\alpha\beta}`$.
-    /// 
-    /// `a` and `b` represent the target [`Site`](hoomd_microstate::Site) $`\alpha`$
-    /// and the other [`Site`](hoomd_microstate::Site) $`\beta`$.
-    /// 
-    /// Call [`Isotropic::site_pair_force`](crate::pairwise::Isotropic) internally.
+    /// Calculate the pairwise force on site `i` caused by site `j`.
+    ///
+    /// Use this method to compute an individual term in the net force on site `i`,
+    /// subject to the the maximum interaction range `r_cut` and inter-body checks:
+    ///
+    /// TODO: equation
     /// 
     /// # Example
     /// ```
@@ -166,6 +166,25 @@ impl<E> PairwiseCutoff<E> {
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
+    pub fn site_pair_force<V, S>(&self, site_i: &Site<S>, site_j: &Site<S>) -> V
+    where
+        E: SitePairForce<S, Force = V>,
+        V: Default,
+    {
+        if site_i.body_tag == site_j.body_tag {
+            V::default()
+        } else {
+            self.0.site_pair_force(&site_i.properties, &site_j.properties)
+        }
+    }
+
+    /// Calculate the pairwise force and torque on site `i` caused by site `j`.
+    /// 
+    /// Use this method to compute an individual term in the net force on site `i`,
+    /// subject to the the maximum interaction range `r_cut` and inter-body checks:
+    ///
+    /// TODO: equation
     #[inline]
     pub fn site_pair_force_and_torque<V, S>(&self, site_i: &Site<S>, site_j: &Site<S>) -> (V, V::Bivector)
     where
@@ -400,6 +419,31 @@ impl<E> PairwiseCutoff<E> {
             }
         }
         energy_initial
+    }
+}
+
+impl<V, B, S, X, C, E> NetSiteForce<V, B, S, X, C> for PairwiseCutoff<E>
+where
+    V: Vector + Default + InnerProduct + Metric,
+    B: Transform<S>,
+    S: Position<Position = V>,
+    E: MaximumInteractionRange + SitePairForce<S, Force = V>,
+    X: PointsNearBall<V, SiteKey>,
+{
+    // TODO
+    #[inline]
+    fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> V {
+        let mut total_force = V::default();
+        
+        
+        for other_site in microstate
+            .iter_sites_near(site.properties.position(), self.maximum_interaction_range())
+            .filter(|s| site.body_tag != s.body_tag)
+        {
+            total_force += self.0.site_pair_force(&site.properties, &other_site.properties);
+        }
+
+        total_force
     }
 }
 

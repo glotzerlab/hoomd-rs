@@ -973,12 +973,24 @@ pub trait SiteForceAndTorque<S> {
 ///
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+pub trait SitePairForce<S> {
+    /// The type of the result force. 
+    type Force;
+
+    /// Evaluate the force on site `i` caused by site `j`.
+    fn site_pair_force(&self, site_properties_i: &S, site_properties_j: &S) -> Self::Force;
+}
+
+/// Compute the pairwise force and torque on one site from another site.
+///
+/// The generic type names are:
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait SitePairForceAndTorque<S> {
     /// The type of the result force. 
     type Force;
     /// The type of the result torque. 
     type Torque;
 
-    /// Evaluate the force and/or torque on site `i` caused by site `j`.
+    /// Evaluate the force and torque on site `i` caused by site `j`.
     fn site_pair_force_and_torque(&self, site_properties_i: &S, site_properties_j: &S) -> (Self::Force, Self::Torque);
 }
