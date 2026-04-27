@@ -62,19 +62,16 @@ fn combined_named() -> anyhow::Result<()> {
     ])?;
 
     let one = External(ConstantForce {
-        alpha: 1.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [1.0, 0.0].try_into()?,
+        force: [-1.0, 0.0].into(),
+        r_0: Cartesian::default(),
     });
     let two = External(ConstantForce {
-        alpha: 2.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [0.0, -1.0].try_into()?,
+        force: [0.0, 2.0].into(),
+        r_0: Cartesian::default(),
     });
     let three = External(ConstantForce {
-        alpha: 3.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [1.0, 0.0].try_into()?,
+        force: [-3.0, 0.0].into(),
+        r_0: Cartesian::default(),
     });
     check!(one.total_energy(&microstate) == 3.0);
     check!(two.total_energy(&microstate) == -2.0);
@@ -107,19 +104,16 @@ fn combined_unnamed() -> anyhow::Result<()> {
     ])?;
 
     let one = External(ConstantForce {
-        alpha: 1.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [1.0, 0.0].try_into()?,
+        force: [-1.0, 0.0].into(),
+        r_0: Cartesian::default(),
     });
     let two = External(ConstantForce {
-        alpha: 2.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [0.0, -1.0].try_into()?,
+        force: [0.0, 2.0].into(),
+        r_0: Cartesian::default(),
     });
     let three = External(ConstantForce {
-        alpha: 3.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [1.0, 0.0].try_into()?,
+        force: [-3.0, 0.0].into(),
+        r_0: Cartesian::default(),
     });
     check!(one.total_energy(&microstate) == 3.0);
     check!(two.total_energy(&microstate) == -2.0);

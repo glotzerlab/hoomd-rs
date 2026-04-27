@@ -25,9 +25,9 @@ use hoomd_vector::Wedge;
 ///
 /// # Examples
 ///
-/// A linear external potential:
+/// A linear external potential given by a constant force:
 /// ```
-/// use hoomd_interaction::{External, TotalEnergy, external::Linear};
+/// use hoomd_interaction::{External, TotalEnergy, external::ConstantForce};
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
 ///
@@ -38,13 +38,12 @@ use hoomd_vector::Wedge;
 ///     Body::point(Cartesian::from([-1.0, 2.0])),
 /// ])?;
 ///
-/// let linear = External(Linear {
-///     alpha: 1.0,
-///     plane_origin: Cartesian::default(),
-///     plane_normal: [0.0, 1.0].try_into()?,
+/// let constant_force = External(ConstantForce {
+///     force: Cartesian::from([0.0, -1.0]),
+///     r_0: Cartesian::default(),
 /// });
 ///
-/// let total_energy = linear.total_energy(&microstate);
+/// let total_energy = constant_force.total_energy(&microstate);
 /// assert_eq!(total_energy, 2.0);
 /// # Ok(())
 /// # }
@@ -101,9 +100,9 @@ where
     ///
     /// # Examples
     ///
-    /// A linear external potential:
+    /// A linear external potential given by a constant force:
     /// ```
-    /// use hoomd_interaction::{External, TotalEnergy, external::Linear};
+    /// use hoomd_interaction::{External, TotalEnergy, external::ConstantForce};
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
@@ -114,13 +113,12 @@ where
     ///     Body::point(Cartesian::from([-1.0, 2.0])),
     /// ])?;
     ///
-    /// let linear = External(Linear {
-    ///     alpha: 1.0,
-    ///     plane_origin: Cartesian::default(),
-    ///     plane_normal: [0.0, 1.0].try_into()?,
+    /// let constant_force = External(ConstantForce {
+    ///     force: Cartesian::from([0.0, -1.0]),
+    ///     r_0: Cartesian::default(),
     /// });
     ///
-    /// let total_energy = linear.total_energy(&microstate);
+    /// let total_energy = constant_force.total_energy(&microstate);
     /// assert_eq!(total_energy, 2.0);
     /// # Ok(())
     /// # }
@@ -183,7 +181,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::{External, TotalEnergy, external::Linear};
+    /// use hoomd_interaction::{External, TotalEnergy, external::ConstantForce};
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
@@ -200,14 +198,13 @@ where
     ///     Body::point(Cartesian::from([-1.0, 2.0])),
     /// ])?;
     ///
-    /// let linear = External(Linear {
-    ///     alpha: 1.0,
-    ///     plane_origin: Cartesian::default(),
-    ///     plane_normal: [0.0, 1.0].try_into()?,
+    /// let constant_force = External(ConstantForce {
+    ///     force: Cartesian::from([0.0, -1.0]),
+    ///     r_0: Cartesian::default(),
     /// });
     ///
     /// let delta_energy_total =
-    ///     linear.delta_energy_total(&microstate_a, &microstate_b);
+    ///     constant_force.delta_energy_total(&microstate_a, &microstate_b);
     /// assert_eq!(delta_energy_total, 1.0);
     /// # Ok(())
     /// # }
@@ -253,9 +250,9 @@ where
     ///
     /// # Examples
     ///
-    /// A linear external potential:
+    /// A linear external potential given by a constant force:
     /// ```
-    /// use hoomd_interaction::{DeltaEnergyOne, External, external::Linear};
+    /// use hoomd_interaction::{DeltaEnergyOne, External, external::ConstantForce};
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
@@ -263,13 +260,12 @@ where
     /// let mut microstate = Microstate::new();
     /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
     ///
-    /// let linear = External(Linear {
-    ///     alpha: 1.0,
-    ///     plane_origin: Cartesian::default(),
-    ///     plane_normal: [0.0, 1.0].try_into()?,
+    /// let constant_force = External(ConstantForce {
+    ///     force: Cartesian::from([0.0, -1.0]),
+    ///     r_0: Cartesian::default(),
     /// });
     ///
-    /// let delta_energy = linear.delta_energy_one(
+    /// let delta_energy = constant_force.delta_energy_one(
     ///     &microstate,
     ///     0,
     ///     &Body::point([0.0, -1.0].into()),
@@ -368,9 +364,9 @@ where
     ///
     /// # Examples
     ///
-    /// A linear external potential:
+    /// A linear external potential given by a constant force:
     /// ```
-    /// use hoomd_interaction::{DeltaEnergyInsert, External, external::Linear};
+    /// use hoomd_interaction::{DeltaEnergyInsert, External, external::ConstantForce};
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
@@ -378,13 +374,12 @@ where
     /// let mut microstate = Microstate::new();
     /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
     ///
-    /// let linear = External(Linear {
-    ///     alpha: 1.0,
-    ///     plane_origin: Cartesian::default(),
-    ///     plane_normal: [0.0, 1.0].try_into()?,
+    /// let constant_force = External(ConstantForce {
+    ///     force: Cartesian::from([0.0, -1.0]),
+    ///     r_0: Cartesian::default(),
     /// });
     ///
-    /// let delta_energy = linear
+    /// let delta_energy = constant_force
     ///     .delta_energy_insert(&microstate, &Body::point([0.0, -1.0].into()));
     /// assert_eq!(delta_energy, -1.0);
     /// # Ok(())
@@ -463,9 +458,9 @@ where
     ///
     /// # Examples
     ///
-    /// A linear external potential:
+    /// A linear external potential given by a constant force:
     /// ```
-    /// use hoomd_interaction::{DeltaEnergyRemove, External, external::Linear};
+    /// use hoomd_interaction::{DeltaEnergyRemove, External, external::ConstantForce};
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
@@ -473,13 +468,12 @@ where
     /// let mut microstate = Microstate::new();
     /// microstate.add_body(Body::point(Cartesian::from([0.0, 1.0])))?;
     ///
-    /// let linear = External(Linear {
-    ///     alpha: 1.0,
-    ///     plane_origin: Cartesian::default(),
-    ///     plane_normal: [0.0, 1.0].try_into()?,
+    /// let constant_force = External(ConstantForce {
+    ///     force: Cartesian::from([0.0, -1.0]),
+    ///     r_0: Cartesian::default(),
     /// });
     ///
-    /// let delta_energy = linear.delta_energy_remove(&microstate, 0);
+    /// let delta_energy = constant_force.delta_energy_remove(&microstate, 0);
     /// assert_eq!(delta_energy, -1.0);
     /// # Ok(())
     /// # }
@@ -559,9 +553,8 @@ where
     /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
     ///
     /// let constant_force = External(ConstantForce {
-    ///     alpha: 1.0,
-    ///     plane_origin: Cartesian::default(),
-    ///     plane_normal: [0.0, 1.0].try_into()?,
+    ///     force: Cartesian::from([0.0, -1.0]),
+    ///     r_0: Cartesian::default(),
     /// });
     ///
     /// let force = constant_force.net_site_force(
@@ -596,9 +589,8 @@ where
     /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
     ///
     /// let constant_force = External(ConstantForce {
-    ///     alpha: 1.0,
-    ///     plane_origin: Cartesian::default(),
-    ///     plane_normal: [0.0, 1.0].try_into()?,
+    ///     force: Cartesian::from([0.0, -1.0]),
+    ///     r_0: Cartesian::default(),
     /// });
     ///
     /// let (force, torque) = constant_force.net_site_force_and_torque(
@@ -635,7 +627,7 @@ mod test_finite {
         boundary::{Closed, Open},
         property::{Point, Position},
     };
-    use hoomd_vector::{Cartesian, Unit};
+    use hoomd_vector::Cartesian;
     use rstest::*;
 
     struct TestSE;
@@ -757,12 +749,9 @@ mod test_finite {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            let plane_normal = Unit::<Cartesian<2>>::try_from([0.0, 1.0])
-                .expect("the hard-coded vector is not zero");
             let energy = External(ConstantForce {
-                plane_origin: [0.0, -1.0].into(),
-                plane_normal,
-                alpha: 4.0,
+                r_0: [0.0, -1.0].into(),
+                force: [0.0, -4.0].into(),
             });
 
             check!(energy.delta_energy_one(&microstate, 0, &final_body) == 2.0);

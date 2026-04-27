@@ -37,9 +37,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Model interactions (in this case, just gravity)
     let force = Rigid(External(ConstantForce {
-        alpha: -2.0,
-        plane_origin: [0.0, 1.0].into(),
-        plane_normal: [0.0, 1.0].try_into()?,
+        force: [0.0, -2.0].into(),
+        r_0: [0.0, 1.0].into(),
     }));
 
     // Create an NVE macrostate

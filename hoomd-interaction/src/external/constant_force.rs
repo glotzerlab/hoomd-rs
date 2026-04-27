@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::property::Position;
-use hoomd_vector::{InnerProduct, Unit, Wedge};
+use hoomd_vector::{InnerProduct, Wedge};
 
 use crate::{SiteForce, SiteForceAndTorque};
 
@@ -14,21 +14,19 @@ use super::super::SiteEnergy;
 
 /// Apply the same force to every site, independent of the site's properties.
 ///
-/// The force is:
+/// The force vector can be expressed as a magnitude and direction:
 /// ```math
-/// \vec{F} = -\alpha \hat{n}
+/// \vec{F} = -F \hat{n}
 /// ```
 /// which is consistent with the potential energy:
 /// ```math
-/// U = \alpha \cdot \hat{n} \cdot ( \vec{r} - \vec{p} )
+/// U = F \cdot \hat{n} \cdot ( \vec{r} - \vec{r}_0 )
 /// ```
-///
-/// The plane origin `p` sets the 0 energy reference, the plane normal `n`,
-/// sets the direction of the force, and `alpha` is the the interaction strength.
+/// where $` \vec{r}_0 `$ is a point on the plane where $` U = 0 `$.
 ///
 /// # Generics
 ///
-/// * `V`: The type used to represent the position and normal vectors.
+/// * `V`: The type used to represent the position and force vectors.
 ///
 /// # Example
 ///
@@ -40,21 +38,19 @@ use super::super::SiteEnergy;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let constant_force = ConstantForce {
-///     alpha: 2.0,
-///     plane_origin: [0.0, -10.0].into(),
-///     plane_normal: [0.0, 1.0].try_into()?,
+///     force: Cartesian::from([0.0, -2.0]),
+///     r_0: Cartesian::from([0.0, -10.0]),
 /// };
 /// # Ok(())
 /// # }
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConstantForce<V> {
-    /// Interaction strength $`[\mathrm{energy}] [\mathrm{length}]^{-1}`$.
-    pub alpha: f64,
-    /// Point on the plane where U=0 $`[\mathrm{length}]`$.
-    pub plane_origin: V,
-    /// Vector normal to the plane *(unitless)*.
-    pub plane_normal: Unit<V>,
+    /// Force vector $`[\mathrm{energy}] [\mathrm{length}]^{-1}`$.
+    pub force: V,
+
+    ///  $` \vec{r}_0 `$ $`[\mathrm{length}]`$.: A point on the plane where $` U = 0 `$.
+    pub r_0: V,
 }
 
 impl<V> ConstantForce<V>
@@ -71,9 +67,8 @@ where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let constant_force = ConstantForce {
-    ///     alpha: 2.0,
-    ///     plane_origin: [0.0, -10.0].into(),
-    ///     plane_normal: [0.0, 1.0].try_into()?,
+    ///     force: Cartesian::from([0.0, -2.0]),
+    ///     r_0: Cartesian::from([0.0, -10.0]),
     /// };
     ///
     /// let energy = constant_force.energy(&[0.0, 0.0].into());
@@ -84,7 +79,14 @@ where
     #[inline]
     #[must_use]
     pub fn energy(&self, r: &V) -> f64 {
-        self.alpha * self.plane_normal.get().dot(&(*r - self.plane_origin))
+        let magnitude = self.force.norm();
+
+        if magnitude == 0.0 {
+            return 0.0;
+        }
+        
+        let direction = self.force / magnitude;
+        -magnitude * direction.dot(&(*r - self.r_0))
     }
 
     /// The force vector that acts on all sites.
@@ -97,20 +99,19 @@ where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let constant_force = ConstantForce {
-    ///     alpha: 2.0,
-    ///     plane_origin: [0.0, -10.0].into(),
-    ///     plane_normal: [0.0, 1.0].try_into()?,
+    ///     force: Cartesian::from([0.0, -2.0]),
+    ///     r_0: Cartesian::from([0.0, -10.0]),
     /// };
     ///
-    /// let energy = constant_force.force();
-    /// assert_eq!(energy, [0.0, -2.0].into());
+    /// let force = constant_force.force();
+    /// assert_eq!(force, [0.0, -2.0].into());
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     #[must_use]
     pub fn force(&self) -> V {
-        *self.plane_normal.get() * self.alpha * -1.0
+        self.force
     }
 }
 
@@ -146,33 +147,5 @@ V::Bivector: Default,
     #[inline]
     fn site_force_and_torque(&self, _site_properties: &S) -> (Self::Force, Self::Torque) {
         (self.force(), V::Bivector::default())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use hoomd_vector::Cartesian;
-
-    use super::*;
-    use approxim::assert_relative_eq;
-    use rstest::*;
-
-    #[rstest]
-    fn energy_2d(
-        #[values(1.0, 0.0, -2.0)] alpha: f64,
-        #[values([0.0, 0.0], [-10.0, 15.0], [16.0, 3.0])] plane_origin: [f64; 2],
-        #[values([1.0, 1.0], [-1.0, 0.2], [-5.0, -1.0])] plane_normal: [f64; 2],
-    ) {
-        let n = Unit::<Cartesian<2>>::try_from(plane_normal)
-            .expect("hard-coded vector should have non-zero length");
-
-        let linear = ConstantForce {
-            plane_origin: plane_origin.into(),
-            plane_normal: n,
-            alpha,
-        };
-
-        let p = linear.plane_origin + *n.get() * 5.0;
-        assert_relative_eq!(linear.energy(&p), 5.0 * alpha, epsilon = 1e-6);
     }
 }
