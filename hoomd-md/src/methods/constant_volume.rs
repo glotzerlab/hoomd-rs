@@ -1257,9 +1257,8 @@ mod tests {
             .bodies([dynamics_body_3d(mass)])
             .try_build()?;
         let force = Rigid(External(ConstantForce {
-            alpha: f_mag,
-            plane_origin: [0.0, 0.0, 0.0].into(),
-            plane_normal: f_dir.to_unit()?.0,
+            force: f_dir * f_mag,
+            r_0: [0.0, 0.0, 0.0].into(),
         }));
         let mut method = ConstantVolume::new(dt);
         struct Isoenergy {}
@@ -1311,9 +1310,8 @@ mod tests {
             .bodies([dynamics_body_2d()])
             .try_build()?;
         let evaluator = Rigid(External(ConstantForce {
-            alpha: 1.0,
-            plane_origin: [0.0, 1.0].into(),
-            plane_normal: [0.0, 1.0].try_into()?,
+            r_0: Cartesian::from([0.0, 1.0]),
+            force: Cartesian::from([0.0, 1.0]),
         }));
         let method = ConstantVolume::new(0.1);
         
@@ -1329,9 +1327,8 @@ mod tests {
             .bodies([dynamics_body_3d(1.0)])
             .try_build()?;
         let evaluator = Rigid(External(ConstantForce {
-            alpha: 1.0,
-            plane_origin: [0.0, 1.0, 0.0].into(),
-            plane_normal: [0.0, 1.0, 0.0].try_into()?,
+            r_0: Cartesian::from([0.0, 1.0, 0.0]),
+            force: Cartesian::from([0.0, 1.0, 0.0]),
         }));
         let method = ConstantVolume::new(0.1);
         
