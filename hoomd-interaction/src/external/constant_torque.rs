@@ -3,57 +3,26 @@
 
 //! Implement [`ConstantTorque`]
 
-use std::ops::Mul;
-
 use hoomd_vector::Wedge;
 
-use crate::NetSiteForceAndTorque;
-use hoomd_microstate::{Microstate, Site};
+use crate::SiteForceAndTorque;
 
-/// Constant torque potential.
-/// 
-/// `a` is the strength of the constant torque and
-/// `direction` is the direction to apply the 
-/// constant torque.
-/// 
-/// Apply a constant torque on each 
-/// [`Site`](hoomd_microstate::Site) in the system
-/// with zero force.
-/// 
-/// The force and torque are
-/// 
-/// ```math
-/// \begin{align}
-///     &\mathbf{f}_\alpha = 0 \\
-///     &\boldsymbol{\tau}_\alpha = a \mathbf{d}
-/// \end{align}
-/// ```
-/// Where $`a`$ is the strength of the constant torque and
-/// $`\mathbf{d}`$ is the direction to apply the 
-/// constant torque.
-/// 
-/// # Note
-/// In two-dimension, the `direction` is a scalar
-/// either +1 or -1.
+/// Apply the same torque to every site, independent of the site's properties.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConstantTorque<V: Wedge> {
-    /// Interaction strength *(\[energy\])*.
-    pub alpha: f64,
-    /// Direction of the torque vector *(unitless)*.
-    /// TODO: figure out how to use Unit
-    pub direction: V::Bivector,
+    /// Torque $`[\mathrm{energy}]`$.
+    pub torque: V::Bivector,
 }
 
-impl<V, B, S, X, C> NetSiteForceAndTorque<V, B, S, X, C> for ConstantTorque<V>
-where
-    V: Wedge + Default,
-    V::Bivector: Default + Mul<f64, Output = V::Bivector> + Clone
+impl<S, V> SiteForceAndTorque<S> for ConstantTorque<V> where
+V: Default + Wedge,
+V::Bivector: Copy + Default,
 {
-    /// Calculate the force and torque.
+    type Force = V;
+    type Torque = V::Bivector;
+
     #[inline]
-    fn net_site_force_and_torque(&self, _microstate: &Microstate<B, S, X, C>, _site: &Site<S>) -> (V, V::Bivector) {
-        let force = V::default();
-        let torque = self.direction.clone() * self.alpha;
-        (force, torque)
+    fn site_force_and_torque(&self, _site_properties: &S) -> (Self::Force, Self::Torque) {
+        (V::default(), self.torque)
     }
 }

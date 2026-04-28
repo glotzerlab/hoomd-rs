@@ -87,8 +87,7 @@ impl Dumbbell {
 
         // Model interactions (in this case, a pairwise Lennard-Jones)
         let force = Rigid(External(ConstantTorque {
-            alpha: 0.001,
-            direction: 1.0,
+            torque: 0.001,
         }));
 
         // Create an NVE macrostate
