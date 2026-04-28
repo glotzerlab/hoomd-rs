@@ -93,7 +93,7 @@ mod zero;
 
 pub use external_type::External;
 
-use hoomd_microstate::{Body, Microstate, Site};
+use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::Wedge;
 pub use hoomd_derive::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
@@ -911,36 +911,24 @@ pub trait NetBodyForceAndTorque<const N: usize, V: Wedge, B, S, X, C> {
 pub trait NetSiteForceAndTorque<V: Wedge, B, S, X, C> {
     /// Compute the net force and torque on a given site.
     ///
-    /// The type `Self` describes the force interaction model, which may (or
-    /// may not) depend on the sites in the `microstate`. Typically `site` is
-    /// a site (not a ghost) that exists in `microstate`. Callers *may* use
-    /// this method to compute the net force and torque on a probe that is not
-    /// part of `microstate`, but must set `site.body_tag` and `site.site_tag`
-    /// accordingly.
+    /// `self` describes the force interaction model.
+    /// `net_site_force_and_torque` computes the total force and torque on
+    /// a site in `microstate` (identified by `site_index`) due to all other
+    /// sites.
     ///
     /// # Return value
     ///
     /// `net_site_force_and_torque` returns the force and torque in a tuple:
     /// `(force, torque)`.
-    ///
-    /// # Safety
-    ///
-    /// `net_site_force_and_torque` *assumes* that the given `site` is inside
-    /// the microstate's boundary. The computed forces may or may not be
-    /// accurate when `site` is outside the boundary.
-    ///
-    /// TODO: is this really safe enough? If we passed a `site_index`, none of
-    /// this would be a problem. We could provide a separate, fallible, API for
-    /// probe sites that wraps into the boundary first.
     #[must_use]
-    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector);
+    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> (V, V::Bivector);
 }
 
 /// TODO
 pub trait NetSiteForce<V, B, S, X, C> {
     /// TODO
     #[must_use]
-    fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> V;
+    fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> V;
 }
 
 /// Compute the force on a single site as a function of its properties.

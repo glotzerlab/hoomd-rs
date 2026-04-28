@@ -1216,6 +1216,22 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
         })
     }
 
+    /// Iterate over all the sites (in the system reference frame) associated with a body.
+    ///
+    /// `iter_body_site_indices` is like [`iter_body_sites`], but iterates over
+    /// the *site indices* instead of the sites themselves.
+    #[inline]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
+    pub fn iter_body_site_indices(&self, body_index: usize) -> impl Iterator<Item = usize> {
+        self.bodies_sites[body_index].iter().map(|site_tag| {
+            self.sites.indices[*site_tag]
+                .expect("bodies_sites and site_indices should be consistent")
+        })
+    }
+
     /// Iterate over all sites in monotonically increasing tag order.
     ///
     /// `iter_sites_tag_order` is especially useful when implementing

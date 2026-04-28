@@ -432,9 +432,9 @@ where
 {
     // TODO
     #[inline]
-    fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> V {
+    fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> V {
+        let site = &microstate.sites()[site_index];
         let mut total_force = V::default();
-        
         
         for other_site in microstate
             .iter_sites_near(site.properties.position(), self.maximum_interaction_range())
@@ -519,8 +519,7 @@ where
     ///         r_cut: 6.0
     /// });
     ///
-    /// let sites = microstate.sites();
-    /// let (force_on_zero, torque_on_zero) = force.net_site_force_and_torque(&microstate, &sites[0]);
+    /// let (force_on_zero, torque_on_zero) = force.net_site_force_and_torque(&microstate, 0);
     ///
     /// assert_abs_diff_eq!(force_on_zero, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-13);
     /// assert_eq!(torque_on_zero,  Cartesian::from([0.0, 0.0, 0.0]));
@@ -534,7 +533,8 @@ where
     /// [`Site`](hoomd_microstate::Site) $`\alpha`$ and $`\beta`$, meaning 
     /// $`\boldsymbol{\tau}_{\alpha \beta}`$ is always zero.
     #[inline]
-    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, <V as Wedge>::Bivector) {
+    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> (V, V::Bivector) {
+        let site = &microstate.sites()[site_index];
         let mut total_force = V::default();
         let mut total_torque = V::Bivector::default();
         

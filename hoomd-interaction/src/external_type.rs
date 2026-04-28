@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForce, NetSiteForceAndTorque, SiteEnergy, SiteForce, SiteForceAndTorque, TotalEnergy
 };
-use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, Transform};
+use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Transform};
 use hoomd_vector::Wedge;
 
 /// Interactions between sites and external fields.
@@ -559,13 +559,14 @@ where
     ///
     /// let force = constant_force.net_site_force(
     ///     &microstate,
-    ///     &microstate.sites()[0]);
+    ///     0);
     /// assert_eq!(force, [0.0, -1.0].into());
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn net_site_force(&self, _microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> V {
+    fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> V {
+        let site = &microstate.sites()[site_index];
         self.0.site_force(&site.properties)
     }
 }
@@ -595,14 +596,15 @@ where
     ///
     /// let (force, torque) = constant_force.net_site_force_and_torque(
     ///     &microstate,
-    ///     &microstate.sites()[0]);
+    ///     0);
     /// assert_eq!(force, [0.0, -1.0].into());
     /// assert_eq!(torque, 0.0);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn net_site_force_and_torque(&self, _microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
+    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> (V, V::Bivector) {
+        let site = &microstate.sites()[site_index];
         self.0.site_force_and_torque(&site.properties)
     }
 }
