@@ -96,7 +96,7 @@ pub use external_type::External;
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::Wedge;
 pub use hoomd_derive::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForce, SitePairEnergy,
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForce, NetSiteForceAndTorque, SitePairEnergy,
     TotalEnergy,
 };
 pub use pairwise_cutoff::PairwiseCutoff;
