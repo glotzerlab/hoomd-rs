@@ -18,7 +18,7 @@ use hoomd_microstate::{
     Microstate, Transform,
     property::{Orientation, Position},
 };
-use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge};
+use hoomd_vector::{Rotate, Vector, Wedge};
 
 /// Rigid body interactions.
 ///
@@ -49,13 +49,15 @@ use hoomd_vector::{Rotate, RotationMatrix, Vector, Wedge};
 /// ```
 pub struct Rigid<E>(pub E);
 
-impl<V, B, S, X, C, E> NetBodyForce<V, B, S, X, C> for Rigid<E>
+impl<V, B, S, X, C, E> NetBodyForce<B, S, X, C> for Rigid<E>
 where
     V: Vector + Default + Wedge,
     B: Transform<S>,
     S: Position<Position = V>,
     E: NetSiteForceAndTorque<B, S, X, C, Force = V>,
 {
+    type Force = V;
+    
     /// Compute the net force.
     ///
     /// `microstate` describes the system configuration and `body_index` specifies
@@ -141,16 +143,17 @@ where
     }
 }
 
-impl<const N: usize, V, B, S, X, C, E, R> NetBodyForceAndTorque<N, V, B, S, X, C> for Rigid<E>
+impl<V, B, S, X, C, E, R> NetBodyForceAndTorque<B, S, X, C> for Rigid<E>
 where
     V: Vector + Wedge + Default,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
     E: NetSiteForceAndTorque<B, S, X, C, Force = V>,
     R: Rotate<V>,
-    RotationMatrix<N>: From<R>,
     V::Bivector: Default + AddAssign,
 {
+    type Force = V;
+    
     /// Compute the net force and torque.
     ///
     /// The force that is associate with the torque calculation will be reused
@@ -246,7 +249,7 @@ where
         &self,
         microstate: &Microstate<B, S, X, C>,
         body_index: usize,
-    ) -> (V, <V as Wedge>::Bivector) {
+    ) -> (V, V::Bivector) {
         let mut total_force = V::default();
         let mut total_torque = V::Bivector::default();
 
@@ -254,7 +257,6 @@ where
             .item
             .properties
             .orientation(); // the body's orientation in the system frame
-        // let q = RotationMatrix::from(*q);    // TODO: add a "to" method (microoptimization)
 
         // Torque based on forces on all sites around the center of mass
         for (body_site_index, microstate_site_index) in microstate.iter_body_site_indices(body_index).enumerate() {

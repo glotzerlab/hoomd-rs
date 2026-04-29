@@ -1026,7 +1026,7 @@ where
     S: Position<Position = V> + Default,
     X: PointUpdate<V, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyForce<V, B, S, X, C>,
+    E: NetBodyForce<B, S, X, C, Force = V>,
 {
     /// Perform the [`NetForce`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
@@ -1068,7 +1068,7 @@ where
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyForceAndTorque<2, Cartesian<2>, B, S, X, C>,
+    E: NetBodyForceAndTorque<B, S, X, C, Force = Cartesian<2>>,
 {
     /// Perform the [`NetForce`] and [`NetTorque`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
@@ -1112,7 +1112,7 @@ where
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyForceAndTorque<3, Cartesian<3>, B, S, X, C>,
+    E: NetBodyForceAndTorque<B, S, X, C, Force = Cartesian<3>>,
 {
     /// Perform the [`NetForce`] and [`NetTorque`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
