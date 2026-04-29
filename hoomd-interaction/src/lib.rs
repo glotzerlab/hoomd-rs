@@ -96,7 +96,7 @@ pub use external_type::External;
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::Wedge;
 pub use hoomd_derive::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForce, SitePairEnergy,
     TotalEnergy,
 };
 pub use pairwise_cutoff::PairwiseCutoff;
@@ -908,7 +908,10 @@ pub trait NetBodyForceAndTorque<const N: usize, V: Wedge, B, S, X, C> {
 /// # Derive macro
 ///
 /// TODO: Implement and describe the derive macro.
-pub trait NetSiteForceAndTorque<V: Wedge, B, S, X, C> {
+pub trait NetSiteForceAndTorque<B, S, X, C> {
+    /// The type of the result force. 
+    type Force: Wedge;
+
     /// Compute the net force and torque on a given site.
     ///
     /// `self` describes the force interaction model.
@@ -921,14 +924,17 @@ pub trait NetSiteForceAndTorque<V: Wedge, B, S, X, C> {
     /// `net_site_force_and_torque` returns the force and torque in a tuple:
     /// `(force, torque)`.
     #[must_use]
-    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> (V, V::Bivector);
+    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> (Self::Force, <Self::Force as Wedge>::Bivector);
 }
 
 /// TODO
-pub trait NetSiteForce<V, B, S, X, C> {
+pub trait NetSiteForce<B, S, X, C> {
+    /// The type of the result force. 
+    type Force;
+
     /// TODO
     #[must_use]
-    fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> V;
+    fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> Self::Force;
 }
 
 /// Compute the force on a single site as a function of its properties.
@@ -949,12 +955,10 @@ pub trait SiteForce<S> {
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait SiteForceAndTorque<S> {
     /// The type of the result force. 
-    type Force;
-    /// The type of the result torque. 
-    type Torque;
+    type Force: Wedge;
 
     /// Evaluate the force and/or torque as a function of a single site's properties.
-    fn site_force_and_torque(&self, site_properties: &S) -> (Self::Force, Self::Torque);
+    fn site_force_and_torque(&self, site_properties: &S) -> (Self::Force, <Self::Force as Wedge>::Bivector);
 }
 
 /// Compute the pairwise force on one site from another site.
@@ -975,10 +979,8 @@ pub trait SitePairForce<S> {
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait SitePairForceAndTorque<S> {
     /// The type of the result force. 
-    type Force;
-    /// The type of the result torque. 
-    type Torque;
+    type Force: Wedge;
 
     /// Evaluate the force and torque on site `i` caused by site `j`.
-    fn site_pair_force_and_torque(&self, site_properties_i: &S, site_properties_j: &S) -> (Self::Force, Self::Torque);
+    fn site_pair_force_and_torque(&self, site_properties_i: &S, site_properties_j: &S) -> (Self::Force, <Self::Force as Wedge>::Bivector);
 }

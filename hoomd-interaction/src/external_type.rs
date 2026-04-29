@@ -535,10 +535,12 @@ where
     }
 }
 
-impl<V, B, S, X, C, E> NetSiteForce<V, B, S, X, C> for External<E>
+impl<V, B, S, X, C, E> NetSiteForce<B, S, X, C> for External<E>
 where
     E: SiteForce<S, Force = V>
 {
+    type Force = V;
+
     /// Compute the net force on a given site.
     ///
     /// # Example
@@ -571,11 +573,13 @@ where
     }
 }
 
-impl<V, B, S, X, C, E> NetSiteForceAndTorque<V, B, S, X, C> for External<E>
+impl<V, B, S, X, C, E> NetSiteForceAndTorque<B, S, X, C> for External<E>
 where
     V: Wedge,
-    E: SiteForceAndTorque<S, Force = V, Torque = V::Bivector>
+    E: SiteForceAndTorque<S, Force = V>
 {
+    type Force = V;
+    
     /// Compute the net force and torque on a given site.
     /// 
     /// # Example

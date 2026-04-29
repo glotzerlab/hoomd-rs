@@ -142,10 +142,9 @@ V: InnerProduct + Wedge,
 V::Bivector: Default,
 {
     type Force = V;
-    type Torque = V::Bivector;
 
     #[inline]
-    fn site_force_and_torque(&self, _site_properties: &S) -> (Self::Force, Self::Torque) {
+    fn site_force_and_torque(&self, _site_properties: &S) -> (V, V::Bivector) {
         (self.force(), V::Bivector::default())
     }
 }

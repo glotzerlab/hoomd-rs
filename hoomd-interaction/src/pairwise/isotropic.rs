@@ -130,7 +130,6 @@ where
     E: UnivariateForce,
 {
     type Force = V;
-    type Torque = V::Bivector;
 
     /// Evaluate the force and torque on site `i` caused by site `j`.
     ///
@@ -144,7 +143,7 @@ where
     ///
     /// Radial forces produce 0 torque.
     #[inline]
-    fn site_pair_force_and_torque(&self, site_properties_i: &S, site_properties_j: &S) -> (Self::Force, Self::Torque) {
+    fn site_pair_force_and_torque(&self, site_properties_i: &S, site_properties_j: &S) -> (V, V::Bivector) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();
         let distance = r_ji.norm();
 
@@ -154,7 +153,7 @@ where
             r_ji * self.interaction.force(distance) / distance
         };
         
-        let torque = Self::Torque::default();
+        let torque = V::Bivector::default();
 
         (force, torque)
     }

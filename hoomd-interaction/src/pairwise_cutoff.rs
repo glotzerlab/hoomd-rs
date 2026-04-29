@@ -188,7 +188,7 @@ impl<E> PairwiseCutoff<E> {
     #[inline]
     pub fn site_pair_force_and_torque<V, S>(&self, site_i: &Site<S>, site_j: &Site<S>) -> (V, V::Bivector)
     where
-        E: SitePairForceAndTorque<S, Force = V, Torque=V::Bivector>,
+        E: SitePairForceAndTorque<S, Force = V>,
         V: Default + Wedge,
         V::Bivector: Default,
     {
@@ -422,7 +422,7 @@ impl<E> PairwiseCutoff<E> {
     }
 }
 
-impl<V, B, S, X, C, E> NetSiteForce<V, B, S, X, C> for PairwiseCutoff<E>
+impl<V, B, S, X, C, E> NetSiteForce<B, S, X, C> for PairwiseCutoff<E>
 where
     V: Vector + Default + InnerProduct + Metric,
     B: Transform<S>,
@@ -430,6 +430,8 @@ where
     E: MaximumInteractionRange + SitePairForce<S, Force = V>,
     X: PointsNearBall<V, SiteKey>,
 {
+    type Force = V;
+    
     // TODO
     #[inline]
     fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> V {
@@ -447,15 +449,17 @@ where
     }
 }
 
-impl<V, B, S, X, C, E> NetSiteForceAndTorque<V, B, S, X, C> for PairwiseCutoff<E>
+impl<V, B, S, X, C, E> NetSiteForceAndTorque<B, S, X, C> for PairwiseCutoff<E>
 where
     V: Vector + Default + InnerProduct + Metric + Wedge,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: MaximumInteractionRange + SitePairForceAndTorque<S, Force = V, Torque = V::Bivector>,
+    E: MaximumInteractionRange + SitePairForceAndTorque<S, Force = V>,
     V::Bivector: AddAssign + Default,
     X: PointsNearBall<V, SiteKey>,
 {
+    type Force = V;
+    
     /// Compute the net force and torque.
     /// 
     /// `microstate` describes the system configuration and the target `site` 

@@ -54,7 +54,7 @@ where
     V: Vector + Default + Wedge,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: NetSiteForceAndTorque<V, B, S, X, C>,
+    E: NetSiteForceAndTorque<B, S, X, C, Force = V>,
 {
     /// Compute the net force.
     ///
@@ -146,7 +146,7 @@ where
     V: Vector + Wedge + Default,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
-    E: NetSiteForceAndTorque<V, B, S, X, C>,
+    E: NetSiteForceAndTorque<B, S, X, C, Force = V>,
     R: Rotate<V>,
     RotationMatrix<N>: From<R>,
     V::Bivector: Default + AddAssign,
