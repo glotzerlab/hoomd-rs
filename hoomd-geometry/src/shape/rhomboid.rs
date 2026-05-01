@@ -12,8 +12,61 @@ use crate::{
 
 /// An axis-aligned parallelogram defined by a 2 x 2 upper triangular matrix.
 ///
-/// This shape is a general case of rhombus where pairs of sides are not equal.
-/// We enforce the convention that the center of the shape is at the origin.
+/// A rhomboid is a 2D parallelogram shape defined by two edge lengths $`(L_x, L_y)`$
+/// and a shear factor $`xy`$ that describes the shearing in the x-direction relative
+/// to the y-extent.
+///
+/// The shape is centered at the origin, with the centroid at $`(0,0)`$.
+///
+/// # Construction
+///
+/// Rhomboids can be constructed using the `from_box_vector` method, which takes
+/// an array of 3 values: `[Lx, Ly, xy]`. They can also be created from a 2D
+/// parallelepiped using the `from_parallelogram` method, or directly from a tuple
+/// of `(PositiveReal, PositiveReal, f64)`.
+///
+/// # Examples
+///
+/// Basic construction and methods:
+/// ```
+/// use hoomd_geometry::{Volume, shape::Rhomboid};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let rhomboid = Rhomboid::from_box_vector([10.0, 12.0, 1.0]);
+/// assert_eq!(rhomboid.volume(), 120.0);
+///
+/// assert_eq!(rhomboid.Lx().get(), 10.0);
+/// assert_eq!(rhomboid.Ly().get(), 12.0);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Checking if a point is inside the rhomboid:
+/// ```
+/// use hoomd_geometry::{IsPointInside, shape::Rhomboid};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let rhomboid = Rhomboid::from_box_vector([6.0, 8.0, 0.5]);
+///
+/// assert!(rhomboid.is_point_inside(&[1.0, 1.0].into()));
+/// assert!(!rhomboid.is_point_inside(&[4.0, 1.0].into()));
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Scaling the rhomboid:
+/// ```
+/// use hoomd_geometry::{Scale, shape::Rhomboid};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let rhomboid = Rhomboid::from_box_vector([10.0, 12.0, 1.0]);
+///
+/// let scaled = rhomboid.scale_length(2.0.try_into()?);
+/// assert_eq!(scaled.Lx().get(), 20.0);
+/// assert_eq!(scaled.Ly().get(), 24.0);
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Rhomboid {
     /// The extents [``L_x``, ``L_y``] of each edge along the Cartesian axes ``x`` and ``y``.
@@ -33,6 +86,28 @@ impl From<(PositiveReal, PositiveReal, f64)> for Rhomboid {
 }
 
 impl Rhomboid {
+    /// Construct a rhomboid from box dimensions.
+    ///
+    /// The dimensions array should contain [Lx, Ly, xy] where:
+    /// - Lx, Ly are the edge lengths (must be positive)
+    /// - xy is the shear factor
+    ///
+    /// # Panics
+    ///
+    /// Panics if any of Lx, Ly are not positive.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rhomboid;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid::from_box_vector([10.0, 12.0, 1.0]);
+    /// assert_eq!(rhomboid.Lx().get(), 10.0);
+    /// assert_eq!(rhomboid.xy(), 1.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn from_box_vector(box_dimensions: [f64; 3]) -> Self {
         Self {
             extents: [
@@ -47,6 +122,33 @@ impl Rhomboid {
         }
     }
 
+    /// Construct a rhomboid from a 2D parallelepiped.
+    ///
+    /// Computes the rhomboid parameters from a parallelepiped by computing
+    /// the edge vectors and applying the transformation formulas:
+    /// ```math
+    ///     L_x = |\vec{v}_1|, \quad L_y = \sqrt{|\vec{v}_2|^2 - \frac{(\vec{v}_1 \cdot \vec{v}_2)^2}{|\vec{v}_1|^2}} \quad
+    ///     xy = \frac{\vec{v}_1 \cdot \vec{v}_2}{|\vec{v}_1| L_y}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::{Rhomboid, Hyperparallelepiped};
+    /// use hoomd_vector::Cartesian;
+    /// use approxim::assert_relative_eq;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let parallelepiped = Hyperparallelepiped::new([
+    ///     Cartesian::from([1.0, 0.0]),
+    ///     Cartesian::from([0.5, 1.0]),
+    /// ]);
+    /// let rhomboid = Rhomboid::from_parallelogram(parallelepiped);
+    /// assert_relative_eq!(rhomboid.Lx().get(), 1.0, epsilon = 1e-8);
+    /// assert_relative_eq!(rhomboid.xy(), 0.5, epsilon = 1e-8);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn from_parallelogram(parallelepiped: Hyperparallelepiped<2>) -> Self {
         let v1 = parallelepiped.edge_vectors[0];
         let v2 = parallelepiped.edge_vectors[1];
@@ -68,15 +170,22 @@ impl Rhomboid {
         }
     }
 
-    #[inline(always)]
+    /// Returns the edge length in the x-direction (Lx)
+    #[inline]
+    #[allow(non_snake_case)]
     pub fn Lx(&self) -> PositiveReal {
         self.extents[0]
     }
-    #[inline(always)]
+
+    /// Returns the edge length in the y-direction (Ly)
+    #[inline]
+    #[allow(non_snake_case)]
     pub fn Ly(&self) -> PositiveReal {
         self.extents[1]
     }
-    #[inline(always)]
+
+    /// Returns the xy shear factor
+    #[inline]
     pub fn xy(&self) -> f64 {
         self.xy
     }
@@ -100,6 +209,27 @@ impl Rhomboid {
     }
 
     /// Compute the vertices of the Rhomboid assuming it is centered at the origin.
+    ///
+    /// Returns the four vertices of the rhomboid in counter-clockwise order,
+    /// starting from the bottom-left corner.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rhomboid;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid::from_box_vector([2.0, 3.0, 0.0]);
+    /// let vertices = rhomboid.vertices();
+    ///
+    /// assert_eq!(vertices[0], Cartesian::from([-1.0, -1.5]));
+    /// assert_eq!(vertices[1], Cartesian::from([1.0, -1.5]));
+    /// assert_eq!(vertices[2], Cartesian::from([1.0, 1.5]));
+    /// assert_eq!(vertices[3], Cartesian::from([-1.0, 1.5]));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn vertices(&self) -> [Cartesian<2>; 4] {
@@ -133,9 +263,9 @@ impl Rhomboid {
         ]
     }
 
-    /// Get the perpendicualar distances between parallel faces of the triclinic box.
+    /// Get the perpendicular distances between parallel edges of the rhomboid.
     ///
-    /// For a rhomboid, the distance between parallel faces is not simply
+    /// For a rhomboid, the distance between parallel edges is not simply
     /// the extent since it is sheared.
     ///
     /// Returns [d_x, d_y] where d_i is the width in direction i.
@@ -146,19 +276,18 @@ impl Rhomboid {
     /// use hoomd_geometry::shape::Rhomboid;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Rhomboid::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
-    /// let distances = triclinic.get_nearest_plane_distance();
+    /// let rhomboid = Rhomboid::from_box_vector([2.0, 2.0, 0.0]);
+    /// let distances = rhomboid.get_nearest_plane_distance();
     ///
-    /// // For orthogonal box, distances are just extents/2
+    /// // For orthogonal rhomboid, distances are just extents
     /// assert_eq!(distances[0].get(), 2.0);
     /// assert_eq!(distances[1].get(), 2.0);
-    /// assert_eq!(distances[2].get(), 2.0);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
-        // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
-        let mut dist = [PositiveReal::default(); 3];
+    pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 2] {
+        // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2), A = |a_j x a_k|.
+        let mut dist = [PositiveReal::default(); 2];
         dist[0] = self.Lx() / (f64::sqrt(1.0 + self.xy() * self.xy())).try_into().unwrap();
         dist[1] = self.Ly();
         dist
@@ -166,6 +295,12 @@ impl Rhomboid {
 }
 
 impl Volume for Rhomboid {
+    /// Calculate the area of the rhomboid.
+    ///
+    /// The area is computed as the product of the edge lengths:
+    /// ```math
+    /// A = L_x \times L_y
+    /// ```
     #[inline]
     fn volume(&self) -> f64 {
         // When A is triangular, det(A) = det(diag(A))
@@ -174,6 +309,30 @@ impl Volume for Rhomboid {
 }
 
 impl Scale for Rhomboid {
+    /// Construct a scaled rhomboid.
+    ///
+    /// The resulting rhomboid's edge lengths $` L_\mathrm{new} `$ are
+    /// the original's $` L `$ scaled by $` v `$:
+    /// ```math
+    /// L_\mathrm{new} = v L
+    /// ```
+    ///
+    /// The centroid remains at the origin.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Rhomboid};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid::from_box_vector([5.0, 6.0, 1.5]);
+    ///
+    /// let scaled_rhomboid = rhomboid.scale_length(0.5.try_into()?);
+    ///
+    /// assert_eq!(scaled_rhomboid.Lx().get(), 2.5);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn scale_length(&self, v: PositiveReal) -> Self {
         Rhomboid {
@@ -182,6 +341,30 @@ impl Scale for Rhomboid {
         }
     }
 
+    /// Construct a scaled rhomboid.
+    ///
+    /// The resulting rhomboid's edge lengths $` L_\mathrm{new} `$ are
+    /// the original's $` L `$ scaled by $` v^\frac{1}{2} `$:
+    /// ```math
+    /// L_\mathrm{new} = v^\frac{1}{2} L
+    /// ```
+    ///
+    /// The centroid remains at the origin.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Rhomboid};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid::from_box_vector([5.0, 6.0, 1.5]);
+    ///
+    /// let scaled_rhomboid = rhomboid.scale_volume(4.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_rhomboid.Lx().get(), 10.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn scale_volume(&self, v: PositiveReal) -> Self {
         let v = v
@@ -194,6 +377,10 @@ impl Scale for Rhomboid {
 }
 
 impl IsPointInside<Cartesian<2>> for Rhomboid {
+    /// Test if a point is inside the rhomboid.
+    ///
+    /// Uses the transformed coordinate system where the rhomboid
+    /// becomes an axis-aligned rectangle.
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<2>) -> bool {
         let [x, y] = point.coordinates;
@@ -211,6 +398,7 @@ impl IsPointInside<Cartesian<2>> for Rhomboid {
 }
 
 impl SupportMapping<Cartesian<2>> for Rhomboid {
+    /// Calculate the point furthest from the center in a given direction.
     #[inline]
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
         let d = self.matmul_t([n[0], n[1]]);
@@ -220,6 +408,10 @@ impl SupportMapping<Cartesian<2>> for Rhomboid {
 }
 
 impl BoundingSphereRadius for Rhomboid {
+    /// Calculate the radius of the bounding sphere.
+    ///
+    /// The bounding sphere is centered at the origin and encompasses
+    /// all points of the rhomboid.
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
         // || maximal_extent || / 2.0 = { lx + ly * |xy|, ly } || / 2.0
@@ -228,6 +420,45 @@ impl BoundingSphereRadius for Rhomboid {
         ))
         .try_into()
         .expect("Norm is always positive.")
+    }
+}
+
+use rand::{
+    Rng,
+    distr::{Distribution, Uniform},
+};
+
+impl Distribution<Cartesian<2>> for Rhomboid {
+    /// Generate points uniformly distributed in the rhomboid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
+    ///
+    /// use hoomd_geometry::{IsPointInside, shape::Rhomboid};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid::from_box_vector([6.0, 8.0, 0.5]);
+    /// let mut rng = StdRng::seed_from_u64(1);
+    ///
+    /// let point = rhomboid.sample(&mut rng);
+    /// assert!(rhomboid.is_point_inside(&point));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<2> {
+        let uniform = Uniform::new(-0.5, 0.5).expect("");
+        let x = uniform.sample(rng);
+        let y = uniform.sample(rng);
+
+        let scaled_x = self.Lx().get() * x + self.Ly().get() * self.xy() * y;
+        let scaled_y = self.Ly().get() * y;
+
+        Cartesian {
+            coordinates: [scaled_x, scaled_y],
+        }
     }
 }
 
@@ -325,7 +556,7 @@ mod tests {
     };
     use approxim::assert_relative_eq;
     use hoomd_vector::Angle;
-    use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
     use rstest_reuse::{self, apply, template};
     use std::f64::consts::PI;
