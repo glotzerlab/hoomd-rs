@@ -2,12 +2,12 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, Metric, Rotate, Rotation, RotationMatrix};
+use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale, SupportMapping,
-    Volume,
+    Volume, shape::Hyperparallelepiped,
 };
 
 /// An axis-aligned parallelogram defined by a 2 x 2 upper triangular matrix.
@@ -33,6 +33,41 @@ impl From<(PositiveReal, PositiveReal, f64)> for Rhomboid {
 }
 
 impl Rhomboid {
+    pub fn from_box_vector(box_dimensions: [f64; 3]) -> Self {
+        Self {
+            extents: [
+                box_dimensions[0]
+                    .try_into()
+                    .expect("Extent Lx must be positive"),
+                box_dimensions[1]
+                    .try_into()
+                    .expect("Extent Ly must be positive"),
+            ],
+            xy: box_dimensions[2],
+        }
+    }
+
+    pub fn from_parallelogram(parallelepiped: Hyperparallelepiped<2>) -> Self {
+        let v1 = parallelepiped.edge_vectors[0];
+        let v2 = parallelepiped.edge_vectors[1];
+
+        let v1_mag = v1.norm();
+        let v2_dot_v1 = v2.dot(&v1);
+
+        let lx = v1_mag;
+        let a2x = v2_dot_v1 / v1_mag;
+        let ly = (v2.dot(&v2) - a2x * a2x).sqrt();
+        let xy = a2x / ly;
+
+        Self {
+            extents: [
+                lx.try_into().expect("Lx must be positive"),
+                ly.try_into().expect("Ly must be positive"),
+            ],
+            xy: xy,
+        }
+    }
+
     #[inline(always)]
     pub fn lx(&self) -> PositiveReal {
         self.extents[0]
@@ -86,7 +121,7 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    #[must_use] // TODO: check
+    #[must_use]
     pub fn to_gsd_box(&self) -> [f64; 6] {
         [
             self.extents[0].get(),
@@ -96,6 +131,43 @@ impl Rhomboid {
             0.0,
             0.0,
         ]
+    }
+
+    /// Get the perpendicualar distances between parallel faces of the triclinic box.
+    ///
+    /// For a rhomboid, the distance between parallel faces is not simply
+    /// the extent since it is sheared.
+    ///
+    /// Returns [d_x, d_y] where d_i is the width in direction i.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rhomboid;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic = Rhomboid::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
+    /// let distances = triclinic.get_nearest_plane_distance();
+    ///
+    /// // For orthogonal box, distances are just extents/2
+    /// assert_eq!(distances[0].get(), 2.0);
+    /// assert_eq!(distances[1].get(), 2.0);
+    /// assert_eq!(distances[2].get(), 2.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
+        // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
+        let mut dist = [PositiveReal::default(); 3];
+        dist[0] = self.Lx()
+            / (f64::sqrt(
+                1.0 + self.xy() * self.xy() + (self.xy() * self.yz() - self.xz()).powi(2),
+            ))
+            .try_into()
+            .unwrap();
+        dist[1] = self.Ly() / (f64::sqrt(1.0 + self.yz() * self.yz())).try_into().unwrap();
+        dist[2] = self.Lz();
+        dist
     }
 }
 

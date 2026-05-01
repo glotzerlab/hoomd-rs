@@ -26,7 +26,7 @@ use crate::{IsPointInside, Scale, SupportMapping, Volume, shape::Hyperparallelep
 ///
 /// # Construction
 ///
-/// Triclinic boxes can most easily be constructed using the `with_box_dimensions` method,
+/// Triclinic boxes can most easily be constructed using the `from_box_vector` method,
 /// which takes an array of 6 values: `[Lx, Ly, Lz, xy, xz, yz]`. It can also be generated
 /// from a 3D parallelepiped using the `from_parallelepiped` method.
 ///
@@ -37,7 +37,7 @@ use crate::{IsPointInside, Scale, SupportMapping, Volume, shape::Hyperparallelep
 /// use hoomd_geometry::{Volume, shape::Triclinic};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let triclinic = Triclinic::with_box_dimensions([10.0, 12.0, 14.0, 1.0, 0.5, -0.2]);
+/// let triclinic = Triclinic::from_box_vector([10.0, 12.0, 14.0, 1.0, 0.5, -0.2]);
 /// assert_eq!(triclinic.volume(), 1680.0);
 ///
 /// let extents = triclinic.extents.map(|x| x.get());
@@ -51,7 +51,7 @@ use crate::{IsPointInside, Scale, SupportMapping, Volume, shape::Hyperparallelep
 /// use hoomd_geometry::{IsPointInside, shape::Triclinic};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let triclinic = Triclinic::with_box_dimensions([6.0, 8.0, 10.0, 0.5, 0.0, 0.0]);
+/// let triclinic = Triclinic::from_box_vector([6.0, 8.0, 10.0, 0.5, 0.0, 0.0]);
 ///
 /// assert!(triclinic.is_point_inside(&[1.0, 1.0, 1.0].into()));
 /// assert!(!triclinic.is_point_inside(&[4.0, 1.0, 1.0].into()));
@@ -64,7 +64,7 @@ use crate::{IsPointInside, Scale, SupportMapping, Volume, shape::Hyperparallelep
 /// use hoomd_geometry::{Scale, shape::Triclinic};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let triclinic = Triclinic::with_box_dimensions([10.0, 12.0, 14.0, 1.0, 0.5, -0.2]);
+/// let triclinic = Triclinic::from_box_vector([10.0, 12.0, 14.0, 1.0, 0.5, -0.2]);
 ///
 /// let scaled = triclinic.scale_length(2.0.try_into()?);
 /// assert_eq!(scaled.Lx().get(), 20.0);
@@ -142,13 +142,13 @@ impl Triclinic {
     /// use hoomd_geometry::shape::Triclinic;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic::with_box_dimensions([10.0, 12.0, 14.0, 1.0, 0.5, -0.2]);
+    /// let triclinic = Triclinic::from_box_vector([10.0, 12.0, 14.0, 1.0, 0.5, -0.2]);
     /// assert_eq!(triclinic.Lx().get(), 10.0);
     /// assert_eq!(triclinic.xy(), 1.0);
     /// # Ok(())
     /// # }
     /// ```
-    pub fn with_box_dimensions(box_dimensions: [f64; 6]) -> Self {
+    pub fn from_box_vector(box_dimensions: [f64; 6]) -> Self {
         Self {
             extents: [
                 box_dimensions[0]
@@ -247,7 +247,7 @@ impl Triclinic {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic::with_box_dimensions([2.0, 3.0, 4.0, 0.5, 0.0, 0.0]);
+    /// let triclinic = Triclinic::from_box_vector([2.0, 3.0, 4.0, 0.5, 0.0, 0.0]);
     /// let edges = triclinic.get_edge_vectors();
     ///
     /// assert_eq!(edges[0], Cartesian::from([2.0, 0.0, 0.0]));
@@ -295,7 +295,7 @@ impl Triclinic {
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic::with_box_dimensions([10.0, 10.0, 10.0, 0.0, 0.0, 0.0]);
+    /// let triclinic = Triclinic::from_box_vector([10.0, 10.0, 10.0, 0.0, 0.0, 0.0]);
     /// let angles = triclinic.get_box_angles();
     ///
     /// // For orthogonal box, all angles should be 90 degrees
@@ -331,7 +331,7 @@ impl Triclinic {
     /// use hoomd_geometry::shape::Triclinic;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
+    /// let triclinic = Triclinic::from_box_vector([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
     /// let distances = triclinic.get_nearest_plane_distance();
     ///
     /// // For orthogonal box, distances are just extents/2
@@ -389,7 +389,7 @@ impl Triclinic {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic =
-    ///     Triclinic::with_box_dimensions([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
+    ///     Triclinic::from_box_vector([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
     ///
     /// let gsd_box = triclinic.to_gsd_box();
     /// assert_eq!(gsd_box, [5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
@@ -448,7 +448,7 @@ impl Scale for Triclinic {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic =
-    ///     Triclinic::with_box_dimensions([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
+    ///     Triclinic::from_box_vector([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
     ///
     /// let scaled_triclinic = triclinic.scale_length(0.5.try_into()?);
     ///
@@ -481,7 +481,7 @@ impl Scale for Triclinic {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic =
-    ///     Triclinic::with_box_dimensions([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
+    ///     Triclinic::from_box_vector([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
     ///
     /// let scaled_triclinic = triclinic.scale_volume(8.0.try_into()?);
     ///
@@ -507,7 +507,7 @@ impl Distribution<Cartesian<3>> for Triclinic {
     /// use hoomd_geometry::{IsPointInside, shape::Triclinic};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic::with_box_dimensions([6.0, 8.0, 10.0, 0.5, 0.0, 0.0]);
+    /// let triclinic = Triclinic::from_box_vector([6.0, 8.0, 10.0, 0.5, 0.0, 0.0]);
     /// let mut rng = StdRng::seed_from_u64(1);
     ///
     /// let point = triclinic.sample(&mut rng);
