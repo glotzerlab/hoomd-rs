@@ -69,11 +69,11 @@ impl Rhomboid {
     }
 
     #[inline(always)]
-    pub fn lx(&self) -> PositiveReal {
+    pub fn Lx(&self) -> PositiveReal {
         self.extents[0]
     }
     #[inline(always)]
-    pub fn ly(&self) -> PositiveReal {
+    pub fn Ly(&self) -> PositiveReal {
         self.extents[1]
     }
     #[inline(always)]
@@ -85,8 +85,8 @@ impl Rhomboid {
     #[inline]
     fn matmul(&self, v: [f64; 2]) -> [f64; 2] {
         [
-            self.lx().get() * v[0] + self.ly().get() * self.xy() * v[1],
-            self.ly().get() * v[1],
+            self.Lx().get() * v[0] + self.Ly().get() * self.xy() * v[1],
+            self.Ly().get() * v[1],
         ]
     }
 
@@ -94,8 +94,8 @@ impl Rhomboid {
     #[inline]
     fn matmul_t(&self, v: [f64; 2]) -> [f64; 2] {
         [
-            self.lx().get() * v[0],
-            self.ly().get() * self.xy() * v[0] + self.ly().get() * v[1],
+            self.Lx().get() * v[0],
+            self.Ly().get() * self.xy() * v[0] + self.Ly().get() * v[1],
         ]
     }
 
@@ -159,14 +159,8 @@ impl Rhomboid {
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 3];
-        dist[0] = self.Lx()
-            / (f64::sqrt(
-                1.0 + self.xy() * self.xy() + (self.xy() * self.yz() - self.xz()).powi(2),
-            ))
-            .try_into()
-            .unwrap();
-        dist[1] = self.Ly() / (f64::sqrt(1.0 + self.yz() * self.yz())).try_into().unwrap();
-        dist[2] = self.Lz();
+        dist[0] = self.Lx() / (f64::sqrt(1.0 + self.xy() * self.xy())).try_into().unwrap();
+        dist[1] = self.Ly();
         dist
     }
 }
@@ -175,7 +169,7 @@ impl Volume for Rhomboid {
     #[inline]
     fn volume(&self) -> f64 {
         // When A is triangular, det(A) = det(diag(A))
-        self.lx().get() * self.ly().get()
+        self.Lx().get() * self.Ly().get()
     }
 }
 
@@ -203,11 +197,11 @@ impl IsPointInside<Cartesian<2>> for Rhomboid {
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<2>) -> bool {
         let [x, y] = point.coordinates;
-        let ly_half = self.ly().get() / 2.0;
+        let ly_half = self.Ly().get() / 2.0;
         if y < -ly_half || y >= ly_half {
             return false;
         }
-        let lx_half = self.lx().get() / 2.0;
+        let lx_half = self.Lx().get() / 2.0;
         let x_skew = x - self.xy() * y;
         if x_skew < -lx_half || x_skew >= lx_half {
             return false;
@@ -230,7 +224,7 @@ impl BoundingSphereRadius for Rhomboid {
     fn bounding_sphere_radius(&self) -> PositiveReal {
         // || maximal_extent || / 2.0 = { lx + ly * |xy|, ly } || / 2.0
         (0.5 * f64::sqrt(
-            (self.lx().get() + self.ly().get() * self.xy().abs()).powi(2) + self.ly().get().powi(2),
+            (self.Lx().get() + self.Ly().get() * self.xy().abs()).powi(2) + self.Ly().get().powi(2),
         ))
         .try_into()
         .expect("Norm is always positive.")
@@ -252,8 +246,8 @@ where
         let o_j = RotationMatrix::from(*o_ij);
         let [c, s] = [o_j.rows()[0][0], o_j.rows()[1][0]];
 
-        let (lx1, ly1, xy1) = (self.lx().get(), self.ly().get(), self.xy());
-        let (lx2, ly2, xy2) = (other.lx().get(), other.ly().get(), other.xy());
+        let (lx1, ly1, xy1) = (self.Lx().get(), self.Ly().get(), self.xy());
+        let (lx2, ly2, xy2) = (other.Lx().get(), other.Ly().get(), other.xy());
         let [tx, ty] = [v_ij[0], v_ij[1]];
 
         // The SAT check projects the distance between centers onto the normals of each
@@ -510,16 +504,16 @@ mod tests {
     fn scale_preserves_aspect_ratio_and_volume() {
         let rhomboid: Rhomboid = (3.0.try_into().unwrap(), 2.0.try_into().unwrap(), 1.5).into();
         let original_volume = rhomboid.volume();
-        let original_lx_over_ly = rhomboid.lx().get() / rhomboid.ly().get();
+        let original_lx_over_ly = rhomboid.Lx().get() / rhomboid.Ly().get();
 
         let scaled = rhomboid.scale_length(2.0.try_into().unwrap());
         assert_relative_eq!(scaled.volume(), 4.0 * original_volume);
-        assert_relative_eq!(scaled.lx().get() / scaled.ly().get(), original_lx_over_ly);
+        assert_relative_eq!(scaled.Lx().get() / scaled.Ly().get(), original_lx_over_ly);
         assert_eq!(scaled.xy(), rhomboid.xy());
 
         let scaled = rhomboid.scale_volume(9.0.try_into().unwrap());
         assert_relative_eq!(scaled.volume(), 9.0 * original_volume);
-        assert_relative_eq!(scaled.lx().get() / scaled.ly().get(), original_lx_over_ly);
+        assert_relative_eq!(scaled.Lx().get() / scaled.Ly().get(), original_lx_over_ly);
         assert_eq!(scaled.xy(), rhomboid.xy());
     }
 
@@ -608,11 +602,11 @@ mod tests {
                  b=({}, {}, {})\n\
                  t=({}, {})\n\
                  theta={}",
-                a.lx().get(),
-                a.ly().get(),
+                a.Lx().get(),
+                a.Ly().get(),
                 a.xy(),
-                b.lx().get(),
-                b.ly().get(),
+                b.Lx().get(),
+                b.Ly().get(),
                 b.xy(),
                 v_ij[0],
                 v_ij[1],
