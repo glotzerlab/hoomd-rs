@@ -2,7 +2,8 @@ use crate::matrix::Matrix;
 
 ///
 ///
-/// Implementation based on https://www.sfu.ca/~jtmulhol/py4math/linalg/np-gramschmidt/
+/// Implementation based on <https://www.sfu.ca/~jtmulhol/py4math/linalg/np-gramschmidt/>
+#[must_use]
 #[inline]
 pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<N, M> {
     let mut a = a.clone();
@@ -14,11 +15,23 @@ pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<
                 .get_col_slice_iter(k, 0..N)
                 .zip(a.get_col_slice_iter(j, 0..N))
                 .fold(0.0, |acc, (l, r)| acc + (l * r));
-            let mut proj_j_onto_k = a.get_col_slice_iter(k, 0..N).map(|x| x * j_dot_k);
             for i in 0..N {
-                a[(i, j)] -= proj_j_onto_k.next().unwrap();
+                a[(i, j)] -= a[(k, i)] * j_dot_k;
             }
-        }
+//         # If original vectors aren't lin indep then we can check for this:
+//         #
+//         if np.isclose(np.linalg.norm(A[:, j]), 0, rtol=1e-15, atol=1e-14, equal_nan=False):
+//             A[:, j] = np.zeros(A.shape[0])
+//         else:
+//             A[:, j] = A[:, j] / np.linalg.norm(A[:, j])
+            let column_j_norm = a
+                .get_col(j).iter_elements().fold(0.0, |acc, x| acc + x*x).sqrt();
+            if column_j_norm.is_finite() {
+                a.get_col_slice_iter_mut(j, 0..N).for_each(|x|*x /= column_j_norm);
+            }
+             else {
+                 
+             }
     }
     a
 }
