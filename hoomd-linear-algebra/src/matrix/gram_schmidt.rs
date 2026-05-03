@@ -15,7 +15,8 @@ pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<
                 .get_col(k)
                 .iter_elements()
                 .zip(a.get_col(j).iter_elements())
-                .fold(0.0, |acc, (l, r)| acc + (l * r));
+                .map(|(l, r)| l * r)
+                .sum::<f64>();
             // Apply the projection
             for i in 0..N {
                 a[(i, j)] -= a[(i, k)] * j_dot_k;
@@ -24,7 +25,8 @@ pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<
         let column_j_norm = a
             .get_col(j)
             .iter_elements()
-            .fold(0.0, |acc, x| acc + x * x)
+            .map(|x| x * x)
+            .sum::<f64>()
             .sqrt();
         // If the initial vectors are not linearly independent, zero out the col.
         if column_j_norm.is_finite() {
