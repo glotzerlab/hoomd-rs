@@ -15,23 +15,26 @@ pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<
                 .get_col_slice_iter(k, 0..N)
                 .zip(a.get_col_slice_iter(j, 0..N))
                 .fold(0.0, |acc, (l, r)| acc + (l * r));
+            // Apply the projection
             for i in 0..N {
-                a[(i, j)] -= a[(k, i)] * j_dot_k;
+                a[(i, j)] -= a[(i, k)] * j_dot_k;
             }
-//         # If original vectors aren't lin indep then we can check for this:
-//         #
-//         if np.isclose(np.linalg.norm(A[:, j]), 0, rtol=1e-15, atol=1e-14, equal_nan=False):
-//             A[:, j] = np.zeros(A.shape[0])
-//         else:
-//             A[:, j] = A[:, j] / np.linalg.norm(A[:, j])
+            // # If original vectors aren't lin indep then we can check for this:
+            // #
+            // if np.isclose(np.linalg.norm(A[:, j]), 0, rtol=1e-15, atol=1e-14, equal_nan=False):
+            //     A[:, j] = np.zeros(A.shape[0])
+            // else:
+            //     A[:, j] = A[:, j] / np.linalg.norm(A[:, j])
             let column_j_norm = a
-                .get_col(j).iter_elements().fold(0.0, |acc, x| acc + x*x).sqrt();
+                .get_col(j)
+                .iter_elements()
+                .fold(0.0, |acc, x| acc + x * x)
+                .sqrt();
             if column_j_norm.is_finite() {
-                a.get_col_slice_iter_mut(j, 0..N).for_each(|x|*x /= column_j_norm);
+                a.get_col_slice_iter_mut(j, 0..N)
+                    .for_each(|x| *x /= column_j_norm);
             }
-             else {
-                 
-             }
+        }
     }
     a
 }
