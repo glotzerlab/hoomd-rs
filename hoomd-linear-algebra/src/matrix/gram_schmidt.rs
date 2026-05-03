@@ -1,5 +1,7 @@
 use crate::matrix::Matrix;
 
+pub const GRAM_SCHMIDT_EPSILON: f64 = 1e-12;
+
 /// Construct an orthonormal basis from the vectors in a [`Matrix`].
 ///
 /// Implementation based on <https://www.sfu.ca/~jtmulhol/py4math/linalg/np-gramschmidt/>
@@ -29,7 +31,7 @@ pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<
             .sum::<f64>()
             .sqrt();
         // If the initial vectors are not linearly independent, zero out the column
-        if column_j_norm.is_finite() {
+        if column_j_norm > GRAM_SCHMIDT_EPSILON {
             a.get_col_slice_iter_mut(j, 0..N)
                 .for_each(|x| *x /= column_j_norm);
         } else {
