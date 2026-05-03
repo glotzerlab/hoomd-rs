@@ -20,20 +20,19 @@ pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<
             for i in 0..N {
                 a[(i, j)] -= a[(i, k)] * j_dot_k;
             }
-            let column_j_norm = a
-                .get_col(j)
-                .iter_elements()
-                .fold(0.0, |acc, x| acc + x * x)
-                .sqrt();
-
-            // If the initial vectors are not linearly independent, zero out the col.
-            if column_j_norm.is_finite() {
-                a.get_col_slice_iter_mut(j, 0..N)
-                    .for_each(|x| *x /= column_j_norm);
-            } else {
-                a.get_col_slice_iter_mut(j, 0..N).for_each(|x| *x = 0.0);
-            }
+        } // end loop over k
+        let column_j_norm = a
+            .get_col(j)
+            .iter_elements()
+            .fold(0.0, |acc, x| acc + x * x)
+            .sqrt();
+        // If the initial vectors are not linearly independent, zero out the col.
+        if column_j_norm.is_finite() {
+            a.get_col_slice_iter_mut(j, 0..N)
+                .for_each(|x| *x /= column_j_norm);
+        } else {
+            a.get_col_slice_iter_mut(j, 0..N).for_each(|x| *x = 0.0);
         }
-    }
+    } // end loop over j
     a
 }
