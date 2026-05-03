@@ -14,10 +14,10 @@ pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<
                 .get_col_slice_iter(k, 0..N)
                 .zip(a.get_col_slice_iter(j, 0..N))
                 .fold(0.0, |acc, (l, r)| acc + (l * r));
-            let proj_j_onto_k = a.get_col_slice_iter(k, 0..N).map(|x| x * j_dot_k);
-            a.get_col_slice_iter_mut(j, 0..N)
-                .zip(proj_j_onto_k)
-                .map(|(a_ji, proj_i)| *a_ji -= proj_i);
+            let mut proj_j_onto_k = a.get_col_slice_iter(k, 0..N).map(|x| x * j_dot_k);
+            for i in 0..N {
+                a[(i, j)] -= proj_j_onto_k.next().unwrap();
+            }
         }
     }
     a
