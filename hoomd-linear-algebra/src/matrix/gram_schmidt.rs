@@ -28,7 +28,7 @@ pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<
             .map(|x| x * x)
             .sum::<f64>()
             .sqrt();
-        // If the initial vectors are not linearly independent, zero out the col.
+        // If the initial vectors are not linearly independent, zero out the column
         if column_j_norm.is_finite() {
             a.get_col_slice_iter_mut(j, 0..N)
                 .for_each(|x| *x /= column_j_norm);
