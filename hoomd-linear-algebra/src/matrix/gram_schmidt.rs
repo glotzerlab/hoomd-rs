@@ -10,7 +10,7 @@ pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<
     for j in 0..a.n_columns() {
         // For the vector in column k, find the perpendicular of the projection onto
         // the previous orthogonal vectors.
-        for k in (0..j) {
+        for k in 0..j {
             let j_dot_k = a
                 .get_col(k)
                 .iter_elements()
