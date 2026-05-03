@@ -1,8 +1,9 @@
 use crate::matrix::Matrix;
 
+/// Tolerance for norms below which a vector is considered to be the zero vector in Gram-Schmidt.
 pub const GRAM_SCHMIDT_EPSILON: f64 = 1e-12;
 
-/// Construct an orthonormal basis from the vectors in a [`Matrix`].
+/// Construct an orthonormal basis from the vectors in a [`Matrix`] using the modified Gram-Schmidt procedure.
 ///
 /// Implementation based on <https://www.sfu.ca/~jtmulhol/py4math/linalg/np-gramschmidt/>
 #[must_use]
