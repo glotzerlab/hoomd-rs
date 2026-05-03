@@ -12,6 +12,9 @@ pub mod ops;
 /// ``qr`` decomposition for [`Matrix`] types.
 pub mod qr;
 
+/// ``Gram-Schmidt`` orthonormalization for [`Matrix`] types.
+pub mod gram_schmidt;
+
 pub use crate::diagonal::DiagonalMatrix;
 
 /// A lightweight representation of a diagonal matrix.
