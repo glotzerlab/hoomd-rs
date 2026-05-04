@@ -99,16 +99,16 @@ use hoomd_simulation::Simulation;
 pub mod representation;
 
 /// The default color for the primary representation (in 2D).
-pub const PRIMARY_COLOR: Color = Color::srgb(249.0 / 255.0, 203.0 / 255.0, 136.0 / 255.0);
+pub const PRIMARY_COLOR: Color = Color::srgb(0.836, 0.533, 0.211);
 
 /// The default color for highlighted features.
 pub const HIGHLIGHT_COLOR: Color = Color::srgb(174.0 / 255.0, 215.0 / 255.0, 1.0);
 
 /// The default color for the primary representation (darkened for 3D lighting).
-pub const PRIMARY_COLOR_3D: Color = Color::srgb(0.836, 0.533, 0.211);
+pub const PRIMARY_COLOR_3D: Color = Color::srgb(0.7, 0.4, 0.0);
 
 /// The default color for a muted representation.
-pub const MUTED_COLOR: Color = Color::srgb(0.75, 0.75, 0.75);
+pub const MUTED_COLOR: Color = Color::srgb(0.5, 0.5, 0.5);
 
 /// The default color for the boundary representation.
 pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
