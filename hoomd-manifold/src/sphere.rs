@@ -488,4 +488,15 @@ mod tests {
             assert!(d > distance);
         }
     }
+    #[test]
+    fn from_versor() {
+        // generate a 3-sphere point from a versor
+        let mut rng = StdRng::seed_from_u64(112358);
+        let v: Versor = rng.random();
+        let sphere_pt = Spherical::<4>::from_versor(v);
+        assert_eq!(sphere_pt.coordinates()[0], v.get().scalar);
+        assert_eq!(sphere_pt.coordinates()[1], v.get().vector.coordinates[0]);
+        assert_eq!(sphere_pt.coordinates()[2], v.get().vector.coordinates[1]);
+        assert_eq!(sphere_pt.coordinates()[3], v.get().vector.coordinates[2]);
+    }
 }
