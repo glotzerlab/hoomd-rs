@@ -1019,10 +1019,8 @@ pub mod test_utils {
         }
     }
 
-    pub(crate) fn assert_diags_ulps_eq<const N: usize, T0, T1>(
-        m0: &T0,
-        m1: &T1,
-    ) where
+    pub(crate) fn assert_diags_ulps_eq<const N: usize, T0, T1>(m0: &T0, m1: &T1)
+    where
         T0: Index<usize, Output = f64> + ?Sized,
         T1: Index<usize, Output = f64> + ?Sized,
     {

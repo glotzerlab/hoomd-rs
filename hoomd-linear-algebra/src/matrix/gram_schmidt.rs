@@ -50,8 +50,7 @@ pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::matrix::Matrix;
-    use crate::matrix::test_utils::assert_matrixes_ulps_eq;
+    use crate::matrix::{Matrix, test_utils::assert_matrixes_ulps_eq};
 
     #[test]
     fn test_gram_schmidt_3x3() {
