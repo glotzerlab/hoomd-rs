@@ -215,7 +215,8 @@ impl Metric for Spherical<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
-        arg.acos()
+        let arg_clipped = arg.clamp(-1.0,1.0);
+        arg_clipped.acos()
     }
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
@@ -242,7 +243,8 @@ impl Metric for Spherical<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
-        arg.acos()
+        let arg_clipped = arg.clamp(-1.0,1.0);
+        arg_clipped.acos()
     }
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
