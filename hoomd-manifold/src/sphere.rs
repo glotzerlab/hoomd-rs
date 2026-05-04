@@ -173,7 +173,7 @@ impl Metric for Spherical<4> {
 /// Randomly distribute points locally on a sphere.
 ///
 /// [`SphericalDisk`] is a uniform distribution of points within distance `r` of
-/// a point on the 2-sphere with a given radius.
+/// a point on the unit 2-sphere.
 ///
 /// # Example
 ///
