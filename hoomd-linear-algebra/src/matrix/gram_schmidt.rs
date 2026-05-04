@@ -10,33 +10,35 @@ pub const GRAM_SCHMIDT_EPSILON: f64 = 1e-12;
 #[inline]
 pub fn gram_schmidt<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<N, M> {
     let mut a = a.clone();
-    for j in 0..a.n_columns() {
+    for j in 0..M {
         // For the vector in column k, find the perpendicular of the projection onto
         // the previous orthogonal vectors.
         for k in 0..j {
-            let j_dot_k = a
-                .get_col(k)
-                .iter_elements()
-                .zip(a.get_col(j).iter_elements())
-                .map(|(l, r)| l * r)
-                .sum::<f64>();
+            let mut j_dot_k = 0.0;
+            for i in 0..N {
+                j_dot_k += a[(i, k)] * a[(i, j)];
+            }
             // Apply the projection
             for i in 0..N {
                 a[(i, j)] -= a[(i, k)] * j_dot_k;
             }
         } // end loop over k
-        let column_j_norm = a
-            .get_col(j)
-            .iter_elements()
-            .map(|x| x * x)
-            .sum::<f64>()
-            .sqrt();
+
+        let mut column_j_norm_sq = 0.0;
+        for i in 0..N {
+            column_j_norm_sq += a[(i, j)] * a[(i, j)];
+        }
+        let column_j_norm = column_j_norm_sq.sqrt();
+
         // If the initial vectors are not linearly independent, zero out the column
         if column_j_norm > GRAM_SCHMIDT_EPSILON {
-            a.get_col_slice_iter_mut(j, 0..N)
-                .for_each(|x| *x /= column_j_norm);
+            for i in 0..N {
+                a[(i, j)] /= column_j_norm;
+            }
         } else {
-            a.get_col_slice_iter_mut(j, 0..N).for_each(|x| *x = 0.0);
+            for i in 0..N {
+                a[(i, j)] = 0.0;
+            }
         }
     } // end loop over j
     a
