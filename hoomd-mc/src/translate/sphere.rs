@@ -53,7 +53,7 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
         body_properties: Point<Spherical<3>>,
     ) -> Point<Spherical<3>> {
         let mut trial = body_properties;
-        let displacement = (self.maximum_distance().get())*rng.sample::<f64, _>(StandardNormal);
+        let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
         let (sn, cs) = (displacement.sin(), displacement.cos());
         let vec = Cartesian::<3>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
         let proj = vec.dot(trial.position.point());
@@ -66,12 +66,11 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
         let (unit, _norm) = tangent.to_unit().expect("cannot be null");
         println!("new unit vector: {:?}", unit);
         let new = Cartesian::from([
-            trial.position.coordinates()[0] * cs + unit.get().coordinates[0]*sn,
-            trial.position.coordinates()[1] * cs + unit.get().coordinates[1]*sn,
-            trial.position.coordinates()[2] * cs + unit.get().coordinates[2]*sn,
+            trial.position.coordinates()[0] * cs + unit.get().coordinates[0] * sn,
+            trial.position.coordinates()[1] * cs + unit.get().coordinates[1] * sn,
+            trial.position.coordinates()[2] * cs + unit.get().coordinates[2] * sn,
         ]);
-        *trial.position_mut() = Spherical::from_cartesian_coordinates(
-            new);
+        *trial.position_mut() = Spherical::from_cartesian_coordinates(new);
         trial
     }
 }
@@ -91,9 +90,11 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(14);
-    /// let initial_point = Point::new(
-    ///     Spherical::<4>::from_polar_coordinates(PI/4.0, PI/10.0, 5.0*PI/4.0)
-    /// );
+    /// let initial_point = Point::new(Spherical::<4>::from_polar_coordinates(
+    ///     PI / 4.0,
+    ///     PI / 10.0,
+    ///     5.0 * PI / 4.0,
+    /// ));
     /// let d = 0.1;
     /// let translate = Translate::with_maximum_distance(d.try_into()?);
     ///
@@ -116,9 +117,13 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
     /// # }
     /// ```
     #[inline]
-    fn propose<R: Rng>(&self, rng: &mut R, body_properties: Point<Spherical<4>>) -> Point<Spherical<4>> {
+    fn propose<R: Rng>(
+        &self,
+        rng: &mut R,
+        body_properties: Point<Spherical<4>>,
+    ) -> Point<Spherical<4>> {
         let mut trial = body_properties;
-        let displacement = (self.maximum_distance().get())*rng.sample::<f64, _>(StandardNormal);
+        let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
         let (sn, cs) = (displacement.sin(), displacement.cos());
         let vec = Cartesian::<4>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
         let proj = vec.dot(trial.position.point());
@@ -130,13 +135,12 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
         ]);
         let (unit, _norm) = tangent.to_unit().expect("cannot be null");
         let new = Cartesian::from([
-            trial.position.coordinates()[0] * cs + unit.get().coordinates[0]*sn,
-            trial.position.coordinates()[1] * cs + unit.get().coordinates[1]*sn,
-            trial.position.coordinates()[2] * cs + unit.get().coordinates[2]*sn,
-            trial.position.coordinates()[3] * cs + unit.get().coordinates[3]*sn,
+            trial.position.coordinates()[0] * cs + unit.get().coordinates[0] * sn,
+            trial.position.coordinates()[1] * cs + unit.get().coordinates[1] * sn,
+            trial.position.coordinates()[2] * cs + unit.get().coordinates[2] * sn,
+            trial.position.coordinates()[3] * cs + unit.get().coordinates[3] * sn,
         ]);
-        *trial.position_mut() = Spherical::from_cartesian_coordinates(
-            new);
+        *trial.position_mut() = Spherical::from_cartesian_coordinates(new);
         trial
     }
 }

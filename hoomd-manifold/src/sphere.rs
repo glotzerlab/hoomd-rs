@@ -130,31 +130,53 @@ impl Spherical<4> {
     #[inline]
     #[must_use]
     pub fn from_versor(versor: Versor) -> Spherical<4> {
-        let (a,b,c,d) = versor.get_components();
-        Spherical::<4>::from_cartesian_coordinates(
-            Cartesian::from([a,b,c,d]))
+        let (a, b, c, d) = versor.get_components();
+        Spherical::<4>::from_cartesian_coordinates(Cartesian::from([a, b, c, d]))
     }
     /// Create a versor which maps $`(1,0,0,0)`$ to the target `Spherical<4>` point.
     /// # Example
     /// ```
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::Spherical;
     /// use hoomd_vector::{Cartesian, Quaternion, Versor};
-    /// use approxim::assert_relative_eq;
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let radius = 1.0;
-    /// let x = Spherical::<4>::from_polar_coordinates(PI/4.0, PI/8.0, 5.0*PI/4.0);
+    /// let x = Spherical::<4>::from_polar_coordinates(
+    ///     PI / 4.0,
+    ///     PI / 8.0,
+    ///     5.0 * PI / 4.0,
+    /// );
     /// let x_versor = x.to_versor();
-    /// let pole_versor = Quaternion::from([1.0,0.0,0.0,0.0]).to_versor().expect("not a null vector");
-    /// let transformation = (*x_versor.get() * *pole_versor.get() * *x_versor.get())
+    /// let pole_versor = Quaternion::from([1.0, 0.0, 0.0, 0.0])
     ///     .to_versor()
-    ///     .expect("Hard-coded example is valid");
+    ///     .expect("not a null vector");
+    /// let transformation =
+    ///     (*x_versor.get() * *pole_versor.get() * *x_versor.get())
+    ///         .to_versor()
+    ///         .expect("Hard-coded example is valid");
     /// let mapped_pole = Spherical::<4>::from_versor(transformation);
-    /// assert_relative_eq!(mapped_pole.coordinates()[0], x.coordinates()[0], epsilon=1e-12);
-    /// assert_relative_eq!(mapped_pole.coordinates()[1], x.coordinates()[1], epsilon=1e-12);
-    /// assert_relative_eq!(mapped_pole.coordinates()[2], x.coordinates()[2], epsilon=1e-12);
-    /// assert_relative_eq!(mapped_pole.coordinates()[3], x.coordinates()[3], epsilon=1e-12);
+    /// assert_relative_eq!(
+    ///     mapped_pole.coordinates()[0],
+    ///     x.coordinates()[0],
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(
+    ///     mapped_pole.coordinates()[1],
+    ///     x.coordinates()[1],
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(
+    ///     mapped_pole.coordinates()[2],
+    ///     x.coordinates()[2],
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(
+    ///     mapped_pole.coordinates()[3],
+    ///     x.coordinates()[3],
+    ///     epsilon = 1e-12
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -162,9 +184,19 @@ impl Spherical<4> {
     #[must_use]
     pub fn to_versor(&self) -> Versor {
         let phi = self.coordinates()[3].atan2(self.coordinates()[2]);
-        let theta = ((self.coordinates()[3].powi(2) + self.coordinates()[2].powi(2)).sqrt()).atan2(self.coordinates()[1]);
-        let psi = ((self.coordinates()[3].powi(2) + self.coordinates()[2].powi(2) + self.coordinates()[1].powi(2)).sqrt()).atan2(self.coordinates()[0]);
-        let n_hat = Cartesian::from([theta.cos(), (theta.sin())*(phi.cos()), (theta.sin())*(phi.sin())]).to_unit_unchecked();
+        let theta = ((self.coordinates()[3].powi(2) + self.coordinates()[2].powi(2)).sqrt())
+            .atan2(self.coordinates()[1]);
+        let psi = ((self.coordinates()[3].powi(2)
+            + self.coordinates()[2].powi(2)
+            + self.coordinates()[1].powi(2))
+        .sqrt())
+        .atan2(self.coordinates()[0]);
+        let n_hat = Cartesian::from([
+            theta.cos(),
+            (theta.sin()) * (phi.cos()),
+            (theta.sin()) * (phi.sin()),
+        ])
+        .to_unit_unchecked();
         Versor::from_axis_angle(n_hat.0, psi)
     }
 }
@@ -336,13 +368,21 @@ impl Distribution<Spherical<4>> for SphericalDisk<4> {
         let max_trans = self.disk_radius.get();
         let point = self.point;
         // generate random unit cartesian vector
-        let v : Versor = rng.random();
-        let b_hat = v.rotate(&Cartesian::from([1.0,0.0,0.0])).to_unit().expect("hard coded non-null vector");
+        let v: Versor = rng.random();
+        let b_hat = v
+            .rotate(&Cartesian::from([1.0, 0.0, 0.0]))
+            .to_unit()
+            .expect("hard coded non-null vector");
         let eta = Uniform::new(0.0, max_trans).expect("hard coded non-negative");
         let translation_versor = Versor::from_axis_angle(b_hat.0, eta.sample(rng));
 
-        let position_versor = Quaternion::from(*point.coordinates()).to_versor().expect("spherical points cannot be null");
-        let transformation = ((*translation_versor.get()) * (*position_versor.get()) * (*translation_versor.get())).to_versor().expect("spherical points cannot be null");
+        let position_versor = Quaternion::from(*point.coordinates())
+            .to_versor()
+            .expect("spherical points cannot be null");
+        let transformation =
+            ((*translation_versor.get()) * (*position_versor.get()) * (*translation_versor.get()))
+                .to_versor()
+                .expect("spherical points cannot be null");
         let sphere_point = Spherical::<4>::from_versor(transformation);
         Spherical::<4>::from_cartesian_coordinates(*sphere_point.point())
     }
