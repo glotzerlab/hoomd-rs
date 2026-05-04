@@ -7,9 +7,9 @@ use rand::{Rng, RngExt};
 use rand_distr::StandardNormal;
 
 use crate::{LocalTrial, Translate};
-use hoomd_manifold::{Spherical, SphericalDisk};
+use hoomd_manifold::Spherical;
 use hoomd_microstate::property::{Point, Position};
-use hoomd_vector::{InnerProduct, Quaternion, Versor};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     /// Propose local trial moves for a body on the surface of a sphere
@@ -25,10 +25,8 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(14);
-    /// let radius: f64 = 1.0;
     /// let initial_point = Point::new(Spherical::from_cartesian_coordinates(
     ///     [0.5_f64.sqrt(), 0.5_f64.sqrt(), 0.0].into(),
-    ///     1.0_f64,
     /// ));
     /// let d = 0.1;
     /// let translate = Translate::with_maximum_distance(d.try_into()?);
@@ -87,15 +85,14 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
     /// use hoomd_manifold::{Spherical, SphericalDisk};
     /// use hoomd_mc::{LocalTrial, Translate};
     /// use hoomd_microstate::property::{Point, Position};
-    /// use hoomd_vector::{Cartesian, Metric, Vector};
+    /// use hoomd_vector::{Cartesian, InnerProduct, Metric, Vector};
     /// use rand::{Rng, SeedableRng, rngs::StdRng};
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(14);
-    /// let radius: f64 = 1.0;
     /// let initial_point = Point::new(
-    ///     Spherical::<4>::from_polar_coordinates(1.0, PI/4.0, PI/10.0, 5.0*PI/4.0)
+    ///     Spherical::<4>::from_polar_coordinates(PI/4.0, PI/10.0, 5.0*PI/4.0)
     /// );
     /// let d = 0.1;
     /// let translate = Translate::with_maximum_distance(d.try_into()?);
@@ -103,7 +100,11 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
     /// let new_body_properties = translate.propose(&mut rng, initial_point);
     ///
     /// // Translation move keeps point on the surface of the sphere
-    /// assert_eq!(new_body_properties.position().radius(), radius,);
+    /// assert_relative_eq!(
+    ///     new_body_properties.position().point().norm(),
+    ///     1.0_f64,
+    ///     epsilon = 1e-8
+    /// );
     ///
     /// // Translation move does not translate the point more than a distance d away
     /// assert!(
@@ -115,7 +116,7 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
     /// # }
     /// ```
     #[inline]
-    fn propose<R: Rng>(&self, rng: &mut R, body_properties: Point<Spherical<3>>) -> Point<Spherical<3>> {
+    fn propose<R: Rng>(&self, rng: &mut R, body_properties: Point<Spherical<4>>) -> Point<Spherical<4>> {
         let mut trial = body_properties;
         let displacement = (self.maximum_distance().get())*rng.sample::<f64, _>(StandardNormal);
         let (sn, cs) = (displacement.sin(), displacement.cos());

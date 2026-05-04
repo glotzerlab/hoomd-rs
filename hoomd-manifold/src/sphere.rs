@@ -103,25 +103,26 @@ impl Spherical<4> {
     /// Create a point on a 3-sphere from spherical coordinates. Note that this uses
     /// the convention
     /// ```math
-    /// \begin{pmatrix}r\cos\psi
-    /// \\ r\sin\psi\cos\theta
-    /// \\ r\sin\psi\sin\theta\cos\phi
-    /// \\ r\sin\psi\sin\theta\sin\phi
+    /// \begin{pmatrix}
+    /// \sin\theta \cos\phi_1
+    /// \\ \sin\theta \sin\phi_1 \cos\phi_2
+    /// \\ \sin\theta \sin\phi_1 \sin\phi_2
+    /// \\ \cos\theta
     /// \end{pmatrix}
     /// ```
-    /// where $`\psi`$ and $`theta`$ both run over the range $`0`$ to $`\pi`$ and $`\phi`$
+    /// where $`\theta`$ and $`phi_1`$ both run over the range $`0`$ to $`\pi`$ and $`\phi_2`$
     /// runs from $`0`$ to $`2\pi`$.
     #[inline]
     #[must_use]
-    pub fn from_polar_coordinates(psi: f64, theta: f64, phi: f64) -> Spherical<4> {
-        let psi_mod = psi.rem_euclid(PI);
+    pub fn from_polar_coordinates(theta: f64, phi_1: f64, phi_2: f64) -> Spherical<4> {
         let theta_mod = theta.rem_euclid(PI);
-        let phi_mod = phi.rem_euclid(2.0 * PI);
+        let phi_1_mod = phi_1.rem_euclid(PI);
+        let phi_2_mod = phi_2.rem_euclid(2.0 * PI);
         let point = Cartesian::from([
-            (psi_mod.cos()),
-            (psi_mod.sin()) * (theta_mod.cos()),
-            (psi_mod.sin()) * (theta_mod.sin()) * (phi_mod.cos()),
-            (psi_mod.sin()) * (theta_mod.sin()) * (phi_mod.sin()),
+            (theta_mod.sin()) * (phi_1_mod.cos()),
+            (theta_mod.sin()) * (phi_1_mod.sin()) * (phi_2_mod.cos()),
+            (theta_mod.sin()) * (phi_1_mod.sin()) * (phi_2_mod.sin()),
+            theta_mod.cos(),
         ]);
         Spherical::from_cartesian_coordinates(point)
     }
@@ -143,7 +144,7 @@ impl Spherical<4> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let radius = 1.0;
-    /// let x = Spherical::<4>::from_polar_coordinates(1.0,PI/4.0, PI/8.0, 5.0*PI/4.0);
+    /// let x = Spherical::<4>::from_polar_coordinates(PI/4.0, PI/8.0, 5.0*PI/4.0);
     /// let x_versor = x.to_versor();
     /// let pole_versor = Quaternion::from([1.0,0.0,0.0,0.0]).to_versor().expect("not a null vector");
     /// let transformation = (*x_versor.get() * *pole_versor.get() * *x_versor.get())
