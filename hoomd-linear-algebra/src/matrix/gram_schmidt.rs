@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 use crate::matrix::Matrix;
 
 /// Tolerance for norms below which a vector is considered to be the zero vector in Gram-Schmidt.
