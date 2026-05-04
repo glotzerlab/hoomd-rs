@@ -215,7 +215,7 @@ impl Metric for Spherical<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
-        let arg_clipped = arg.clamp(-1.0,1.0);
+        let arg_clipped = arg.clamp(-1.0, 1.0);
         arg_clipped.acos()
     }
     #[inline]
@@ -243,7 +243,7 @@ impl Metric for Spherical<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
-        let arg_clipped = arg.clamp(-1.0,1.0);
+        let arg_clipped = arg.clamp(-1.0, 1.0);
         arg_clipped.acos()
     }
     #[inline]
@@ -491,7 +491,7 @@ mod tests {
     #[test]
     fn from_versor() {
         // generate a 3-sphere point from a versor
-        let mut rng = StdRng::seed_from_u64(112358);
+        let mut rng = StdRng::seed_from_u64(358);
         let v: Versor = rng.random();
         let sphere_pt = Spherical::<4>::from_versor(v);
         assert_eq!(sphere_pt.coordinates()[0], v.get().scalar);
