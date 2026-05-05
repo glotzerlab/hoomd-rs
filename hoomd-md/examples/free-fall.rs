@@ -3,7 +3,7 @@
 #![allow(non_snake_case)]
 
 // use hoomd_simulation::macrostate::{Isoenergy};
-use hoomd_interaction::{External, external::ConstantForce, rigid::Rigid};
+use hoomd_interaction::{External, external::ConstantForce, Rigid};
 use hoomd_md::{
     thermostat::NoThermostat,
     methods::{

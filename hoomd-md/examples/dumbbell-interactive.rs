@@ -6,7 +6,7 @@
 
 use hoomd_geometry::shape::{Rectangle};
 use hoomd_interaction::{
-    pairwise::Isotropic, rigid::Rigid, PairwiseCutoff, univariate::WeeksChandlerAnderson
+    pairwise::Isotropic, Rigid, PairwiseCutoff, univariate::WeeksChandlerAnderson
 };
 use hoomd_md::{
     thermostat::NoThermostat,

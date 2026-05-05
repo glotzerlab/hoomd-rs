@@ -8,7 +8,7 @@ use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     PairwiseCutoff, TotalEnergy,
     pairwise::Isotropic, univariate::{LennardJones, Xplor},
-    rigid::Rigid,
+    Rigid,
 };
 use hoomd_md::{
     methods::{

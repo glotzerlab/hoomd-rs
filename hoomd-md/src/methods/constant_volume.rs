@@ -1146,7 +1146,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use hoomd_interaction::{External, MaximumInteractionRange, external::{ConstantForce, ConstantTorque}, rigid::Rigid};
+    use hoomd_interaction::{External, MaximumInteractionRange, external::{ConstantForce, ConstantTorque}, Rigid};
     use hoomd_microstate::{Body, property::{DynamicsPoint, OrientedDynamicsPoint, Point}};
 
     use crate::thermostat::NoThermostat;

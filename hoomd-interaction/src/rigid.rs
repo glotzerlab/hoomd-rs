@@ -1,13 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Rigid intrabody interactions.
-//!
-//! This module provides the Rigid type, which handles intrabody summation of
-//! forces and torques, and also provides logic for converting between site
-//! forces and body torques.
-//!
-//! TODO: Expand documentation.
+//! Implement Rigid.
 
 use std::ops::AddAssign;
 
@@ -37,7 +31,7 @@ use hoomd_vector::{Rotate, Vector, Wedge};
 ///
 /// ```
 /// use hoomd_interaction::{
-///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
+///     Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
 /// };
 ///
 /// let lennard_jones: LennardJones = LennardJones {
@@ -80,7 +74,7 @@ where
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyForce
+    ///     Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyForce
     /// };
     ///
     /// use hoomd_microstate::{
@@ -185,7 +179,7 @@ where
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyForceAndTorque
+    ///     Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyForceAndTorque
     /// };
     ///
     /// use hoomd_microstate::{

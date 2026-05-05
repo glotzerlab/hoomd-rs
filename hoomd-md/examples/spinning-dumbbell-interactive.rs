@@ -5,7 +5,7 @@ use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     External,
     external::ConstantTorque,
-    rigid::Rigid,
+    Rigid,
 };
 use hoomd_md::{
     methods::{

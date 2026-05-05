@@ -2,7 +2,7 @@
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    pairwise::Isotropic, univariate::LennardJones, rigid::Rigid, PairwiseCutoff
+    pairwise::Isotropic, univariate::LennardJones, Rigid, PairwiseCutoff
 };
 use hoomd_md::{
     methods::{

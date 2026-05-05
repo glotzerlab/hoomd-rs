@@ -2,7 +2,7 @@
 
 use hoomd_vector::Cartesian;
 use hoomd_microstate::{Microstate, Body, property::{Point, DynamicsPoint}};
-use hoomd_interaction::{pairwise::Isotropic, univariate::LennardJones, rigid::Rigid, PairwiseCutoff};
+use hoomd_interaction::{pairwise::Isotropic, univariate::LennardJones, Rigid, PairwiseCutoff};
 use hoomd_md::{
     methods::{
         ConstantVolume,
