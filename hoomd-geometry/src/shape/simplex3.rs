@@ -471,18 +471,14 @@ impl BoundingSphereRadius for Simplex3 {
     ///
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexSurfaceMesh2d};
+    /// use hoomd_geometry::{BoundingSphereRadius, shape::Simplex3};
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
-    /// let triangle = ConvexSurfaceMesh2d::from_point_set([
-    ///     [1.0, -1.0].into(),
-    ///     [-1.0, -1.0].into(),
-    ///     [0.0, 1.0].into(),
-    /// ])?;
+    /// let tet = Simplex3::default();
     ///
-    /// let bounding_radius = triangle.bounding_sphere_radius();
+    /// let bounding_radius = tet.bounding_sphere_radius();
     ///
-    /// assert_relative_eq!(bounding_radius.get(), 2.0_f64.sqrt());
+    /// assert_relative_eq!(bounding_radius.get(), 3.0_f64.sqrt());
     /// # Ok(())
     /// # }
     /// ```
