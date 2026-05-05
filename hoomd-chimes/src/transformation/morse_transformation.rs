@@ -13,8 +13,7 @@ use super::Transformation;
 /// It calculates a coordinate $`s(r)`$ falls between [-1, 1]
 /// and its derivative $`\frac{ds(r)}{dr}`$ with respect to $`r`$.
 ///
-/// See equation 3 to 5 in
-/// <https://doi.org/10.1038/s41524-024-01497-y>.
+/// See equation 3 to 5 in [ChIMES-2.0 paper].
 ///
 /// The morse transformation can be expressed as:
 ///
@@ -37,6 +36,8 @@ use super::Transformation;
 /// \frac{ds(r)}{dr} = -\frac{x(r)}{\lambda x_\mathrm{diff}}
 /// ```
 ///
+/// [ChIMES-2.0 paper]: <https://doi.org/10.1038/s41524-024-01497-y>
+/// 
 /// # Example
 /// ```
 /// use hoomd_chimes::transformation::MorseTransformation;

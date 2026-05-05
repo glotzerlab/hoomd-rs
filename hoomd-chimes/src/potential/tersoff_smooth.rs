@@ -35,8 +35,10 @@ use std::f64::consts::PI; // Note: Becky's chimes uses hard coding value: 3.1415
 /// to control the activation of smoothing.
 ///
 /// # Note:
-/// See equation 8 in <https://doi.org/10.1038/s41524-024-01497-y>.
+/// See equation 8 in [ChIMES-2.0 paper].
 ///
+/// [ChIMES-2.0 paper]: <https://doi.org/10.1038/s41524-024-01497-y>
+/// 
 /// # Example:
 /// ```
 /// use hoomd_chimes::{

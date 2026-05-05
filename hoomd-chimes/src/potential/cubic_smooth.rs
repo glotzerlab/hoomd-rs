@@ -20,7 +20,9 @@ use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 /// Where `r_out` is the outer distance cutoff.
 ///
 /// # Note:
-/// See equation 7 in <https://doi.org/10.1038/s41524-024-01497-y>.
+/// See equation 7 in [ChIMES-2.0 paper].
+/// 
+/// [ChIMES-2.0 paper]: <https://doi.org/10.1038/s41524-024-01497-y>
 ///
 /// # Example:
 /// ```

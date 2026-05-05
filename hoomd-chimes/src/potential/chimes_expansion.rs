@@ -21,9 +21,11 @@ use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 /// distance between particles, given by [`Transformation`].
 ///
 /// # Note:
-/// See equation 2 in <https://doi.org/10.1038/s41524-024-01497-y>.
+/// See equation 2 in [ChIMES-2.0 paper].
 /// Must be used with the [`TersoffSmooth`] and [`ChimesPenalty`]
 /// to enable correct potential calculation.
+/// 
+/// [ChIMES-2.0 paper]: <https://doi.org/10.1038/s41524-024-01497-y>
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChimesChebyshevExpansion<F: Transformation, const N: usize> {
     /// Transformation style.

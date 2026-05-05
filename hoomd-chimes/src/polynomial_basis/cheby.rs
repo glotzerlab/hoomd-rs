@@ -56,7 +56,7 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
     /// let cheby = Chebyshev::<3>::new();
     /// let s = 0.5;
     /// let tn = cheby.evaluate(&s);
-    /// T_1=0.5, T_2=-0.5, T_3=-1.0
+    /// // T_1=0.5, T_2=-0.5, T_3=-1.0
     /// assert_eq!(tn.as_slice(), [0.5, -0.5, -1.0]);
     /// ```
     #[inline]
@@ -108,8 +108,7 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
     /// let cheby = Chebyshev::<3>::new();
     /// let s = 0.5;
     /// let tnd = cheby.evaluate_derivative(&s);
-    /// dT_1/ds=1, dT_2/ds=2, dT_3/ds=0.0
-    ///
+    /// // dT_1/ds=1, dT_2/ds=2, dT_3/ds=0.0
     /// assert_eq!(tnd.as_slice(), [1.0, 2.0, 0.0]);
     /// ```
     #[inline]

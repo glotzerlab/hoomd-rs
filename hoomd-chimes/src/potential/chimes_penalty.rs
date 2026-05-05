@@ -33,7 +33,7 @@ use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 /// use hoomd_chimes::potential::{ChimesChebyshevExpansion, TersoffSmooth, ChimesPenalty};
 /// use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 ///
-/// Main body of chimes potential
+/// // Main body of chimes potential
 /// let lambda = 1.5;
 /// let r_out = 3.0;
 /// let r_in = 1.0;
@@ -41,9 +41,9 @@ use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 /// let coeff = vec![1.0, 2.0, 3.0];
 ///
 /// let morse_trans: MorseTransformation = MorseTransformation {
-/// lambda,
-/// r_out,
-/// r_in,
+///     lambda,
+///     r_out,
+///     r_in,
 /// };
 ///
 /// let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 3> =
@@ -56,7 +56,7 @@ use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 /// fo,
 /// };
 ///
-/// ChIMES penalty. Parameters are obtain from <https://doi.org/10.1038/s41524-024-01497-y>.
+/// // ChIMES penalty. Parameters are obtain from <https://doi.org/10.1038/s41524-024-01497-y>.
 /// let a = 1e+6;
 /// let dt = 0.02;
 ///

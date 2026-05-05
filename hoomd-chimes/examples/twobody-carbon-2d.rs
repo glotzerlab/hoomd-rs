@@ -61,7 +61,7 @@ impl Fill {
         let maximum_distance = 0.15;
 
         // ChIMES model
-        let params = ChimesBuilder::<NCOEFF>::parse(
+        let params = ChimesBuilder::<NCOEFF, 0>::parse(
             "/Users/alexlee/Documents/git_repo/hoomd-rs/hoomd-chimes/test-data/C-twobody.txt",
         )
         .expect("Failed to parse parameter file");
@@ -86,7 +86,7 @@ impl Fill {
 
         // spatial_data (neighbor list)
         let vec_cell = VecCell::builder()
-            .nominal_search_radius(params.pair_data.3[0].try_into()?) // get chimes outer cutoff
+            .nominal_search_radius(params.pair_data[0].r_out.try_into()?) // get chimes outer cutoff
             .build();
 
         // microstate
