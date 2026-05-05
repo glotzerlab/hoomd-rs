@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Quaternion`] and related types.
@@ -10,7 +10,7 @@ use std::{
 
 use approxim::approx_derive::RelativeEq;
 use rand::{
-    Rng,
+    Rng, RngExt,
     distr::{Distribution, StandardUniform},
 };
 use rand_distr::StandardNormal;
@@ -466,7 +466,7 @@ impl SubAssign for Quaternion {
 /// Create a random [`Versor`]:
 /// ```
 /// use hoomd_vector::Versor;
-/// use rand::{Rng, SeedableRng, rngs::StdRng};
+/// use rand::{RngExt, SeedableRng, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(1);
@@ -795,7 +795,7 @@ impl Distribution<Versor> for StandardUniform {
     ///
     /// ```
     /// use hoomd_vector::Versor;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);

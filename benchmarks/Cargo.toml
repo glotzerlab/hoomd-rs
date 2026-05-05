@@ -4,6 +4,7 @@ categories.workspace = true
 description = "Measure hoomd-rs performance for typical simulations."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -19,6 +20,7 @@ workspace = true
 [dependencies]
 parquet.workspace = true
 parquet_derive.workspace = true
+postcard.workspace = true
 rayon.workspace = true
 
 hoomd-geometry.workspace = true

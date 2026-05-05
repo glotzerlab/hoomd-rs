@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `Anisotropic`
@@ -58,12 +58,12 @@ pub struct Anisotropic<E> {
     pub r_cut: f64,
 }
 
-impl<V, R, S, E> SitePairEnergy<S> for Anisotropic<E>
+impl<P, R, S, E> SitePairEnergy<S> for Anisotropic<E>
 where
-    S: Position<Position = V> + Orientation<Rotation = R>,
-    V: Vector,
-    R: Rotation + Rotate<V>,
-    E: AnisotropicEnergy<V, R>,
+    S: Position<Position = P> + Orientation<Rotation = R>,
+    P: Vector,
+    R: Rotation + Rotate<P>,
+    E: AnisotropicEnergy<P, R>,
 {
     /// Compute the pair energy between two sites.
     ///

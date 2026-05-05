@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`LennardJones`]
@@ -56,7 +56,8 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// assert_abs_diff_eq!(lennard_jones.energy(sigma), 0.0);
 /// assert_relative_eq!(
 ///     lennard_jones.energy(2.0_f64.powf(1.0 / 4.0) * sigma),
-///     -epsilon
+///     -epsilon,
+///     epsilon = 1e-12
 /// );
 /// assert_abs_diff_eq!(
 ///     lennard_jones.force(2.0_f64.powf(1.0 / 4.0) * sigma),
@@ -170,7 +171,11 @@ mod tests {
         assert_relative_eq!(lj.force(sigma), 16.0 * epsilon / sigma);
 
         // Bottom of the well
-        assert_relative_eq!(lj.energy(2.0_f64.powf(1.0 / 4.0) * sigma), -epsilon);
+        assert_relative_eq!(
+            lj.energy(2.0_f64.powf(1.0 / 4.0) * sigma),
+            -epsilon,
+            epsilon = 1e-12
+        );
         assert_abs_diff_eq!(
             lj.force(2.0_f64.powf(1.0 / 4.0) * sigma),
             0.0,

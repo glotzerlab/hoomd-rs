@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `QuickCompress`
@@ -139,9 +139,9 @@ impl<C> QuickCompress<C> {
     pub fn with_target_volume(target_volume: PositiveReal) -> Self {
         Self {
             target_volume,
-            maximum_energy_per_site: 25.0,
+            maximum_energy_per_site: 1000.0,
             state: State::default(),
-            maximum_delta: 0.01
+            maximum_delta: 0.05
                 .try_into()
                 .expect("hard-coded constant should be in the open unit interval"),
         }

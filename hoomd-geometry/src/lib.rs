@@ -1,11 +1,11 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 
 //! General, performant computational geometry code.
@@ -59,7 +59,7 @@
 //! implemented as well:
 //! ```
 //! use hoomd_geometry::{Convex, IntersectsAt, shape::Sphere};
-//! use hoomd_vector::Versor;
+//! use hoomd_vector::{Cartesian, Versor};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let s0 = Sphere {
@@ -71,8 +71,8 @@
 //!
 //! let q_id = Versor::default();
 //!
-//! assert!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id));
-//! assert!(!s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id));
+//! assert!(s0.intersects_at(&s1, &Cartesian::from([1.9, 0.0, 0.0]), &q_id));
+//! assert!(!s0.intersects_at(&s1, &Cartesian::from([2.1, 0.0, 0.0]), &q_id));
 //! # Ok(())
 //! # }
 //! ```
@@ -109,9 +109,16 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! # Complete documentation
+//!
+//! `hoomd-geometry` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{InnerProduct, Rotate, Rotation, Vector};
+use hoomd_vector::InnerProduct;
 use thiserror::Error;
 
 mod convex;
@@ -165,6 +172,35 @@ pub trait SupportMapping<V> {
     fn support_mapping(&self, n: &V) -> V;
 }
 
+/// Test whether the set of points in one shape intersects with the set of another
+/// (in the global frame).
+///
+/// [`IntersectsAtGlobal`] supports hard-particle overlap checks for simulations
+/// defined in arbitrary metric spaces.
+pub trait IntersectsAtGlobal<S, P, R> {
+    /// Test whether the set of points in one shape intersects with the set of another
+    /// (in the global frame).
+    ///
+    /// Each shape (`self` and `other`) remain unmodified in their own local
+    /// coordinate systems. The intersection test is performed in a global
+    /// coordinate system where `self` has position/orientation `r_self`/`o_self`
+    /// and other has position/orientation `r_other`/`o_other`.
+    ///
+    /// When starting with shapes in the global frame (such as in Monte Carlo
+    /// simulations), `intersects_at_global` may be faster than `intersects_at`
+    /// as it is able to check whether the bounding spheres of the shapes
+    /// overlap *before* transforming into the local coordinate system about
+    /// `self`.
+    fn intersects_at_global(
+        &self,
+        other: &S,
+        r_self: &P,
+        o_self: &R,
+        r_other: &P,
+        o_other: &R,
+    ) -> bool;
+}
+
 /// Test whether two shapes share any points in space.
 ///
 /// # Examples
@@ -172,7 +208,7 @@ pub trait SupportMapping<V> {
 /// Some shapes implement [`IntersectsAt`] directly:
 /// ```
 /// use hoomd_geometry::{Convex, IntersectsAt, shape::Sphere};
-/// use hoomd_vector::Versor;
+/// use hoomd_vector::{Cartesian, Versor};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let s0 = Sphere {
@@ -184,8 +220,8 @@ pub trait SupportMapping<V> {
 ///
 /// let q_id = Versor::default();
 ///
-/// assert!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id));
-/// assert!(!s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id));
+/// assert!(s0.intersects_at(&s1, &Cartesian::from([1.9, 0.0, 0.0]), &q_id));
+/// assert!(!s0.intersects_at(&s1, &Cartesian::from([2.1, 0.0, 0.0]), &q_id));
 /// # Ok(())
 /// # }
 /// ```
@@ -219,11 +255,7 @@ pub trait SupportMapping<V> {
 /// # Ok(())
 /// # }
 /// ```
-pub trait IntersectsAt<S, V, R>
-where
-    V: Vector,
-    R: Rotation + Rotate<V>,
-{
+pub trait IntersectsAt<S, V, R> {
     /// Test whether the set of points in one shape intersects with the set of another
     /// (in the local frame).
     ///
@@ -240,33 +272,6 @@ where
     ///
     /// [`pair_system_to_local`]: hoomd_vector::pair_system_to_local
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
-
-    /// Test whether the set of points in one shape intersects with the set of another
-    /// (in the global frame).
-    ///
-    /// Each shape (`self` and `other`) remain unmodified in their own local
-    /// coordinate systems. The intersection test is performed in a global
-    /// coordinate system where `self` has position/orientation `r_self`/`o_self`
-    /// and other has position/orientation `r_other`/`o_other`.
-    ///
-    /// When starting with shapes in the global frame (such as in Monte Carlo
-    /// simulations), `intersects_at_global` may be faster than `intersects_at`
-    /// as it is able to check whether the bounding spheres of the shapes
-    /// overlap *before* transforming into the local coordinate system about
-    /// `self`.
-    #[inline]
-    fn intersects_at_global(
-        &self,
-        other: &S,
-        r_self: &V,
-        o_self: &R,
-        r_other: &V,
-        o_other: &R,
-    ) -> bool {
-        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
-
-        self.intersects_at(other, &v_ij, &o_ij)
-    }
 
     /// Approximate the amount of overlap between two shapes.
     ///
@@ -447,4 +452,8 @@ pub enum Error {
     /// The point is outside the shape.
     #[error("cannot map a point that is outside the shape")]
     PointOutsideShape,
+
+    /// Too many vertices were provided.
+    #[error("too many vertices")]
+    TooManyVertices,
 }

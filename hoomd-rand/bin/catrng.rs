@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! A small utility to concatenate the output of an RNG to stdout.
@@ -105,7 +105,7 @@ fn main() -> io::Result<()> {
             }
         }
         // Cli::ManualCounter => {
-        //     let mut counter = 0u64;
+        //     let mut counter = 0_u64;
 
         //     loop {
         //         let mut rng = SFC64::from_state_and_counter([0; 3], counter);
@@ -115,7 +115,7 @@ fn main() -> io::Result<()> {
         //     }
         // }
         Cli::SeedIncrement => {
-            let mut seed_counter = 0u64;
+            let mut seed_counter = 0_u64;
             loop {
                 for chunk in buf.chunks_mut(8) {
                     let mut rng = SFC64::seed_from_u64(seed_counter);

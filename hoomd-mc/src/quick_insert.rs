@@ -1,10 +1,11 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `QuickInsert`
 
-use rand::distr::Distribution;
 use serde::{Deserialize, Serialize};
+
+use crate::BodyDistribution;
 
 use super::Count;
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};
@@ -276,7 +277,7 @@ impl<D> QuickInsert<D> {
         B: Position<Position = P> + Transform<S>,
         S: Position<Position = P> + Default,
         X: PointUpdate<P, SiteKey>,
-        D: Distribution<Body<B, S>>,
+        D: BodyDistribution<Body<B, S>>,
         H: DeltaEnergyInsert<B, S, X, C> + TotalEnergy<Microstate<B, S, X, C>>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     {
@@ -306,7 +307,7 @@ impl<D> QuickInsert<D> {
             let mut insertions_with_overlaps = 0;
 
             for _ in 0..self.target {
-                let new_body = self.distribution.sample(&mut rng);
+                let new_body = self.distribution.sample(self.inserted, &mut rng);
 
                 let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
                 if delta_energy.is_finite() && microstate.add_body(new_body).is_ok() {

@@ -1,11 +1,11 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Microstate`] and related types.
 
 use arrayvec::ArrayVec;
 use serde::{Deserialize, Serialize};
-use std::{cmp::Reverse, collections::BinaryHeap, fmt};
+use std::{cmp::Reverse, collections::BinaryHeap, fmt, mem};
 
 use crate::{
     Body, Error, Site, Transform,
@@ -15,7 +15,7 @@ use crate::{
 
 use hoomd_geometry::MapPoint;
 use hoomd_rand::Counter;
-use hoomd_spatial::{AllPairs, PointUpdate, PointsNearBall};
+use hoomd_spatial::{AllPairs, IndexFromPosition, PointUpdate, PointsNearBall};
 
 /// Either a primary site index or a ghost site index.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
@@ -121,7 +121,6 @@ impl<T> VecWithTags<T> {
     }
 
     /// Number of items stored.
-    #[cfg(test)]
     fn len(&self) -> usize {
         self.items.len()
     }
@@ -130,6 +129,13 @@ impl<T> VecWithTags<T> {
     #[cfg(test)]
     fn is_empty(&self) -> bool {
         self.items.is_empty()
+    }
+
+    /// Iterate over items in tag order.
+    fn iter_tag_order(&self) -> impl Iterator<Item = &T> {
+        self.indices
+            .iter()
+            .filter_map(|opt_i| opt_i.map(|i| &self.items[i]))
     }
 }
 
@@ -277,9 +283,9 @@ impl<B, S> Microstate<B, S, AllPairs<SiteKey>, Open> {
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_microstate::{
-    ///     Body, Microstate, SiteKey, boundary::Closed, property::Point,
+    ///     Body, Microstate, boundary::Closed, property::Point,
     /// };
-    /// use hoomd_spatial::{AllPairs, VecCell};
+    /// use hoomd_spatial::VecCell;
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -561,14 +567,13 @@ where
     /// Given a site in the boundary, update that site's ghosts to be consistent
     /// with that site's properties. This may require adding or removing ghosts.
     fn update_site_ghosts(
-        sites: &VecWithTags<Site<S>>,
+        site: &Site<S>,
         site_index: usize,
         boundary: &C,
         sites_ghosts: &mut [ArrayVec<usize, MAX_GHOSTS>],
         ghosts: &mut VecWithTags<Site<S>>,
         spatial_data: &mut X,
     ) {
-        let site = &sites.items[site_index];
         let new_ghosts = boundary.generate_ghosts(&site.properties);
         let ghost_tags = &mut sites_ghosts[site_index];
 
@@ -614,7 +619,7 @@ where
             let site_index = self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent");
             Self::update_site_ghosts(
-                &self.sites,
+                &self.sites.items[site_index],
                 site_index,
                 &self.boundary,
                 &mut self.sites_ghosts,
@@ -900,10 +905,9 @@ where
 
         // An unknown site in the body might not wrap into the boundary.
         // Check that they do first before starting to modify internal data
-        // structures. This wraps every site twice on update. Should that prove
-        // to be a performance bottleneck, we could alternately implement a
-        // staging Vec (would require allocation/deallocation per update or a
-        // reusable scratch storage).
+        // structures. This wraps every site twice on update. Testing
+        // shows that caching/reusing the results of the first wrap
+        // does not change performance at all.
         for s in &body.item.sites {
             self.boundary
                 .wrap(new_body_properties.transform(s))
@@ -923,9 +927,16 @@ where
             self.spatial_data
                 .insert(SiteKey::Primary(*site_tag), *site_properties.position());
             self.sites.items[site_index].properties = site_properties;
-        }
 
-        self.update_body_site_ghosts(body_index);
+            Self::update_site_ghosts(
+                &self.sites.items[site_index],
+                site_index,
+                &self.boundary,
+                &mut self.sites_ghosts,
+                &mut self.ghosts,
+                &mut self.spatial_data,
+            );
+        }
 
         Ok(())
     }
@@ -1205,6 +1216,47 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
         })
     }
 
+    /// Iterate over all sites in monotonically increasing tag order.
+    ///
+    /// `iter_sites_tag_order` is especially useful when implementing
+    /// [`AppendMicrostate`], as GSD files must be written in tag order.
+    ///
+    /// [`AppendMicrostate`]: crate::AppendMicrostate
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::{Body, Microstate};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::builder()
+    ///     .bodies([
+    ///         Body::point(Cartesian::from([1.0, 0.0])),
+    ///         Body::point(Cartesian::from([-1.0, 2.0])),
+    ///     ])
+    ///     .try_build()?;
+    ///
+    /// microstate.remove_body(0);
+    /// microstate.add_body(Body::point(Cartesian::from([3.0, 1.0])))?;
+    ///
+    /// let positions_tag_order: Vec<_> = microstate
+    ///     .iter_sites_tag_order()
+    ///     .map(|s| s.properties.position)
+    ///     .collect();
+    /// assert_eq!(
+    ///     positions_tag_order,
+    ///     vec![[3.0, 1.0].into(), [-1.0, 2.0].into()]
+    /// );
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn iter_sites_tag_order(&self) -> impl Iterator<Item = &Site<S>> {
+        self.sites.iter_tag_order()
+    }
+
     /// Get the spatial data structure.
     #[inline]
     pub fn spatial_data(&self) -> &X {
@@ -1241,7 +1293,7 @@ where
         clippy::missing_panics_doc,
         reason = "Will panic only due to a bug in hoomd-rs."
     )]
-    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
+    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl Iterator<Item = &Site<S>> {
         let potential_sites = self.spatial_data.points_near_ball(point, r);
         potential_sites.map(|k| match k {
             SiteKey::Primary(tag) => {
@@ -1348,9 +1400,6 @@ where
 
         // MC methods require the clone as they keep the old microstate for
         // rejected moves. MD methods do not need to clone.
-        // TODO: Refactor this code into a method like `set_boundary_and_update_bodies`.
-        // It would take a callable that updates the bodies so that MD methods could
-        // scale both position and velocity appropriately.
 
         new_microstate.boundary = new_boundary;
 
@@ -1368,6 +1417,51 @@ where
         }
 
         Ok(new_microstate)
+    }
+}
+
+impl<P, B, S, X, C, L> Microstate<B, S, X, C>
+where
+    S: Position<Position = P>,
+    X: IndexFromPosition<P, Location = L>,
+    L: Ord,
+    Site<S>: Copy,
+{
+    /// Sort the sites spatially.
+    ///
+    /// `sort_sites` reorders the sites in memory based on their spatial location.
+    /// `PairwiseCutoff` interactions compute in less them when the sites are sorted
+    /// because the interacting sites are more likely to be nearby in memory.
+    ///
+    /// CPUs have large caches. Typical simulations start to see benefits from sorting
+    /// when there are more than 100,000 sites. `sort` is a quick operation, so there
+    /// is no harm in sorting the microstate every few hundred steps regardless of the
+    /// system size.
+    #[inline]
+    pub fn sort_sites(&mut self) {
+        let mut sort_order = (0..self.sites.len()).collect::<Vec<_>>();
+        sort_order.sort_by_key(|&i| {
+            self.spatial_data
+                .location_from_position(self.sites.items[i].properties.position())
+        });
+
+        let mut new_sites_items = Vec::new();
+        let mut new_sites_tags = Vec::new();
+        let mut new_sites_ghosts = Vec::new();
+
+        for index in sort_order {
+            new_sites_items.push(self.sites.items[index]);
+            new_sites_tags.push(self.sites.tags[index]);
+            new_sites_ghosts.push(self.sites_ghosts[index].clone());
+        }
+
+        for (index, tag) in new_sites_tags.iter().enumerate() {
+            self.sites.indices[*tag] = Some(index);
+        }
+
+        let _ = mem::replace(&mut self.sites.items, new_sites_items);
+        let _ = mem::replace(&mut self.sites.tags, new_sites_tags);
+        let _ = mem::replace(&mut self.sites_ghosts, new_sites_ghosts);
     }
 }
 
@@ -1700,6 +1794,7 @@ mod tests {
     mod open {
         use super::*;
         use assert2::{assert, check};
+        use rand::RngExt;
 
         fn create_body<R: Rng>(rng: &mut R) -> Body<Point<Cartesian<2>>> {
             let mut body = Body::point(rng.random::<Cartesian<2>>() * MAX_INITIAL_BODY_COORDINATE);
@@ -1956,6 +2051,7 @@ mod tests {
     mod periodic {
         use super::*;
         use assert2::{assert, check};
+        use rand::RngExt;
 
         fn create_body<R: Rng>(
             rng: &mut R,

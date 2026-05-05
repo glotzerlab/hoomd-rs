@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement Translate for Cartesian
@@ -73,7 +73,7 @@ mod tests {
 
         let mut rng = StdRng::seed_from_u64(1);
         let a = Point::new(Cartesian::from([1.0, -5.0, 2.5]));
-        let translate = Translate::with_maximum_distance(
+        let translate = Translate::<Cartesian<3>>::with_maximum_distance(
             d.try_into()
                 .expect("hard-coded constant should be a positive real"),
         );

@@ -26,8 +26,6 @@ capabilities that [HOOMD-blue] cannot, such as:
 * Build native command line applications on *Linux*, *macOS*, and *Windows*.
 * Run real-time interactive simulations on desktop platforms or embedded in a web page.
 
-## How to Read This Book
-
 This documentation is written in mdBook. The [Reading Books] chapter
 explains how to search, change display settings, and navigate this book.
 Press `?` to see a list of keyboard shortcuts.

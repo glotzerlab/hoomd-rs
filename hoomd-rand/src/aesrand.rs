@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Ported to aarch64
@@ -7,9 +7,14 @@ use std::arch::aarch64::{
     vreinterpretq_u8_u64, vreinterpretq_u64_u8,
 };
 
+use core::convert::Infallible;
+
 use rand::{
-    RngCore, SeedableRng,
-    rand_core::block::{BlockRng64, BlockRngCore},
+    SeedableRng,
+    rand_core::{
+        TryRng,
+        block::{BlockRng, Generator},
+    },
 };
 
 /// PRNG using the AES block cipher as an [invertible random mapping](https://www.pcg-random.org/posts/random-invertible-mapping-statistics.html).
@@ -53,18 +58,17 @@ impl AESRandCore {
     }
 }
 
-impl BlockRngCore for AESRandCore {
-    type Item = u64;
-    type Results = [u64; 4];
+impl Generator for AESRandCore {
+    type Output = [u64; 4];
 
     #[inline]
-    fn generate(&mut self, results: &mut Self::Results) {
+    fn generate(&mut self, output: &mut Self::Output) {
         // SAFETY: As long as the +aes feature is enabled
         let data = unsafe { self.gen_array() };
         // SAFETY: As long as size_of::<[uint8x16_t; 2]>() == 32
         let bytes: [u8; 32] = unsafe { std::mem::transmute(data) };
         for (i, chunk) in bytes.chunks_exact(8).enumerate() {
-            results[i] = u64::from_ne_bytes(chunk.try_into().expect("Not enough bytes to read."));
+            output[i] = u64::from_ne_bytes(chunk.try_into().expect("Not enough bytes to read."));
         }
     }
 }
@@ -76,30 +80,37 @@ impl BlockRngCore for AESRandCore {
 /// ratio of state to output, with a 128 bit state and 256 bits of output per step.
 /// The original (x86-64 implementation) of this method is here:
 /// <https://github.com/TheIronBorn/simd_prngs/blob/master/src/prngs/aes_rand.rs>
-pub struct AESRand(BlockRng64<AESRandCore>);
+pub struct AESRand(BlockRng<AESRandCore>);
 impl SeedableRng for AESRand {
     type Seed = [u8; 16];
 
     #[inline]
     fn from_seed(seed: Self::Seed) -> Self {
         // SAFETY: seed.as_ptr() has all 16 bytes and properly aligned for uint8x16_t
-        Self(BlockRng64::new(AESRandCore {
+        Self(BlockRng::new(AESRandCore {
             state: unsafe { vld1q_u8(seed.as_ptr()) },
         }))
     }
 }
 
-impl RngCore for AESRand {
+impl TryRng for AESRand {
+    type Error = Infallible;
+
     #[inline]
-    fn next_u64(&mut self) -> u64 {
-        self.0.next_u64()
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        Ok(self.0.next_word())
     }
     #[inline]
-    fn next_u32(&mut self) -> u32 {
-        self.0.next_u32()
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the truncation is intended"
+    )]
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        Ok(self.0.next_word() as u32)
     }
     #[inline]
-    fn fill_bytes(&mut self, dst: &mut [u8]) {
+    fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
         self.0.fill_bytes(dst);
+        Ok(())
     }
 }

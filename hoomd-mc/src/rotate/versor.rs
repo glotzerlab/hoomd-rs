@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement Rotate for Versor
@@ -39,7 +39,6 @@ impl Distribution<Versor> for VersorDisplacement {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Versor {
         // Based on Karney 2007: doi.org/10.1016/j.jmgm.2006.04.002
-        const _SAFE_THETA: f64 = 1e-12;
         loop {
             // As in section 7, we select `s` from a 3D Gaussian distribution.
             let normal =

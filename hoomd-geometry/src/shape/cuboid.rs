@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Hypercuboid`]
@@ -351,6 +351,70 @@ impl<const N: usize> Hypercuboid<N> {
     /// ```
     pub fn minimal_extents(&self) -> [f64; N] {
         array::from_fn(|i| -self.edge_lengths[i].get() / 2.0)
+    }
+}
+
+impl Hypercuboid<2> {
+    /// Represent the shape in the GSD box format.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rectangle = Rectangle {
+    ///     edge_lengths: [10.0.try_into()?, 15.0.try_into()?],
+    /// };
+    ///
+    /// let gsd_box = rectangle.to_gsd_box();
+    /// assert_eq!(gsd_box, [10.0, 15.0, 0.0, 0.0, 0.0, 0.0]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn to_gsd_box(&self) -> [f64; 6] {
+        [
+            self.edge_lengths[0].get(),
+            self.edge_lengths[1].get(),
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
+    }
+}
+
+impl Hypercuboid<3> {
+    /// Represent the shape in the GSD box format.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Cuboid;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rectangle = Cuboid {
+    ///     edge_lengths: [10.0.try_into()?, 15.0.try_into()?, 20.0.try_into()?],
+    /// };
+    ///
+    /// let gsd_box = rectangle.to_gsd_box();
+    /// assert_eq!(gsd_box, [10.0, 15.0, 20.0, 0.0, 0.0, 0.0]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn to_gsd_box(&self) -> [f64; 6] {
+        [
+            self.edge_lengths[0].get(),
+            self.edge_lengths[1].get(),
+            self.edge_lengths[2].get(),
+            0.0,
+            0.0,
+            0.0,
+        ]
     }
 }
 

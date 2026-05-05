@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Provides a collection of fast, high-quality random number generators (RNGs) for the HOOMD ecosystem.
@@ -12,6 +12,13 @@
 //! - `AESRand`: An AES-based RNG (currently only available on some aarch64
 //!   platforms). This can be even faster than SFC64, but has a smaller state that
 //!   makes it less suitable for highly parallel applications.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-rand` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 /// Utility functions for random number generation.
 pub(crate) mod util;

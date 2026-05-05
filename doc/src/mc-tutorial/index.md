@@ -13,4 +13,4 @@ For each of these steps, you can use built-in types provided by [`hoomd-mc`] or
 write your own. Read the following tutorials to learn how to run and customize
 MC simulations using *hoomd-rs*.
 
-[`hoomd-mc`]: api/hoomd_mc/index.html
+[`hoomd-mc`]: ../api/hoomd_mc/index.html

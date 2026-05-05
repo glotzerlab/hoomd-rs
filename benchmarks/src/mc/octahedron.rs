@@ -1,29 +1,40 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Benchmark hard octahedra Monte Carlo simulations.
 
+use anyhow::Context;
+use log::{debug, info, trace};
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::{
+    fmt,
+    fs::{self, File},
+    io::{self, Write},
+};
 
 use hoomd_geometry::{
     Convex,
     shape::{ConvexPolyhedron, Hypercuboid},
 };
-use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
-use hoomd_mc::{
-    Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial, Tune,
+use hoomd_interaction::{
+    MaximumInteractionRange, PairwiseCutoff,
+    pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
+    univariate::OverlapPenalty,
 };
+use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
     property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
+use hoomd_spatial::{IndexFromPosition, PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::{Cartesian, Versor};
 
-use crate::Effort;
+use crate::{Effort, place::place_single_site_orientable_bodies};
+
+/// Relax configurations this many steps before tuning move sizes.
+const RELAX_STEPS: usize = 1_000;
 
 /// The hard octahedra simulation.
 #[derive(Serialize, Deserialize)]
@@ -89,11 +100,18 @@ impl<X> Effort for Octahedron<X> {
 
 impl<X> Simulation for Octahedron<X>
 where
-    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + Sync,
+    X: PointsNearBall<Cartesian<3>, SiteKey>
+        + PointUpdate<Cartesian<3>, SiteKey>
+        + Sync
+        + IndexFromPosition<Cartesian<3>>,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
+        if self.microstate.step().is_multiple_of(300) {
+            self.microstate.sort_sites();
+        }
+
         if self.parallel {
             self.translate_count += self.parallel_translate_sweep.apply(
                 &mut self.microstate,
@@ -154,7 +172,12 @@ impl<X> Octahedron<X>
 where
     X: PointsNearBall<Cartesian<3>, SiteKey>
         + PointUpdate<Cartesian<3>, SiteKey>
-        + WithSearchRadius,
+        + WithSearchRadius
+        + Clone
+        + for<'a> Deserialize<'a>
+        + Serialize
+        + Sync
+        + IndexFromPosition<Cartesian<3>>,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     /// Construct a new hard octahedra simulation
@@ -162,24 +185,33 @@ where
     /// # Errors
     /// Returns an error when the microstate cannot be constructed.
     #[inline]
-    pub fn new<X2>(
-        microstate: &Microstate<
-            OrientedPoint<Cartesian<3>, Versor>,
-            OrientedPoint<Cartesian<3>, Versor>,
-            X2,
-            Periodic<Hypercuboid<3>>,
-        >,
-        parallel: bool,
-    ) -> anyhow::Result<Self> {
-        let sigma = 1.0;
+    pub fn new(n: usize, parallel: bool) -> anyhow::Result<Self> {
+        let macrostate = Isothermal { temperature: 1.0 };
+        let packing_fraction = 0.44;
+        let a = 2.0_f64.sqrt() / 2.0;
+        let octahedron_volume = 1.0 / 3.0 * 2.0_f64.sqrt() * a.powi(3);
+        let number_density = packing_fraction / octahedron_volume;
+        let cache_filename = format!("mc_3d_octahedron_{packing_fraction}_{n}.postcard");
 
-        let translate = Translate::with_maximum_distance((sigma * 0.1).try_into()?);
-        let mut translate_sweep = Sweep(translate.clone());
-        let mut parallel_translate_sweep = ParallelSweep::new(sigma.try_into()?, translate);
+        match fs::read(&cache_filename) {
+            Ok(bytes) => {
+                debug!("Reading cache '{cache_filename}'.");
 
-        let rotate = Rotate::with_maximum_rotation((0.1).try_into()?);
-        let mut rotate_sweep = Sweep(rotate.clone());
-        let mut parallel_rotate_sweep = ParallelSweep::new(sigma.try_into()?, rotate);
+                let mut result: Self = postcard::from_bytes(&bytes)
+                    .with_context(|| format!("Could not read {cache_filename}"))?;
+                // The cache may have been generated with a different value of parallel.
+                result.parallel = parallel;
+                result.microstate.sort_sites();
+                return Ok(result);
+            }
+            Err(error) => match error.kind() {
+                io::ErrorKind::NotFound => (),
+                _ => return Err(error).with_context(|| format!("Could not read {cache_filename}")),
+            },
+        }
+
+        let maximum_translation = 0.081;
+        let maximum_rotation = 0.2;
 
         let octahedron = ConvexPolyhedron::with_vertices(vec![
             [-0.5, 0.0, 0.0].into(),
@@ -189,23 +221,38 @@ where
             [0.0, 0.0, -0.5].into(),
             [0.0, 0.0, 0.5].into(),
         ])?;
-        let hamiltonian = PairwiseCutoff(HardShape(Convex(octahedron)));
+        let hamiltonian = PairwiseCutoff(HardShape(Convex(octahedron.clone())));
 
-        let cell_list = X::with_search_radius(sigma.try_into()?);
-        let microstate = Microstate::builder()
-            .spatial_data(cell_list)
-            .boundary(microstate.boundary().clone())
-            .bodies(microstate.bodies().iter().map(|b| b.item.clone()))
-            .try_build()?;
+        let translate = Translate::with_maximum_distance(maximum_translation.try_into()?);
+        let translate_sweep = Sweep(translate.clone());
+        let parallel_translate_sweep = ParallelSweep::new(
+            hamiltonian.maximum_interaction_range().try_into()?,
+            translate,
+        );
 
-        let macrostate = Isothermal { temperature: 1.0 };
+        let rotate = Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
+        let rotate_sweep = Sweep(rotate.clone());
+        let parallel_rotate_sweep =
+            ParallelSweep::new(hamiltonian.maximum_interaction_range().try_into()?, rotate);
 
-        translate_sweep.tune_default(&microstate, &hamiltonian, &macrostate);
-        *parallel_translate_sweep.local_trial_mut() = translate_sweep.0.clone();
-        rotate_sweep.tune_default(&microstate, &hamiltonian, &macrostate);
-        *parallel_rotate_sweep.local_trial_mut() = rotate_sweep.0.clone();
+        let approximate_shape_overlap = Anisotropic {
+            interaction: ApproximateShapeOverlap::new(
+                Convex(octahedron),
+                OverlapPenalty::default(),
+                0.01.try_into()?,
+            ),
+            r_cut: hamiltonian.maximum_interaction_range(),
+        };
+        let overlap_penalty_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
 
-        Ok(Self {
+        let microstate = place_single_site_orientable_bodies(
+            n,
+            number_density,
+            hamiltonian.maximum_interaction_range(),
+            &overlap_penalty_hamiltonian,
+        )?;
+
+        let mut simulation = Self {
             microstate,
             translate_sweep,
             rotate_sweep,
@@ -216,6 +263,48 @@ where
             translate_count: Count::default(),
             rotate_count: Count::default(),
             parallel,
-        })
+        };
+
+        debug!("Relaxing configuration...");
+
+        for i in 0..RELAX_STEPS {
+            simulation.advance()?;
+            if (i + 1).is_multiple_of(100) {
+                trace!("{:.1}%", ((i + 1) as f64 / RELAX_STEPS as f64) * 100.0);
+            }
+        }
+
+        simulation.microstate.sort_sites();
+
+        // Move sizes are fixed above for comparison with HOOMD-blue. Uncomment this code
+        // when there is a need to retune the move sizes.
+
+        // simulation.translate_sweep.tune_default(&simulation.microstate, &simulation.hamiltonian, &Isothermal { temperature: 1.0 });
+        // *simulation.parallel_translate_sweep
+        //     .local_trial_mut()
+        //     .maximum_distance_mut() = *simulation.translate_sweep.0.maximum_distance();
+
+        // simulation.rotate_sweep.tune_default(&simulation.microstate, &simulation.hamiltonian, &Isothermal { temperature: 1.0 });
+        // *simulation.parallel_rotate_sweep
+        //     .local_trial_mut()
+        //     .maximum_rotation_mut() = *simulation.rotate_sweep.0.maximum_rotation();
+
+        info!(
+            "Translation move size: {}",
+            simulation.translate_sweep.0.maximum_distance()
+        );
+
+        info!(
+            "Rotation move size: {}",
+            simulation.rotate_sweep.0.maximum_rotation()
+        );
+
+        simulation.translate_count = Count::default();
+        simulation.rotate_count = Count::default();
+        let out_bytes: Vec<u8> = postcard::to_stdvec(&simulation)?;
+        let mut file = File::create(cache_filename)?;
+        file.write_all(&out_bytes)?;
+
+        Ok(simulation)
     }
 }

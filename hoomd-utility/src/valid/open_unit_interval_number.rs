@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `OpenUnitIntervalNumber`
@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use crate::Error;
+use super::Error;
 
 /// A f64 value in the interval (0,1)
 ///
@@ -68,14 +68,14 @@ impl TryFrom<f64> for OpenUnitIntervalNumber {
     /// let result = OpenUnitIntervalNumber::try_from(2.0);
     /// assert!(matches!(
     ///     result,
-    ///     Err(hoomd_utility::Error::NotInOpenUnitInterval(_))
+    ///     Err(hoomd_utility::valid::Error::NotInOpenUnitInterval(_))
     /// ));
     /// ```
     ///
     /// # Errors
     ///
-    /// `[Error::NotFinite]` when `v` is not finite.
-    /// `[Error::NotInOpenUnitInterval]` when `v` is not in (0,1).
+    /// [`Error::NotFinite`] when `v` is not finite.
+    /// [`Error::NotInOpenUnitInterval`] when `v` is not in (0,1).
     #[inline]
     fn try_from(v: f64) -> Result<OpenUnitIntervalNumber, Error> {
         if !v.is_finite() {

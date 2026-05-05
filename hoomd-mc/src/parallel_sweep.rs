@@ -1,14 +1,14 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `ParallelSweep`
 
-use rand::{Rng, seq::IndexedRandom};
+use rand::{RngExt, seq::IndexedRandom};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-use super::{Adjust, Count, LocalTrial, Trial, Tune, tune_local::tune_local_trial};
+use super::{Adjust, Count, LocalTrial, Trial, Tune, TuneOptions, tune_local::tune_local_trial};
 use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Transform,
@@ -91,6 +91,7 @@ pub struct ParallelSweep<L, K, B, S> {
     checkerboard: K,
 
     /// Cached storage of the body indices assigned to each space.
+    #[serde(skip)]
     spaces: Vec<Vec<usize>>,
 
     /// Cached storage of the body trial moves in each space.
@@ -427,10 +428,10 @@ where
 {
     /// Tune the trial move maximum size to achieve a given acceptance ratio.
     ///
-    /// Use [`tune_default`] unless you have a specific need to adjust the
-    /// tuning parameters.
+    /// Use [`tune_with_options`] and `TuneOptions:default()` unless you have a
+    /// specific need to adjust the tuning parameters.
     ///
-    /// [`tune_default`]: Self::tune_default
+    /// [`tune_with_options`]: Self::tune_with_options
     ///
     /// # Example
     ///
@@ -439,7 +440,7 @@ where
     /// use hoomd_interaction::{
     ///     MaximumInteractionRange, PairwiseCutoff, pairwise::HardSphere,
     /// };
-    /// use hoomd_mc::{ParallelSweep, Translate, Trial, Tune};
+    /// use hoomd_mc::{ParallelSweep, Translate, Trial, Tune, TuneOptions};
     /// use hoomd_microstate::{
     ///     Body, Microstate, boundary::Periodic, property::Position,
     /// };
@@ -462,7 +463,12 @@ where
     /// let hamiltonian = PairwiseCutoff(HardSphere { diameter: 1.0 });
     /// let macrostate = Isothermal { temperature: 1.0 };
     ///
-    /// translate_sweep.tune_default(&microstate, &hamiltonian, &macrostate);
+    /// translate_sweep.tune_with_options(
+    ///     &microstate,
+    ///     &hamiltonian,
+    ///     &macrostate,
+    ///     &TuneOptions::default(),
+    /// );
     ///
     /// translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
     ///
@@ -484,9 +490,12 @@ where
             microstate,
             hamiltonian,
             macrostate,
-            target_acceptance,
-            samples,
-            steps,
+            &TuneOptions {
+                target_acceptance,
+                samples,
+                steps,
+            },
+            |_| true,
         );
     }
 }

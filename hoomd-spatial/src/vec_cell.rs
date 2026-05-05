@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![expect(
@@ -24,7 +24,7 @@ use hoomd_vector::Cartesian;
 
 use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 
-use crate::hash_cell::CellIndex;
+use crate::{IndexFromPosition, hash_cell::CellIndex};
 
 /// Bucket sort points into cubes with [`Vec`]-backed storage
 ///
@@ -777,6 +777,18 @@ where
     }
 }
 
+impl<K, const D: usize> IndexFromPosition<Cartesian<D>> for VecCell<K, D>
+where
+    K: Eq + Hash,
+{
+    type Location = [i64; D];
+
+    #[inline]
+    fn location_from_position(&self, position: &Cartesian<D>) -> Self::Location {
+        self.cell_index_from_position(position)
+    }
+}
+
 #[expect(
     clippy::used_underscore_binding,
     reason = "Used for const parameterization."
@@ -785,7 +797,7 @@ where
 mod tests {
     use assert2::{assert, check};
     use rand::{
-        Rng, SeedableRng,
+        RngExt, SeedableRng,
         distr::{Distribution, Uniform},
         rngs::StdRng,
     };

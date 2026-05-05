@@ -4,7 +4,7 @@
 use hoomd_chimes::{builder::ChimesBuilder, potential::ChimesTwobPotential};
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    External, PairwiseCutoff, TotalEnergy, external::Linear, pairwise::Isotropic,
+    External, PairwiseCutoff, TotalEnergy, external::Linear, pairwise::Isotropic, MaximumInteractionRange, DeltaEnergyOne
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{Body, Microstate, SiteKey, boundary::Closed, property::Point};
@@ -27,6 +27,12 @@ use hoomd_bevy::{
 struct A {}
 const NCOEFF: usize = 12;
 
+#[derive(TotalEnergy, DeltaEnergyOne, MaximumInteractionRange)]
+struct Hamiltonian {
+    linear: External<Linear<Cartesian<2>>>,
+    pairwise_cutoff: PairwiseCutoff<Isotropic<ChimesTwobPotential<12>>>,
+}
+
 // Remove the cfg_attr(...) line when using this code outside the hoomd-rs/examples directory.
 #[derive(Resource)]
 // ANCHOR: simulation_struct
@@ -39,10 +45,7 @@ struct Fill {
         Closed<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: (
-        External<Linear<Cartesian<2>>>,
-        PairwiseCutoff<Isotropic<ChimesTwobPotential<12>>>,
-    ),
+    hamiltonian: Hamiltonian,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<Cartesian<2>>>,
     /// Temperature set point.
@@ -58,7 +61,6 @@ impl Fill {
         // ANCHOR: parameters
         let box_length = 60.0;
         let macrostate = Isothermal { temperature: 2.5 };
-        let maximum_distance = 0.15;
 
         // ChIMES model
         let params = ChimesBuilder::<NCOEFF, 0>::parse(
@@ -75,10 +77,10 @@ impl Fill {
             plane_origin: Cartesian::default(),
             plane_normal: [0.0, 1.0].try_into()?,
         });
-        let hamiltonian = (linear, pairwise_cutoff);
+        let hamiltonian = Hamiltonian{ linear, pairwise_cutoff: pairwise_cutoff };
 
         // sweep
-        let translate = Translate::with_maximum_distance(maximum_distance.try_into()?);
+        let translate = Translate::with_maximum_distance(params.pair_data[0].r_out.try_into()?);
         let translate_sweep = Sweep(translate);
 
         // boundary
@@ -127,7 +129,7 @@ impl Simulation for Fill {
         // ANCHOR_END: apply
 
         // ANCHOR: reset
-        if self.hamiltonian.0.total_energy(&self.microstate) > 20_0000.0 {
+        if self.hamiltonian.linear.total_energy(&self.microstate) > 20_0000.0 {
             self.microstate.clear();
         }
 

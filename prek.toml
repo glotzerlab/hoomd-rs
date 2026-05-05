@@ -1,0 +1,57 @@
+#:schema https://www.schemastore.org/prek.json
+
+minimum_prek_version = "0.3.8"
+
+[[repos]]
+repo = "https://github.com/glotzerlab/fix-license-header"
+rev = "96a6da2d22354ecb4dbc50809e9455c7f1e20fe8" # frozen: v0.4.1
+hooks = [
+  {
+    id = "fix-license-header",
+    name = "Fix license headers",
+    types_or = ["rust"],
+    exclude = ".*examples/.*",
+    args = [
+      "--license-file=LICENSE",
+      "--add=Part of hoomd-rs, released under the BSD 3-Clause License."
+    ]
+  }
+]
+
+[[repos]]
+repo = "builtin"
+hooks = [
+  { id = "end-of-file-fixer" },
+  { id = "trailing-whitespace" },
+  { id = "check-json" },
+  { id = "check-toml" },
+  { id = "check-yaml" },
+  { id = "check-case-conflict" },
+  { id = "mixed-line-ending" },
+  { id = "check-added-large-files" },
+  { id = "check-executables-have-shebangs" },
+  { id = "check-symlinks" },
+  { id = "detect-private-key" },
+  { id = "check-vcs-permalinks" },
+  { id = "check-shebang-scripts-are-executable" },
+  { id = "check-illegal-windows-names" },
+]
+
+[[repos]]
+repo = "https://github.com/rhysd/actionlint"
+rev = "914e7df21a07ef503a81201c76d2b11c789d3fca" # frozen: v1.7.12
+hooks = [
+  { id = "actionlint" }
+]
+
+[[repos]]
+repo = "https://github.com/mit-d/check-unicode"
+rev = "9d217f6f91d9e2de6bc31b54575ff35e595173f5" # frozen: v0.6.0
+hooks = [
+  { id = "check-unicode",
+    args = [
+      "--allow-printable",
+      "--check-confusables",
+    ]
+  }
+]

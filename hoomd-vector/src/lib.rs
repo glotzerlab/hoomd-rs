@@ -1,11 +1,11 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 
 //! Vector and quaternion math.
@@ -156,23 +156,51 @@
 //!
 //! `hoomd_vector` interoperates with [`rand`] to generate random vectors and rotations.
 //!
-//! The [`StandardUniform`](rand::distr::StandardUniform) distribution
-//! samples rotations uniformly from the set of all rotations and vectors from the
-//! `[-1,1]` hypercube.
+//! The [`StandardUniform`](rand::distr::StandardUniform) distribution randomly samples
+//! rotations uniformly from the set of all vectors or rotations.
 //!
+//! - Vectors are uniformly sampled from the `[-1,1]` hypercube
+//! - Angles are uniformly sampled from the half-open interval `[0, 2π)`
+//! - Versors are uniformly sampled from the surface of the `3-Sphere`, which doubly
+//!   covers `SO(3)`, the manifold of rotations in three dimensions.
 //!
 //! ```
 //! use hoomd_vector::{Angle, Cartesian, Versor};
-//! use rand::{Rng, SeedableRng, rngs::StdRng};
+//! use rand::{RngExt, SeedableRng, rngs::StdRng};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut rng = StdRng::seed_from_u64(1);
-//! let angle: Angle = rng.random();
 //! let vector: Cartesian<3> = rng.random();
+//! let angle: Angle = rng.random();
 //! let versor: Versor = rng.random();
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! The [`Ball`](crate::distribution::Ball) distribution samples vectors from
+//! the interior of an `n-Ball`, the set of all points whose distance from the origin is
+//! in `[0, 1)`.
+//!
+//! ```
+//! use hoomd_vector::{Cartesian, distribution::Ball};
+//! use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut rng = StdRng::seed_from_u64(1);
+//! let ball = Ball {
+//!     radius: 3.0.try_into()?,
+//! };
+//! let v: Cartesian<3> = ball.sample(&mut rng);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Complete documentation
+//!
+//! `hoomd-vector` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 mod angle;
 mod cartesian;
@@ -717,15 +745,18 @@ where
     R: Rotation + Rotate<V>,
 {
     let r_ab = *r_b - *r_a;
-    let r_a_inverted = o_a.inverted();
-    let v_ij = r_a_inverted.rotate(&r_ab);
-    let o_ij = o_b.combine(&r_a_inverted);
+    let o_a_inverted = o_a.inverted();
+    let v_ij = o_a_inverted.rotate(&r_ab);
+    let o_ij = o_a_inverted.combine(o_b);
     (v_ij, o_ij)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approxim::assert_relative_eq;
+    use assert2::check;
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
 
     fn compute_add_generic<T>(a: T, b: T) -> T
     where
@@ -739,6 +770,72 @@ mod tests {
         let a = Cartesian::from([1.0, 2.0, 3.0]);
         let b = Cartesian::from([4.0, 5.0, 6.0]);
         let c = compute_add_generic(a, b);
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
+        check!(c == [5.0, 7.0, 9.0].into());
+    }
+
+    #[test]
+    fn test_pair_system_to_local_2d() {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        for _ in 0..1_000 {
+            let o_a: Angle = rng.random();
+            let o_b: Angle = rng.random();
+
+            let r_a: Cartesian<2> = rng.random();
+            let r_b: Cartesian<2> = rng.random();
+
+            let c_in_b: Cartesian<2> = rng.random();
+
+            // Test self-consistency by locating c in both a's and b's reference frames.
+            // Check that they are equivalent in the global frame.
+            let (v_ij, o_ij) = pair_system_to_local(&r_a, &o_a, &r_b, &o_b);
+            let c_in_a = v_ij + o_ij.rotate(&c_in_b);
+
+            assert_relative_eq!(
+                r_a + o_a.rotate(&c_in_a),
+                r_b + o_b.rotate(&c_in_b),
+                epsilon = 4.0 * f64::EPSILON
+            );
+
+            let (v_ji, o_ji) = pair_system_to_local(&r_b, &o_b, &r_a, &o_a);
+            assert_relative_eq!(
+                v_ji + o_ji.rotate(&c_in_a),
+                c_in_b,
+                epsilon = 4.0 * f64::EPSILON
+            );
+        }
+    }
+
+    #[test]
+    fn test_pair_system_to_local_3d() {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        for _ in 0..1_000 {
+            let o_a: Versor = rng.random();
+            let o_b: Versor = rng.random();
+
+            let r_a: Cartesian<3> = rng.random();
+            let r_b: Cartesian<3> = rng.random();
+
+            let c_in_b: Cartesian<3> = rng.random();
+
+            // Test self-consistency by locating c in both a's and b's reference frames.
+            // Check that they are equivalent in the global frame.
+            let (v_ij, o_ij) = pair_system_to_local(&r_a, &o_a, &r_b, &o_b);
+            let c_in_a = v_ij + o_ij.rotate(&c_in_b);
+
+            assert_relative_eq!(
+                r_a + o_a.rotate(&c_in_a),
+                r_b + o_b.rotate(&c_in_b),
+                epsilon = 10.0 * f64::EPSILON
+            );
+
+            let (v_ji, o_ji) = pair_system_to_local(&r_b, &o_b, &r_a, &o_a);
+            assert_relative_eq!(
+                v_ji + o_ji.rotate(&c_in_a),
+                c_in_b,
+                epsilon = 10.0 * f64::EPSILON
+            );
+        }
     }
 }

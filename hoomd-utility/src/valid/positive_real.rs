@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `PositiveReal`
@@ -9,7 +9,7 @@ use std::{
     ops::{Div, DivAssign, Mul, MulAssign},
 };
 
-use crate::Error;
+use super::Error;
 
 /// A f64 value that is not +/- inf, nan, or a value <= 0.
 ///
@@ -69,13 +69,16 @@ impl TryFrom<f64> for PositiveReal {
     /// use hoomd_utility::valid::PositiveReal;
     ///
     /// let result = PositiveReal::try_from(-1.0);
-    /// assert!(matches!(result, Err(hoomd_utility::Error::NotPositive(_))));
+    /// assert!(matches!(
+    ///     result,
+    ///     Err(hoomd_utility::valid::Error::NotPositive(_))
+    /// ));
     /// ```
     ///
     /// # Errors
     ///
-    /// `[Error::NotFinite]` when `v` is not finite.
-    /// `[Error::NotPositive]` when `v` is not a positive value
+    /// [`Error::NotFinite`] when `v` is not finite.
+    /// [`Error::NotPositive`] when `v` is not a positive value
     #[inline]
     fn try_from(v: f64) -> Result<PositiveReal, Error> {
         if !v.is_finite() {

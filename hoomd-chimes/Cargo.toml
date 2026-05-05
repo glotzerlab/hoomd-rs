@@ -20,6 +20,7 @@ hoomd-geometry.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
 hoomd-simulation.workspace = true
+hoomd-gsd.workspace = true
 hoomd-spatial.workspace = true
 hoomd-vector.workspace = true
 hoomd-bevy.workspace=true

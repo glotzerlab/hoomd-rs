@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement canonical vector types.
@@ -53,7 +53,7 @@ use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 ///
 /// ```
 /// use hoomd_vector::Cartesian;
-/// use rand::{Rng, SeedableRng, rngs::StdRng};
+/// use rand::{RngExt, SeedableRng, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(1);
@@ -457,7 +457,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     ///
     /// ```
     /// use hoomd_vector::Cartesian;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);
@@ -783,7 +783,7 @@ mod tests {
     use super::*;
     use approxim::assert_relative_eq;
     use paste::paste;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
 
     // Parameterize a test function over an array of vector lengths
