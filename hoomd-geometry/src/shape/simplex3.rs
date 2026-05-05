@@ -501,7 +501,7 @@ impl BoundingSphereRadius for Simplex3 {
         )
         .sqrt()
         .try_into()
-        .expect("All norms are NaN -- check your inputs!")
+        .expect("All norms are zero or NaN -- check your inputs!")
     }
 }
 
