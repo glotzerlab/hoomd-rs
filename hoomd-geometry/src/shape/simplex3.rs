@@ -484,22 +484,12 @@ impl BoundingSphereRadius for Simplex3 {
     /// ```
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        // Norm squared is positive and *usually* not NaN.
-        // f64::from_bits(
-        //     *self
-        //         .vertices
-        //         .map(|v| v.norm_squared().to_bits())
-        //         .iter()
-        //         .max()
-        //         .expect("Iterator over [...; 4] should have nonzero length."),
-        // )
-        // .sqrt()
-        // .try_into()
-        // .expect("sqrt is positive")
         self.vertices
-            .map(|v| v.norm_squared())
+            .map(|v| {
+                let n = v.norm_squared();
+                if n.is_nan() { -f64::NEG_INFINITY } else { n }
+            })
             .iter()
-            .filter(|val| !val.is_nan())
             .max_by(|a, b| a.total_cmp(b))
             .expect("Iterator over [...; 4] should have nonzero length.")
             .sqrt()
