@@ -488,11 +488,15 @@ impl BoundingSphereRadius for Simplex3 {
     /// ```
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        let arr = self.vertices.map(|v| {
-            PositiveReal::try_from((v - self.centroid()).norm())
-                .expect("Square of an f64 should be positive.")
-        });
-        *arr.iter().max().expect("Max of Ord type should be Some.")
+        *self
+            .vertices
+            .map(|v| {
+                PositiveReal::try_from((v - self.centroid()).norm())
+                    .expect("Square of an f64 should be positive.")
+            })
+            .iter()
+            .max()
+            .expect("Max of Ord type should be Some.")
     }
 }
 
