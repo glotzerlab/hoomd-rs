@@ -484,18 +484,18 @@ impl BoundingSphereRadius for Simplex3 {
     /// ```
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        self.vertices
-            .map(|v| {
-                PositiveReal::try_from((v - self.centroid()).norm_squared())
-                    .expect("Square of an f64 should be positive.")
-            })
-            .iter()
-            .max()
-            .expect("Max of Ord type should be Some.")
-            .get()
-            .sqrt()
-            .try_into()
-            .expect("Square root should be positive")
+        // Norm squared is positive
+        f64::from_bits(
+            *self
+                .vertices
+                .map(|v| v.norm_squared().to_bits())
+                .iter()
+                .max()
+                .expect("Max of Ord type should be Some."),
+        )
+        .sqrt()
+        .try_into()
+        .expect("sqrt is positive")
     }
 }
 
