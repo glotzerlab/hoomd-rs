@@ -96,7 +96,7 @@ pub struct TripletTypeData {
 /// Enum to encapsulate different `ChIMES` many-body cutoff styles.
 #[derive(Debug)]
 enum TripletCutType {
-    None,
+    Default,
     All,
     Specific,
 }
@@ -105,8 +105,9 @@ enum TripletCutType {
 /// the `ChIMES` parameter file.
 ///
 /// Given a known maximum two-body Chebyshev polynomial
-/// orders `N`, [`ChimesBuilder`] can be used to parse the
-/// potential parameter in the `ChIMES` parameter TXT file,
+/// orders `N` and three-body order `M`, [`ChimesBuilder`] 
+/// can be used to parse the potential parameter 
+/// in the `ChIMES` parameter TXT file,
 /// as described in the Generating a `ChIMES` model
 /// writen in the [ChIMES-LSQ].
 ///
@@ -268,10 +269,10 @@ impl<const N: usize, const M: usize> ChimesBuilder<N, M> {
 
         let mut triplet_special_r_in = Vec::new();
         let mut triplet_special_r_in_pair_type = Vec::new();
-        let mut triplet_special_r_in_status = TripletCutType::None;
+        let mut triplet_special_r_in_status = TripletCutType::Default;
         let mut triplet_special_r_out = Vec::new();
         let mut triplet_special_r_out_pair_type = Vec::new();
-        let mut triplet_special_r_out_status = TripletCutType::None;
+        let mut triplet_special_r_out_status = TripletCutType::Default;
         let mut triplet_data = Vec::new();
         let mut triplet_idx_slow_map = Vec::new();
         let mut triplet_type_slow_map = Vec::new();
@@ -283,7 +284,7 @@ impl<const N: usize, const M: usize> ChimesBuilder<N, M> {
                     let pairtyp = Self::parse_i32_vec(l.trim_start_matches("PAIRTYP: CHEBYSHEV "))?;
                     if pairtyp.is_empty() || pairtyp[0] as usize != N {
                         return Err(ChimesError::InvalidFormat(format!(
-                            "Expected two-body order {N}"
+                            "Expect two-body order {N}"
                         ))
                         .into());
                     }
@@ -292,7 +293,7 @@ impl<const N: usize, const M: usize> ChimesBuilder<N, M> {
                     if pairtyp.len() >= 4 {
                         if pairtyp[1] as usize != M {
                             return Err(ChimesError::InvalidFormat(format!(
-                                "Expected three-body order {M}"
+                                "Expect three-body order {M}"
                             ))
                             .into());
                         }
@@ -1004,7 +1005,7 @@ impl<const N: usize, const M: usize> ChimesBuilder<N, M> {
 
         for (status, spec_vals, spec_types, is_in) in passes {
             match status {
-                TripletCutType::None => {
+                TripletCutType::Default => {
                     for tri in triplet_data.iter_mut() {
                         let c1 = pair_mapping.get(tri.pair1.as_str()).unwrap();
                         let c2 = pair_mapping.get(tri.pair2.as_str()).unwrap();
@@ -1196,7 +1197,7 @@ mod tests {
 
     #[rstest]
     #[should_panic(
-        expected = "Failed to parse parameter file: InvalidFormat(\"Expected two-body order 8\")"
+        expected = "Failed to parse parameter file: InvalidFormat(\"Expect two-body order 8\")"
     )]
     fn mismatch_2b_order() {
         const N: usize = 8;
@@ -1213,7 +1214,7 @@ mod tests {
 
     #[rstest]
     #[should_panic(
-        expected = "Failed to parse parameter file: InvalidFormat(\"Expected three-body order 1\")"
+        expected = "Failed to parse parameter file: InvalidFormat(\"Expect three-body order 1\")"
     )]
     fn mismatch_3b_order() {
         const N: usize = 12;
@@ -1420,7 +1421,7 @@ mod tests {
         assert_eq!(params.pair_idx_fast_map, expected_pair_idx_fast_map);
         assert_eq!(params.pair_type_fast_map, expected_pair_type_fast_map);
 
-        // Use specific ALL style for triplets outer cutoffs
+        // Use ALL style for triplets outer cutoffs
         for data in params.triplet_data.clone() {
             assert_eq!(data.r_out1, 5.0);
             assert_eq!(data.r_out2, 5.0);
