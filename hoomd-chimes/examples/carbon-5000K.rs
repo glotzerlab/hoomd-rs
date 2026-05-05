@@ -58,10 +58,13 @@ impl Fill {
         let maximum_distance = 0.3;
 
         // ChIMES model
+        let mut file_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        file_path.push("test-data");
+        file_path.push("C-twobody.txt");
         let params = ChimesBuilder::<NCOEFF, 0>::parse(
-            "/Users/alexlee/Documents/git_repo/hoomd-rs/hoomd-chimes/test-data/C-twobody.txt",
+            file_path.to_str().expect("Path contains invalid symbols"),
         )
-        .expect("Failed to parse parameter file");
+            .expect("Failed to parse parameter file");
         let pairwise_cutoff = params
             .get_twob_chimes_potential(0)
             .expect("Error assemling ChIMES potential");
