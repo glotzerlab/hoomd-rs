@@ -3,13 +3,14 @@
 
 //! A tetrahedron in three dimensions. This struct should be viewed as a prototype for
 //! more complex geometries in addition to its standalone functionality.
+use hoomd_utility::valid::PositiveReal;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{array, fmt};
 
 use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
 
-use crate::{IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
 
 /// The hull of any 4 noncoplanar points in three dimensions.
 ///
@@ -460,6 +461,41 @@ where
         true // No separating planes -> intersection!
     }
 }
+
+impl BoundingSphereRadius for Simplex3 {
+    /// Radius of a circle that bounds the shape.
+    ///
+    /// The circle has the same local origin as the shape `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexSurfaceMesh2d};
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let triangle = ConvexSurfaceMesh2d::from_point_set([
+    ///     [1.0, -1.0].into(),
+    ///     [-1.0, -1.0].into(),
+    ///     [0.0, 1.0].into(),
+    /// ])?;
+    ///
+    /// let bounding_radius = triangle.bounding_sphere_radius();
+    ///
+    /// assert_relative_eq!(bounding_radius.get(), 2.0_f64.sqrt());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn bounding_sphere_radius(&self) -> PositiveReal {
+        let arr = self.vertices.map(|v| {
+            PositiveReal::try_from((v - self.centroid()).norm())
+                .expect("Square of an f64 should be positive.")
+        });
+        *arr.iter().max().expect("Max of Ord type should be Some.")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::xenocollide::collide3d;
