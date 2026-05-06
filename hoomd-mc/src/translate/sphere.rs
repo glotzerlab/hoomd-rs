@@ -3,7 +3,7 @@
 
 //! Implement Translation moves on curved surfaces
 
-use rand::{Rng, RngExt};
+use rand::{Rng, RngExt, distr::{Distribution, Uniform}};
 use rand_distr::StandardNormal;
 
 use crate::{LocalTrial, Translate};
@@ -35,7 +35,7 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     ///
     /// // Translation move keeps point on the surface of the sphere
     /// let new_body_radius = new_body_properties.position.point().norm();
-    /// assert_eq!(new_body_radius, 1.0);
+    /// assert_relative_eq!(new_body_radius, 1.0, epsilon=1e-8);
     ///
     /// // Translation move does not translate the point more than a distance d away
     /// assert!(
@@ -53,7 +53,9 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
         body_properties: Point<Spherical<3>>,
     ) -> Point<Spherical<3>> {
         let mut trial = body_properties;
-        let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
+        let dist = Uniform::new(0.0, self.maximum_distance().get()).expect("max distance must be positive real");
+        let displacement = dist.sample(rng);
+        //let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
         let (sn, cs) = (displacement.sin(), displacement.cos());
         let vec = Cartesian::<3>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
         let proj = vec.dot(trial.position.point());
@@ -70,16 +72,6 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
         ]);
         *trial.position_mut() = Spherical::from_cartesian_coordinates(new);
         trial
-        //         let mut trial = body_properties;
-        // let disk = SphericalDisk {
-        // disk_radius: *self.maximum_distance(),
-        // point: *trial.position_mut(),
-        // };
-        // trial.position_mut() = disk.sample(rng);
-        // let rescale = 1.0 / trial.position().point().norm();
-        // trial.position_mut() =
-        // Spherical::from_cartesian_coordinates(*trial.position().point() * rescale);
-        // trial
     }
 }
 
@@ -131,7 +123,8 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
         body_properties: Point<Spherical<4>>,
     ) -> Point<Spherical<4>> {
         let mut trial = body_properties;
-        let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
+        let dist = Uniform::new(0.0, self.maximum_distance().get()).expect("max distance must be positive real");
+        let displacement = dist.sample(rng);
         let (sn, cs) = ((displacement.abs()).sin(), (displacement.abs()).cos());
         let vec = Cartesian::<4>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
         let proj = vec.dot(trial.position.point());
@@ -153,4 +146,66 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
     }
 }
 
-// TODO: test code
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approxim::assert_relative_eq;
+    use hoomd_vector::Metric;
+    use rand::{SeedableRng, rngs::StdRng};
+    use rstest::*;
+    use std::f64::consts::PI;
+
+    const N: usize = 256;
+
+    #[rstest]
+    fn translate_2spherical_point(#[values(0.01,0.1,1.0)] d:f64) {
+        let mut rng = StdRng::seed_from_u64(1459);
+        let initial_point = Point::new(Spherical::<3>::from_cartesian_coordinates(
+            [0.5_f64.sqrt(), 0.0, 0.5_f64.sqrt()].into()
+        ));
+        let translate = Translate::with_maximum_distance(d.try_into().expect("hard-coded positive value"));
+
+        for _ in 0..N {
+            let new_body_properties = translate.propose(&mut rng, initial_point);
+            // Translation move keeps point on the surface of the sphere
+            assert_relative_eq!(
+                new_body_properties.position().point().norm(),
+                1.0_f64,
+                epsilon = 1e-8
+            );
+            // Translation move does not translate the point more than a distance d away
+            assert!(
+                d > new_body_properties
+                    .position()
+                    .distance(&initial_point.position())
+            );
+        }
+    }
+
+    #[rstest]
+    fn translate_3spherical_point(#[values(0.01,0.1,1.0)] d:f64) {
+        let mut rng = StdRng::seed_from_u64(1459);
+        let initial_point = Point::new(Spherical::<4>::from_polar_coordinates(
+            PI / 4.0,
+            PI / 10.0,
+            5.0 * PI / 4.0,
+        ));
+        let translate = Translate::with_maximum_distance(d.try_into().expect("hard-coded positive value"));
+
+        for _ in 0..N {
+            let new_body_properties = translate.propose(&mut rng, initial_point);
+            // Translation move keeps point on the surface of the sphere
+            assert_relative_eq!(
+                new_body_properties.position().point().norm(),
+                1.0_f64,
+                epsilon = 1e-8
+            );
+            // Translation move does not translate the point more than a distance d away
+            assert!(
+                d > new_body_properties
+                    .position()
+                    .distance(&initial_point.position())
+            );
+        }
+    }
+}
