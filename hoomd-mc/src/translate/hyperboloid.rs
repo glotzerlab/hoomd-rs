@@ -3,7 +3,8 @@
 
 //! Implement Translation moves on curved surfaces
 
-use rand::{Rng, distr::Distribution};
+use rand::{Rng, RngExt, distr::{Distribution, Uniform}};
+use rand_distr::StandardNormal;
 
 use crate::{LocalTrial, Translate};
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
@@ -62,17 +63,25 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
         body_properties: Point<Hyperbolic<3>>,
     ) -> Point<Hyperbolic<3>> {
         let mut trial = body_properties;
-        let disk = HyperbolicDisk {
-            disk_radius: *self.maximum_distance(),
-            point: *trial.position_mut(),
-        };
-        let trial_sample: Hyperbolic<3> = disk.sample(rng);
-        // push point back onto Hyperboloid
-        *trial.position_mut() = Hyperbolic::from_minkowski_coordinates(Minkowski::from([
-            trial_sample.coordinates()[0],
-            trial_sample.coordinates()[1],
-            (trial_sample.point()[0].powi(2) + trial_sample.point()[1].powi(2) + 1.0_f64).sqrt(),
-        ]));
+        let trial_array = trial.position.coordinates();
+        let dist = Uniform::new(0.0, self.maximum_distance().get()).expect("max distance must be positive real");
+        let displacement = dist.sample(rng);
+        let (snh, csh) = (displacement.sinh(), displacement.cosh());
+        let vec: [f64;3] = std::array::from_fn(|_| rng.sample(StandardNormal));
+        let proj = vec[0]*trial_array[0] + vec[1]*trial_array[1] - vec[2]*trial_array[2];
+        let tangent = Minkowski::from([
+            vec[0] + proj * trial_array[0],
+            vec[1] + proj * trial_array[1],
+            vec[2] + proj * trial_array[2],
+        ]);
+        let mink_norm = (tangent[0]*tangent[0] + tangent[1]*tangent[1] - tangent[2]*tangent[2]).sqrt();
+        let unit = tangent / mink_norm;
+        let new = Minkowski::from([
+            trial_array[0] * csh + unit.coordinates[0] * snh,
+            trial_array[1] * csh + unit.coordinates[1] * snh,
+            trial_array[2] * csh + unit.coordinates[2] * snh,
+        ]);
+        *trial.position_mut() = Hyperbolic::from_minkowski_coordinates(new);
         trial
     }
 }
@@ -128,7 +137,6 @@ mod tests {
     #[rstest]
     fn translate_hyperbolic_point(#[values(0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
-        let rho: f64 = 1.0;
         let body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
             [1.0, 0.0, (2.0_f64).sqrt()].into(),
         ));
@@ -144,20 +152,18 @@ mod tests {
                     .position()
                     .point()
                     .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
-                -(rho.powi(2)),
-                epsilon = 1e-12
+                -1.0,
+                epsilon = 1e-8
             );
 
             // Translation move does not move the point more than a distance d
-            assert!(
-                d > new_body_properties.position().distance(
+            let dist = new_body_properties.position().distance(
                     &Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                         1.0,
                         0.0,
                         (2.0_f64).sqrt()
-                    ]),)
-                )
-            );
+                    ])));
+            assert!(d > dist);
         }
     }
 
@@ -196,4 +202,5 @@ mod tests {
             );
         }
     }
+    // TODO: stress tests
 }
