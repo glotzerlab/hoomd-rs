@@ -7,7 +7,7 @@ use hoomd_interaction::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, External, TotalEnergy, external::ConstantForce,
 };
 use hoomd_microstate::{Body, Microstate};
-use hoomd_vector::Cartesian;
+use hoomd_vector::{Cartesian, Vector};
 
 use assert2::check;
 
@@ -62,19 +62,16 @@ fn combined_named() -> anyhow::Result<()> {
     ])?;
 
     let one = External(ConstantForce {
-        alpha: 1.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [1.0, 0.0].try_into()?,
+        force: [-1.0, 0.0].into(),
+        r_0: Cartesian::default(),
     });
     let two = External(ConstantForce {
-        alpha: 2.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [0.0, -1.0].try_into()?,
+        force: [0.0, 2.0].into(),
+        r_0: Cartesian::default(),
     });
     let three = External(ConstantForce {
-        alpha: 3.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [1.0, 0.0].try_into()?,
+        force: [-3.0, 0.0].into(),
+        r_0: Cartesian::default(),
     });
     check!(one.total_energy(&microstate) == 3.0);
     check!(two.total_energy(&microstate) == -2.0);
@@ -107,19 +104,16 @@ fn combined_unnamed() -> anyhow::Result<()> {
     ])?;
 
     let one = External(ConstantForce {
-        alpha: 1.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [1.0, 0.0].try_into()?,
+        force: [-1.0, 0.0].into(),
+        r_0: Cartesian::default(),
     });
     let two = External(ConstantForce {
-        alpha: 2.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [0.0, -1.0].try_into()?,
+        force: [0.0, 2.0].into(),
+        r_0: Cartesian::default(),
     });
     let three = External(ConstantForce {
-        alpha: 3.0,
-        plane_origin: Cartesian::default(),
-        plane_normal: [1.0, 0.0].try_into()?,
+        force: [-3.0, 0.0].into(),
+        r_0: Cartesian::default(),
     });
     check!(one.total_energy(&microstate) == 3.0);
     check!(two.total_energy(&microstate) == -2.0);
@@ -134,4 +128,59 @@ fn combined_unnamed() -> anyhow::Result<()> {
     check!(combined_unnamed.delta_energy_remove(&microstate, 1) == 2.0);
 
     Ok(())
+}
+
+#[derive(DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy)]
+struct CombinedNamedGeneric<V: Vector, E> where
+E: Clone,
+{
+    one: External<ConstantForce<V>>,
+    two: External<ConstantForce<V>>,
+    three: E,
+}
+
+#[test]
+fn combined_named_generic() -> anyhow::Result<()> {
+    let mut microstate = Microstate::new();
+    microstate.extend_bodies([
+        Body::point(Cartesian::from([3.0, 0.0])),
+        Body::point(Cartesian::from([0.0, 1.0])),
+    ])?;
+
+    let one = External(ConstantForce {
+        force: [-1.0, 0.0].into(),
+        r_0: Cartesian::default(),
+    });
+    let two = External(ConstantForce {
+        force: [0.0, 2.0].into(),
+        r_0: Cartesian::default(),
+    });
+    let three = External(ConstantForce {
+        force: [-3.0, 0.0].into(),
+        r_0: Cartesian::default(),
+    });
+    check!(one.total_energy(&microstate) == 3.0);
+    check!(two.total_energy(&microstate) == -2.0);
+    check!(three.total_energy(&microstate) == 9.0);
+
+    let combined_named_generic = CombinedNamedGeneric { one, two, three };
+    check!(combined_named_generic.total_energy(&microstate) == 10.0);
+
+    let new_body = Body::point(Cartesian::from([2.0, 1.0]));
+    check!(combined_named_generic.delta_energy_one(&microstate, 0, &new_body) == -6.0);
+    check!(combined_named_generic.delta_energy_insert(&microstate, &new_body) == 6.0);
+    check!(combined_named_generic.delta_energy_remove(&microstate, 1) == 2.0);
+
+    Ok(())
+}
+
+// Check that no syntax errors are created when there is no trailing comma.
+#[expect(dead_code, reason = "The implementation is tested above.")]
+#[derive(DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy)]
+struct CombinedNamedGenericNoComma<V: Vector, E> where
+E: Clone
+{
+    one: External<ConstantForce<V>>,
+    two: External<ConstantForce<V>>,
+    three: E,
 }

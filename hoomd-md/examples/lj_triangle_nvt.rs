@@ -6,7 +6,7 @@ use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     PairwiseCutoff, TotalEnergy,
     pairwise::Isotropic, univariate::LennardJones,
-    rigid::Rigid,
+    Rigid,
 };
 use hoomd_md::{
     methods::{

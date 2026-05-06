@@ -13,7 +13,7 @@ tutorial shows you how to represents **sites** with hard convex polyhedra.
 When compressed to a sufficiently high packing fraction, systems of hard
 tetrahedra **self-assemble** into a quasicrystal: [10.1038/nature08641].
 
-[10.1038/nature08641]: http://doi.org/10.1038/nature08641
+[10.1038/nature08641]: https://doi.org/10.1038/nature08641
 
 * Objectives:
   * Explain how to model system of hard convex polytopes.
@@ -158,15 +158,14 @@ Render with Tachyon, and you should see something like:
 This tutorial showed you how to perform hard tetrahedron self-assembly simulations
 using a shape overlap potential.
 
-Navigate to the top of the page and refresh to see the simulation in action
-again. Notice that tetrahedra are first added in a large batch. Once all the
-overlaps are removed, another batch appears. After all all tetrahedra are in the
-microstate and not overlapping, the simulation compresses to a higher packing
-fraction. After that, it speeds up as it begins using the more efficient hard
-particle overlap Hamiltonian. Watch the simulation long enough and you should
-see dimers and pentamers form. These motifs organize to form a quasicrystal,
-but only after very long simulation times with at least 4096 tetrahedra:
-[10.1038/nature08641].
+Navigate to the top of the page to see the simulation in action. Notice that
+tetrahedra are first added in a large batch. Once all the overlaps are removed,
+another batch appears. After all all tetrahedra are in the microstate and not
+overlapping, the simulation compresses to a higher packing fraction. After
+that, it speeds up as it begins using the more efficient hard particle overlap
+Hamiltonian. Watch the simulation long enough and you should see dimers and
+pentamers form. These motifs organize to form a quasicrystal, but only after
+very long simulation times with at least 4096 tetrahedra: [10.1038/nature08641].
 
 ## Complete Code
 

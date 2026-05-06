@@ -91,27 +91,6 @@ pub trait ForceUpdate<B, S, X, C, E> {
     fn update_force(&self, microstate: &mut Microstate<B, S, X, C>, evaluator: &E);
 }
 
-/// Update the [`NetTorque`] in [`Microstate`] for each [`Body`] 
-/// using [`Position`] and [`Orientation`] stored in it.
-///
-/// The generic type names are:
-/// * `B`: The [`Body::properties`] type.
-/// * `S`: The [`Site::properties`] type.
-/// * `C`: The [`boundary`] condition type.
-/// * `E`: The interaction [`rigid`] type.
-/// 
-/// # Note
-/// 
-/// It will perform one extra force calculation per [`Site`] 
-/// to evaludate the [`NetTorque`]. 
-/// If updating both [`NetForce`] and [`NetTorque`] is intended, 
-/// use [`ForceAndTorqueUpdate`] for more efficient calculation that
-/// only performs force calculation once.
-pub trait TorqueUpdate<const N: usize, B, S, X, C, E> {
-    /// Perform update.
-    fn update_torque(&self, microstate: &mut Microstate<B, S, X, C>, evaluator: &E);
-}
-
 /// Update the [`NetForce`] and [`NetTorque`] in [`Microstate`] 
 /// for each [`Body`] using [`Position`] and [`Orientation`] stored in it.
 ///

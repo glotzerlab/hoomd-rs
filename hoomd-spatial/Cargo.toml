@@ -1,7 +1,7 @@
 [package]
 name = "hoomd-spatial"
 categories.workspace = true
-description = "Infrastructure for efficient computation of neighbors using spatial data structures."
+description = "Spatial data structures used when computing interaction models in hoomd-rs."
 edition.workspace = true
 homepage.workspace = true
 documentation.workspace = true

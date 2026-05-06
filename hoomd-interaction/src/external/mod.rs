@@ -8,3 +8,6 @@ pub use constant_force::ConstantForce;
 
 mod constant_torque;
 pub use constant_torque::ConstantTorque;
+
+mod linear;
+pub use linear::Linear;

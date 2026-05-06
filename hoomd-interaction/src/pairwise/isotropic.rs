@@ -5,9 +5,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForce, univariate::{UnivariateEnergy, UnivariateForce}};
+use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForce, SitePairForceAndTorque, univariate::{UnivariateEnergy, UnivariateForce}};
 use hoomd_microstate::property::Position;
-use hoomd_vector::{InnerProduct, Vector, Metric};
+use hoomd_vector::{InnerProduct, Metric, Wedge};
 
 /// Compute isotropic interactions between a pair of sites.
 ///
@@ -23,12 +23,12 @@ use hoomd_vector::{InnerProduct, Vector, Metric};
 /// # Example
 ///
 /// ```
+/// use approxim::assert_relative_eq;
 /// use hoomd_interaction::{
-///     SitePairEnergy, pairwise::Isotropic, univariate::LennardJones,
+///     SitePairEnergy, SitePairForce, pairwise::Isotropic, univariate::LennardJones,
 /// };
 /// use hoomd_microstate::property::Point;
 /// use hoomd_vector::Cartesian;    
-/// use approxim::assert_relative_eq;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let a = Point {
@@ -92,25 +92,69 @@ impl<E> MaximumInteractionRange for Isotropic<E> {
     }
 }
 
-impl<P, S, E> SitePairForce<P, S> for Isotropic<E>
+impl<V, S, E> SitePairForce<S> for Isotropic<E>
 where
+    V: Default + InnerProduct,
+    S: Position<Position = V>,
     E: UnivariateForce,
-    P: Vector + InnerProduct + Metric,
-    S: Position<Position = P>
 {
-    /// Calculate the pairwise force 
-    /// 
+    type Force = V;
+
+    /// Evaluate the force on site `i` caused by site `j`.
+    ///
+    ///
+    /// Isotropic forces always act along the radial direction:
     /// ```math
     /// \begin{equation}
-    /// \mathbf{f}_{\alpha\beta} = -\nabla_{r_{\alpha\beta}} U(r_{\alpha\beta})
+    /// \vec{F_{ij}} = -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ji}} \hat{r}_{ji}
     /// \end{equation}
     /// ```
-    /// 
-    /// on [`Site`](hoomd_microstate::Site) $`\alpha`$ exerting by $`\beta`$.
     #[inline]
-    fn site_pair_force(&self, a: &S, b: &S) -> P {
-        let r = *a.position() - *b.position();
-        let distance = r.norm();
-        r * self.interaction.force(distance) / distance
+    fn site_pair_force(&self, site_properties_i: &S, site_properties_j: &S) -> Self::Force {
+        let r_ji = *site_properties_i.position() - *site_properties_j.position();
+        let distance = r_ji.norm();
+
+        if distance >= self.r_cut {
+            V::default()
+        } else {
+            r_ji * self.interaction.force(distance) / distance
+        }
+    }
+}
+
+impl<V, S, E> SitePairForceAndTorque<S> for Isotropic<E>
+where
+    V: Default + InnerProduct + Wedge,
+    V::Bivector: Default,
+    S: Position<Position = V>,
+    E: UnivariateForce,
+{
+    type Force = V;
+
+    /// Evaluate the force and torque on site `i` caused by site `j`.
+    ///
+    ///
+    /// Isotropic forces always act along the radial direction:
+    /// ```math
+    /// \begin{equation}
+    /// \vec{F_{ij}} = -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ji}} \hat{r}_{ji}
+    /// \end{equation}
+    /// ```
+    ///
+    /// Radial forces produce 0 torque.
+    #[inline]
+    fn site_pair_force_and_torque(&self, site_properties_i: &S, site_properties_j: &S) -> (V, V::Bivector) {
+        let r_ji = *site_properties_i.position() - *site_properties_j.position();
+        let distance = r_ji.norm();
+
+        let force = if distance >= self.r_cut {
+            V::default()
+        } else {
+            r_ji * self.interaction.force(distance) / distance
+        };
+        
+        let torque = V::Bivector::default();
+
+        (force, torque)
     }
 }

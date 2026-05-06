@@ -5,7 +5,7 @@ use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     External,
     external::ConstantTorque,
-    rigid::Rigid,
+    Rigid,
 };
 use hoomd_md::{
     methods::{
@@ -65,7 +65,7 @@ impl Dumbbell {
         let square = Rectangle::with_equal_edges(box_length.try_into()?);
         // let boundary = Closed(square);
         let boundary = Periodic::new(2.5, square)?;
-        let mut microstate = Microstate::builder().boundary(boundary);
+        let mut microstate = Microstate::builder().boundary(boundary).try_build()?;
 
         let dumbbell_body = Body {
             properties: OrientedDynamicsPoint {
@@ -87,8 +87,7 @@ impl Dumbbell {
 
         // Model interactions (in this case, a pairwise Lennard-Jones)
         let force = Rigid(External(ConstantTorque {
-            alpha: 0.001,
-            direction: 1.0,
+            torque: 0.001,
         }));
 
         // Create an NVE macrostate

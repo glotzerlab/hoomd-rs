@@ -378,78 +378,88 @@ pub trait Vector:
 {
 }
 
-/// Operate on elements of a wedge product space.
+/// The vector wedge product.
 /// 
-/// The [`WedgeProduct`] subtrait defines the wedge product method, which returns the bivector
-/// for two elements. In 2-D vector space, the bivector of two vectors is a scalar;
-/// in 3-D it is another 3-vector. In cartesian space, torque always takes the form
-/// of a bivector.
-/// TODO: confirm whether the elements must be vectors
-pub trait WedgeProduct: Vector {
-    /// Type of the resulting [bivector](https://en.wikipedia.org/wiki/Bivector).
+/// The result of a vector wedge product is a *[bivector]*. Mathematically,
+/// bivectors are different from vectors. In practice, *hoomd-rs* uses
+/// follows standard physics practices, where torques are bivectors:
+/// * When the inputs are 2D vectors ([`Cartesian<2>`]), the result is a scalar.
+/// * When the inputs are 3D vectors ([`Cartesian<3>`]), the result is another
+///   [`Cartesian<3>`].
+///
+/// [bivector]: https://en.wikipedia.org/wiki/Bivector
+pub trait Wedge {
+    /// Type of the bivector result.
     type Bivector;
-    /// Compute the wedge product between two elements.
+
+    /// Compute the wedge product of two vectors.
     /// 
     /// ```math
     /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
     /// ```
     /// 
-    /// # Example
+    /// # Examples
+    ///
+    /// 2D:
     /// ```
-    /// use hoomd_vector::{Cartesian, WedgeProduct}
+    /// use hoomd_vector::{Cartesian, Wedge};
     /// 
-    /// # fn main() {
-    /// let a = Cartesian::from([1.0, 1.0]);
-    /// let b = Cartesian::from([0.0, 1.0]);
-    /// let c = Cartesian::from([1.0, 1.0, 1.0]);
-    /// let d = Cartesian::from([0.0, 1.0, 0.0]);
-    /// assert_eq!(a.cross(b), a.wedge_product(b));
-    /// assert_eq!(c.cross(d), c.wedge_product(d));
-    /// # }
+    /// let a = Cartesian::from([2.0, 1.0]);
+    /// let b = Cartesian::from([3.0, 1.0]);
+    ///
+    /// assert_eq!(a.wedge(&b), -1.0);
     /// ```
-    fn wedge_product(&self, other: &Self) -> Self::Bivector;
+    ///
+    /// 3D:
+    /// ```
+    /// use hoomd_vector::{Cartesian, Wedge};
+    ///
+    /// let a = Cartesian::from([1.0, 0.0, 0.0]);
+    /// let b = Cartesian::from([0.0, 1.0, 0.0]);
+    /// assert_eq!(a.wedge(&b), [0.0, 0.0, 1.0].into());
+    /// ```
+    fn wedge(&self, other: &Self) -> Self::Bivector;
 }
 
-/// Operate on elements of a tensor product space.
-/// 
-/// The [`TensorProduct`] subtrait defines the tensor product method, which returns
-/// the tensor resulting from matrix-style multiplication of two elements.
-/// TODO: confirm whether the elements must be vectors
-pub trait TensorProduct: Vector {
-    /// Type of the resulting tensor.
-    type Tensor;
-    /// Compute the tensor product between two elements.
+/// The vector outer product.
+pub trait Outer {
+    /// Result type.
+    type Output;
+    
+    /// Compute the outer product of two vectors.
     /// 
     /// ```math
-    /// a \otimes b = \begin{bmatrix} a_{0}
+    /// a \otimes b = \begin{bmatrix} a_0
+    ///  \\ a_1
     ///  \\ \vdots 
     ///  \\ a_{n}
     /// \end{bmatrix}
     /// \begin{bmatrix}
-    /// b_{0} & \dots & b_{n}
+    /// b_0 & b_1 & \dots & b_{n}
     /// \end{bmatrix}
     /// =
     /// \begin{bmatrix}
-    /// a_{0}b_{0} & \dots & a_{0}b_{n} \\
-    /// \vdots & \ddots & \vdots \\
-    /// a_{n}b_{0} & \dots & a_{n}b_{n}
+    /// a_0 b_0 & a_0 b_1 & \dots & a_0 b_n \\
+    /// a_1 b_0 & a_1 b_1 & \dots & a_1 b_n \\
+    /// \vdots & \vdots & \ddots & \vdots \\
+    /// a_n b_0 & a_n b_1 & \dots & a_n b_n
     /// \end{bmatrix}
     /// ```
     /// 
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Matrix, TensorProduct}
+    /// use hoomd_vector::{Cartesian, Outer};
+    /// use hoomd_linear_algebra::matrix::Matrix;
     /// 
-    /// # fn main() {
-    /// let a = Cartesian::from([1.0, 1.0]);
-    /// let b = Cartesian::from([0.0, 1.0]);
+    /// let a = Cartesian::from([2.0, 1.0]);
+    /// let b = Cartesian::from([4.0, 3.0]);
+    ///
     /// let m = Matrix {
-    ///     rows: [[0.0, 1.0], [0.0, 1.0]]
-    /// }
-    /// assert_eq!(a.tensor_product(b), m)
-    /// # }
+    ///     rows: [[8.0, 6.0], [6.0, 3.0]]
+    /// };
+    /// assert_eq!(a.outer(&b), m);
     /// ```
-    fn tensor_product(&self, other: &Self) -> Self::Tensor;
+    fn outer(&self, other: &Self) -> Self::Output;
 }
 
 /// Operates on elements of a metric space.
@@ -684,9 +694,11 @@ impl<V> Unit<V> {
     }
 }
 
-/// A vector space where the cross product is defined.
+/// The vector cross product.
+///
+/// The result of a vector cross product is in the same vector space as the
+/// operands.
 pub trait Cross {
-    /// Perform the cross product.
     /// Compute the cross product (right-handed) of two vectors:
     ///
     /// ```math

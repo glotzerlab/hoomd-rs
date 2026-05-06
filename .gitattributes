@@ -1,1 +1,2 @@
 katex.html linguist-documentation
+*.sh -linguist-detectable

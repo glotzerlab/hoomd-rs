@@ -17,7 +17,7 @@ use rand::{
     distr::{Distribution, StandardUniform, Uniform},
 };
 
-use crate::{Cross, Error, InnerProduct, Metric, Rotate, TensorProduct, Unit, Vector, WedgeProduct};
+use crate::{Cross, Error, InnerProduct, Metric, Rotate, Outer, Unit, Vector, Wedge};
 use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
@@ -448,11 +448,26 @@ impl Cross for Cartesian<3> {
     }
 }
 
-impl WedgeProduct for Cartesian<3> {
+impl Wedge for Cartesian<3> {
     type Bivector = Cartesian<3>;
 
     #[inline]
-    fn wedge_product(&self, other: &Self) -> Self::Bivector {
+    /// Compute the wedge product of two vectors.
+    /// 
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, Wedge};
+    ///
+    /// let a = Cartesian::from([1.0, 0.0, 0.0]);
+    /// let b = Cartesian::from([0.0, 1.0, 0.0]);
+    /// assert_eq!(a.wedge(&b), [0.0, 0.0, 1.0].into());
+    /// ```
+    fn wedge(&self, other: &Self) -> Self::Bivector {
         self.cross(other)
     }
 }
@@ -530,20 +545,36 @@ impl Cartesian<2> {
     }
 }
 
-impl WedgeProduct for Cartesian<2> {
+impl Wedge for Cartesian<2> {
     type Bivector = f64;
 
+    /// Compute the wedge product of two vectors.
+    /// 
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, Wedge};
+    /// 
+    /// let a = Cartesian::from([2.0, 1.0]);
+    /// let b = Cartesian::from([3.0, 1.0]);
+    ///
+    /// assert_eq!(a.wedge(&b), -1.0);
+    /// ```
     #[inline]
-    fn wedge_product(&self, other: &Self) -> Self::Bivector {
+    fn wedge(&self, other: &Self) -> Self::Bivector {
         self[0] * other[1] - self[1] * other[0]
     }
 }
 
-impl<const N: usize> TensorProduct for Cartesian<N> {
-    type Tensor = Matrix::<N, N>;
+impl<const N: usize> Outer for Cartesian<N> {
+    type Output = Matrix::<N, N>;
 
     #[inline]
-    fn tensor_product(&self, other: &Self) -> Self::Tensor {
+    fn outer(&self, other: &Self) -> Self::Output{
         self.to_column_matrix().matmul(&other.to_row_matrix())
     }
 }

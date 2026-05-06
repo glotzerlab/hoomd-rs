@@ -119,7 +119,7 @@ various terms of the Hamiltonian. The concept of a Hamiltonian will appear, but
 in more focused cases. MC trial moves will take a `hamiltonian` argument that
 implements `TotalEnergy`. It will appear more implicitly in MD.
 
-### TotalEnergy
+#### TotalEnergy
 
 The **energy** of the system defines how the bodies of a microstate interact.
 The `TotalEnergy` trait describes a type that computes the energy of a given
@@ -130,12 +130,7 @@ implement the `TotalEnergy` trait.
 Derive macros for `TotalEnergy` (and similar traits) sum the contributions from
 all fields of the struct.
 
-### Forces and torques
-
-TODO: Determine how to implement force and torque calculations on these types
-for MD.
-
-### Infinite energies
+#### Infinite energies
 
 The `TotalEnergy` trait must serve the needs of both MD and MC simulations.
 MD simulations will call `total_energy` only for logging and rely mainly
@@ -146,7 +141,7 @@ infinite potentials. To improve performance, the `TotalEnergy` implementations
 should exit early after encountering the first infinity as there is no need to
 spend time computing values that will not change the total.
 
-### Layers of abstraction
+#### Layers of abstraction
 
 `hoomd_interaction` breaks each energy/force computation up into multiple layers.
 For example, the external potential module defines the `SiteEnergy` trait
@@ -176,6 +171,47 @@ a pair of sites (as a function of their properties). The wrappers `Isotropic`
 and `Anisotropic` implement `SitePairEnergy` for the potentials described above.
 `PairwiseCutoff` implements `TotalEnergy` for pairwise interactions that are
 cutoff to 0 at a given distance `r_cut`.
+
+### Forces, torques, and virials
+
+Design goal: When possible, allow the same model to be used for both MD and MC
+simulation. Types that implement the MC traits `TotalEnergy`, `DeltaEnergyOne`,
+etc.. should also (when possible) implement the `NetSiteForce` and
+`NetSiteForceAndTorque` traits.
+
+#### Rigid bodies
+
+`NetSiteForce`/`NetSiteForceAndTorque` compute the net force/torque on a
+given *site* in the microstate. This is different from the MC traits like
+`DeltaEnergyOne` that operate on *bodies*.
+
+In MD, going from net forces/torques on sites to bodies is always the
+same process for rigid bodies. To reduce code duplication, the `Rigid`
+newtype computes the forces and torques on bodies via the result of
+`NetSiteForce`/`NetSiteForceAndTorque`. Say the force/torque interaction
+model type will implement `NetSiteForceAndTorque`, `TotalEnergy`, and other MC
+traits like `DeltaEnergyOne` when possible. `Rigid(model)` will then implement
+`NetBodyForce`/`NetBodyForceAndTorque` which can be used by an MD integration
+method.
+
+#### External forces/torques
+
+The `External` newtype implements `NetSiteForce` and/or `NetSiteForceAndTorque` for
+any wrapped type that implements `NetSiteForce` and/or `SiteForceAndTorque`.
+
+#### Cutoff pairwise forces/torques
+
+The `PairwiseCutoff` newtype implements `NetSiteForce` and/or
+`NetSiteForceAndTorque` for any wrapped type that implements `SitePairForce`
+and/or `SitePairForceAndTorque`.
+
+`Isotropic` implements `SitePairForce` and `SitePairForceAndTorque` for any
+wrapped type that implements `UnivariateForce`.
+
+At this time there are no simple entry points for custom anisotropic forces.
+Users should implement `SitePairForceAndTorque` directly to achieve anisotropic
+interactions. Future releases of `hoomd-rs` may add `AnisotropicForceAndTorque`
+to compliment `AnisotropicEnergy`.
 
 ## Type dependent parameters
 

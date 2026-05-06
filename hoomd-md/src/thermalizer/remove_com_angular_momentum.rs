@@ -1,15 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
+use crate::thermalizer::TranslationalMomentumModifier;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        Mass, Momentum, NetForce, Position,
-    }
+    Microstate, SiteKey, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{Mass, Momentum, NetForce, Position},
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Cartesian, InnerProduct, TensorProduct, WedgeProduct};
-use crate::thermalizer::TranslationalMomentumModifier;
-
+use hoomd_vector::{Cartesian, InnerProduct, Outer, Wedge};
 
 /// Remove the center-of-mass angular momentum.
 pub struct ComAngularMomentumRemover;
@@ -27,7 +26,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
-    /// 
+    ///
     /// The function modifies the three-dimensional system's momentum by zeroing the
     /// center-of-mass (COM) angular momentum as
     /// ```math
@@ -78,11 +77,11 @@ where
 
             let p_to_com = *position - com;
 
-            com_angular_momentum += p_to_com.wedge_product(&momentum); // r x p
+            com_angular_momentum += p_to_com.wedge(&momentum); // r x p
 
             let p_to_com_lengthsq = p_to_com.norm_squared();
             com_moment_of_inertia += (Matrix::with_diagonal([(); 3].map(|_| p_to_com_lengthsq))
-                - p_to_com.tensor_product(&p_to_com))
+                - p_to_com.outer(&p_to_com))
                 * *mass; // m * [||r||^2 x delta_ij - r_i (tensor prodcut) r_j]
         }
 
@@ -119,7 +118,7 @@ where
             let p_to_com = *position - com;
 
             // p_new = p_old - omega x r
-            momentum -= com_angular_velocity.wedge_product(&p_to_com) * *mass;
+            momentum -= com_angular_velocity.wedge(&p_to_com) * *mass;
 
             *body_properties.momentum_mut() = momentum;
 
@@ -144,7 +143,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
-    /// 
+    ///
     /// The function modifies the two-dimensional system's momentum by zeroing the
     /// center-of-mass (COM) angular momentum as
     /// ```math
@@ -184,7 +183,7 @@ where
 
             let p_to_com = *position - com;
 
-            com_angular_momentum += p_to_com.wedge_product(&momentum);
+            com_angular_momentum += p_to_com.wedge(&momentum);
 
             let p_to_com_lengthsq = p_to_com.norm_squared();
             com_moment_of_inertia += p_to_com_lengthsq * *mass;
@@ -202,9 +201,8 @@ where
                 let mass = body_properties.mass();
 
                 let p_to_com = *position - com;
-                
-                momentum -=
-                    p_to_com.perpendicular() * com_angular_velocity * *mass;
+
+                momentum -= p_to_com.perpendicular() * com_angular_velocity * *mass;
 
                 *body_properties.momentum_mut() = momentum;
 

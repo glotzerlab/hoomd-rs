@@ -3,7 +3,7 @@
 
 #![allow(non_snake_case)]
 
-use hoomd_interaction::{NetBodyForce, NetBodyForceAndTorque, NetBodyTorque};
+use hoomd_interaction::{NetBodyForce, NetBodyForceAndTorque};
 use hoomd_microstate::{
     Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
         AngularMomentum, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Orientation,
@@ -11,9 +11,9 @@ use hoomd_microstate::{
     }
 };
 use hoomd_vector::{
-    Angle, Cartesian, InnerProduct, Quaternion, Rotate, Vector, Versor,
+    Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Vector, Versor
 };
-use crate::{thermostat::Thermostat, methods::{TranslationalMotion, RotationalMotion, ForceUpdate, ForceAndTorqueUpdate, TorqueUpdate}};
+use crate::{thermostat::Thermostat, methods::{TranslationalMotion, RotationalMotion, ForceUpdate, ForceAndTorqueUpdate}};
 use hoomd_spatial::PointUpdate;
 
 /// Perform time integration on the [`Microstate`] with the volume constraining
@@ -496,7 +496,7 @@ where
 
             // Rotate torque into body frame based on principal axes
             // TODO: check that this is correct
-            let mut t_inframe = q.conjugate().rotate(&t);
+            let mut t_inframe = q.inverted().rotate(&t);
 
             let mut q_quaternion = *q.get();
             // convert angular momentum from a vector to qauternion.
@@ -724,7 +724,7 @@ where
 
             // Rotate torque into body frame based on principal axes
             // TODO: check that this is correct
-            let mut t_inframe = q.conjugate().rotate(&t);
+            let mut t_inframe = q.inverted().rotate(&t);
 
             // convert orientation from versor to quaternion
             let q_quaternion = *q.get();
@@ -1026,7 +1026,7 @@ where
     S: Position<Position = V> + Default,
     X: PointUpdate<V, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyForce<V, B, S, X, C>,
+    E: NetBodyForce<B, S, X, C, Force = V>,
 {
     /// Perform the [`NetForce`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
@@ -1045,86 +1045,8 @@ where
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
 
             // Calculate the net force and update the properties copy
-            let net_force_new = evaluator.net_force_on_body(microstate, body_index);
+            let net_force_new = evaluator.net_body_force(microstate, body_index);
             *body_properties.net_force_mut() = net_force_new;
-
-            // Update the microstate with new body properties, wrapping automatically
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
-        }
-    }
-}
-
-impl<B, S, X, C, E> TorqueUpdate<2, B, S, X, C, E> for ConstantVolume
-where
-    B: NetTorque<NetTorque = f64>
-        + Transform<S>
-        + Position<Position = Cartesian<2>> // TODO: should this be required?
-        + Clone,
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyTorque<2, Cartesian<2>, B, S, X, C>,
-{
-    /// Perform the [`NetTorque`] update in [`Microstate`] using its 
-    /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
-    /// 
-    /// # Note
-    /// This method should be called in between, 
-    /// [`integrate_translation_step_one`](ConstantVolume::integrate_translation_step_one), 
-    /// [`integrate_rotation_step_one`](ConstantVolume::integrate_rotation_step_one) and 
-    /// [`integrate_translation_step_two`](ConstantVolume::integrate_translation_step_two), 
-    /// [`integrate_rotation_step_two`](ConstantVolume::integrate_rotation_step_two), to enable
-    /// correct time integration. 
-    #[inline]
-    fn update_torque(&self, microstate: &mut Microstate<B, S, X, C>, evaluator: &E) {
-        for body_index in 0..microstate.bodies().len() {
-            // Get a copy of the body properties to modify
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
-
-            // Calculate the net force and update the properties copy
-            let net_torque_new = evaluator.net_torque_on_body(microstate, body_index);
-            *body_properties.net_torque_mut() = net_torque_new;
-
-            // Update the microstate with new body properties, wrapping automatically
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
-        }
-    }
-}
-
-impl<B, S, X, C, E> TorqueUpdate<3, B, S, X, C, E> for ConstantVolume
-where
-    B: NetTorque<NetTorque = Cartesian<3>>
-        + Transform<S>
-        + Position<Position = Cartesian<3>> // TODO: should this be required?
-        + Clone,
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyTorque<3, Cartesian<3>, B, S, X, C>,
-{
-    /// Perform the [`NetTorque`] update in [`Microstate`] using its 
-    /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
-    /// 
-    /// # Note
-    /// This method should be called in between, 
-    /// [`integrate_translation_step_one`](ConstantVolume::integrate_translation_step_one), 
-    /// [`integrate_rotation_step_one`](ConstantVolume::integrate_rotation_step_one) and 
-    /// [`integrate_translation_step_two`](ConstantVolume::integrate_translation_step_two), 
-    /// [`integrate_rotation_step_two`](ConstantVolume::integrate_rotation_step_two), to enable
-    /// correct time integration. 
-    #[inline]
-    fn update_torque(&self, microstate: &mut Microstate<B, S, X, C>, evaluator: &E) {
-        for body_index in 0..microstate.bodies().len() {
-            // Get a copy of the body properties to modify
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
-
-            // Calculate the net force and update the properties copy
-            let net_torque_new = evaluator.net_torque_on_body(microstate, body_index);
-            *body_properties.net_torque_mut() = net_torque_new;
 
             // Update the microstate with new body properties, wrapping automatically
             microstate
@@ -1146,7 +1068,7 @@ where
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyForceAndTorque<2, Cartesian<2>, B, S, X, C>,
+    E: NetBodyForceAndTorque<B, S, X, C, Force = Cartesian<2>>,
 {
     /// Perform the [`NetForce`] and [`NetTorque`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
@@ -1166,7 +1088,7 @@ where
 
             // Calculate the net force and update the properties copy
             let (net_force_new, net_torque_new) =
-                evaluator.net_force_and_torque_on_body(microstate, body_index);
+                evaluator.net_body_force_and_torque(microstate, body_index);
             *body_properties.net_force_mut() = net_force_new;
             *body_properties.net_torque_mut() = net_torque_new;
 
@@ -1190,7 +1112,7 @@ where
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyForceAndTorque<3, Cartesian<3>, B, S, X, C>,
+    E: NetBodyForceAndTorque<B, S, X, C, Force = Cartesian<3>>,
 {
     /// Perform the [`NetForce`] and [`NetTorque`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
@@ -1210,7 +1132,7 @@ where
 
             // Calculate the net force and update the properties copy
             let (net_force_new, net_torque_new) =
-                evaluator.net_force_and_torque_on_body(microstate, body_index);
+                evaluator.net_body_force_and_torque(microstate, body_index);
             *body_properties.net_force_mut() = net_force_new;
             *body_properties.net_torque_mut() = net_torque_new;
 
@@ -1224,7 +1146,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use hoomd_interaction::{External, MaximumInteractionRange, external::{ConstantForce, ConstantTorque}, rigid::Rigid};
+    use hoomd_interaction::{External, MaximumInteractionRange, external::{ConstantForce, ConstantTorque}, Rigid};
     use hoomd_microstate::{Body, property::{DynamicsPoint, OrientedDynamicsPoint, Point}};
 
     use crate::thermostat::NoThermostat;
@@ -1335,9 +1257,8 @@ mod tests {
             .bodies([dynamics_body_3d(mass)])
             .try_build()?;
         let force = Rigid(External(ConstantForce {
-            alpha: f_mag,
-            plane_origin: [0.0, 0.0, 0.0].into(),
-            plane_normal: f_dir.to_unit()?.0,
+            force: f_dir * f_mag,
+            r_0: [0.0, 0.0, 0.0].into(),
         }));
         let mut method = ConstantVolume::new(dt);
         struct Isoenergy {}
@@ -1392,8 +1313,7 @@ mod tests {
             .bodies([oriented_dynamics_body_2d(mass, moi)])
             .try_build()?;
         let torque = Rigid(External(ConstantTorque {
-            alpha: t_mag,
-            direction: t_dir,
+            torque: t_dir * t_mag,
         }));
         let mut method = ConstantVolume::new(dt);
         struct Isoenergy {}
@@ -1401,7 +1321,7 @@ mod tests {
         let mut thermostat = NoThermostat;  // TODO: use an actual thermostat
 
         // Update torque first so that the particles can move
-        method.update_torque(&mut microstate, &torque);
+        method.update_force_and_torque(&mut microstate, &torque);
         
         // Check the first halfstep
         method.integrate_rotation_step_one(
@@ -1417,7 +1337,7 @@ mod tests {
         assert_eq!(expected_orientation, microstate.bodies()[0].item.properties.orientation.theta);
 
         // Update torque again
-        method.update_torque(&mut microstate, &torque);
+        method.update_force_and_torque(&mut microstate, &torque);
 
         // Check the second halfstep
          method.integrate_rotation_step_two(
@@ -1448,8 +1368,7 @@ mod tests {
             .try_build()?;
 
         let torque = Rigid(External(ConstantTorque::<Cartesian<3>> {    // TODO: why does this not permit a Unit vector?
-            alpha: t_mag,
-            direction: t_dir,
+            torque: t_dir * t_mag,
         }));
         let mut method = ConstantVolume::new(dt);
         struct Isoenergy {}
@@ -1457,7 +1376,7 @@ mod tests {
         let mut thermostat = NoThermostat;  // TODO: use an actual thermostat
 
         // Update torque first so that the particles can move
-        method.update_torque(&mut microstate, &torque);
+        method.update_force_and_torque(&mut microstate, &torque);
         
         // Check the first halfstep
         method.integrate_rotation_step_one(
@@ -1478,7 +1397,7 @@ mod tests {
         // assert_eq!(expected_orientation, microstate.bodies()[0].item.properties.orientation.theta);
 
         // // Update torque again
-        // method.update_torque(&mut microstate, &torque);
+        // method.update_force_and_torque(&mut microstate, &torque);
 
         // // Check the second halfstep
         //  method.integrate_rotation_step_two(
@@ -1499,9 +1418,8 @@ mod tests {
             .bodies([dynamics_body_2d()])
             .try_build()?;
         let evaluator = Rigid(External(ConstantForce {
-            alpha: 1.0,
-            plane_origin: [0.0, 1.0].into(),
-            plane_normal: [0.0, 1.0].try_into()?,
+            r_0: Cartesian::from([0.0, 1.0]),
+            force: Cartesian::from([0.0, 1.0]),
         }));
         let method = ConstantVolume::new(0.1);
         
@@ -1517,9 +1435,8 @@ mod tests {
             .bodies([dynamics_body_3d(1.0)])
             .try_build()?;
         let evaluator = Rigid(External(ConstantForce {
-            alpha: 1.0,
-            plane_origin: [0.0, 1.0, 0.0].into(),
-            plane_normal: [0.0, 1.0, 0.0].try_into()?,
+            r_0: Cartesian::from([0.0, 1.0, 0.0]),
+            force: Cartesian::from([0.0, 1.0, 0.0]),
         }));
         let method = ConstantVolume::new(0.1);
         
@@ -1536,12 +1453,11 @@ mod tests {
             .try_build()?;
 
         let evaluator = Rigid(External(ConstantTorque {
-            alpha: 1.0,
-            direction: 1.0
+            torque: 1.0,
         }));
         let method = ConstantVolume::new(0.1);
         
-        method.update_torque(&mut microstate, &evaluator);        
+        method.update_force_and_torque(&mut microstate, &evaluator);        
         assert_eq!(microstate.bodies()[0].item.properties.net_torque, 1.0);
 
         Ok(())
@@ -1554,40 +1470,36 @@ mod tests {
             .try_build()?;
 
         let evaluator = Rigid(External(ConstantTorque {
-            alpha: 1.0,
-            direction: Cartesian::<3>::from([0.0, 0.0, 1.0])
+            torque: Cartesian::<3>::from([0.0, 0.0, 1.0])
         }));
         let method = ConstantVolume::new(0.1);
         
-        method.update_torque(&mut microstate, &evaluator);        
+        method.update_force_and_torque(&mut microstate, &evaluator);        
         assert_eq!(microstate.bodies()[0].item.properties.net_torque, Cartesian::<3>::from([0.0, 0.0, 1.0]));
 
         Ok(())
     }
     
     // TODO: return here, and start by creating derive macros for NetForce, NetTorque, Momentum, AngularMomentum, etc.
-    #[test]
-    fn test_force_and_torque_update_2d() -> anyhow::Result<()> {
-        let mut microstate = Microstate::builder()
-            .bodies([oriented_dynamics_body_2d()])
-            .try_build()?;
+    // #[test]
+    // fn test_force_and_torque_update_2d() -> anyhow::Result<()> {
+    //     let mut microstate = Microstate::builder()
+    //         .bodies([oriented_dynamics_body_2d(1.0, 1.0)])
+    //         .try_build()?;
 
-        let torque_evaluator = Rigid(External(ConstantTorque {
-            alpha: 1.0,
-            direction: 1.0
-        }));
-        let force_evaluator = Rigid(External(ConstantForce {
-            alpha: 1.0,
-            plane_origin: [0.0, 1.0].into(),
-            plane_normal: [0.0, 1.0].try_into()?,
-        }));
-        let evaluator = (torque_evaluator, force_evaluator);
-        let method = ConstantVolume::new(0.1);
+    //     let torque_evaluator = Rigid(External(ConstantTorque {
+    //         torque: 1.0
+    //     }));
+    //     let force_evaluator = Rigid(External(ConstantForce {
+    //         force: [0.0, 1.0].into(),
+    //         r_0: [0.0, 1.0].into(),
+    //     }));
+    //     let evaluator = (torque_evaluator, force_evaluator);
+    //     let method = ConstantVolume::new(0.1);
         
-        method.update_force_and_torque(&mut microstate, &evaluator);
-        assert_eq!(microstate.bodies()[0].item.properties.net_force, Cartesian::<2>::from([0.0, 1.0]));
-        assert_eq!(microstate.bodies()[0].item.properties.net_torque, 1.0);
-
+    //     method.update_force_and_torque(&mut microstate, &evaluator);
+    //     assert_eq!(microstate.bodies()[0].item.properties.net_force, Cartesian::<2>::from([0.0, 1.0]));
+    //     assert_eq!(microstate.bodies()[0].item.properties.net_torque, 1.0);
         
     //     Ok(())
     // }
@@ -1600,18 +1512,13 @@ mod tests {
     //         torque: ConstantTorque<Cartesian<3>>
     //     }
 
-
-
     //     let interaction = OverallInteraction {
     //         force: ConstantForce {
-    //             alpha: 1.0,
+    //             alpha: f_mag,
     //             plane_origin: [0.0, 0.0, 0.0].into(),
-    //             plane_normal: Cartesian::<3>::from([0.0, 0.0, 1.0]).to_unit()?.0,
+    //             plane_normal: f_dir.to_unit()?.0,
     //         },
-    //         torque: ConstantTorque {
-    //             alpha: 1.0,
-    //             direction: Cartesian::<3>::from([0.0, 0.0, 1.0])
-    //         }
-    //     }
+    //         torque: ConstantTorque { alpha: 1.0, direction: 1.0 }
+    //     };
     // }
 }

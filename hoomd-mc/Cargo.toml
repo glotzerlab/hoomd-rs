@@ -1,7 +1,7 @@
 [package]
 name = "hoomd-mc"
 categories.workspace = true
-description = "Perfom Monte Carlo simulations on systems of particles."
+description = "Perfom Monte Carlo simulations on systems of bodies in hoomd-rs."
 edition.workspace = true
 homepage.workspace = true
 documentation.workspace = true

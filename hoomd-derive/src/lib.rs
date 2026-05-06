@@ -22,6 +22,8 @@ mod delta_energy_insert;
 mod delta_energy_one;
 mod delta_energy_remove;
 mod maximum_interaction_range;
+mod net_site_force;
+mod net_site_force_and_torque;
 mod orientation;
 mod position;
 mod site_pair_energy;
@@ -85,6 +87,34 @@ pub fn delta_energy_remove_derive(input: TokenStream) -> TokenStream {
 pub fn maximum_interaction_range_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     maximum_interaction_range::maximum_interaction_range(input).into()
+}
+
+/// Automatically implement the `hoomd_interaction::NetSiteForce` trait.
+///
+/// The implemented `net_site_force` sums the result of `net_site_force`
+/// over all fields.
+///
+/// Valid on:
+/// * Structs with named fields.
+/// * Tuple structs.
+#[proc_macro_derive(NetSiteForce)]
+pub fn net_site_force_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    net_site_force::net_site_force(input).into()
+}
+
+/// Automatically implement the `hoomd_interaction::NetSiteForceAndTorque` trait.
+///
+/// The implemented `net_site_force_and_torque` sums the result of `net_site_force_and_torque`
+/// over all fields.
+///
+/// Valid on:
+/// * Structs with named fields.
+/// * Tuple structs.
+#[proc_macro_derive(NetSiteForceAndTorque)]
+pub fn net_site_force_and_torque_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    net_site_force_and_torque::net_site_force_and_torque(input).into()
 }
 
 /// Automatically implement the `hoomd_microstate::property::Orientation` trait.

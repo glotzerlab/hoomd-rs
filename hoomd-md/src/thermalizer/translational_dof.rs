@@ -1,15 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
+use crate::thermalizer::{Thermalizer, TranslationalThermalizer};
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        Mass, Momentum, NetForce, Position,
-    }
+    Microstate, SiteKey, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{Mass, Momentum, NetForce, Position},
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::Cartesian;
 use rand_distr::{Distribution, Normal};
-use crate::thermalizer::{TranslationalThermalizer, Thermalizer};
-
 
 impl<const N: usize, B, S, X, C> TranslationalThermalizer<N, B, S, X, C> for Thermalizer
 where
@@ -24,7 +23,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Draw random momentum from Gaussian.
-    /// 
+    ///
     /// The function thermalizes the system's translational montion given $`k_BT`$ by
     /// drawing random momentum from Gaussians.
     ///

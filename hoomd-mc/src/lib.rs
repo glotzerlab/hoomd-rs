@@ -358,6 +358,32 @@ pub trait Adjust {
     fn adjust(&mut self, factor: PositiveReal);
 }
 
+/// Options that control move size tuning by [`Tune`].
+///
+/// The defaults are:
+/// - `target_acceptance`: 0.2
+/// - `samples`: 8,000
+/// - `steps`: 32
+pub struct TuneOptions {
+    /// The target move acceptance ratio.
+    target_acceptance: OpenUnitIntervalNumber,
+    /// Number of trial moves sampled per step.
+    samples: usize,
+    /// Tune the move size over this many steps.
+    steps: usize,
+}
+
+impl Default for TuneOptions {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            target_acceptance: 0.2.try_into().expect("hard-coded constant should be valid"),
+            samples: 8_000,
+            steps: 32,
+        }
+    }
+}
+
 /// Tune trial move maximum sizes toward a target acceptance ratio.
 ///
 /// [`Trial`] moves that implement [`Tune`] can automatically adjust
@@ -367,8 +393,38 @@ pub trait Adjust {
 pub trait Tune<P, B, S, X, C, L, H, MA> {
     /// Tune the trial move maximum size to achieve a given acceptance ratio.
     ///
-    /// Use [`tune_default`] unless you have a specific need to adjust the
-    /// tuning parameters.
+    /// [`tune_with_options`] performs `samples` individual trial moves to measure the
+    /// current acceptance ratio. It then adjusts the trial move size
+    /// to increase or decrease the acceptance ratio as needed over
+    /// `steps` iterations.
+    ///
+    /// [`tune_with_options`]: Tune::tune_with_options
+    #[inline]
+    fn tune_with_options(
+        &mut self,
+        microstate: &Microstate<B, S, X, C>,
+        hamiltonian: &H,
+        macrostate: &MA,
+        options: &TuneOptions,
+    ) {
+        #[expect(
+            deprecated,
+            reason = "must continue to use until this method replaces `tune`"
+        )]
+        self.tune(
+            microstate,
+            hamiltonian,
+            macrostate,
+            options.target_acceptance,
+            options.samples,
+            options.steps,
+        );
+    }
+
+    /// Tune the trial move maximum size to achieve a given acceptance ratio.
+    ///
+    /// Use [`tune_with_options`] and `TuneOptions:default()` unless you have a
+    /// specific need to adjust the tuning parameters.
     ///
     /// [`tune`] performs `samples` individual trial moves to measure the
     /// current acceptance ratio. It then adjusts the trial move size
@@ -376,7 +432,8 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
     /// `steps` iterations.
     ///
     /// [`tune`]: Tune::tune
-    /// [`tune_default`]: Tune::tune_default
+    /// [`tune_with_options`]: Tune::tune_with_options
+    #[deprecated(since = "1.1.0", note = "use `tune_with_options`")]
     fn tune(
         &mut self,
         microstate: &Microstate<B, S, X, C>,
@@ -394,20 +451,17 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
     /// - `samples`: 8,000
     /// - `steps`: 32
     #[inline]
+    #[deprecated(
+        since = "1.1.0",
+        note = "use `tune_with_options(..., &TuneOptions::default())`"
+    )]
     fn tune_default(
         &mut self,
         microstate: &Microstate<B, S, X, C>,
         hamiltonian: &H,
         macrostate: &MA,
     ) {
-        self.tune(
-            microstate,
-            hamiltonian,
-            macrostate,
-            0.2.try_into().expect("hard-coded constant should be valid"),
-            8_000,
-            32,
-        );
+        self.tune_with_options(microstate, hamiltonian, macrostate, &TuneOptions::default());
     }
 }
 

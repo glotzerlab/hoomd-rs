@@ -3,17 +3,15 @@
 
 #![allow(non_snake_case)]
 
+use crate::thermalizer::{RotationalThermalizer, Thermalizer};
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        AngularMomentum, MomentOfInertia, NetTorque, Orientation,
-        Position,
-    }
+    Microstate, SiteKey, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{AngularMomentum, MomentOfInertia, NetTorque, Orientation, Position},
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, Versor};
 use rand_distr::{Distribution, Normal};
-use crate::thermalizer::{RotationalThermalizer, Thermalizer};
-
 
 impl<B, S, X, C> RotationalThermalizer<2, B, S, X, C> for Thermalizer
 where

@@ -3,22 +3,22 @@
 
 #![allow(non_snake_case)]
 
+use crate::thermostat::Thermostat;
 use arrayvec::ArrayVec;
 use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
-use crate::thermostat::Thermostat;
 use rand_distr::{Distribution, Normal};
 
 /// [`NHCThermostat`] implement the Nos$`\text{\'e}`$-Hoover chain thermostat
 /// that adjsut temperture using non-Hamiltonian dynamics
 /// given a time constant $`\tau`$.
-/// 
+///
 /// The generic type names are:
 /// * `N`: The length of thermostat chain. Must be larger than zero.
-/// When the `N` is one, the behaviour reduces to 
+/// When the `N` is one, the behaviour reduces to
 /// [`MTTKThermostat`](crate::thermostat::MTTKThermostat).
-/// 
+///
 /// It perform time integration on the
 /// extra degrees-of-freedom in the non-Hamiltonian
 /// equations of motion,
@@ -46,13 +46,13 @@ pub struct NHCThermostat<const N: usize> {
     /// Thermostat time constant (`[time]`).
     tau: PositiveReal,
     /// Chain of thermostat velocity.
-    xi_arr: ArrayVec::<f64, N>,
+    xi_arr: ArrayVec<f64, N>,
     /// Chain of thermostat position. Refer to the log(s) in Nose-Hoover's EOS.
-    eta_arr: ArrayVec::<f64, N>,
+    eta_arr: ArrayVec<f64, N>,
     /// Chain of thermostat acceleration.
-    g_arr: ArrayVec::<f64, N>,
+    g_arr: ArrayVec<f64, N>,
     /// Chain of thermostat mass.
-    q_arr: ArrayVec::<f64, N>,
+    q_arr: ArrayVec<f64, N>,
     /// Energy the thermostat contributes to the Hamiltonian. Useful for checking energy conservation.
     energy: f64,
 }
@@ -94,9 +94,11 @@ impl<const N: usize> NHCThermostat<N> {
     /// Calculate thermostat energy.
     pub fn thermostat_energy(&self, kT_setpoint: &f64, dof: &f64) -> f64 {
         let mut energy = 0.0;
-        energy += dof * kT_setpoint * self.eta_arr[0] + 0.5 * self.q_arr[0] * (self.xi_arr[0]).powi(2);
+        energy +=
+            dof * kT_setpoint * self.eta_arr[0] + 0.5 * self.q_arr[0] * (self.xi_arr[0]).powi(2);
         for idx in 1..N {
-            energy += kT_setpoint * self.eta_arr[idx] + 0.5 * self.q_arr[idx] * (self.xi_arr[idx]).powi(2);
+            energy += kT_setpoint * self.eta_arr[idx]
+                + 0.5 * self.q_arr[idx] * (self.xi_arr[idx]).powi(2);
         }
         energy
     }
@@ -107,12 +109,12 @@ impl<const N: usize> NHCThermostat<N> {
     }
 
     /// Get the chain of position.
-    pub fn get_position_arr(&self) -> &ArrayVec::<f64, N> {
+    pub fn get_position_arr(&self) -> &ArrayVec<f64, N> {
         &self.eta_arr
     }
 
     /// Get the chain of velocity.
-    pub fn get_velocity_arr(&self) -> &ArrayVec::<f64, N> {
+    pub fn get_velocity_arr(&self) -> &ArrayVec<f64, N> {
         &self.xi_arr
     }
 }
@@ -152,14 +154,14 @@ where
         }
 
         // Update the thermostat acceleration coupled to the real system
-        self.g_arr[0] = (2.0*ke - nkT_setpoint) / self.q_arr[0];
+        self.g_arr[0] = (2.0 * ke - nkT_setpoint) / self.q_arr[0];
 
         // Update the chain of velocity
         // start from the last one
-        self.xi_arr[N-1] += 0.25 * dt * self.g_arr[N-1];
+        self.xi_arr[N - 1] += 0.25 * dt * self.g_arr[N - 1];
         // update the rest
-        for idx in (0..N-1).rev() {
-            let xi_rescaling_factor = (-0.125 * dt * self.xi_arr[idx+1]).exp();
+        for idx in (0..N - 1).rev() {
+            let xi_rescaling_factor = (-0.125 * dt * self.xi_arr[idx + 1]).exp();
             self.xi_arr[idx] *= xi_rescaling_factor;
             self.xi_arr[idx] += 0.25 * dt * self.g_arr[idx];
             self.xi_arr[idx] *= xi_rescaling_factor;
@@ -172,7 +174,7 @@ where
         let ke_new = ke * (rescaling_factor).powi(2);
 
         // Update the thermostat acceleration coupled to the real system
-        self.g_arr[0] = (2.0*ke_new - nkT_setpoint) / self.q_arr[0];
+        self.g_arr[0] = (2.0 * ke_new - nkT_setpoint) / self.q_arr[0];
 
         // Update the chain of position
         for idx in 0..N {
@@ -189,19 +191,21 @@ where
         } else {
             self.xi_arr[0] += 0.25 * dt * self.g_arr[0];
         }
-        // update the rest 
+        // update the rest
         // the chain of acceleration need to be updated here (have done the first one)
-        for idx in 1..N-1 {
-            let xi_rescaling_factor = (-0.125 * dt * self.xi_arr[idx+1]).exp();
+        for idx in 1..N - 1 {
+            let xi_rescaling_factor = (-0.125 * dt * self.xi_arr[idx + 1]).exp();
             self.xi_arr[idx] *= xi_rescaling_factor;
-            self.g_arr[idx] = (self.q_arr[idx-1] * (self.xi_arr[idx-1]).powi(2) - kT_setpoint) / self.q_arr[idx];
+            self.g_arr[idx] = (self.q_arr[idx - 1] * (self.xi_arr[idx - 1]).powi(2) - kT_setpoint)
+                / self.q_arr[idx];
             self.xi_arr[idx] += 0.25 * dt * self.g_arr[idx];
             self.xi_arr[idx] *= xi_rescaling_factor;
         }
         // special for the last one
         if N > 1 {
-            self.g_arr[N-1] = (self.q_arr[N-2] * (self.xi_arr[N-2]).powi(2) - kT_setpoint) / self.q_arr[N-1];
-            self.xi_arr[N-1] += 0.25 * dt * self.g_arr[N-1];
+            self.g_arr[N - 1] = (self.q_arr[N - 2] * (self.xi_arr[N - 2]).powi(2) - kT_setpoint)
+                / self.q_arr[N - 1];
+            self.xi_arr[N - 1] += 0.25 * dt * self.g_arr[N - 1];
         }
 
         self.energy = self.thermostat_energy(kT_setpoint, &dof);
@@ -227,16 +231,44 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::*;
 
-    #[test]
-    fn test_nhc() -> anyhow::Result<()> {
-        todo!();
-        // Instantiation
-
+    #[rstest]
+    fn test_init() -> anyhow::Result<()> {
         // Blanket Implementation
+        const N_CHAINS: usize = 5;
+        let tau = 1.0;
+        let nhc = NHCThermostat::<N_CHAINS>::new(tau.try_into()?);
 
-        // Thermostat Implementation
+        assert_eq!(tau, nhc.tau.get());
+        assert_eq!([0.0; N_CHAINS], nhc.get_position_arr().as_slice());
+        assert_eq!([0.0; N_CHAINS], nhc.get_velocity_arr().as_slice());
+        assert_eq!(0.0, *nhc.get_energy());
+
+        // Instantiation
+        let custom_nhc = NHCThermostat::<N_CHAINS> {
+            tau: tau.try_into()?,
+            xi_arr: ArrayVec::from([1.0; N_CHAINS]),
+            eta_arr: ArrayVec::from([2.0; N_CHAINS]),
+            g_arr: ArrayVec::from([3.0; N_CHAINS]),
+            q_arr: ArrayVec::from([4.0; N_CHAINS]),
+            energy: 5.0,
+        };
+
+        assert_eq!(tau, custom_nhc.tau.get());
+        assert_eq!([1.0; N_CHAINS], custom_nhc.xi_arr.as_slice());
+        assert_eq!([2.0; N_CHAINS], custom_nhc.eta_arr.as_slice());
+        assert_eq!([3.0; N_CHAINS], custom_nhc.g_arr.as_slice());
+        assert_eq!([4.0; N_CHAINS], custom_nhc.q_arr.as_slice());
+        assert_eq!(5.0, custom_nhc.energy);
 
         Ok(())
+    }
+
+    #[rstest]
+    #[should_panic(expected = "tau should be positive: NotPositive(-1.0)")]
+    fn test_invalid_tau() {
+        let tau = -1.0;
+        let _ = NHCThermostat::<1>::new(tau.try_into().expect("tau should be positive"));
     }
 }

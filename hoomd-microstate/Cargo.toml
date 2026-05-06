@@ -1,7 +1,7 @@
 [package]
 name = "hoomd-microstate"
 categories.workspace = true
-description = "Store and manage a system microstate."
+description = "Implement the Microstate type for hoomd-rs."
 edition.workspace = true
 homepage.workspace = true
 documentation.workspace = true

@@ -3,50 +3,54 @@
 
 //! Implement [`ConstantForce`]
 
-use crate::{ExternalBodyTorque, ExternalSiteForce, SiteForceAndTorque};
-
-
 use serde::{Deserialize, Serialize};
 
-use hoomd_microstate::{property::{Mass, MomentOfInertia, Orientation, Position}, Microstate, Site};
-use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
+use hoomd_microstate::property::Position;
+use hoomd_vector::{InnerProduct, Wedge};
+
+use crate::{SiteForce, SiteForceAndTorque};
 
 use super::super::SiteEnergy;
 
-/// Linear potential based on position.
+/// Apply the same force to every site, independent of the site's properties.
 ///
+/// The force vector can be expressed as a magnitude and direction:
 /// ```math
-/// U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} )
+/// \vec{F} = -F \hat{n}
 /// ```
+/// which is consistent with the potential energy:
+/// ```math
+/// U = F \cdot \hat{n} \cdot ( \vec{r} - \vec{r}_0 )
+/// ```
+/// where $` \vec{r}_0 `$ is a point on the plane where $` U = 0 `$.
 ///
-/// Computes a Linear external potential at a point in space relative to the plane
-/// origin `p`, plane normal `n`, and the interaction strength `alpha`.
+/// # Generics
+///
+/// * `V`: The type used to represent the position and force vectors.
 ///
 /// # Example
 ///
 /// Basic usage:
 ///
 /// ```
-/// use hoomd_interaction::external::Linear;
+/// use hoomd_interaction::external::ConstantForce;
 /// use hoomd_vector::{Cartesian, Unit};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let Linear = Linear {
-///     alpha: 2.0,
-///     plane_origin: [0.0, -10.0].into(),
-///     plane_normal: [0.0, 1.0].try_into()?,
+/// let constant_force = ConstantForce {
+///     force: Cartesian::from([0.0, -2.0]),
+///     r_0: Cartesian::from([0.0, -10.0]),
 /// };
 /// # Ok(())
 /// # }
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConstantForce<V> {
-    /// Interaction strength *(\[energy\] \[length\]^(-1))*.
-    pub alpha: f64,
-    /// Point on the plane where U=0 *(\[length\])*.
-    pub plane_origin: V,
-    /// Vector normal to the plane *(unitless)*.
-    pub plane_normal: Unit<V>,
+    /// Force vector $`[\mathrm{energy}] [\mathrm{length}]^{-1}`$.
+    pub force: V,
+
+    ///  $` \vec{r}_0 `$ $`[\mathrm{length}]`$.: A point on the plane where $` U = 0 `$.
+    pub r_0: V,
 }
 
 impl<V> ConstantForce<V>
@@ -58,17 +62,16 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::external::Linear;
+    /// use hoomd_interaction::external::ConstantForce;
     /// use hoomd_vector::{Cartesian, Unit};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let linear = Linear {
-    ///     alpha: 2.0,
-    ///     plane_origin: [0.0, -10.0].into(),
-    ///     plane_normal: [0.0, 1.0].try_into()?,
+    /// let constant_force = ConstantForce {
+    ///     force: Cartesian::from([0.0, -2.0]),
+    ///     r_0: Cartesian::from([0.0, -10.0]),
     /// };
     ///
-    /// let energy = linear.energy(&[0.0, 0.0].into());
+    /// let energy = constant_force.energy(&[0.0, 0.0].into());
     /// assert_eq!(energy, 20.0);
     /// # Ok(())
     /// # }
@@ -76,20 +79,39 @@ where
     #[inline]
     #[must_use]
     pub fn energy(&self, r: &V) -> f64 {
-        self.alpha * self.plane_normal.get().dot(&(*r - self.plane_origin))
+        let magnitude = self.force.norm();
+
+        if magnitude == 0.0 {
+            return 0.0;
+        }
+        
+        let direction = self.force / magnitude;
+        -magnitude * direction.dot(&(*r - self.r_0))
     }
 
-    /** Compute the force on a point in the linear field.
-
-    TODO: Add example.
-    TODO: consider refactoring so that energy and force functionality are
-    defined in the top file of the external module, like how things are done
-    in the pairwise module.
-    */
+    /// The force vector that acts on all sites.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::external::ConstantForce;
+    /// use hoomd_vector::{Cartesian, Unit};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let constant_force = ConstantForce {
+    ///     force: Cartesian::from([0.0, -2.0]),
+    ///     r_0: Cartesian::from([0.0, -10.0]),
+    /// };
+    ///
+    /// let force = constant_force.force();
+    /// assert_eq!(force, [0.0, -2.0].into());
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn force(&self) -> V {
-        *self.plane_normal.get() * self.alpha * -1.0
+        self.force
     }
 }
 
@@ -104,67 +126,25 @@ where
     }
 }
 
-impl<V, S> ExternalSiteForce<V, S> for ConstantForce<V>
-where
-    V: InnerProduct,
-    S: Position<Position = V>,
+impl<S, V> SiteForce<S> for ConstantForce<V> where
+V: InnerProduct,
 {
+    type Force = V;
+
     #[inline]
-    fn site_single_force(&self, _site_properties: &S) -> V {
+    fn site_force(&self, _site_properties: &S) -> Self::Force {
         self.force()
     }
 }
 
-impl<V, B, R> ExternalBodyTorque<V, B> for ConstantForce<V>
-where
-    V: Vector + WedgeProduct + InnerProduct,
-    B: Orientation<Rotation=R> + MomentOfInertia + Mass,
-    R: Rotate<V>
+impl<S, V> SiteForceAndTorque<S> for ConstantForce<V> where
+V: InnerProduct + Wedge,
+V::Bivector: Default,
 {
+    type Force = V;
+
     #[inline]
-    fn body_single_torque(&self, _body_properties: &B) -> V::Bivector {
-        todo!()
-    }
-}
-
-impl<V, B, S, X, C> SiteForceAndTorque<V, B, S, X, C> for ConstantForce<V>
-where
-    V: InnerProduct + WedgeProduct,
-    S: Position<Position = V>,
-    V::Bivector: Default
-{
-    /// Calculate the force and torque.
-    fn net_force_and_torque_on_site(&self, _microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
-        let force = self.site_single_force(&site.properties);
-        let torque = V::Bivector::default();
-        (force, torque)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use hoomd_vector::Cartesian;
-
-    use super::*;
-    use approxim::assert_relative_eq;
-    use rstest::*;
-
-    #[rstest]
-    fn energy_2d(
-        #[values(1.0, 0.0, -2.0)] alpha: f64,
-        #[values([0.0, 0.0], [-10.0, 15.0], [16.0, 3.0])] plane_origin: [f64; 2],
-        #[values([1.0, 1.0], [-1.0, 0.2], [-5.0, -1.0])] plane_normal: [f64; 2],
-    ) {
-        let n = Unit::<Cartesian<2>>::try_from(plane_normal)
-            .expect("hard-coded vector should have non-zero length");
-
-        let linear = ConstantForce {
-            plane_origin: plane_origin.into(),
-            plane_normal: n,
-            alpha,
-        };
-
-        let p = linear.plane_origin + *n.get() * 5.0;
-        assert_relative_eq!(linear.energy(&p), 5.0 * alpha, epsilon = 1e-6);
+    fn site_force_and_torque(&self, _site_properties: &S) -> (V, V::Bivector) {
+        (self.force(), V::Bivector::default())
     }
 }
