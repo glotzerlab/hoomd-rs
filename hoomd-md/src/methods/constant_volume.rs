@@ -899,8 +899,8 @@ where
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
 
             // Shorthand variables
-            // t is the z-compoenet of net torque
-            // I is the z-compoenet of the moment of inertia
+            // t is the z-component of net torque
+            // I is the z-component of the moment of inertia
             let t = *body_properties.net_torque();
             let I = *body_properties.moment_of_inertia();
 
@@ -1258,34 +1258,34 @@ mod tests {
     }
 
     /// A simple 2d oriented dynamics point body
-    fn oriented_dynamics_body_2d() -> Body<OrientedDynamicsPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>> {
+    fn oriented_dynamics_body_2d(mass: f64, moi: f64) -> Body<OrientedDynamicsPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>> {
         Body {
             properties: OrientedDynamicsPoint {
                 position: Cartesian::<2>::default(),
                 orientation: Angle::default(),
                 momentum: Cartesian::<2>::default(),
                 net_force: Cartesian::<2>::default(),
-                moment_of_inertia: 1.0,
+                moment_of_inertia: moi,
                 angular_momentum: 0.0,
                 net_torque: 0.0,
-                mass: 1.0,
+                mass: mass,
             },
             sites: vec![Point::new(Cartesian::from([0.0, 0.0]))],
         }
     }
 
     /// A simple 2d oriented dynamics point body
-    fn oriented_dynamics_body_3d() -> Body<OrientedDynamicsPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
+    fn oriented_dynamics_body_3d(mass: f64, moi: Cartesian<3>) -> Body<OrientedDynamicsPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
         Body {
             properties: OrientedDynamicsPoint {
                 position: Cartesian::<3>::default(),
                 orientation: Versor::default(),
                 momentum: Cartesian::<3>::default(),
                 net_force: Cartesian::<3>::default(),
-                moment_of_inertia: Cartesian::<3>::from([1.0, 1.0, 1.0]),
+                moment_of_inertia: moi,
                 angular_momentum: Cartesian::<3>::default(),
                 net_torque: Cartesian::<3>::default(),
-                mass: 1.0,
+                mass: mass,
             },
             sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
         }
@@ -1354,7 +1354,7 @@ mod tests {
             &mut macrostate
         );
         let mut expected_momentum = Cartesian::<3>::default()
-            + (f_dir * (f_mag ) * (dt / 2.0) * -1.0);
+            + (f_dir * f_mag * dt * 0.5 * -1.0);
         let expected_position = Cartesian::<3>::default()
             + expected_momentum * dt / mass;
 
@@ -1370,18 +1370,128 @@ mod tests {
             &mut thermostat,
             &mut macrostate
         );
-        expected_momentum += f_dir * (f_mag ) * (dt / 2.0) * -1.0;
+        expected_momentum += f_dir * f_mag * dt * 0.5 * -1.0;
         assert_eq!(expected_momentum, microstate.bodies()[0].item.properties.momentum);
-
+        assert_eq!(expected_position, microstate.bodies()[0].item.properties.position);
 
         Ok(())
     }
 
     #[test]
-    fn test_rotational_integration_2d() {}
+    fn test_rotational_integration_2d() -> anyhow::Result<()> {
+        // Ensure rotational integration of a simple external torque in 2D
+        // yields the correct orientation and angular momentum at the halfstep
+        // and the fullstep
+        let mass = 1.0;
+        let moi = 1.0;
+        let dt = 0.1;
+        let t_mag = 1.0;
+        let t_dir = 1.0;
+
+        let mut microstate = Microstate::builder()
+            .bodies([oriented_dynamics_body_2d(mass, moi)])
+            .try_build()?;
+        let torque = Rigid(External(ConstantTorque {
+            alpha: t_mag,
+            direction: t_dir,
+        }));
+        let mut method = ConstantVolume::new(dt);
+        struct Isoenergy {}
+        let mut macrostate = Isoenergy {};
+        let mut thermostat = NoThermostat;  // TODO: use an actual thermostat
+
+        // Update torque first so that the particles can move
+        method.update_torque(&mut microstate, &torque);
+        
+        // Check the first halfstep
+        method.integrate_rotation_step_one(
+            &mut microstate,
+            &mut thermostat,
+            &mut macrostate
+        );
+        let mut expected_angular_momentum = t_dir * t_mag * 0.5 * dt;
+        let expected_orientation = Angle::default().theta
+            + expected_angular_momentum / moi * dt;
+
+        assert_eq!(expected_angular_momentum, microstate.bodies()[0].item.properties.angular_momentum);
+        assert_eq!(expected_orientation, microstate.bodies()[0].item.properties.orientation.theta);
+
+        // Update torque again
+        method.update_torque(&mut microstate, &torque);
+
+        // Check the second halfstep
+         method.integrate_rotation_step_two(
+            &mut microstate,
+            &mut thermostat,
+            &mut macrostate
+        );
+        expected_angular_momentum += t_dir * t_mag * 0.5 * dt;
+        assert_eq!(expected_angular_momentum, microstate.bodies()[0].item.properties.angular_momentum);
+        assert_eq!(expected_orientation, microstate.bodies()[0].item.properties.orientation.theta);
+
+        Ok(())
+    }
 
     #[test]
-    fn test_rotational_integration_3d() {}
+    fn test_rotational_integration_3d() -> anyhow::Result<()> {
+        // Ensure rotational integration of a simple external torque in 3D
+        // yields the correct orientation and angular momentum at the halfstep
+        // and the fullstep
+        let mass = 1.0;
+        let moi = Cartesian::<3>::from([1.0, 1.0, 1.0]);
+        let dt = 0.1;
+        let t_mag = 1.0;
+        let t_dir = Cartesian::<3>::from([0.0, 0.0, 1.0]);
+
+        let mut microstate = Microstate::builder()
+            .bodies([oriented_dynamics_body_3d(mass, moi)])
+            .try_build()?;
+
+        let torque = Rigid(External(ConstantTorque::<Cartesian<3>> {    // TODO: why does this not permit a Unit vector?
+            alpha: t_mag,
+            direction: t_dir,
+        }));
+        let mut method = ConstantVolume::new(dt);
+        struct Isoenergy {}
+        let mut macrostate = Isoenergy {};
+        let mut thermostat = NoThermostat;  // TODO: use an actual thermostat
+
+        // Update torque first so that the particles can move
+        method.update_torque(&mut microstate, &torque);
+        
+        // Check the first halfstep
+        method.integrate_rotation_step_one(
+            &mut microstate,
+            &mut thermostat,
+            &mut macrostate
+        );
+
+        // TODO: return here
+        // Calculate expected angular momentum
+
+        // // Calculate expected orientation
+        // let mut expected_angular_momentum = t_dir * t_mag * 0.5 * dt;
+        // let expected_orientation = Angle::default().theta
+        //     + expected_angular_momentum / moi * dt;
+
+        // assert_eq!(expected_angular_momentum, microstate.bodies()[0].item.properties.angular_momentum);
+        // assert_eq!(expected_orientation, microstate.bodies()[0].item.properties.orientation.theta);
+
+        // // Update torque again
+        // method.update_torque(&mut microstate, &torque);
+
+        // // Check the second halfstep
+        //  method.integrate_rotation_step_two(
+        //     &mut microstate,
+        //     &mut thermostat,
+        //     &mut macrostate
+        // );
+        // expected_angular_momentum += t_dir * t_mag * 0.5 * dt;
+        // assert_eq!(expected_angular_momentum, microstate.bodies()[0].item.properties.angular_momentum);
+        // assert_eq!(expected_orientation, microstate.bodies()[0].item.properties.orientation.theta);
+
+        Ok(())
+    }
 
     #[test]
     fn test_force_update_2d() -> anyhow::Result<()> {
@@ -1422,7 +1532,7 @@ mod tests {
     #[test]
     fn test_torque_update_2d() -> anyhow::Result<()> {
         let mut microstate = Microstate::builder()
-            .bodies([oriented_dynamics_body_2d()])
+            .bodies([oriented_dynamics_body_2d(1.0, 1.0)])
             .try_build()?;
 
         let evaluator = Rigid(External(ConstantTorque {
@@ -1440,7 +1550,7 @@ mod tests {
     #[test]
     fn test_torque_update_3d() -> anyhow::Result<()> {
         let mut microstate = Microstate::builder()
-            .bodies([oriented_dynamics_body_3d()])
+            .bodies([oriented_dynamics_body_3d(1.0, Cartesian::<3>::from([1.0, 1.0, 1.0]))])
             .try_build()?;
 
         let evaluator = Rigid(External(ConstantTorque {
@@ -1456,47 +1566,52 @@ mod tests {
     }
     
     // TODO: return here, and start by creating derive macros for NetForce, NetTorque, Momentum, AngularMomentum, etc.
-    // #[test]
-    // fn test_force_and_torque_update_2d() -> anyhow::Result<()> {
-    //     let mut microstate = Microstate::builder()
-    //         .bodies([oriented_dynamics_body_2d()])
-    //         .try_build()?;
+    #[test]
+    fn test_force_and_torque_update_2d() -> anyhow::Result<()> {
+        let mut microstate = Microstate::builder()
+            .bodies([oriented_dynamics_body_2d()])
+            .try_build()?;
 
-    //     let torque_evaluator = Rigid(External(ConstantTorque {
-    //         alpha: 1.0,
-    //         direction: 1.0
-    //     }));
-    //     let force_evaluator = Rigid(External(ConstantForce {
-    //         alpha: 1.0,
-    //         plane_origin: [0.0, 1.0].into(),
-    //         plane_normal: [0.0, 1.0].try_into()?,
-    //     }));
-    //     let evaluator = (torque_evaluator, force_evaluator);
-    //     let method = ConstantVolume::new(0.1);
+        let torque_evaluator = Rigid(External(ConstantTorque {
+            alpha: 1.0,
+            direction: 1.0
+        }));
+        let force_evaluator = Rigid(External(ConstantForce {
+            alpha: 1.0,
+            plane_origin: [0.0, 1.0].into(),
+            plane_normal: [0.0, 1.0].try_into()?,
+        }));
+        let evaluator = (torque_evaluator, force_evaluator);
+        let method = ConstantVolume::new(0.1);
         
-    //     method.update_force_and_torque(&mut microstate, &evaluator);
-    //     assert_eq!(microstate.bodies()[0].item.properties.net_force, Cartesian::<2>::from([0.0, 1.0]));
-    //     assert_eq!(microstate.bodies()[0].item.properties.net_torque, 1.0);
+        method.update_force_and_torque(&mut microstate, &evaluator);
+        assert_eq!(microstate.bodies()[0].item.properties.net_force, Cartesian::<2>::from([0.0, 1.0]));
+        assert_eq!(microstate.bodies()[0].item.properties.net_torque, 1.0);
 
         
     //     Ok(())
     // }
 
-    #[test]
-    fn test_force_and_torque_update_3d() {
-        #[derive(MaximumInteractionRange)]
-        struct OverallInteraction {
-            force: ConstantForce,
-            torque: ConstantTorque
-        }
+    // #[test]
+    // fn test_force_and_torque_update_3d() {
+    //     // #[derive(MaximumInteractionRange)]
+    //     struct OverallInteraction {
+    //         force: ConstantForce<Cartesian<3>>,
+    //         torque: ConstantTorque<Cartesian<3>>
+    //     }
 
-        let interaction = OverallInteraction {
-            force: ConstantForce {
-                alpha: f_mag,
-                plane_origin: [0.0, 0.0, 0.0].into(),
-                plane_normal: f_dir.to_unit()?.0,
-            },
-            torque: ConstantTorque { alpha: 1.0, direction: 1.0 }
-        }
-    }
+
+
+    //     let interaction = OverallInteraction {
+    //         force: ConstantForce {
+    //             alpha: 1.0,
+    //             plane_origin: [0.0, 0.0, 0.0].into(),
+    //             plane_normal: Cartesian::<3>::from([0.0, 0.0, 1.0]).to_unit()?.0,
+    //         },
+    //         torque: ConstantTorque {
+    //             alpha: 1.0,
+    //             direction: Cartesian::<3>::from([0.0, 0.0, 1.0])
+    //         }
+    //     }
+    // }
 }
