@@ -199,3 +199,20 @@ where
         self.integrate_step_one(microstate, macrostate, &dt, &mut compute_properties)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_mttk() -> anyhow::Result<()> {
+        todo!();
+        // Instantiation
+
+        // Blanket Implementation
+
+        // Thermostat Implementation
+
+        Ok(())
+    }
+}

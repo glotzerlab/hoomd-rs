@@ -168,3 +168,20 @@ where
         1.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bussi() -> anyhow::Result<()> {
+        todo!();
+        // Instantiation
+
+        // Blanket Implementation
+
+        // Thermostat Implementation
+
+        Ok(())
+    }
+}
