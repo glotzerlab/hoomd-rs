@@ -484,24 +484,13 @@ impl BoundingSphereRadius for Simplex3 {
     /// ```
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        // For positive, non-nan floats, comparisons of the bit representation are
-        // equivalent to comparisons of the float itself, e.g. a.to_bits() < b.to_bits()
-        // if and only if a < b. For nan values this is untrue, so we explicitly handle
-        // that case.
-        f64::from_bits(
-            *self
-                .vertices
-                .map(|v| {
-                    let n = v.norm_squared();
-                    if n.is_nan() { 0u64 } else { n.to_bits() }
-                })
-                .iter()
-                .max()
-                .expect("Iterator over [...; 4] should have nonzero length."),
-        )
-        .sqrt()
-        .try_into()
-        .expect("All norms are zero or NaN -- check your inputs!")
+        self.vertices
+            .iter()
+            .map(Cartesian::norm_squared)
+            .fold(0.0, &f64::max)
+            .sqrt()
+            .try_into()
+            .expect("All norms are zero or NaN -- check your inputs!")
     }
 }
 
