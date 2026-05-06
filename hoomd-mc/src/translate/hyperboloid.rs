@@ -193,7 +193,7 @@ mod tests {
                     .point()
                     .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
                 -1.0,
-                epsilon = 10.0_f64.powi(tolerance)
+                epsilon = 10.0_f64.powi(-tolerance)
             );
 
             // Translation move does not move the point more than a distance d
@@ -227,7 +227,7 @@ mod tests {
                     .point()
                     .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
                 -1.0,
-                epsilon = 10.0_f64.powi(tolerance)
+                epsilon = 10.0_f64.powi(-tolerance)
             );
 
             // Translation move does not move the point more than a distance d
@@ -264,7 +264,7 @@ mod tests {
                     .point()
                     .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
                 -1.0,
-                epsilon = 10.0_f64.powi(tolerance)
+                epsilon = 10.0_f64.powi(-tolerance)
             );
 
             // Translation move does not move the point more than a distance d
@@ -298,7 +298,7 @@ mod tests {
                     .point()
                     .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
                 -1.0,
-                epsilon = 10.0_f64.powi(tolerance)
+                epsilon = 10.0_f64.powi(-tolerance)
             );
 
             // Translation move does not move the point more than a distance d
