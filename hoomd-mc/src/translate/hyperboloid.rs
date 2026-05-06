@@ -76,12 +76,17 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
         ]);
         let mink_norm = (tangent[0]*tangent[0] + tangent[1]*tangent[1] - tangent[2]*tangent[2]).sqrt();
         let unit = tangent / mink_norm;
-        let new = Minkowski::from([
+        let new = [
             trial_array[0] * csh + unit.coordinates[0] * snh,
             trial_array[1] * csh + unit.coordinates[1] * snh,
             trial_array[2] * csh + unit.coordinates[2] * snh,
-        ]);
-        *trial.position_mut() = Hyperbolic::from_minkowski_coordinates(new);
+        ];
+        // push point back onto hyperboloid
+        let resc = 1.0/(new[2]*new[2]-new[0]*new[0]-new[1]*new[1]).sqrt();
+        //println!("rescaling factor: {}", resc);
+        //println!("new point coordinates: {:?}", new);
+        let new_pushed = Minkowski::from([resc*new[0], resc*new[1], resc*new[2]]);
+        *trial.position_mut() = Hyperbolic::from_minkowski_coordinates(new_pushed);
         trial
     }
 }
@@ -133,8 +138,9 @@ mod tests {
 
     /// Number of trial moves to test
     const N: usize = 256;
+    const NSTEPS: usize = 1000;
 
-    #[rstest]
+     #[rstest]
     fn translate_hyperbolic_point(#[values(0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
@@ -168,6 +174,39 @@ mod tests {
     }
 
     #[rstest]
+    fn translate_hyperbolic_point_chain(#[values(0.5)] d: f64) {
+        let mut rng = StdRng::seed_from_u64(42);
+        let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
+            [-1.0, 1.0, (3.0_f64).sqrt()].into(),
+        ));
+        let translate =
+            Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
+
+        for _ in 0..NSTEPS {
+            let new_body_properties = translate.propose(&mut rng, body_properties);
+
+            // Translation move keeps the point on the Hyperboloid
+            let tolerance = 8_i32 - (new_body_properties.position.coordinates()[2].log10().floor() as i32);
+            assert_relative_eq!(
+                new_body_properties
+                    .position()
+                    .point()
+                    .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
+                -1.0,
+                epsilon = 10.0_f64.powi(tolerance)
+            );
+
+            // Translation move does not move the point more than a distance d
+            let dist = new_body_properties
+                .position()
+                .distance(&body_properties.position);
+            assert!(d > dist);
+
+            body_properties.position = new_body_properties.position;
+        }
+    }
+
+     #[rstest]
     fn translate_oriented_hyperbolic_point(#[values(0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let body_properties = OrientedHyperbolicPoint {
@@ -181,13 +220,14 @@ mod tests {
             let new_body_properties = translate.propose(&mut rng, body_properties);
 
             // Translation move keeps the point on the Hyperboloid
+            let tolerance = 8_i32 - (new_body_properties.position.coordinates()[2].log10().floor() as i32);
             assert_relative_eq!(
                 new_body_properties
                     .position()
                     .point()
                     .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
                 -1.0,
-                epsilon = 1e-12
+                epsilon = 10.0_f64.powi(tolerance)
             );
 
             // Translation move does not move the point more than a distance d
@@ -202,5 +242,71 @@ mod tests {
             );
         }
     }
-    // TODO: stress tests
+
+    #[rstest]
+    fn translate_oriented_hyperbolic_point_chain(#[values(0.01, 0.1, 0.25)] d: f64) {
+        let mut rng = StdRng::seed_from_u64(42);
+        let mut body_properties = OrientedHyperbolicPoint {
+            position: Hyperbolic::from_minkowski_coordinates([1.0, 0.0, (2.0_f64).sqrt()].into()),
+            orientation: Angle::from(0.0),
+        };
+        let translate =
+            Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
+
+        for _ in 0..NSTEPS {
+            let new_body_properties = translate.propose(&mut rng, body_properties);
+
+            // Translation move keeps the point on the Hyperboloid
+            let tolerance = 8_i32 - (new_body_properties.position.coordinates()[2].log10().floor() as i32);
+            assert_relative_eq!(
+                new_body_properties
+                    .position()
+                    .point()
+                    .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
+                -1.0,
+                epsilon = 10.0_f64.powi(tolerance)
+            );
+
+            // Translation move does not move the point more than a distance d
+            assert!(
+                d > new_body_properties
+                    .position()
+                    .distance(&mut body_properties.position)
+            );
+            body_properties.position = new_body_properties.position;
+        }
+    }
+    
+
+    #[rstest]
+    fn translate_hyperbolic_point_far_from_cusp(#[values(0.01, 0.1, 0.5)] d: f64) {
+        let mut rng = StdRng::seed_from_u64(42);
+        let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
+            [100.0, 100.0, (20_001.0_f64).sqrt()].into(),
+        ));
+        let translate =
+            Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
+
+        for _ in 0..NSTEPS {
+            let new_body_properties = translate.propose(&mut rng, body_properties);
+
+            // Translation move keeps the point on the Hyperboloid
+            let tolerance = 8_i32 - (new_body_properties.position.coordinates()[2].log10().floor() as i32);
+            assert_relative_eq!(
+                new_body_properties
+                    .position()
+                    .point()
+                    .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
+                -1.0,
+                epsilon = 10.0_f64.powi(tolerance)
+            );
+
+            // Translation move does not move the point more than a distance d
+            let dist = new_body_properties
+                .position()
+                .distance(&body_properties.position);
+            assert!(d > dist);
+            body_properties.position = new_body_properties.position;
+        }
+    } 
 }
