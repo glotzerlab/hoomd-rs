@@ -4,6 +4,8 @@
 
 *Added:*
 
+* `[hoomd-utility]`: Implement `Eq`, `PartialOrd`, and `Ord` for `PositiveReal` (#287).
+
 *Changed:*
 
 *Deprecated:*
