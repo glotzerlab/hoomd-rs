@@ -101,8 +101,7 @@ where
     type Force = V;
 
     /// Evaluate the force on site `i` caused by site `j`.
-    ///
-    ///
+    /// TODO: Example
     /// Isotropic forces always act along the radial direction:
     /// ```math
     /// \begin{equation}

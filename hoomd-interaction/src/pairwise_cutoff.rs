@@ -18,7 +18,7 @@ use crate::{
 
 /// Short-ranged pairwise interactions between sites.
 ///
-/// A [`PairwiseCutoff`] newtype wrapped around a type that implements
+/// A [`PairwiseCutoff`] newtype wrapping a type that implements
 /// [`SitePairEnergy`] represents:
 /// ```math
 /// U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
@@ -32,7 +32,7 @@ use crate::{
 /// separated by a distance less than the maximum interaction range `r_cut` and
 /// belong to different bodies.
 ///
-/// A [`PairwiseCutoff`] newtype wrapped around a type that implements
+/// A [`PairwiseCutoff`] newtype wrapping a type that implements
 /// [`SitePairForce`] and/or [`SitePairForceAndTorque`] represents:
 /// ```math
 /// \vec{F}_i = \sum_{j \ne i} \vec{F}\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]

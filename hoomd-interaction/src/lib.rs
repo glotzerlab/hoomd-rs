@@ -900,7 +900,7 @@ pub trait DeltaEnergyRemove<B, S, X, C> {
 
 /// Sum all the forces that act on a given body in a microstate.
 ///
-/// TODO: example.
+/// See [`Rigid`] for an example.
 ///
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
@@ -911,13 +911,17 @@ pub trait NetBodyForce<B, S, X, C> {
     type Force;
 
     /// Compute the net force on a body in the microstate.
+    ///
+    /// # Return value
+    ///
+    /// `net_site_force` returns the force vector.
     #[must_use]
     fn net_body_force(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> Self::Force;
 }
 
 /// Sum all the forces and torques that act on a given body in a microstate.
 ///
-/// TODO: example.
+/// See [`Rigid`] for an example.
 ///
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
@@ -929,6 +933,11 @@ pub trait NetBodyForceAndTorque<B, S, X, C> {
     type Force: Wedge;
     
     /// Compute the net force and torque on a body in the microstate.
+    ///
+    /// # Return value
+    ///
+    /// `net_body_force_and_torque` returns the force and torque in a tuple:
+    /// `(force, torque)`.
     #[must_use]
     fn net_body_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> (Self::Force, <Self::Force as Wedge>::Bivector);
 }

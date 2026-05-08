@@ -6,7 +6,7 @@
 use std::ops::AddAssign;
 
 use crate::{
-    NetBodyForce, NetBodyForceAndTorque, NetSiteForceAndTorque,
+    NetBodyForce, NetBodyForceAndTorque, NetSiteForce, NetSiteForceAndTorque
 };
 use hoomd_microstate::{
     Microstate, Transform,
@@ -16,16 +16,13 @@ use hoomd_vector::{Rotate, Vector, Wedge};
 
 /// Rigid body interactions.
 ///
-/// The generic type names are:
-/// * `E`: The evaluator that implements [`NetSiteForceAndTorque`].
-/// 
-/// Given an evaluator,
-/// [`Rigid`] provides methods for summing the forces and torques on every 
-/// [`Site`](hoomd_microstate::Site) to determine net forces, 
-/// and torques on every [`Body`](hoomd_microstate::Body).
+/// The [`Rigid`] newtype implements [`NetBodyForce`] and/or [`NetBodyForceAndTorque`]
+/// for wrapped force interaction model types that implement [`NetSiteForce`] and/or
+/// [`NetSiteForceAndTorque`]. [`Rigid`] computes the net force and/or torque on
+/// a rigid body that results from the forces/torques on all of its sites.
 ///
-/// Use [`Rigid`] by wrapping it around [`CutoffPair`](crate::cutoff_pair::CutoffPair), 
-/// [`External`](crate::External) or your own custom type.
+/// The generic type names are:
+/// * `F`: The evaluator that implements [`NetSiteForce`] and/or [`NetSiteForceAndTorque`].
 ///
 /// # Example
 ///
@@ -35,56 +32,49 @@ use hoomd_vector::{Rotate, Vector, Wedge};
 /// };
 ///
 /// let lennard_jones: LennardJones = LennardJones {
-///     epsilon: 1.5,
-///     sigma: 2.0,
+///     epsilon: 1.0,
+///     sigma: 1.0,
 /// };
-/// let evaluator = Isotropic{ interaction: lennard_jones, r_cut: 2.0*6.0};
+/// let evaluator = Isotropic{ interaction: lennard_jones, r_cut: 2.5};
 /// let rigid = Rigid(PairwiseCutoff(evaluator));
 /// ```
-pub struct Rigid<E>(pub E);
+pub struct Rigid<F>(pub F);
 
-impl<V, B, S, X, C, E> NetBodyForce<B, S, X, C> for Rigid<E>
+impl<V, B, S, X, C, F> NetBodyForce<B, S, X, C> for Rigid<F>
 where
     V: Vector + Default + Wedge,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: NetSiteForceAndTorque<B, S, X, C, Force = V>,
+    F: NetSiteForce<B, S, X, C, Force = V>,
 {
     type Force = V;
     
-    /// Compute the net force.
+    /// Compute the net force on a body in the microstate.
     ///
-    /// `microstate` describes the system configuration and `body_index` specifies
-    /// the body with index $`i`$ within the system for which the net force
-    /// $`\mathbf{f}_i`$ is calculated.
-    ///
-    /// First, the net force acting on each constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ are calculated in [`CutoffPair::net_site_force_and_torque`](crate::cutoff_pair::CutoffPair)
-    /// and [`External::net_site_force_and_torque`](crate::External).
-    ///
-    /// Then, the net force acting on the [`Body`](hoomd_microstate::Body)
-    /// $`i`$ are calculated
-    ///
+    /// The net force on a body is the sum of the net site forces for all sites
+    /// in the body:
     /// ```math
     /// \begin{align}
-    ///     &\mathbf{f}_{i} = \sum_{\alpha} \mathbf{f}_{i, \alpha} \\
+    ///     &\vec{F}_\mathrm{body} = \sum_{i \in \mathrm{body}} \vec{F}_{i} \\
     /// \end{align}
     /// ```
     ///
+    /// The net site force $` \vec{F}_i `$ is given by the [`NetSiteForce`]
+    /// implementation for the wrapped type.
+    ///
     /// # Example
     /// ```
+    /// use approxim::assert_relative_eq;
+    ///
     /// use hoomd_interaction::{
     ///     Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyForce
     /// };
-    ///
     /// use hoomd_microstate::{
     ///     Body, Microstate,
     ///     boundary::Open,
     ///     property::{OrientedPoint, Point},
     /// };
     /// use hoomd_vector::{Cartesian, Versor};
-    ///
-    /// use approxim::assert_abs_diff_eq;
     ///
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -110,19 +100,22 @@ where
     ///         },
     /// ])?;
     ///
-    /// let force = Rigid(PairwiseCutoff(
+    /// let lennard_jones: LennardJones = LennardJones {
+    ///             epsilon: 1.0,
+    ///             sigma: 1.0};
+    ///
+    /// let force_interaction_model = PairwiseCutoff(
     ///     Isotropic{ 
-    ///         interaction: LennardJones::<12, 6> {
-    ///                 epsilon: 1.0,
-    ///                 sigma: 2.0_f64.powf(-1.0 / 6.0),
-    ///         }, 
-    ///         r_cut: 6.0,
-    /// }));
+    ///         interaction: lennard_jones,
+    ///         r_cut: 2.5,
+    /// });
+    /// let rigid = Rigid(force_interaction_model);
     ///
-    ///    
-    /// let net_force = force.net_body_force(&microstate, 0);
+    /// let body_force_0 = rigid.net_body_force(&microstate, 0);
+    /// let body_force_1 = rigid.net_body_force(&microstate, 1);
     ///
-    /// assert_abs_diff_eq!(net_force, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
+    /// assert_relative_eq!(body_force_0, Cartesian::from([-24.0, 0.0, 0.0]));
+    /// assert_relative_eq!(body_force_1, Cartesian::from([24.0, 0.0, 0.0]));
     /// # Ok(())
     /// # }
     /// ```
@@ -130,19 +123,18 @@ where
     fn net_body_force(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V {
         let mut total = V::default();
         for site_index in microstate.iter_body_site_indices(body_index) {
-            let (f_on_site, _) = self.0.net_site_force_and_torque(microstate, site_index);
-            total += f_on_site;
-        }
+            total += self.0.net_site_force(microstate, site_index);
+       }
         total
     }
 }
 
-impl<V, B, S, X, C, E, R> NetBodyForceAndTorque<B, S, X, C> for Rigid<E>
+impl<V, B, S, X, C, F, R> NetBodyForceAndTorque<B, S, X, C> for Rigid<F>
 where
     V: Vector + Wedge + Default,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
-    E: NetSiteForceAndTorque<B, S, X, C, Force = V>,
+    F: NetSiteForceAndTorque<B, S, X, C, Force = V>,
     R: Rotate<V>,
     V::Bivector: Default + AddAssign,
 {

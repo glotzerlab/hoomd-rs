@@ -12,16 +12,34 @@ use hoomd_vector::Wedge;
 
 /// Interactions between sites and external fields.
 ///
-/// Given an inner type that implements [`SiteEnergy`], [`External`] represents:
+/// An [`External`] newtype wrapping a type that implements [`SitePairEnergy`] represents:
 ///
 /// ```math
 /// U_\mathrm{total} = \sum_{i=0}^{N-1} U\left( s_i \right)
 /// ```
 /// where $`s_i`$ is the full set of site properties for site i.
 ///
-/// For the inner type, use one from [`external`] or your own custom type.
+/// An [`External`] newtype wrapping a type that implements [`SiteForce`] and/or
+/// [`SiteForceAndTorque`] represents:
+/// ```math
+/// \vec{F}_i = \vec{F}\left(s_i\right)
+/// ```
+/// ```math
+/// \vec{\tau}_i = \vec{\tau}\left(s_i\right)
+/// ```
+/// where $`\vec{F}(s_i)`$ is the force computed by [`SiteForce`]
+/// (or [`SiteForceAndTorque`]) and $`\vec{\tau}(s_i)`$ is the torque computed by
+/// [`SiteForceAndTorque`].
 ///
-/// [`external`]: crate::external
+/// A type that implements *both* [`SiteEnergy`] and [`SiteForce`]
+/// (or [`SiteForceAndTorque`]) *must* compute forces and torques that are
+/// derivatives of the energy.
+///
+/// Use [`External`] with [`ConstantForce`] or your own custom type that
+/// implements [`SiteEnergy`], [`SiteForce`] and/or
+/// [`SiteForceAndTorque`].
+///
+/// [`ConstantForce`]: crate::external::ConstantForce
 ///
 /// # Examples
 ///
