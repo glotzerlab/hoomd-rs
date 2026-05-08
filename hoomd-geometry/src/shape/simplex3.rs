@@ -463,9 +463,9 @@ where
 }
 
 impl BoundingSphereRadius for Simplex3 {
-    /// Radius of a circle that bounds the shape.
+    /// Radius of a sphere that bounds the shape.
     ///
-    /// The circle has the same local origin as the shape `self`.
+    /// The sphere has the same local origin as the shape `self`.
     ///
     /// # Example
     ///
