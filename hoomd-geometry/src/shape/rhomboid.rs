@@ -6,8 +6,8 @@ use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMa
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale, SupportMapping,
-    Volume, shape::Hyperparallelepiped,
+    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, IsPointInside, MapPoint, Scale,
+    SupportMapping, Volume, shape::Hyperparallelepiped,
 };
 
 /// An axis-aligned parallelogram defined by a 2 x 2 upper triangular matrix.
@@ -199,6 +199,15 @@ impl Rhomboid {
         ]
     }
 
+    /// A^-1 @ [x, y] = [1/lx (x - xy·y), 1/ly·y]
+    #[inline]
+    fn matmul_inv(&self, v: [f64; 2]) -> [f64; 2] {
+        [
+            1.0 / self.Lx().get() * (v[0] - self.xy() * v[1]),
+            1.0 / self.Ly().get() * v[1],
+        ]
+    }
+
     /// A^T @ [x, y] = [lx·x, ly·xy·x + ly·y]
     #[inline]
     fn matmul_t(&self, v: [f64; 2]) -> [f64; 2] {
@@ -235,6 +244,14 @@ impl Rhomboid {
     pub fn vertices(&self) -> [Cartesian<2>; 4] {
         [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]].map(|c| self.matmul(c).into())
     }
+
+    pub fn get_edge_vectors(&self) -> [Cartesian<2>; 2] {
+        let mut edge_vectors = [Cartesian::<2>::default(); 2];
+        edge_vectors[0] = [self.Lx().get(), 0.].into();
+        edge_vectors[1] = [self.Ly().get() * self.xy(), self.Ly().get()].into();
+        edge_vectors
+    }
+
     /// Represent a 2D triclinic box in the GSD box format.
     ///
     /// # Example
@@ -544,6 +561,14 @@ where
         let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
 
         self.intersects_at(other, &v_ij, &o_ij)
+    }
+}
+
+impl MapPoint<Cartesian<2>> for Rhomboid {
+    fn map_point(&self, point: Cartesian<2>, other: &Self) -> Result<Cartesian<2>, crate::Error> {
+        let fractional = self.matmul_inv(point.coordinates);
+        let mapped_coords = other.matmul(fractional);
+        Ok(Cartesian::from(mapped_coords))
     }
 }
 

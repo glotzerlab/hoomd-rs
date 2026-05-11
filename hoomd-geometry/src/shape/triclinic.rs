@@ -14,7 +14,7 @@ use rand::{
     distr::{Distribution, Uniform},
 };
 
-use crate::{IsPointInside, Scale, SupportMapping, Volume, shape::Hyperparallelepiped};
+use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume, shape::Hyperparallelepiped};
 
 /// A triclinic box shape with arbitrary tilt factors.
 ///
@@ -124,6 +124,37 @@ impl Triclinic {
     #[inline]
     pub fn yz(&self) -> f64 {
         self.tilt_factors[2]
+    }
+
+    #[inline]
+    fn matmul(&self, v: [f64; 3]) -> [f64; 3] {
+        [
+            self.Lx().get() * v[0]
+                + self.Ly().get() * self.xy() * v[1]
+                + self.Lz().get() * self.xz() * v[2],
+            self.Ly().get() * v[1] + self.Lz().get() * self.yz() * v[2],
+            self.Lz().get() * v[2],
+        ]
+    }
+
+    #[inline]
+    fn matmul_inv(&self, v: [f64; 3]) -> [f64; 3] {
+        [
+            1.0 / self.Lx().get()
+                * (v[0] - self.xy() * v[1] - (self.xz() + self.xy() * self.yz()) * v[2]),
+            1.0 / self.Ly().get() * (v[1] - self.yz()),
+            1.0 / self.Lz().get(),
+        ]
+    }
+
+    /// A^T @ [x, y] = [lx·x, ly·xy·x + ly·y]
+    #[inline]
+    fn matmul_t(&self, v: [f64; 3]) -> [f64; 3] {
+        [
+            self.Lx().get() * v[0],
+            self.Ly().get() * self.xy() * v[0] + self.Ly().get() * v[1],
+            self.Lz().get() * (self.xz() * v[0] + self.yz() * v[1] + v[2]),
+        ]
     }
 
     /// Construct a triclinic box from box dimensions.
@@ -530,5 +561,13 @@ impl Distribution<Cartesian<3>> for Triclinic {
         Cartesian {
             coordinates: [scaled_x, scaled_y, scaled_z],
         }
+    }
+}
+
+impl MapPoint<Cartesian<3>> for Triclinic {
+    fn map_point(&self, point: Cartesian<3>, other: &Self) -> Result<Cartesian<3>, crate::Error> {
+        let fractional = self.matmul_inv(point.coordinates);
+        let mapped_coords = other.matmul(fractional);
+        Ok(Cartesian::from(mapped_coords))
     }
 }

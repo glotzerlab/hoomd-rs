@@ -44,18 +44,18 @@ impl MaximumAllowableInteractionRange for Rhomboid {
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
         let plane_distances = self.get_nearest_plane_distance();
-        min(plane_distances[0], plane_distances[1])
+        f64::min(plane_distances[0].get(), plane_distances[1].get())
     }
 }
 
 impl Periodic<Rhomboid> {
     pub fn to_fractional(&self, pos: &Cartesian<2>) -> Cartesian<2> {
-        let lx = self.shape.lx().get();
-        let ly = self.shape.ly().get();
+        let Lx = self.shape.Lx().get();
+        let Ly = self.shape.Ly().get();
         let xy = self.shape.xy();
 
-        let s1 = (pos[0] - xy * pos[1]) / lx;
-        let s2 = pos[1] / ly;
+        let s1 = (pos[0] - xy * pos[1]) / Lx;
+        let s2 = pos[1] / Ly;
 
         Cartesian::from([s1, s2])
     }
@@ -88,12 +88,12 @@ impl Periodic<Rhomboid> {
     /// # }
     /// ```
     pub fn to_absolute(&self, frac: &Cartesian<2>) -> Cartesian<2> {
-        let lx = self.shape.lx().get();
-        let ly = self.shape.ly().get();
+        let Lx = self.shape.Lx().get();
+        let Ly = self.shape.Ly().get();
         let xy = self.shape.xy();
 
-        let r1 = lx * frac[0] + xy * ly * frac[1];
-        let r2 = ly * frac[1];
+        let r1 = Lx * frac[0] + xy * Ly * frac[1];
+        let r2 = Ly * frac[1];
 
         Cartesian::from([r1, r2])
     }
@@ -196,11 +196,10 @@ where
 
         let edge_vectors = self.shape.get_edge_vectors();
 
-        let new_site = |x, y, z| {
+        let new_site = |x, y| {
             let mut new_site = *site_properties;
             *new_site.position_mut() += x * edge_vectors[0];
             *new_site.position_mut() += y * edge_vectors[1];
-            *new_site.position_mut() += z * edge_vectors[2];
             new_site
         };
 
