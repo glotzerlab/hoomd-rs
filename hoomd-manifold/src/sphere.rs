@@ -158,6 +158,7 @@ impl Spherical<4> {
     ///         .to_versor()
     ///         .expect("Hard-coded example is valid");
     /// let mapped_pole = Spherical::<4>::from_versor(transformation);
+    ///
     /// assert_relative_eq!(
     ///     mapped_pole.coordinates()[0],
     ///     x.coordinates()[0],
