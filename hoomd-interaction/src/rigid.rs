@@ -3,7 +3,7 @@
 
 //! Implement Rigid.
 
-use std::ops::AddAssign;
+use std::ops::{Add, AddAssign};
 
 use crate::{
     NetBodyForce, NetBodyForceAndTorque, NetSiteForce, NetSiteForceAndTorque
@@ -19,7 +19,10 @@ use hoomd_vector::{Rotate, Vector, Wedge};
 /// The [`Rigid`] newtype implements [`NetBodyForce`] and/or [`NetBodyForceAndTorque`]
 /// for wrapped force interaction model types that implement [`NetSiteForce`] and/or
 /// [`NetSiteForceAndTorque`]. [`Rigid`] computes the net force and/or torque on
-/// a rigid body that results from the forces/torques on all of its sites.
+/// a rigid body that results from the forces/torques on all of its sites:
+/// ```math
+/// \vec{F}_\mathrm{body} = \sum_{i \in \mathrm{body}} \vec{F}_{i}
+/// ```
 ///
 /// The generic type names are:
 /// * `F`: The evaluator that implements [`NetSiteForce`] and/or [`NetSiteForceAndTorque`].
@@ -54,13 +57,10 @@ where
     /// The net force on a body is the sum of the net site forces for all sites
     /// in the body:
     /// ```math
-    /// \begin{align}
-    ///     &\vec{F}_\mathrm{body} = \sum_{i \in \mathrm{body}} \vec{F}_{i} \\
-    /// \end{align}
+    /// \vec{F}_\mathrm{body} = \sum_{i \in \mathrm{body}} \vec{F}_{i}
     /// ```
-    ///
-    /// The net site force $` \vec{F}_i `$ is given by the [`NetSiteForce`]
-    /// implementation for the wrapped type.
+    /// where the net site force $` \vec{F}_i `$ is given by `F`'s implementation of
+    /// [`NetSiteForce`].
     ///
     /// # Example
     /// ```
@@ -136,37 +136,28 @@ where
     S: Position<Position = V>,
     F: NetSiteForceAndTorque<B, S, X, C, Force = V>,
     R: Rotate<V>,
-    V::Bivector: Default + AddAssign,
+    V::Bivector: Default + Add<Output = V::Bivector> + AddAssign,
 {
     type Force = V;
     
-    /// Compute the net force and torque.
+    /// Compute the net force and torque on a body in the microstate.
     ///
-    /// The force that is associate with the torque calculation will be reused
-    /// in this function to reduce the costs.
-    ///
-    /// `microstate` describes the system configuration and `body_index` specifies
-    /// the body with index $`i`$ within the system for which the net force and torque
-    /// $`\mathbf{f}_i`$, $`\boldsymbol{\tau}_i`$ are calculated.
-    ///
-    /// First, the net force acting on each constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ are calculated in [`CutoffPair::net_site_force_and_torque`](crate::cutoff_pair::CutoffPair).
-    /// and [`External::net_site_force_and_torque`](crate::External).
-    ///
-    /// Then, the net force and torque acting on the [`Body`](hoomd_microstate::Body)
-    /// $`i`$ are calculated
-    ///
+    /// The net force on a body is the sum of the net site forces for all sites
+    /// in the body, and the net torque is the sum of the torques resulting from those
+    /// forces *and* intrinsic torques applied to the sites:
     /// ```math
-    /// \begin{align}
-    ///     &\mathbf{f}_{i} = \sum_{\alpha} \mathbf{f}_{i, \alpha} \\
-    ///     &\boldsymbol{\tau}_{i} = \sum_{\alpha} q_i\mathbf{r}_{\mathrm{body}, \alpha}q_i^* \wedge \mathbf{f}_{i, \alpha} + \boldsymbol{\tau}_{i, \alpha}
-    /// \end{align}
+    /// \vec{F}_\mathrm{body} = \sum_{i \in \mathrm{body}} \vec{F}_{i}
     /// ```
-    /// Where $`q_i`$ is the orientation of the [`Body`](hoomd_microstate::Body)
-    /// $`i`$ and $`\mathbf{r}_{\mathrm{body}, \alpha}`$
-    /// is the position of the constituent [`Site`](hoomd_microstate::Site)
-    /// $`\alpha`$ in the body frame. The symbol $`\wedge`$ represents
-    /// the [Wedge], equivalent to [Cross](hoomd_vector::Cross) in three-dimension.
+    /// ```math
+    /// \vec{\tau}_\mathrm{body} = \sum_{i \in \mathrm{body}} (\mathbf{q}_\mathrm{body} \cdot \vec{r}_{\mathrm{body},i} \cdot \mathbf{q}_\mathrm{body}^*) \wedge \vec{F}_i + \vec{\tau}_{i}
+    /// ```
+    /// where $` \mathbf{q}_\mathrm{body} `$ is the body's orientation,
+    /// $` \vec{r}_{\mathrm{body},i} `$ is the position of site *i* in the body
+    /// frame, and $` \vec{F}_i `$ / $` \vec{\tau}_i `$ are the net site force and torque
+    /// given by `F`'s implementation of [`NetSiteForceAndTorque`].
+    ///
+    /// The symbol $` \wedge `$ denotes the [`Wedge`] product. The resulting torque
+    /// $` \vec{\tau}_\mathrm{body} `$ is in the system frame.
     ///
     /// # Example
     /// ```
@@ -181,7 +172,7 @@ where
     /// };
     /// use hoomd_vector::{Cartesian, Versor};
     ///
-    /// use approxim::assert_abs_diff_eq;
+    /// use approxim::assert_relative_eq;
     ///
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -189,16 +180,16 @@ where
     /// microstate.extend_bodies([
     ///     Body {
     ///         properties: OrientedPoint {
-    ///             position: Cartesian::from([0.0, 0.0, 0.0]),
+    ///             position: Cartesian::from([0.0, 2.0, 0.0]),
     ///             orientation: Versor::default(),
     ///         },
     ///         sites: vec![Point {
-    ///             position: Cartesian::from([0.0, 3.0_f64.sqrt() / 2.0, 0.0]),
+    ///             position: Cartesian::from([0.0, -2.0, 0.0]),
     ///         }],
     ///         },
     ///     Body {
     ///         properties: OrientedPoint {
-    ///             position: Cartesian::from([0.5, 0.0, 0.0]),
+    ///             position: Cartesian::from([1.0, 0.0, 0.0]),
     ///             orientation: Versor::default(),
     ///         },
     ///         sites: vec![Point {
@@ -207,29 +198,24 @@ where
     ///         },
     /// ])?;
     ///
-    /// let force = Rigid(PairwiseCutoff(
+    /// let lennard_jones: LennardJones = LennardJones {
+    ///             epsilon: 1.0,
+    ///             sigma: 1.0};
+    ///
+    /// let force_interaction_model = PairwiseCutoff(
     ///     Isotropic{ 
-    ///         interaction: LennardJones::<12, 6> {
-    ///                 epsilon: 1.0,
-    ///                 sigma: 2.0_f64.powf(-1.0 / 6.0),
-    ///         }, 
-    ///         r_cut: 6.0,
-    /// }));
+    ///         interaction: lennard_jones,
+    ///         r_cut: 2.5,
+    /// });
+    /// let rigid = Rigid(force_interaction_model);
     ///
-    /// let (net_force, net_torque) = force.net_body_force_and_torque(&microstate, 0);
+    /// let (body_force, body_torque) = rigid.net_body_force_and_torque(&microstate, 0);
     ///
-    /// assert_abs_diff_eq!(net_force, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-13);
-    /// assert_abs_diff_eq!(net_torque, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
+    /// assert_relative_eq!(body_force, Cartesian::from([-24.0, 0.0, 0.0]));
+    /// assert_relative_eq!(body_torque, Cartesian::from([0.0, 0.0, -48.0]));
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// # Note
-    ///
-    /// The current implementation assumes the pure torque $`\boldsymbol{\tau}_{i, \alpha}`$ acting on the
-    /// constituent [`Site`](hoomd_microstate::Site) $`\alpha`$
-    /// (not contributed by the force) solely
-    /// results from the external field in [`External`](crate::External).
     #[inline]
     fn net_body_force_and_torque(
         &self,
@@ -242,25 +228,16 @@ where
         let q = microstate.bodies()[body_index]
             .item
             .properties
-            .orientation(); // the body's orientation in the system frame
+            .orientation();
 
-        // Torque based on forces on all sites around the center of mass
         for (body_site_index, microstate_site_index) in microstate.iter_body_site_indices(body_index).enumerate() {
-            // Get relevant quantities
             let site_body_frame = &microstate.bodies()[body_index].item.sites[body_site_index];
-            let r_body_frame = site_body_frame.position(); // the site's position in the body frame (which we need in order to not have wrapping issues)
-            let r = q.rotate(r_body_frame); // the moment arm in the system frame
-            let (f_on_site, t_on_site) = self.0.net_site_force_and_torque(microstate, microstate_site_index); // the force on the site in the system frame
+            let r_body_frame = site_body_frame.position();
+            let r = q.rotate(r_body_frame);
+            let (site_force, site_torque) = self.0.net_site_force_and_torque(microstate, microstate_site_index);
 
-            // Calculate Torque in the system frame
-            let t_from_f_on_site = r.wedge(&f_on_site);
-
-            // Add to the total
-            total_force += f_on_site;
-            total_torque += t_from_f_on_site;
-
-            // Torque from torques directly on the sites
-            total_torque += t_on_site;
+            total_force += site_force;
+            total_torque += r.wedge(&site_force) + site_torque;
         }
 
         (total_force, total_torque)

@@ -12,7 +12,7 @@ use hoomd_vector::Wedge;
 
 /// Interactions between sites and external fields.
 ///
-/// An [`External`] newtype wrapping a type that implements [`SitePairEnergy`] represents:
+/// An [`External`] newtype wrapping a type that implements [`SiteEnergy`] represents:
 ///
 /// ```math
 /// U_\mathrm{total} = \sum_{i=0}^{N-1} U\left( s_i \right)

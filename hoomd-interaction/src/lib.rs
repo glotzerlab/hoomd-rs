@@ -914,7 +914,7 @@ pub trait NetBodyForce<B, S, X, C> {
     ///
     /// # Return value
     ///
-    /// `net_site_force` returns the force vector.
+    /// `net_body_force` returns the force vector.
     #[must_use]
     fn net_body_force(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> Self::Force;
 }

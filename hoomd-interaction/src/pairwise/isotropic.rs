@@ -13,9 +13,29 @@ use hoomd_vector::{InnerProduct, Metric, Wedge};
 ///
 /// [`Isotropic`] provides a single implementation that computes pairwise
 /// interactions that are a function only of the distance between sites. It
-/// fills the gap between traits like [`SitePairEnergy`] which operates on
-/// site properties and [`UnivariateEnergy`] which is a function only of the
-/// separation distance.
+/// fills the gap between traits like [`SitePairEnergy`] / [`SitePairForce`]
+/// which operate on site properties and [`UnivariateEnergy`] /
+/// [`UnivariateForce`] which is a function only of the separation distance.
+///
+/// [`Isotropic`] cuts all interactions off when the distance between sites
+/// is greater than or equal to `r_cut`:
+/// ```math
+/// U_{ij} =
+/// \begin{cases}
+/// U(r_{ij}) & r_{ij} < r_\mathrm{cut} \\
+/// 0 & r_{ij} \ge r_\mathrm{cut}
+/// \end{cases}
+/// ```
+/// ```math
+/// \vec{F_{ij}} =
+/// \begin{cases}
+/// -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ji}} \hat{r}_{ji} & r_{ij} < r_\mathrm{cut} \\
+/// \vec{0} & r_{ij} \ge r_\mathrm{cut}
+/// \end{cases}
+/// ```
+/// where $` U `$ is given by `E`'s [`UnivariateEnergy`] implementation and 
+/// $` -\frac{\mathrm{d} U}{\mathrm{d} r} `$ is given by `E`'s [`UnivariateForce`]
+/// implementation. 
 ///
 /// Use [`Isotropic`] with [`PairwiseCutoff`] in MD and MC simulations.
 ///
@@ -72,6 +92,51 @@ where
     P: Metric,
     E: UnivariateEnergy,
 {
+    /// Compute the energy contribution from a pair of sites.
+    ///
+    /// ```math
+    /// U_{ij} =
+    /// \begin{cases}
+    /// U(r_{ij}) & r_{ij} < r_\mathrm{cut} \\
+    /// 0 & r_{ij} \ge r_\mathrm{cut}
+    /// \end{cases}
+    /// ```
+    /// where $` U `$ is given by `E`'s [`UnivariateEnergy`] implementation. 
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_interaction::{
+    ///     SitePairEnergy, pairwise::Isotropic, univariate::LennardJones,
+    /// };
+    /// use hoomd_microstate::property::Point;
+    /// use hoomd_vector::Cartesian;    
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let a = Point {
+    ///     position: Cartesian::from([0.0, 0.0]),
+    /// };
+    /// let b = Point {
+    ///     position: Cartesian::from([0.0, 2.0 * 2.0_f64.powf(1.0 / 6.0)]),
+    /// };
+    ///
+    /// let lennard_jones: LennardJones = LennardJones {
+    ///     epsilon: 1.5,
+    ///     sigma: 2.0,
+    /// };
+    /// let lennard_jones = Isotropic {
+    ///     interaction: lennard_jones,
+    ///     r_cut: 2.5,
+    /// };
+    ///
+    /// let energy = lennard_jones.site_pair_energy(&a, &b);
+    /// 
+    /// assert_eq!(energy, -1.5);
+    /// 
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
         let r = site_properties_i
@@ -86,6 +151,29 @@ where
 }
 
 impl<E> MaximumInteractionRange for Isotropic<E> {
+    /// The maximum interaction range for `Isotropic` is the given `r_cut`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::{MaximumInteractionRange,
+    ///     pairwise::Isotropic, univariate::LennardJones,
+    /// };
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let lennard_jones: LennardJones = LennardJones {
+    ///     epsilon: 1.5,
+    ///     sigma: 2.0,
+    /// };
+    /// let lennard_jones = Isotropic {
+    ///     interaction: lennard_jones,
+    ///     r_cut: 2.5,
+    /// };
+    ///
+    /// assert_eq!(lennard_jones.maximum_interaction_range(), 2.5);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
         self.r_cut
@@ -101,12 +189,53 @@ where
     type Force = V;
 
     /// Evaluate the force on site `i` caused by site `j`.
-    /// TODO: Example
+    ///
     /// Isotropic forces always act along the radial direction:
     /// ```math
-    /// \begin{equation}
-    /// \vec{F_{ij}} = -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ji}} \hat{r}_{ji}
-    /// \end{equation}
+    /// \vec{F_{ij}} =
+    /// \begin{cases}
+    /// -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ji}} \hat{r}_{ji} & r_{ij} < r_\mathrm{cut} \\
+    /// \vec{0} & r_{ij} \ge r_\mathrm{cut}
+    /// \end{cases}
+    /// ```
+    /// where $` -\frac{\mathrm{d} U}{\mathrm{d} r} `$ is given by `E`'s [`UnivariateForce`]
+    /// implementation. 
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_interaction::{
+    ///     SitePairForce, pairwise::Isotropic, univariate::LennardJones,
+    /// };
+    /// use hoomd_microstate::property::Point;
+    /// use hoomd_vector::Cartesian;    
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let a = Point {
+    ///     position: Cartesian::from([0.0, 0.0]),
+    /// };
+    /// let b = Point {
+    ///     position: Cartesian::from([0.0, 2.0 * 2.0_f64.powf(1.0 / 6.0)]),
+    /// };
+    ///
+    /// let lennard_jones: LennardJones = LennardJones {
+    ///     epsilon: 1.5,
+    ///     sigma: 2.0,
+    /// };
+    /// let lennard_jones = Isotropic {
+    ///     interaction: lennard_jones,
+    ///     r_cut: 2.5,
+    /// };
+    ///
+    /// let force_ab = lennard_jones.site_pair_force(&a, &b);
+    /// let force_ba = lennard_jones.site_pair_force(&b, &a);
+    /// 
+    /// assert_eq!(force_ab, -force_ba);
+    /// assert_relative_eq!(force_ab, Cartesian::from([0.0, 0.0]), epsilon = 1e-14);
+    /// 
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline]
     fn site_pair_force(&self, site_properties_i: &S, site_properties_j: &S) -> Self::Force {
@@ -132,13 +261,16 @@ where
 
     /// Evaluate the force and torque on site `i` caused by site `j`.
     ///
-    ///
     /// Isotropic forces always act along the radial direction:
     /// ```math
-    /// \begin{equation}
-    /// \vec{F_{ij}} = -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ji}} \hat{r}_{ji}
-    /// \end{equation}
+    /// \vec{F_{ij}} =
+    /// \begin{cases}
+    /// -\frac{\mathrm{d} U}{\mathrm{d} r} \biggr\rvert_{r=r_{ji}} \hat{r}_{ji} & r_{ij} < r_\mathrm{cut} \\
+    /// \vec{0} & r_{ij} \ge r_\mathrm{cut}
+    /// \end{cases}
     /// ```
+    /// where $` -\frac{\mathrm{d} U}{\mathrm{d} r} `$ is given by `E`'s [`UnivariateForce`]
+    /// implementation. 
     ///
     /// Radial forces produce 0 torque.
     #[inline]

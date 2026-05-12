@@ -459,6 +459,12 @@ where
     
     /// Compute the net force and torque on a given site.
     ///
+    /// ```math
+    /// \vec{F}_i = \sum_{j \ne i} \vec{F}\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+    /// ```
+    /// where $` \vec{F}\left(s_i, s_j \right) `$ is given by `E`'s implementation of
+    /// [`SitePairForce`].
+    ///
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
@@ -523,6 +529,15 @@ where
     type Force = V;
     
     /// Compute the net force and torque on a given site.
+    ///
+    /// ```math
+    /// \vec{F}_i = \sum_{j \ne i} \vec{F}\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+    /// ```
+    /// ```math
+    /// \vec{\tau}_i = \sum_{j \ne i} \vec{\tau}\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+    /// ```
+    /// where $` \vec{F}\left(s_i, s_j \right) `$  and $` \vec{\tau}\left(s_i, s_j \right) `$
+    ///are given by `E`'s implementation of [`SitePairForceAndTorque`].
     /// 
     /// # Return value
     ///
@@ -651,7 +666,7 @@ where
 
     /// Compute the difference in energy between two microstates.
     ///
-    /// Returns `$ E_\mathrm{final} - E_\mathrm{initial} $`.
+    /// Returns $` E_\mathrm{final} - E_\mathrm{initial} `$.
     ///
     /// # Example
     ///

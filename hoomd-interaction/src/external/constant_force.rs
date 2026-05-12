@@ -124,7 +124,7 @@ where
     /// ```
     /// use hoomd_interaction::{external::ConstantForce, SiteEnergy};
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_microstate::{Body, Microstate, Site};
+    /// use hoomd_microstate::property::Point;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let constant_force = ConstantForce {
@@ -132,17 +132,13 @@ where
     ///     r_0: Cartesian::from([0.0, -10.0]),
     /// };
     ///
-    /// let body_a = Body::point(Cartesian::from([0.0, 0.0]));
-    /// let body_b = Body::point(Cartesian::from([0.0, 3.0]));
+    /// let a = Point { position: Cartesian::from([0.0, 0.0]) };
+    /// let b = Point { position: Cartesian::from([0.0, 3.0]) };
     ///
-    /// let microstate = Microstate::builder()
-    ///     .bodies([body_a, body_b])
-    ///     .try_build()?;
-    ///
-    /// let energy_0 = constant_force.site_energy(&microstate.sites()[0].properties);
+    /// let energy_0 = constant_force.site_energy(&a);
     /// assert_eq!(energy_0, 20.0);
     //
-    /// let energy_1 = constant_force.site_energy(&microstate.sites()[1].properties);
+    /// let energy_1 = constant_force.site_energy(&b);
     /// assert_eq!(energy_1, 26.0);
     /// # Ok(())
     /// # }
@@ -165,7 +161,7 @@ V: InnerProduct,
     /// ```
     /// use hoomd_interaction::{external::ConstantForce, SiteForce};
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_microstate::{Body, Microstate, Site};
+    /// use hoomd_microstate::property::Point;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let constant_force = ConstantForce {
@@ -173,17 +169,13 @@ V: InnerProduct,
     ///     r_0: Cartesian::from([0.0, -10.0]),
     /// };
     ///
-    /// let body_a = Body::point(Cartesian::from([0.0, 0.0]));
-    /// let body_b = Body::point(Cartesian::from([0.0, 3.0]));
+    /// let a = Point { position: Cartesian::from([0.0, 0.0]) };
+    /// let b = Point { position: Cartesian::from([0.0, 3.0]) };
     ///
-    /// let microstate = Microstate::builder()
-    ///     .bodies([body_a, body_b])
-    ///     .try_build()?;
-    ///
-    /// let force_0 = constant_force.site_force(&microstate.sites()[0].properties);
+    /// let force_0 = constant_force.site_force(&a);
     /// assert_eq!(force_0, [0.0, -2.0].into());
     ///
-    /// let force_1 = constant_force.site_force(&microstate.sites()[1].properties);
+    /// let force_1 = constant_force.site_force(&b);
     /// assert_eq!(force_1, [0.0, -2.0].into());
     /// # Ok(())
     /// # }
@@ -207,7 +199,7 @@ V::Bivector: Default,
     /// ```
     /// use hoomd_interaction::{external::ConstantForce, SiteForceAndTorque};
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_microstate::{Body, Microstate, Site};
+    /// use hoomd_microstate::property::Point;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let constant_force = ConstantForce {
@@ -215,18 +207,14 @@ V::Bivector: Default,
     ///     r_0: Cartesian::from([0.0, -10.0]),
     /// };
     ///
-    /// let body_a = Body::point(Cartesian::from([0.0, 0.0]));
-    /// let body_b = Body::point(Cartesian::from([0.0, 3.0]));
+    /// let a = Point { position: Cartesian::from([0.0, 0.0]) };
+    /// let b = Point { position: Cartesian::from([0.0, 3.0]) };
     ///
-    /// let microstate = Microstate::builder()
-    ///     .bodies([body_a, body_b])
-    ///     .try_build()?;
-    ///
-    /// let (force_0, torque_0) = constant_force.site_force_and_torque(&microstate.sites()[0].properties);
+    /// let (force_0, torque_0) = constant_force.site_force_and_torque(&a);
     /// assert_eq!(force_0, [0.0, -2.0].into());
     /// assert_eq!(torque_0, 0.0);
     ///
-    /// let (force_1, torque_1) = constant_force.site_force_and_torque(&microstate.sites()[1].properties);
+    /// let (force_1, torque_1) = constant_force.site_force_and_torque(&b);
     /// assert_eq!(force_1, [0.0, -2.0].into());
     /// assert_eq!(torque_1, 0.0);
     /// # Ok(())
