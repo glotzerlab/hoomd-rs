@@ -2,7 +2,7 @@ use anyhow::{Context, anyhow};
 
 use hoomd_geometry::{
     Convex, Volume,
-    shape::{ConvexPolygon, Rectangle, Rhomboid},
+    shape::{ConvexPolyhedron, Triclinic},
 };
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff, TotalEnergy,
@@ -18,24 +18,24 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
-use hoomd_vector::{self, Angle, Cartesian};
+use hoomd_vector::{self, Cartesian, Versor};
 
-type PositionVector = Cartesian<2>;
-type Orientation = Angle;
+type PositionVector = Cartesian<3>;
+type Orientation = Versor;
 type BodyProperties = OrientedPoint<PositionVector, Orientation>;
 type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 
 #[cfg_attr(feature = "bevy", derive(Resource))]
-struct HardRhomboidSelfAssembly {
+struct HardTriclinicSelfAssembly {
     /// Positions and orientations of all the bodies in the simulation.
     microstate: Microstate<
         BodyProperties,
         SiteProperties,
-        VecCell<SiteKey, 2>,
-        Periodic<Rhomboid>,
+        VecCell<SiteKey, 3>,
+        Periodic<Triclinic>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: PairwiseCutoff<HardShape<Convex<Rhomboid>>>,
+    hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolyhedron>>>,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
@@ -43,12 +43,14 @@ struct HardRhomboidSelfAssembly {
     /// Temperature set point.
     macrostate: Isothermal,
     /// Quick compress algorithm.
-    quick_compress: QuickCompress<Periodic<Rhomboid>>,
+    quick_compress: QuickCompress<Periodic<Triclinic>>,
     /// Quick insert algorithm.
-    quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Rhomboid>>>,
+    quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Triclinic>>>,
     /// How sites interact when inserted and compressed.
     overlap_penalty_hamiltonian: PairwiseCutoff<
-        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Rhomboid>>,
+        Anisotropic<
+            ApproximateShapeOverlap<OverlapPenalty, Convex<ConvexPolyhedron>>,
+        >,
     >,
     /// The current phase of the simulation.
     phase: Phase,
@@ -59,39 +61,86 @@ enum Phase {
     Equilibrate,
 }
 
-impl HardRhomboidSelfAssembly {
-    /// Construct a new hard rhomboid self-assembly simulation.
-    fn new() -> anyhow::Result<HardRhomboidSelfAssembly> {
+impl HardTriclinicSelfAssembly {
+    /// Construct a new hard triclinic self-assembly simulation.
+    ///
+    /// The particle is a parallelepiped (triclinic polyhedron) whose shape
+    /// mirrors the simulation box, with edge lengths [1, √3/2, √3/3] and a
+    /// shared xy tilt factor. This is the 3D analogue of the 2D rhomboid
+    /// simulation.
+    fn new() -> anyhow::Result<HardTriclinicSelfAssembly> {
         let initial_packing_fraction = 0.01;
         let target_packing_fraction = 0.5;
         let n_bodies = 512;
         let maximum_distance = 0.07;
         let maximum_rotation = 0.3;
         let sigma = 1.0;
-        let aspect = 5.0;
         let macrostate = Isothermal { temperature: 1.0 };
-        assert!(aspect >= 1.0);
 
-        let rhomboid = Rhomboid::from_box_vector([
-            1.0.try_into()?,
+        // Build a triclinic particle whose box vector matches the 2D rhomboid:
+        //   Lx=1,  Ly=√3/2,  Lz=√3/3,  xy=√3/3,  xz=0,  yz=0
+        // This gives a 3D parallelepiped with the same shear in the xy-plane.
+        let particle_box_vector = [
+            1.0,
             3.0_f64.sqrt() / 2.0,
             3.0_f64.sqrt() / 3.0,
-        ]);
-        let hamiltonian = PairwiseCutoff(HardShape(Convex(rhomboid.clone())));
+            3.0_f64.sqrt() / 3.0, // xy tilt (same as 2D rhomboid)
+            0.0,                  // xz tilt
+            0.0,                  // yz tilt
+        ];
+        let particle_shape = Triclinic::from_box_vector(particle_box_vector);
 
-        let initial_box_volume =
-            n_bodies as f64 * rhomboid.volume() / initial_packing_fraction;
-        let initial_box_edge_length = initial_box_volume.sqrt();
-        let sheared_box = Rhomboid::from_box_vector([
-            initial_box_edge_length.try_into()?,
-            initial_box_edge_length * 3.0_f64.sqrt() / 2.0,
-            3.0_f64.sqrt() / 3.0,
+        // Derive the 8 vertices of the triclinic parallelepiped and build a
+        // convex polyhedron for overlap detection.
+        let edges = particle_shape.get_edge_vectors();
+        let [a1, a2, a3] = edges;
+        let half_a1: Cartesian<3> = (a1 * 0.5).into();
+        let half_a2: Cartesian<3> = (a2 * 0.5).into();
+        let half_a3: Cartesian<3> = (a3 * 0.5).into();
+
+        // All 8 corners: ±½a₁ ± ½a₂ ± ½a₃
+        let vertices: Vec<Cartesian<3>> = [
+            [-1.0_f64, -1.0, -1.0],
+            [1.0, -1.0, -1.0],
+            [-1.0, 1.0, -1.0],
+            [1.0, 1.0, -1.0],
+            [-1.0, -1.0, 1.0],
+            [1.0, -1.0, 1.0],
+            [-1.0, 1.0, 1.0],
+            [1.0, 1.0, 1.0],
+        ]
+        .iter()
+        .map(|&[s1, s2, s3]| {
+            Cartesian::from([
+                s1 * half_a1[0] + s2 * half_a2[0] + s3 * half_a3[0],
+                s1 * half_a1[1] + s2 * half_a2[1] + s3 * half_a3[1],
+                s1 * half_a1[2] + s2 * half_a2[2] + s3 * half_a3[2],
+            ])
+        })
+        .collect();
+
+        let particle = ConvexPolyhedron::with_vertices(vertices)?;
+        let hamiltonian = PairwiseCutoff(HardShape(Convex(particle.clone())));
+
+        // Build the initial simulation box as a scaled triclinic box with the
+        // same tilt factors as the particle, so the particles tile perfectly
+        // under compression.
+        let initial_box_volume = n_bodies as f64 * particle_shape.volume()
+            / initial_packing_fraction;
+        let initial_box_edge_length = initial_box_volume.cbrt();
+        let scale = initial_box_edge_length / particle_box_vector[0]; // Lx=1
+        let initial_box = Triclinic::from_box_vector([
+            particle_box_vector[0] * scale,
+            particle_box_vector[1] * scale,
+            particle_box_vector[2] * scale,
+            particle_box_vector[3], // preserve tilt factors
+            particle_box_vector[4],
+            particle_box_vector[5],
         ]);
-        // let sheared_box =
-        //     Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
-        let periodic_sheared = Periodic::new(
+
+        let periodic_triclinic = Periodic::new(
             hamiltonian.maximum_interaction_range(),
-            sheared_box,
+            initial_box,
         )?;
 
         let vec_cell = VecCell::builder()
@@ -100,7 +149,7 @@ impl HardRhomboidSelfAssembly {
             )
             .build();
         let microstate = Microstate::builder()
-            .boundary(periodic_sheared)
+            .boundary(periodic_triclinic)
             .spatial_data(vec_cell)
             .try_build()?;
 
@@ -119,13 +168,13 @@ impl HardRhomboidSelfAssembly {
         let quick_insert = QuickInsert::new(distribution, n_bodies);
 
         let target_box_volume =
-            n_bodies as f64 * rhomboid.volume() / target_packing_fraction;
+            n_bodies as f64 * particle_shape.volume() / target_packing_fraction;
         let quick_compress =
             QuickCompress::with_target_volume(target_box_volume.try_into()?);
 
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
-                rhomboid,
+                Convex(particle),
                 OverlapPenalty::default(),
                 0.1.try_into()?,
             ),
@@ -135,7 +184,7 @@ impl HardRhomboidSelfAssembly {
         let overlap_penalty_hamiltonian =
             PairwiseCutoff(approximate_shape_overlap);
 
-        Ok(HardRhomboidSelfAssembly {
+        Ok(HardTriclinicSelfAssembly {
             microstate,
             overlap_penalty_hamiltonian,
             hamiltonian,
@@ -149,7 +198,7 @@ impl HardRhomboidSelfAssembly {
     }
 }
 
-impl Simulation for HardRhomboidSelfAssembly {
+impl Simulation for HardTriclinicSelfAssembly {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         match self.phase {
@@ -170,7 +219,7 @@ impl Simulation for HardRhomboidSelfAssembly {
     }
 }
 
-impl HardRhomboidSelfAssembly {
+impl HardTriclinicSelfAssembly {
     fn initialize(&mut self) -> anyhow::Result<()> {
         if self.quick_insert.is_complete() {
             self.quick_compress.apply(
@@ -255,9 +304,9 @@ fn main() -> anyhow::Result<()> {
     use hoomd_gsd::hoomd::HoomdGsdFile;
     use hoomd_microstate::AppendMicrostate;
 
-    let mut simulation = HardRhomboidSelfAssembly::new()?;
+    let mut simulation = HardTriclinicSelfAssembly::new()?;
     let mut hoomd_gsd_file =
-        HoomdGsdFile::create("hard-rhomboid-self-assembly.gsd")?;
+        HoomdGsdFile::create("hard-triclinic-self-assembly.gsd")?;
 
     for _ in 0..100_000 {
         simulation.advance()?;
