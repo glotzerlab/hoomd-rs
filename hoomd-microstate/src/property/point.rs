@@ -222,7 +222,7 @@ impl Transform<Point<Spherical<4>>> for Point<Spherical<4>> {
     /// Move `Point<Sphere<4>>` properties from the local body frame to the
     /// system frame.
     ///
-    /// All positions on the 3-sphere are associated with some $`SO(4)`$
+    /// All positions on the 3-sphere are associated with some $`SU(2)`$
     /// transformation which translates the origin to that position. The local
     /// body frame is the frame in which the body position is the origin. The
     /// position of the sites in the system frame is obtained by applying the
