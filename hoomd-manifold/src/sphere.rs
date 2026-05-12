@@ -130,8 +130,8 @@ impl Spherical<4> {
     #[inline]
     #[must_use]
     pub fn from_versor(versor: Versor) -> Spherical<4> {
-        let q = versor.get();
-        let (a,b,c,d) = (q.scalar, q.vector[0], q.vector[1], q.vector[2]);
+        let quat = versor.get();
+        let (a, b, c, d) = (quat.scalar, quat.vector[0], quat.vector[1], quat.vector[2]);
         Spherical::<4>::from_cartesian_coordinates(Cartesian::from([a, b, c, d]))
     }
     /// Create a versor which maps $`(1,0,0,0)`$ to the target `Spherical<4>` point.
@@ -511,13 +511,26 @@ mod tests {
         let pole_versor = Quaternion::from([1.0, 0.0, 0.0, 0.0])
             .to_versor()
             .expect("not a null vector");
-        let transformation = (*versor_from_spherical.get() * *pole_versor.get() * *versor_from_spherical.get())
-            .to_versor()
-            .expect("Hard-coded example is valid");
+        let transformation =
+            (*versor_from_spherical.get() * *pole_versor.get() * *versor_from_spherical.get())
+                .to_versor()
+                .expect("Hard-coded example is valid");
         let q = transformation.get();
-        assert_relative_eq!(q.scalar, v.get().scalar,epsilon=1e-12);
-        assert_relative_eq!(q.vector.coordinates[0], v.get().vector.coordinates[0],epsilon=1e-12);
-        assert_relative_eq!(q.vector.coordinates[1], v.get().vector.coordinates[1],epsilon=1e-12);
-        assert_relative_eq!(q.vector.coordinates[2], v.get().vector.coordinates[2],epsilon=1e-12);
+        assert_relative_eq!(q.scalar, v.get().scalar, epsilon = 1e-12);
+        assert_relative_eq!(
+            q.vector.coordinates[0],
+            v.get().vector.coordinates[0],
+            epsilon = 1e-12
+        );
+        assert_relative_eq!(
+            q.vector.coordinates[1],
+            v.get().vector.coordinates[1],
+            epsilon = 1e-12
+        );
+        assert_relative_eq!(
+            q.vector.coordinates[2],
+            v.get().vector.coordinates[2],
+            epsilon = 1e-12
+        );
     }
 }
