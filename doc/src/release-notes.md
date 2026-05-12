@@ -4,13 +4,13 @@
 
 *Added:*
 
-* `[hoomd-manifold`: Add `Spherical<4>::from_versor` and the corresponding `::to_versor` (#285).
-* `[hoomd-mc`]: Implement translation moves for `Point<Spherical<4>>` (#287).
+* `[hoomd-manifold]`: Add `Spherical<4>::from_versor` and the corresponding `::to_versor` (#285).
+* `[hoomd-mc]`: Implement translation moves for `Point<Spherical<4>>` (#287).
 * `[hoomd-utility]`: Implement `Eq`, `PartialOrd`, and `Ord` for `PositiveReal` (#287).
 
 *Changed:*
 
-* `[hoomd-mc`]: Improve the numerical stability of translation moves for `Point<Spherical<3>>` (#287).
+* `[hoomd-mc]`: Improve the numerical stability of translation moves for `Point<Spherical<3>>` (#287).
 
 *Deprecated:*
 
