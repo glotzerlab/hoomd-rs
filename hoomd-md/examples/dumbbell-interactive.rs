@@ -19,7 +19,7 @@ use hoomd_md::{
 };
 
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, boundary::Periodic, property::{Momentum, OrientedDynamicsPoint, Point}
+    Body, Microstate, SiteKey, boundary::Periodic, property::{Momentum, OrientedDynamicPoint, Point}
 };
 use hoomd_simulation::{Simulation};
 use hoomd_spatial::AllPairs;
@@ -44,7 +44,7 @@ struct Isoenergy {}
 #[derive(Resource)]
 struct Dumbbell {
     microstate: Microstate<
-        OrientedDynamicsPoint<Cartesian<2>, Angle>,
+        OrientedDynamicPoint<Cartesian<2>, Angle>,
         Point<Cartesian<2>>,
         AllPairs<SiteKey>,
         Periodic<Rectangle>
@@ -72,7 +72,7 @@ impl Dumbbell {
             .try_build()?;
 
         let dumbbell_body = Body {
-            properties: OrientedDynamicsPoint {
+            properties: OrientedDynamicPoint {
                 position: Cartesian::from([0.0, 0.0]),
                 momentum: Cartesian::from([0.0, 0.0]),
                 net_force: Cartesian::from([0.0, 0.0]),
@@ -92,7 +92,7 @@ impl Dumbbell {
         let swimmer_x = 0.0;
         let swimmer_y = - (box_length / 2.0) * (4.0 / 5.0);
         let swimmer_body = Body {
-            properties: OrientedDynamicsPoint {     // why does this have to be of the same Type as the dumbbell body?
+            properties: OrientedDynamicPoint {     // why does this have to be of the same Type as the dumbbell body?
                 position: Cartesian::from([swimmer_x, swimmer_y]),
                 momentum: Cartesian::from([0.0, 0.0]),
                 net_force: Cartesian::from([0.0, 0.0]),

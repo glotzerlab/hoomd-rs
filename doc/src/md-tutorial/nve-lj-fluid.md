@@ -29,14 +29,14 @@ We will:
 
 ## Dynamic Bodies and Sites
 Following the **Applying-Interactions** tutorial in the `mc-tutorial`, we again use point particles in the three-dimension with each **body** now has extended properties to perform MD simulation, including the momentum, mass and net force. Specifically, that means
-each **body** has `DynamicsPoint<Cartesian<3>>` for its **body properties** type (`B`),
+each **body** has `DynamicPoint<Cartesian<3>>` for its **body properties** type (`B`),
 and a single **site** at the origin (*in the body reference frame*) which has
 `Point<Cartesian<3>>` for its **site properties** (`S`) type.
 ### Note
-- `DynamicsPoint<Cartesian<3>>`: contains position, momentum, net force, and mass
+- `DynamicPoint<Cartesian<3>>`: contains position, momentum, net force, and mass
 - `Point<Cartesian<3>>`: just position (single site at the origin of the body frame)
 
-The `DynamicsPoint` type is provided by [`hoomd-microstate`] and is the most common choice when doing classical MD with point particles or rigid bodies without internal degrees of freedom.
+The `DynamicPoint` type is provided by [`hoomd-microstate`] and is the most common choice when doing classical MD with point particles or rigid bodies without internal degrees of freedom.
 
 ## Use Declarations
 

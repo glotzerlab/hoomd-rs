@@ -24,7 +24,7 @@ use hoomd_md::{
     thermostat::{BussiThermostat},
 };
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, boundary::Periodic, property::{OrientedDynamicsPoint, Point}
+    Body, Microstate, SiteKey, boundary::Periodic, property::{OrientedDynamicPoint, Point}
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::AllPairs;
@@ -36,7 +36,7 @@ use anyhow::Context;
 /// The state of the swimming simulation, tracked as a resource by Bevy
 struct System {
     microstate: Microstate<
-        OrientedDynamicsPoint<Cartesian<3>, Versor>,
+        OrientedDynamicPoint<Cartesian<3>, Versor>,
         Point<Cartesian<3>>,
         AllPairs<SiteKey>,
         Periodic<Hypercuboid<3>>,
@@ -71,7 +71,7 @@ impl System {
                     let y = space * f64::from(j + 1) - (f64::from(1 + ny) * space / 2.0);
                     let z = space * f64::from(k + 1) - (f64::from(1 + nz) * space / 2.0);
                     builder = builder.bodies([Body {
-                        properties: OrientedDynamicsPoint {
+                        properties: OrientedDynamicPoint {
                             position: Cartesian::from([x, y, z]),
                             momentum: Cartesian::default(),
                             net_force: Cartesian::default(),

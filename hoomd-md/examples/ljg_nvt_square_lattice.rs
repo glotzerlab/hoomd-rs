@@ -23,7 +23,7 @@ use hoomd_md::{
     thermostat::BussiThermostat,
 };
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicsPoint, NetForce, Point}
+    Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicPoint, NetForce, Point}
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::AllPairs;
@@ -45,9 +45,9 @@ struct A;
 /// The state of the swimming simulation, tracked as a resource by Bevy
 #[derive(Resource)]
 struct LJGSquare {
-    // microstate: Microstate<DynamicsPoint<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
+    // microstate: Microstate<DynamicPoint<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
     microstate: Microstate<
-        DynamicsPoint<Cartesian<2>>,
+        DynamicPoint<Cartesian<2>>,
         Point<Cartesian<2>>,
         AllPairs<SiteKey>,
         Periodic<Rectangle>,
@@ -98,7 +98,7 @@ impl LJGSquare {
                 let x = space * f64::from(i + 1) - (f64::from(1 + n_columns) * space / 2.0);
                 let y = space * f64::from(j + 1) - (f64::from(1 + n_rows) * space / 2.0);
                 builder = builder.bodies([Body {
-                    properties: DynamicsPoint {
+                    properties: DynamicPoint {
                         position: Cartesian::from([x, y]),
                         momentum: Cartesian::from([0.0, 0.0]),
                         net_force: Cartesian::from([0.0, 0.0]),

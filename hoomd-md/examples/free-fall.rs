@@ -14,7 +14,7 @@ use hoomd_md::{
 };
 use hoomd_microstate::{
     Body, Microstate,
-    property::{DynamicsPoint, Point},
+    property::{DynamicPoint, Point},
 };
 use hoomd_vector::Cartesian;
 
@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a microstate with a single body containing a single site
     let mut microstate = Microstate::new();
     let body = Body {
-        properties: DynamicsPoint {
+        properties: DynamicPoint {
             position: Cartesian::from([0.0, 1.0]),
             momentum: Cartesian::from([0.0, 0.0]),
             net_force: Cartesian::from([0.0, 0.0]),

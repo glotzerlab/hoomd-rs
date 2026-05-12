@@ -148,10 +148,10 @@ mod oriented_point;
 pub use oriented_point::OrientedPoint;
 
 mod dynamics_point;
-pub use dynamics_point::DynamicsPoint;
+pub use dynamics_point::DynamicPoint;
 
 mod oriented_dynamics_point;
-pub use oriented_dynamics_point::OrientedDynamicsPoint;
+pub use oriented_dynamics_point::OrientedDynamicPoint;
 
 mod oriented_hyperbolic_point;
 pub use oriented_hyperbolic_point::OrientedHyperbolicPoint;

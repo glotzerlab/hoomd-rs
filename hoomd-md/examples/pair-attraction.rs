@@ -1,7 +1,7 @@
 //! Simple example of two bodies attracted to each other.
 
 use hoomd_vector::Cartesian;
-use hoomd_microstate::{Microstate, Body, property::{Point, DynamicsPoint}};
+use hoomd_microstate::{Microstate, Body, property::{Point, DynamicPoint}};
 use hoomd_interaction::{pairwise::Isotropic, univariate::LennardJones, Rigid, PairwiseCutoff};
 use hoomd_md::{
     methods::{
@@ -15,7 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a microstate with two bodies, each with a single site
     let mut microstate = Microstate::new();
     let body1 = Body {
-        properties: DynamicsPoint {
+        properties: DynamicPoint {
             position: Cartesian::from([0.0, 0.0]),
             momentum: Cartesian::from([0.0, 0.0]),
             net_force: Cartesian::from([0.0, 0.0]),
@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let body2 = Body {
-        properties: DynamicsPoint {
+        properties: DynamicPoint {
             position: Cartesian::from([0.0, 2.5]),
             momentum: Cartesian::from([0.0, 0.0]),
             net_force: Cartesian::from([0.0, 0.0]),

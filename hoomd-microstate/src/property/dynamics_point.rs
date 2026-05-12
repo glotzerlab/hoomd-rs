@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement DynamicsPoint
+//! Implement DynamicPoint
 
 use super::oriented_point::OrientedPoint;
 use super::point::Point;
@@ -13,15 +13,15 @@ use hoomd_vector::Vector;
 /// The position, mass, momentum, and net force of an extended body, such as is
 /// useful for Molecular Dynamics simulations.
 ///
-/// Use [`DynamicsPoint`] as a [`Body`](crate::Body) property type.
+/// Use [`DynamicPoint`] as a [`Body`](crate::Body) property type.
 ///
 /// # Example
 ///
 /// ```
-/// use hoomd_microstate::property::DynamicsPoint;
+/// use hoomd_microstate::property::DynamicPoint;
 /// use hoomd_vector::Cartesian;
 ///
-/// let dynamics_point = DynamicsPoint {
+/// let dynamics_point = DynamicPoint {
 ///     position: Cartesian::from([1.0, -3.0]),
 ///     mass: 1.0,
 ///     momentum: Cartesian::from([0.0, 1.0]),
@@ -29,7 +29,7 @@ use hoomd_vector::Vector;
 /// };
 /// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct DynamicsPoint<V> {
+pub struct DynamicPoint<V> {
     /// The location of the extended body in space.
     pub position: V,
 
@@ -43,12 +43,12 @@ pub struct DynamicsPoint<V> {
     pub net_force: V,
 }
 
-/// Move [`DynamicsPoint`] properties from the local body frame to the system frame.
-impl<V> Transform<Point<V>> for DynamicsPoint<V>
+/// Move [`DynamicPoint`] properties from the local body frame to the system frame.
+impl<V> Transform<Point<V>> for DynamicPoint<V>
 where
     V: Vector,
 {
-    /// [`DynamicsPoint`] transforms [`Point`] by vector addition.
+    /// [`DynamicPoint`] transforms [`Point`] by vector addition.
     ///
     /// ```math
     /// \vec{r} = \vec{r}_\mathrm{body} + \vec{r}_\mathrm{site}
@@ -57,9 +57,9 @@ where
     /// ```
     /// use approxim::assert_relative_eq;
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_microstate::{property::{DynamicsPoint, Point}, Transform};
+    /// use hoomd_microstate::{property::{DynamicPoint, Point}, Transform};
     ///
-    /// let body_properties = DynamicsPoint {
+    /// let body_properties = DynamicPoint {
     ///     position: Cartesian::from([1.0, -2.0, 3.0]),
     ///     mass: 1.0,
     ///     momentum: Cartesian::<3>::default(),
@@ -78,12 +78,12 @@ where
     }
 }
 
-impl<V, R> Transform<OrientedPoint<V, R>> for DynamicsPoint<V>
+impl<V, R> Transform<OrientedPoint<V, R>> for DynamicPoint<V>
 where
     V: Vector,
     R: Copy,
 {
-    /// [`DynamicsPoint`] transforms [`OrientedPoint`] by vector addition.
+    /// [`DynamicPoint`] transforms [`OrientedPoint`] by vector addition.
     ///
     /// ```math
     /// \vec{r} = \vec{r}_\mathrm{body} + \vec{r}_\mathrm{site}
@@ -92,9 +92,9 @@ where
     /// ```
     /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Cartesian, Versor};
-    /// use hoomd_microstate::{property::{DynamicsPoint, OrientedPoint}, Transform};
+    /// use hoomd_microstate::{property::{DynamicPoint, OrientedPoint}, Transform};
     ///
-    /// let body_properties = DynamicsPoint {
+    /// let body_properties = DynamicPoint {
     ///     position: Cartesian::from([1.0, -2.0, 3.0]),
     ///     mass: 1.0,
     ///     momentum: Cartesian::<3>::default(),
@@ -117,7 +117,7 @@ where
     }
 }
 
-impl<P> Position for DynamicsPoint<P> {
+impl<P> Position for DynamicPoint<P> {
     type Position = P;
 
     #[inline]
@@ -131,7 +131,7 @@ impl<P> Position for DynamicsPoint<P> {
     }
 }
 
-impl<V> Momentum for DynamicsPoint<V>
+impl<V> Momentum for DynamicPoint<V>
 where
     V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy,
 {
@@ -158,14 +158,14 @@ where
     }
 }
 
-impl<V> Mass for DynamicsPoint<V> {
+impl<V> Mass for DynamicPoint<V> {
     #[inline]
     fn mass(&self) -> &f64 {
         &self.mass
     }
 }
 
-impl<V> NetForce for DynamicsPoint<V> {
+impl<V> NetForce for DynamicPoint<V> {
     type Vector = V;
 
     #[inline]

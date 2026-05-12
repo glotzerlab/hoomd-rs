@@ -1147,16 +1147,16 @@ where
 #[cfg(test)]
 mod tests {
     use hoomd_interaction::{External, MaximumInteractionRange, external::{ConstantForce, ConstantTorque}, Rigid};
-    use hoomd_microstate::{Body, property::{DynamicsPoint, OrientedDynamicsPoint, Point}};
+    use hoomd_microstate::{Body, property::{DynamicPoint, OrientedDynamicPoint, Point}};
 
     use crate::thermostat::NoThermostat;
 
     use super::*;
 
     /// A simple 2d dynamics point body
-    fn dynamics_body_2d() -> Body<DynamicsPoint<Cartesian<2>>, Point<Cartesian<2>>> {
+    fn dynamics_body_2d() -> Body<DynamicPoint<Cartesian<2>>, Point<Cartesian<2>>> {
         Body {
-            properties: DynamicsPoint {
+            properties: DynamicPoint {
                 position: Cartesian::<2>::default(),
                 momentum: Cartesian::<2>::default(),
                 net_force: Cartesian::<2>::default(),
@@ -1167,9 +1167,9 @@ mod tests {
     }
 
     /// A simple 3d dynamics point body
-    fn dynamics_body_3d(mass: f64) -> Body<DynamicsPoint<Cartesian<3>>, Point<Cartesian<3>>> {
+    fn dynamics_body_3d(mass: f64) -> Body<DynamicPoint<Cartesian<3>>, Point<Cartesian<3>>> {
         Body {
-            properties: DynamicsPoint {
+            properties: DynamicPoint {
                 position: Cartesian::<3>::default(),
                 momentum: Cartesian::<3>::default(),
                 net_force: Cartesian::<3>::default(),
@@ -1180,9 +1180,9 @@ mod tests {
     }
 
     /// A simple 2d oriented dynamics point body
-    fn oriented_dynamics_body_2d(mass: f64, moi: f64) -> Body<OrientedDynamicsPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>> {
+    fn oriented_dynamics_body_2d(mass: f64, moi: f64) -> Body<OrientedDynamicPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>> {
         Body {
-            properties: OrientedDynamicsPoint {
+            properties: OrientedDynamicPoint {
                 position: Cartesian::<2>::default(),
                 orientation: Angle::default(),
                 momentum: Cartesian::<2>::default(),
@@ -1197,9 +1197,9 @@ mod tests {
     }
 
     /// A simple 2d oriented dynamics point body
-    fn oriented_dynamics_body_3d(mass: f64, moi: Cartesian<3>) -> Body<OrientedDynamicsPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
+    fn oriented_dynamics_body_3d(mass: f64, moi: Cartesian<3>) -> Body<OrientedDynamicPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
         Body {
-            properties: OrientedDynamicsPoint {
+            properties: OrientedDynamicPoint {
                 position: Cartesian::<3>::default(),
                 orientation: Versor::default(),
                 momentum: Cartesian::<3>::default(),

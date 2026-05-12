@@ -21,7 +21,7 @@ use hoomd_md::{
     }, thermostat::{BussiThermostat, NoThermostat}
 };
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicsPoint, Point}
+    Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicPoint, Point}
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
@@ -34,7 +34,7 @@ use hoomd_vector::Cartesian;
 struct LJFluid {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<
-        DynamicsPoint<Cartesian<3>>,
+        DynamicPoint<Cartesian<3>>,
         Point<Cartesian<3>>,
         VecCell<SiteKey, 3>,
         Periodic<Hypercuboid<3>>
@@ -119,7 +119,7 @@ impl LJFluid {
                     let y = space * f64::from(j + 1) - ((1.0 + n) * space / 2.0);
                     let z = space * f64::from(k + 1) - ((1.0 + n) * space / 2.0);
                     builder = builder.bodies([Body {
-                        properties: DynamicsPoint {
+                        properties: DynamicPoint {
                             position: Cartesian::from([x, y, z]),
                             momentum: Cartesian::default(),
                             net_force: Cartesian::default(),

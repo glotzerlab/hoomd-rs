@@ -57,7 +57,7 @@ mod tests {
     use approxim::assert_abs_diff_eq;
     use hoomd_microstate::{
         Body,
-        property::{AngularMomentum, DynamicsPoint, Momentum, OrientedDynamicsPoint, Point},
+        property::{AngularMomentum, DynamicPoint, Momentum, OrientedDynamicPoint, Point},
     };
     use hoomd_vector::{Cartesian, Versor, Wedge};
     use rstest::*;
@@ -128,9 +128,9 @@ mod tests {
             pos: Cartesian<3>,
             mass: f64,
             mom: Cartesian<3>,
-        ) -> Body<DynamicsPoint<Cartesian<3>>, Point<Cartesian<3>>> {
+        ) -> Body<DynamicPoint<Cartesian<3>>, Point<Cartesian<3>>> {
             Body {
-                properties: DynamicsPoint {
+                properties: DynamicPoint {
                     position: pos,
                     momentum: mom,
                     net_force: Cartesian::<3>::default(),
@@ -279,9 +279,9 @@ mod tests {
         fn create_body_3d(
             inertia: Cartesian<3>,
             angmom: Cartesian<3>,
-        ) -> Body<OrientedDynamicsPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
+        ) -> Body<OrientedDynamicPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
             Body {
-                properties: OrientedDynamicsPoint {
+                properties: OrientedDynamicPoint {
                     position: Cartesian::<3>::default(),
                     orientation: Versor::default(),
                     momentum: Cartesian::<3>::default(),
