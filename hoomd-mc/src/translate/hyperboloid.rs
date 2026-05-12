@@ -3,7 +3,10 @@
 
 //! Implement Translation moves on curved surfaces
 
-use rand::{Rng, RngExt, distr::{Distribution, Uniform}};
+use rand::{
+    Rng, RngExt,
+    distr::{Distribution, Uniform},
+};
 use rand_distr::StandardNormal;
 
 use crate::{LocalTrial, Translate};
@@ -64,17 +67,19 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
     ) -> Point<Hyperbolic<3>> {
         let mut trial = body_properties;
         let trial_array = trial.position.coordinates();
-        let dist = Uniform::new(0.0, self.maximum_distance().get()).expect("max distance must be positive real");
+        let dist = Uniform::new(0.0, self.maximum_distance().get())
+            .expect("max distance must be positive real");
         let displacement = dist.sample(rng);
         let (snh, csh) = (displacement.sinh(), displacement.cosh());
-        let vec: [f64;3] = std::array::from_fn(|_| rng.sample(StandardNormal));
-        let proj = vec[0]*trial_array[0] + vec[1]*trial_array[1] - vec[2]*trial_array[2];
+        let vec: [f64; 3] = std::array::from_fn(|_| rng.sample(StandardNormal));
+        let proj = vec[0] * trial_array[0] + vec[1] * trial_array[1] - vec[2] * trial_array[2];
         let tangent = Minkowski::from([
             vec[0] + proj * trial_array[0],
             vec[1] + proj * trial_array[1],
             vec[2] + proj * trial_array[2],
         ]);
-        let mink_norm = (tangent[0]*tangent[0] + tangent[1]*tangent[1] - tangent[2]*tangent[2]).sqrt();
+        let mink_norm =
+            (tangent[0] * tangent[0] + tangent[1] * tangent[1] - tangent[2] * tangent[2]).sqrt();
         let unit = tangent / mink_norm;
         let new = [
             trial_array[0] * csh + unit.coordinates[0] * snh,
@@ -82,10 +87,11 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
             trial_array[2] * csh + unit.coordinates[2] * snh,
         ];
         // push point back onto hyperboloid
-        let resc = 1.0/(new[2]*new[2]-new[0]*new[0]-new[1]*new[1]).sqrt();
-        //println!("rescaling factor: {}", resc);
-        //println!("new point coordinates: {:?}", new);
-        let new_pushed = Minkowski::from([resc*new[0], resc*new[1], resc*new[2]]);
+        let new_pushed = Minkowski::from([
+            new[0],
+            new[1],
+            (new[0] * new[0] + new[1] * new[1] + 1.0_f64).sqrt(),
+        ]);
         *trial.position_mut() = Hyperbolic::from_minkowski_coordinates(new_pushed);
         trial
     }
@@ -140,7 +146,7 @@ mod tests {
     const N: usize = 256;
     const NSTEPS: usize = 1000;
 
-     #[rstest]
+    #[rstest]
     fn translate_hyperbolic_point(#[values(0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
@@ -163,18 +169,20 @@ mod tests {
             );
 
             // Translation move does not move the point more than a distance d
-            let dist = new_body_properties.position().distance(
-                    &Hyperbolic::from_minkowski_coordinates(Minkowski::from([
+            let dist =
+                new_body_properties
+                    .position()
+                    .distance(&Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                         1.0,
                         0.0,
-                        (2.0_f64).sqrt()
+                        (2.0_f64).sqrt(),
                     ])));
             assert!(d > dist);
         }
     }
 
     #[rstest]
-    fn translate_hyperbolic_point_chain(#[values(0.5)] d: f64) {
+    fn translate_hyperbolic_point_chain(#[values(0.001, 0.01, 0.1, 0.5)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
             [-1.0, 1.0, (3.0_f64).sqrt()].into(),
@@ -186,7 +194,14 @@ mod tests {
             let new_body_properties = translate.propose(&mut rng, body_properties);
 
             // Translation move keeps the point on the Hyperboloid
-            let tolerance = 8_i32 - (new_body_properties.position.coordinates()[2].log10().floor() as i32);
+            #[allow(
+                clippy::cast_possible_truncation,
+                reason = "float is truncated before converting to i32"
+            )]
+            let tolerance = 8_i32
+                - (new_body_properties.position.coordinates()[2]
+                    .log10()
+                    .trunc() as i32);
             assert_relative_eq!(
                 new_body_properties
                     .position()
@@ -206,8 +221,8 @@ mod tests {
         }
     }
 
-     #[rstest]
-    fn translate_oriented_hyperbolic_point(#[values(0.01, 0.1, 1.0)] d: f64) {
+    #[rstest]
+    fn translate_oriented_hyperbolic_point(#[values(0.001, 0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let body_properties = OrientedHyperbolicPoint {
             position: Hyperbolic::from_minkowski_coordinates([1.0, 0.0, (2.0_f64).sqrt()].into()),
@@ -220,7 +235,14 @@ mod tests {
             let new_body_properties = translate.propose(&mut rng, body_properties);
 
             // Translation move keeps the point on the Hyperboloid
-            let tolerance = 8_i32 - (new_body_properties.position.coordinates()[2].log10().floor() as i32);
+            #[allow(
+                clippy::cast_possible_truncation,
+                reason = "float is truncated before converting to i32"
+            )]
+            let tolerance = 8_i32
+                - (new_body_properties.position.coordinates()[2]
+                    .log10()
+                    .trunc() as i32);
             assert_relative_eq!(
                 new_body_properties
                     .position()
@@ -244,7 +266,7 @@ mod tests {
     }
 
     #[rstest]
-    fn translate_oriented_hyperbolic_point_chain(#[values(0.01, 0.1, 0.25)] d: f64) {
+    fn translate_oriented_hyperbolic_point_chain(#[values(0.001, 0.01, 0.1, 0.25)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let mut body_properties = OrientedHyperbolicPoint {
             position: Hyperbolic::from_minkowski_coordinates([1.0, 0.0, (2.0_f64).sqrt()].into()),
@@ -257,7 +279,14 @@ mod tests {
             let new_body_properties = translate.propose(&mut rng, body_properties);
 
             // Translation move keeps the point on the Hyperboloid
-            let tolerance = 8_i32 - (new_body_properties.position.coordinates()[2].log10().floor() as i32);
+            #[allow(
+                clippy::cast_possible_truncation,
+                reason = "float is truncated before converting to i32"
+            )]
+            let tolerance = 8_i32
+                - (new_body_properties.position.coordinates()[2]
+                    .log10()
+                    .trunc() as i32);
             assert_relative_eq!(
                 new_body_properties
                     .position()
@@ -268,18 +297,17 @@ mod tests {
             );
 
             // Translation move does not move the point more than a distance d
-            assert!(
-                d > new_body_properties
-                    .position()
-                    .distance(&mut body_properties.position)
-            );
+            let dist = new_body_properties
+                .position()
+                .distance(&body_properties.position);
+            // println!("distance: {:} at position {:?}", dist, new_body_properties.position.coordinates());
+            assert!(d > dist);
             body_properties.position = new_body_properties.position;
         }
     }
-    
 
     #[rstest]
-    fn translate_hyperbolic_point_far_from_cusp(#[values(0.01, 0.1, 0.5)] d: f64) {
+    fn translate_hyperbolic_point_far_from_cusp(#[values(0.001, 0.01, 0.1, 0.5)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
             [100.0, 100.0, (20_001.0_f64).sqrt()].into(),
@@ -291,7 +319,14 @@ mod tests {
             let new_body_properties = translate.propose(&mut rng, body_properties);
 
             // Translation move keeps the point on the Hyperboloid
-            let tolerance = 8_i32 - (new_body_properties.position.coordinates()[2].log10().floor() as i32);
+            #[allow(
+                clippy::cast_possible_truncation,
+                reason = "float is truncated before converting to i32"
+            )]
+            let tolerance = 8_i32
+                - (new_body_properties.position.coordinates()[2]
+                    .log10()
+                    .trunc() as i32);
             assert_relative_eq!(
                 new_body_properties
                     .position()
@@ -308,5 +343,5 @@ mod tests {
             assert!(d > dist);
             body_properties.position = new_body_properties.position;
         }
-    } 
+    }
 }

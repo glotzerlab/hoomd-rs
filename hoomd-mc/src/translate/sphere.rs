@@ -3,7 +3,10 @@
 
 //! Implement Translation moves on curved surfaces
 
-use rand::{Rng, RngExt, distr::{Distribution, Uniform}};
+use rand::{
+    Rng, RngExt,
+    distr::{Distribution, Uniform},
+};
 use rand_distr::StandardNormal;
 
 use crate::{LocalTrial, Translate};
@@ -35,7 +38,7 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     ///
     /// // Translation move keeps point on the surface of the sphere
     /// let new_body_radius = new_body_properties.position.point().norm();
-    /// assert_relative_eq!(new_body_radius, 1.0, epsilon=1e-8);
+    /// assert_relative_eq!(new_body_radius, 1.0, epsilon = 1e-8);
     ///
     /// // Translation move does not translate the point more than a distance d away
     /// assert!(
@@ -53,9 +56,10 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
         body_properties: Point<Spherical<3>>,
     ) -> Point<Spherical<3>> {
         let mut trial = body_properties;
-        let dist = Uniform::new(0.0, self.maximum_distance().get()).expect("max distance must be positive real");
+        let dist = Uniform::new(0.0, self.maximum_distance().get())
+            .expect("max distance must be positive real");
         let displacement = dist.sample(rng);
-        //let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
+        // let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
         let (sn, cs) = (displacement.sin(), displacement.cos());
         let vec = Cartesian::<3>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
         let proj = vec.dot(trial.position.point());
@@ -123,7 +127,8 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
         body_properties: Point<Spherical<4>>,
     ) -> Point<Spherical<4>> {
         let mut trial = body_properties;
-        let dist = Uniform::new(0.0, self.maximum_distance().get()).expect("max distance must be positive real");
+        let dist = Uniform::new(0.0, self.maximum_distance().get())
+            .expect("max distance must be positive real");
         let displacement = dist.sample(rng);
         let (sn, cs) = ((displacement.abs()).sin(), (displacement.abs()).cos());
         let vec = Cartesian::<4>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
@@ -158,12 +163,13 @@ mod tests {
     const N: usize = 256;
 
     #[rstest]
-    fn translate_2spherical_point(#[values(0.01,0.1,1.0)] d:f64) {
+    fn translate_2spherical_point(#[values(0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(1459);
         let initial_point = Point::new(Spherical::<3>::from_cartesian_coordinates(
-            [0.5_f64.sqrt(), 0.0, 0.5_f64.sqrt()].into()
+            [0.5_f64.sqrt(), 0.0, 0.5_f64.sqrt()].into(),
         ));
-        let translate = Translate::with_maximum_distance(d.try_into().expect("hard-coded positive value"));
+        let translate =
+            Translate::with_maximum_distance(d.try_into().expect("hard-coded positive value"));
 
         for _ in 0..N {
             let new_body_properties = translate.propose(&mut rng, initial_point);
@@ -177,20 +183,21 @@ mod tests {
             assert!(
                 d > new_body_properties
                     .position()
-                    .distance(&initial_point.position())
+                    .distance(initial_point.position())
             );
         }
     }
 
     #[rstest]
-    fn translate_3spherical_point(#[values(0.01,0.1,1.0)] d:f64) {
+    fn translate_3spherical_point(#[values(0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(1459);
         let initial_point = Point::new(Spherical::<4>::from_polar_coordinates(
             PI / 4.0,
             PI / 10.0,
             5.0 * PI / 4.0,
         ));
-        let translate = Translate::with_maximum_distance(d.try_into().expect("hard-coded positive value"));
+        let translate =
+            Translate::with_maximum_distance(d.try_into().expect("hard-coded positive value"));
 
         for _ in 0..N {
             let new_body_properties = translate.propose(&mut rng, initial_point);
@@ -204,7 +211,7 @@ mod tests {
             assert!(
                 d > new_body_properties
                     .position()
-                    .distance(&initial_point.position())
+                    .distance(initial_point.position())
             );
         }
     }

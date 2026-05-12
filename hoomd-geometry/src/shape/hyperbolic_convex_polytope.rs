@@ -52,7 +52,7 @@ use std::f64::consts::PI;
 ///     &Hyperbolic::<3>::default(),
 ///     &Angle::default(),
 ///     &Hyperbolic::<3>::from_polar_coordinates(3.0, 2.3),
-///     &Angle::from(0.2) 
+///     &Angle::from(0.2)
 /// ));
 /// # Ok(())
 /// # }

@@ -520,10 +520,17 @@ impl<const N: usize> Hyperbolic<N> {
     /// ```
     #[must_use]
     #[inline]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "truncation to relax precision"
+    )]
     pub fn from_minkowski_coordinates(point: Minkowski<N>) -> Hyperbolic<N> {
-        let skirt_squared = -point.distance_squared(&Minkowski::<N>::default());
-        let tolerance = 8_i32 - (point.coordinates[N-1].log10().floor() as i32);
-        assert_relative_eq!(skirt_squared, 1.0_f64, epsilon = 10.0_f64.powi(-tolerance));
+        let pt = point.coordinates;
+        // let lhs = pt[0]*pt[0] + pt[1]*pt[1];
+        let lhs = pt[0..N - 1].iter().fold(0.0, |sum, x| sum + x * x);
+        let rhs = pt[N - 1] * pt[N - 1] - 1.0;
+        let tolerance = 8_i32 - (point.coordinates[N - 1].log10().trunc() as i32);
+        assert_relative_eq!(lhs, rhs, epsilon = 10.0_f64.powi(-tolerance));
         Hyperbolic { point }
     }
 }
@@ -651,10 +658,11 @@ impl Metric for Hyperbolic<3> {
     fn distance(&self, other: &Self) -> f64 {
         let self_coords = self.point.coordinates;
         let other_coords = other.point.coordinates;
-        (self_coords[2] * other_coords[2]
+        let arg = self_coords[2] * other_coords[2]
             - self_coords[0] * other_coords[0]
-            - self_coords[1] * other_coords[1])
-            .acosh()
+            - self_coords[1] * other_coords[1];
+        let arg_clipped = if arg <= 1.0 { 1.0 } else { arg };
+        arg_clipped.acosh()
     }
 
     #[inline]
@@ -683,11 +691,12 @@ impl Metric for Hyperbolic<4> {
     fn distance(&self, other: &Self) -> f64 {
         let self_coords = self.point.coordinates;
         let other_coords = other.point.coordinates;
-        (self_coords[3] * other_coords[3]
+        let arg = self_coords[3] * other_coords[3]
             - self_coords[0] * other_coords[0]
             - self_coords[1] * other_coords[1]
-            - self_coords[2] * other_coords[2])
-            .acosh()
+            - self_coords[2] * other_coords[2];
+        let arg_clipped = if arg <= 1.0 { 1.0 } else { arg };
+        arg_clipped.acosh()
     }
 
     #[inline]
