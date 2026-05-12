@@ -1,0 +1,114 @@
+name: Interactive Examples
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches:
+    - trunk
+
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
+  CLICOLOR: 1
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Remove native build configuration
+      run: rm .cargo/config.toml
+    - name: Configure Rust
+      uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+      with:
+        toolchain: 1.94.0
+        targets: wasm32-unknown-unknown
+    - name: Check rust installation
+      run: rustc -vV
+    - name: Install cargo-binstall
+      run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "$HOME/.cargo/bin"
+    - name: Install wasm-bindgen
+      run: cargo binstall wasm-bindgen-cli@0.2.118 --no-confirm --disable-strategies=compile --disable-telemetry
+    - name: Install binaryen
+      run: curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "$HOME/.cargo/bin"
+
+    # rust-cache already includes a Cargo.lock hash in the key. However, it
+    # eagerly restores caches with previous Cargo.lock files. This causes
+    # multiple builds to be cached in target/ increasing the cache usage
+    # dramatically. Add the Cargo.lock hash again in the key portion to
+    # prevent this restoration.
+    - name: Cache
+      uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+      with:
+        key: ${{ 'wasm32-unknown-unknown' }}-${{ hashFiles('Cargo.lock') }}
+        cache-bin: false
+        save-if: ${{ github.ref == 'refs/heads/trunk' }}
+
+    - name: Create output directory
+      run: mkdir -p web
+
+    - name: Build examples
+      run: >
+        cargo run
+        --locked
+        -p build-wasm-doc-examples
+        --
+        --reduce-size
+        --root web
+
+    - name: Show target directory size
+      run: du -hsc target/*
+
+    - name: Show web directory size
+      run: du -hsc web/*
+
+    - name: Web directory contents
+      run: ls -lR web
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+      with:
+        path: ./web
+
+  deploy:
+    name: Deploy
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    needs: build
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/trunk'
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
+
+  tests_complete:
+    name: All WASM example builds
+    if: always()
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+    - name: Done
+      run: exit 0

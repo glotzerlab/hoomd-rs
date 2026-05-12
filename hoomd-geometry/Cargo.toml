@@ -4,29 +4,44 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 repository.workspace = true
 license.workspace = true
 keywords.workspace = true
 categories.workspace = true
-description = "Performant, general computational geometry methods in Rust."
+description = "Construct and manipulate shapes in space. Compute their properties, sample points in them, and evaluate whether shapes intersect. Part of hoomd-rs."
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
 
 [dependencies]
+rand.workspace = true
+itertools.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+thiserror.workspace = true
+robust.workspace = true
+
+arrayvec.workspace = true
 hoomd-manifold.workspace = true
 hoomd-vector.workspace = true
 hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
-rand.workspace = true
-itertools.workspace = true
-thiserror.workspace = true
 
 [lints]
 workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
+assert2.workspace = true
 approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true
 
 [[bench]]
 name = "overlaps"
+harness = false
+
+[[bench]]
+name = "hull"
 harness = false

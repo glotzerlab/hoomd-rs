@@ -1,12 +1,14 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Capsule`]
 
+use serde::{Deserialize, Serialize};
+
 use super::sphere::sphere_volume_prefactor;
-use crate::{BoundingSphereRadius, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct};
+use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation};
 
 /// All points less than or equal to a distance `r` from a line segment of length `h`.
 ///
@@ -43,10 +45,10 @@ use hoomd_vector::{Cartesian, InnerProduct};
 /// use std::f64::consts::PI;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let capsule = Convex(Capsule::<2> {
+/// let capsule = Capsule::<2> {
 ///     radius: 1.0.try_into()?,
 ///     height: 8.0.try_into()?,
-/// });
+/// };
 ///
 /// assert!(capsule.intersects_at(
 ///     &capsule,
@@ -66,13 +68,16 @@ use hoomd_vector::{Cartesian, InnerProduct};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Capsule<const N: usize> {
-    /// Radius of of points that are considered enclosed in the shape.
+    /// Radius of points that are considered enclosed in the shape.
     pub radius: PositiveReal,
     /// Length of the line segment.
     pub height: PositiveReal,
 }
+
+/// A sphere swept along a line segment in $`\mathbb{R}^3`$.
+pub type Spherocylinder = Capsule<3>;
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
     #[inline]
@@ -122,6 +127,86 @@ impl<const N: usize> Volume for Capsule<N> {
     }
 }
 
+/// Create a `Cartesian<N>` with zeros except in the final index.
+#[inline]
+fn axis_aligned_cartesian<const N: usize>(h: f64) -> Cartesian<N> {
+    Cartesian::from(std::array::from_fn(|i| if i == (N - 1) { h } else { 0.0 }))
+}
+
+impl<const N: usize, R> IntersectsAtGlobal<Capsule<N>, Cartesian<N>, R> for Capsule<N>
+where
+    R: Rotation + Rotate<Cartesian<N>>,
+{
+    #[inline]
+    fn intersects_at_global(
+        &self,
+        other: &Capsule<N>,
+        r_self: &Cartesian<N>,
+        o_self: &R,
+        r_other: &Cartesian<N>,
+        o_other: &R,
+    ) -> bool {
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
+
+        self.intersects_at(other, &v_ij, &o_ij)
+    }
+}
+
+impl<const N: usize, R> IntersectsAt<Capsule<N>, Cartesian<N>, R> for Capsule<N>
+where
+    R: Rotate<Cartesian<N>>,
+{
+    #[inline]
+    fn intersects_at(&self, other: &Capsule<N>, v_ij: &Cartesian<N>, o_ij: &R) -> bool {
+        // Adapted from Real Time Collision Detection, D. Eberly, pp 148
+        // Note we ignore fallbacks when the capsule length is small, as these
+        // could be valid inputs. If we somehow underflow to NaN, a (possibly spurious)
+        // overlap will be detected.
+
+        let d1 = axis_aligned_cartesian::<N>(self.height.get());
+        let p1 = d1 * -0.5;
+
+        let d2 = o_ij.rotate(&axis_aligned_cartesian(other.height.get()));
+        let p2 = *v_ij - d2 * 0.5;
+
+        let distance_between_centers = p1 - p2;
+
+        let d1_norm_sq = d1.dot(&d1);
+        let d2_norm_sq = d2.dot(&d2);
+        let f = d2.dot(&distance_between_centers);
+
+        let c = d1.dot(&distance_between_centers);
+
+        // The general nondegenerate case - very small capsules are valid.
+        let d1_dot_d2 = d1.dot(&d2);
+        let denom = d1_norm_sq * d2_norm_sq - d1_dot_d2 * d1_dot_d2;
+
+        // If segments not parallel, compute closest point on L1 to L2 and
+        // clamp to segment S1. Else pick arbitrary s (here 0)
+        let s = if denom == 0.0 {
+            0.0
+        } else {
+            ((d1_dot_d2 * f - c * d2_norm_sq) / denom).clamp(0.0, 1.0)
+        };
+
+        // Compute point on L2 closest to S1(s) using
+        // t = Dot((P1 + D1*s) - P2,D2) / Dot(D2,D2) = (b*s + f) / e
+        let tnom = d1_dot_d2 * s + f;
+        let (t, s) = if tnom < 0.0 {
+            (0.0, (-c / d1_norm_sq).clamp(0.0, 1.0))
+        } else if tnom > d2_norm_sq {
+            (1.0, ((d1_dot_d2 - c) / d1_norm_sq).clamp(0.0, 1.0))
+        } else {
+            (tnom / d2_norm_sq, s)
+        };
+
+        let (c1, c2) = (p1 + d1 * s, p2 + d2 * t);
+        let dist_sq = (c1 - c2).norm_squared();
+
+        let total_radius = self.radius.get() + other.radius.get();
+        dist_sq <= total_radius.powi(2)
+    }
+}
 #[cfg(test)]
 mod tests {
 
@@ -130,6 +215,7 @@ mod tests {
         shape::{Circle, Cylinder, Hypersphere},
     };
     use hoomd_vector::{Angle, Versor};
+    use rand::{RngExt, SeedableRng};
 
     use super::*;
     use approxim::assert_relative_eq;
@@ -283,5 +369,137 @@ mod tests {
         );
 
         // on the caps is not so easy to test manually...
+    }
+
+    #[rstest]
+    #[case(true, 1.999_999, 0.0, 0.0)]
+    #[case(true, 2.0, 0.0, 0.0)]
+    #[case(false, 2.000_001, 0.0, 0.0)]
+    fn test_intersect_capsule_capsule_2d(
+        #[case] expected: bool,
+        #[case] x: f64,
+        #[case] y: f64,
+        #[case] angle: f64,
+    ) {
+        let capsule1 = Capsule::<2> {
+            radius: 1.0.try_into().unwrap(),
+            height: 2.0.try_into().unwrap(),
+        };
+        let capsule2 = Capsule::<2> {
+            radius: 1.0.try_into().unwrap(),
+            height: 2.0.try_into().unwrap(),
+        };
+
+        let v_ij = [x, y].into();
+        let o_ij = Angle::from(angle);
+        assert_eq!(capsule1.intersects_at(&capsule2, &v_ij, &o_ij), expected);
+        assert_eq!(
+            capsule2.intersects_at(&capsule1, &(-v_ij), &o_ij.inverted()),
+            expected
+        );
+    }
+
+    #[rstest]
+    #[case(true, 0.0, 2.0, 90.0)]
+    #[case(true, 0.0, 3.0, 90.0)]
+    #[case(false, 0.0, 3.000_001, 90.0)]
+    fn test_intersect_capsule_capsule_2d_rotated(
+        #[case] expected: bool,
+        #[case] x: f64,
+        #[case] y: f64,
+        #[case] angle: f64,
+    ) {
+        let capsule1 = Capsule::<2> {
+            radius: 1.0.try_into().unwrap(),
+            height: 2.0.try_into().unwrap(),
+        };
+        let capsule2 = Capsule::<2> {
+            radius: 1.0.try_into().unwrap(),
+            height: 2.0.try_into().unwrap(),
+        };
+
+        let v_ij = [x, y].into();
+        let o_ij = Angle::from(angle.to_radians());
+        assert_eq!(capsule1.intersects_at(&capsule2, &v_ij, &o_ij), expected);
+        assert_eq!(
+            capsule2.intersects_at(&capsule1, &(-v_ij), &o_ij.inverted()),
+            expected
+        );
+    }
+
+    /// Nearly-0 height
+    #[test]
+    fn test_intersect_degenerate_capsules() {
+        let sphere1 = Capsule::<3> {
+            radius: 1.0.try_into().unwrap(),
+            height: 1e-12.try_into().unwrap(),
+        };
+        let sphere2 = Capsule::<3> {
+            radius: 1.0.try_into().unwrap(),
+            height: 1e-12.try_into().unwrap(),
+        };
+
+        let o_ij = Versor::identity();
+        // Intersecting
+        let v_ij = [1.999_999, 0.0, 0.0].into();
+        assert!(sphere1.intersects_at(&sphere2, &v_ij, &o_ij));
+        // Touching
+        let v_ij = [2.0, 0.0, 0.0].into();
+        assert!(sphere1.intersects_at(&sphere2, &v_ij, &o_ij));
+        // Not intersecting
+        let v_ij = [2.000_001, 0.0, 0.0].into();
+        assert!(!sphere1.intersects_at(&sphere2, &v_ij, &o_ij));
+
+        let capsule = Capsule::<3> {
+            radius: 1.0.try_into().unwrap(),
+            height: 2.0.try_into().unwrap(),
+        };
+        // Intersecting
+        let v_ij = [1.999_999, 0.0, 0.0].into();
+        assert!(sphere1.intersects_at(&capsule, &v_ij, &o_ij));
+        assert!(capsule.intersects_at(&sphere1, &v_ij, &o_ij));
+        // Touching
+        let v_ij = [2.0, 0.0, 0.0].into();
+        assert!(sphere1.intersects_at(&capsule, &v_ij, &o_ij));
+        assert!(capsule.intersects_at(&sphere1, &v_ij, &o_ij));
+        // Not intersecting
+        let v_ij = [2.000_001, 0.0, 0.0].into();
+        assert!(!sphere1.intersects_at(&capsule, &v_ij, &o_ij));
+        assert!(!capsule.intersects_at(&sphere1, &v_ij, &o_ij));
+    }
+
+    #[test]
+    fn test_intersect_capsule_capsule_complex_3d_random() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(0);
+
+        for _ in 0..10_000 {
+            let r1 = rng.random_range(0.1..10.0);
+            let h1 = rng.random_range(0.1..10.0);
+            let r2 = rng.random_range(0.1..10.0);
+            let h2 = rng.random_range(0.1..10.0);
+
+            let capsule1 = Capsule::<3> {
+                radius: r1.try_into()?,
+                height: h1.try_into()?,
+            };
+            let capsule2 = Capsule::<3> {
+                radius: r2.try_into()?,
+                height: h2.try_into()?,
+            };
+
+            let v_ij = (rng.random::<Cartesian<3>>() * 10.0) - Cartesian::from([5.0; 3]);
+
+            let o_ij = rng.random::<Versor>();
+
+            let result_direct = capsule1.intersects_at(&capsule2, &v_ij, &o_ij);
+
+            let result_xeno = Convex(capsule1).intersects_at(&Convex(capsule2), &v_ij, &o_ij);
+            assert_eq!(
+                result_direct, result_xeno,
+                "Failed with r1={r1}, h1={h1}, r2={r2}, h2={h2}, v_ij={v_ij:?}, o_ij={o_ij:?}"
+            );
+        }
+        Ok(())
     }
 }

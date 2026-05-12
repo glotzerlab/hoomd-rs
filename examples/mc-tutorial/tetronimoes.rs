@@ -1,21 +1,21 @@
 // ANCHOR: all
 // ANCHOR: use
-use rand::{Rng, seq::IndexedRandom};
+use rand::{Rng, RngExt, seq::IndexedRandom};
 use std::f64::consts::PI;
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, External, TotalEnergy,
-    external::Linear,
-    pairwise::{Boxcar, Isotropic},
+    DeltaEnergyOne, External, MaximumInteractionRange, PairwiseCutoff,
+    TotalEnergy, external::Linear, pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder,
+    Body, Microstate, SiteKey,
     boundary::Closed,
     property::{OrientedPoint, Point},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::VecCell;
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -67,18 +67,26 @@ impl LocalTrial<BodyProperties> for DiscreteRotateOrTranslate {
 // ANCHOR: simulation_struct
 struct Tetronimoes {
     /// Positions and orientations of all the bodies in the simulation.
-    microstate: Microstate<BodyProperties, SiteProperties, Closed<Rectangle>>,
+    microstate: Microstate<
+        BodyProperties,
+        SiteProperties,
+        VecCell<SiteKey, 2>,
+        Closed<Rectangle>,
+    >,
     /// How sites interact with other sites and fields.
-    hamiltonian: (
-        External<Linear<PositionVector>>,
-        CutoffPair<Isotropic<Boxcar>>,
-    ),
+    hamiltonian: Hamiltonian,
     /// Trial moves to apply.
     sweep: Sweep<DiscreteRotateOrTranslate>,
     /// Temperature set point.
     macrostate: Isothermal,
     /// Tetronimo shapes.
     template_sites: Vec<Vec<Point<PositionVector>>>,
+}
+
+#[derive(TotalEnergy, DeltaEnergyOne, MaximumInteractionRange)]
+struct Hamiltonian {
+    linear: External<Linear<Cartesian<2>>>,
+    pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
 }
 // ANCHOR_END: simulation_struct
 
@@ -95,16 +103,6 @@ impl Tetronimoes {
         let sigma = 1.0;
         // ANCHOR_END: parameters
 
-        // ANCHOR: microstate
-        let square = Rectangle::with_equal_edges(box_height.try_into()?);
-        let microstate = MicrostateBuilder::<
-            BodyProperties,
-            SiteProperties,
-            Closed<Rectangle>,
-        >::with_boundary(Closed(square))
-        .try_build()?;
-        // ANCHOR_END: microstate
-
         // ANCHOR: hamiltonian
         let linear = External(Linear {
             alpha,
@@ -117,14 +115,29 @@ impl Tetronimoes {
             left: 0.0,
             right: sigma,
         };
-        let isotropic = Isotropic(boxcar);
-        let cutoff_pair = CutoffPair {
+        let pairwise_cutoff = PairwiseCutoff(Isotropic {
+            interaction: boxcar,
             r_cut: sigma,
-            evaluator: isotropic,
-        };
+        });
 
-        let hamiltonian = (linear, cutoff_pair);
+        let hamiltonian = Hamiltonian {
+            linear,
+            pairwise_cutoff,
+        };
         // ANCHOR_END: hamiltonian
+
+        // ANCHOR: microstate
+        let vec_cell = VecCell::builder()
+            .nominal_search_radius(
+                hamiltonian.maximum_interaction_range().try_into()?,
+            )
+            .build();
+        let square = Rectangle::with_equal_edges(box_height.try_into()?);
+        let microstate = Microstate::builder()
+            .spatial_data(vec_cell)
+            .boundary(Closed(square))
+            .try_build()?;
+        // ANCHOR_END: microstate
 
         // ANCHOR: trial_moves
         let sweep = Sweep(DiscreteRotateOrTranslate);
@@ -223,7 +236,7 @@ impl Simulation for Tetronimoes {
         // ANCHOR_END: apply
 
         // ANCHOR: reset
-        if self.hamiltonian.1.total_energy(&self.microstate) > 20_000.0 {
+        if self.hamiltonian.linear.total_energy(&self.microstate) > 100.0 {
             self.microstate.clear();
         }
 
@@ -243,11 +256,20 @@ impl Simulation for Tetronimoes {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let mut simulation = Tetronimoes::new()?;
-    // TODO: Write GSD file.
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
 
-    for _ in 0..20_000 {
+    let mut simulation = Tetronimoes::new()?;
+    let mut hoomd_gsd_file = HoomdGsdFile::create("tetronimoes.gsd")?;
+
+    for _ in 0..100_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(1_000) {
+            hoomd_gsd_file
+                .append_microstate(&simulation.microstate)?
+                .end()?;
+        }
     }
 
     Ok(())

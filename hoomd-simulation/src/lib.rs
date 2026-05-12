@@ -1,11 +1,11 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 
 //! Interact with simulations.
@@ -27,6 +27,13 @@
 //!
 //! let macrostate = Isothermal { temperature: 1.2 };
 //! ```
+//!
+//! # Complete documentation
+//!
+//! `hoomd-simulation` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 pub mod macrostate;
 

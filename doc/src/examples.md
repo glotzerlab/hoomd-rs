@@ -29,25 +29,30 @@ $ cd hoomd-rs
 ```
 You will find the example code in `examples`.
 
-To compile and run an example as a desktop application, execute:
+To compile and run an example in batch mode (no display, GSD file output), execute:
+```shell
+$ cargo run --release --example {example}
+```
+where `{example}` is the name of the example *without* the path
+or extension (e.g. `--example applying-interactions`, will build and run
+`examples/mc-tutorial/applying-interactions.rs`).
+
+To compile and run an example as an interactive desktop application, execute:
 ```shell
 $ cargo run --release --features=bevy --example {example}
 ```
-where `{example}` is the name of the example *without* the path
-or extension (e.g. `--example random-walk`, will build and run
-`examples/mc-tutorial/random-walk.rs`).
 
-The examples use the [Bevy] engine. If you get compile errors when building
-`bevy` crates, you may need to [install additional software]. MacOS is the
-simplest platform to configure, as you only need XCode. On Linux, you will need
-to install a number of system packages depending on your distribution. On Windows,
-you will need the *Microsoft C++ build tools*.
+The interactive examples use the [Bevy] engine. If you get compile errors when
+building `bevy` crates, you may need to [install additional software]. MacOS
+is the simplest platform to configure as you only need XCode. On Windows, you
+will need the *Microsoft C++ build tools*. On Linux, you will need to install a
+number of system packages depending on your distribution.
 
 > [!NOTE]
 > These additional software dependencies are *only* needed to build examples
-> with interactive displays and your own code that uses the `hoomd-bevy` crate.
+> with `--features=bevy` and your own code that uses the `hoomd-bevy` crate.
 > You do not need to install additional software to build and run command line
-> applications with *hoomd-rs*, you only need Rust.
+> applications with *hoomd-rs*.
 
 ## Building Browser Applications
 

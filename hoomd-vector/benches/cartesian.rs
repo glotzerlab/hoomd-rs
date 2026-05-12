@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![expect(
@@ -7,11 +7,15 @@
 )]
 
 //! Benchmark Cartesian
-
 use divan::{self, Bencher, black_box, counter::ItemsCount};
-use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};
-
-use hoomd_vector::{Cartesian, Cross, InnerProduct};
+use hoomd_rand::Counter;
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Cartesian, Cross, InnerProduct, distribution::Ball};
+use rand::{
+    Rng, RngExt, SeedableRng,
+    distr::{Distribution, Uniform},
+    rngs::StdRng,
+};
 
 fn main() {
     divan::main();
@@ -98,9 +102,23 @@ fn cross_vec3(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn gen_random<const N: usize>(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+    let mut rng = Counter::new(0, 0, 0).make_rng();
 
     bencher
         .counter(ItemsCount::from(1_u32))
         .bench_local(|| black_box(rng.random::<Cartesian<N>>()));
+}
+
+#[divan::bench(consts = DIMENSIONS)]
+fn gen_ball<const N: usize>(bencher: Bencher) {
+    let mut rng = Counter::new(0, 0, 0).make_rng();
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| Ball {
+            radius: PositiveReal::default(),
+        })
+        .bench_local_values(|ball| {
+            black_box::<Cartesian<N>>(ball.sample(&mut rng));
+        });
 }

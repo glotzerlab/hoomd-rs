@@ -1,8 +1,10 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement canonical vector types.
 
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 use std::{
     array, fmt,
     iter::{Sum, zip},
@@ -51,7 +53,7 @@ use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 ///
 /// ```
 /// use hoomd_vector::Cartesian;
-/// use rand::{Rng, SeedableRng, rngs::StdRng};
+/// use rand::{RngExt, SeedableRng, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(1);
@@ -88,10 +90,12 @@ use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 ///         .into_iter()
 ///         .sum();
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 #[approx(epsilon_type = f64)]
 pub struct Cartesian<const N: usize> {
     /// The vector's coordinates.
+    #[serde_as(as = "[_; N]")]
     #[approx(into_iter)]
     pub coordinates: [f64; N],
 }
@@ -453,7 +457,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     ///
     /// ```
     /// use hoomd_vector::Cartesian;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);
@@ -563,9 +567,11 @@ impl<const N: usize> Sum for Cartesian<N> {
 /// [`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
 /// rotations that are often the most effective and numerically stable to
 /// manipulate.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RotationMatrix<const N: usize> {
     /// Rows of the rotation matrix.
+    #[serde_as(as = "[_; N]")]
     pub(crate) rows: [Cartesian<N>; N],
 }
 
@@ -777,7 +783,7 @@ mod tests {
     use super::*;
     use approxim::assert_relative_eq;
     use paste::paste;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
 
     // Parameterize a test function over an array of vector lengths

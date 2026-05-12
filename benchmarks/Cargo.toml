@@ -1,0 +1,42 @@
+[package]
+name = "benchmarks"
+categories.workspace = true
+description = "Measure hoomd-rs performance for typical simulations."
+edition.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+# Do not publish benchmarks to crates.io
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+parquet.workspace = true
+parquet_derive.workspace = true
+postcard.workspace = true
+rayon.workspace = true
+
+hoomd-geometry.workspace = true
+hoomd-interaction.workspace = true
+hoomd-mc.workspace = true
+hoomd-microstate.workspace = true
+hoomd-rand.workspace = true
+hoomd-simulation.workspace = true
+hoomd-spatial.workspace = true
+hoomd-vector.workspace = true
+
+anyhow.workspace = true
+clap.workspace = true
+clap-verbosity-flag.workspace = true
+env_logger.workspace = true
+log.workspace = true
+rand.workspace = true
+serde.workspace = true
+wildmatch.workspace = true

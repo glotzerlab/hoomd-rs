@@ -1,25 +1,33 @@
 [package]
 name = "hoomd-linear-algebra"
 categories.workspace = true
-description = "Linear algebra library optimized for small matrixes."
+description = "Linear algebra types and routines optimized for small matrixes. Part of hoomd-rs."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
+
 [lints]
 workspace = true
 
+[dependencies]
+serde.workspace = true
+serde_with.workspace = true
+
 [dev-dependencies]
-faer = { version = "=0.23.2", default-features = false, features=["std"] }
+faer = { version = "=0.24.0", default-features = false, features=["std"] }
 approxim.workspace = true
 divan.workspace = true
 rand.workspace = true
 rstest.workspace = true
-nalgebra = "=0.34.1"
+nalgebra = "=0.34.2"
 
 
 [[bench]]

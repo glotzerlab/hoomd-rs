@@ -39,9 +39,7 @@ the microstate.
 `DeltaEnergy` and friends are defined as traits so that users can implement
 custom interactions in their MC simulations. `hoomd_mc` will implement these
 traits for very commonly used interactions (e.g. cutoff pair potentials) in the
-`hoomd_interaction` crate. `hoomd_mc` should also implement some solution for
-summing several `DeltaEnergy` types together, for example via an implementation
-on a tuple of different types, each implementing the appropriate traits.
+`hoomd_interaction` crate.
 
 ### Handling infinite energies
 
@@ -68,7 +66,17 @@ the move.
 Metropolis check. Therefore, potentials that return `inf` are technically
 well-defined and should not be prevented. To boost performance, specialized
 implementations of `DeltaEnergy` for hard overlaps will skip the initial
-energy calculation.
+energy calculation. This specialization was originally achieved with separate
+`*Overlap` and therefore increased the complexity of the API for users and
+the maintenance burden. That implementation was replaced with some additional
+methods in `SiteEnergy` and `SitePairEnergy`: 1) An `_energy_initial` method
+allows an implementation to always compute 0 for the initial energy and 2) an
+`is_only_infinite_or_zero` const method allows the delta energy methods to
+implement specialized code paths. When a full potential is infinite or zero
+only, they can skip the initial energy term entirely. When only a portion of
+the potential is (e.g. hard particle + patches), then `_energy_initial` allows
+that potential to only compute the non-infinite part when evaluating the initial
+energy.
 
 In some cases, such as Frenkel-Ladd integration, the move sizes may be so small
 that the phantom overlaps cannot be resolved. In such cases, potentials can
@@ -150,3 +158,53 @@ The tuning recipe should take ownership of the microstate, and return the
 modified microstate back. This way, users could even opt to clone their
 microstate so that the moves introduced by the tuner do not appear in the
 trajectory.
+
+## Parallel Sweeps
+
+hoomd-rs will implement the same flavor parallelization scheme as HOOMD-blue
+on the GPU. The simulation space will split into colored grid cells.
+`ParallelSweep` applies trial moves in parallel to one of the colors at a time.
+
+`VecCell` builds only axis-aligned cubic cells that are not commensurate
+with the boundary condition. The parallel algorithm requires that the
+checkerboard is not disrupted at the periodic boundaries. Therefore,
+the periodic boundaries need to be able to generate compatible cell indices
+with a given interaction range. `VecCell` always stores an odd number of
+cells along each axis, where the checkerboard requires an even number.
+
+Similar to HOOMD-blue, the cell nearest plane distance must be greater than
+or equal to the largest interaction distance *between two body centers*.
+All bodies and interactions can be different, so hoomd-rs cannot detect
+this. The user must provide an appropriate value. It may not even be possible
+for hoomd-rs to detect if the assumption is violated! The most conservative
+estimate of the value is the largest distance from the center of a body
+to any site plus the pairwise `r_cut`.
+
+HOOMD-blue restores ergodicity by randomly translating all particles.
+hoomd-rs will instead choose a random origin within the center cell.
+Translate moves that wrap around the periodic boundary conditions will
+be allowed --- provided that they stay in the same cell. The cell index
+computation must account for periodic boundary conditions to support this
+behavior.
+
+`Microstate` must update a lot of internal data structures when a body
+is moved. To avoid contention, `Microstate` will not implement `Mutex`
+guarded updates. Instead, `ParallelSweep` will:
+
+0) Choose a random origin.
+1) Compute the cell for each body.
+2) Loop over colors.
+3) Loop over all cells of the same color *in parallel*.
+4) Choose one body in that cell at random and propose a trial move.
+   - Reject if the body leaves its cell.
+5) Collect all of the accepted (so far) trial moves.
+6) Apply all accepted moves to the Microstate (rejections can occur
+   due to boundary conditions at this point).
+7) Repeat step 2 until at least a given number of trial moves have been attempted.
+
+In the initial implementation, step 6 will be serialized. TODO: Test performance
+and determine how best to parallelize step 6. Perhaps `Microstate` should
+implement `update_many_bodies_properties`. MC will only ever update a fraction
+at a time, while MD will often update them all.
+
+Questions: Can rayon's step_by() be used to iterate over all cells of the same color?

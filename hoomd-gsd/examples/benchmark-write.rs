@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 #![allow(clippy::print_stdout, reason = "Demonstration purposes")]
 
 //! This is an example
@@ -47,7 +50,7 @@ fn benchmark(
     let t1 = Instant::now();
     for _ in 0..n_frames {
         for name in &names {
-            gsd_file.write_scalars(name, &data)?;
+            gsd_file.write_scalars(name, data.iter().copied())?;
         }
         gsd_file.end_frame()?;
     }

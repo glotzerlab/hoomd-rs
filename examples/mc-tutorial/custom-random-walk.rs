@@ -7,9 +7,10 @@ use hoomd_geometry::IsPointInside;
 use hoomd_interaction::Zero;
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
+    Body, Microstate, SiteKey, boundary::Closed, property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::AllPairs;
 use hoomd_vector::{Cartesian, Metric};
 // ANCHOR_END: use
 
@@ -65,8 +66,12 @@ impl LocalTrial<Point<Cartesian<2>>> for Discrete {
 // ANCHOR: simulation_struct
 struct CustomRandomWalk {
     /// Positions of all the bodies in the simulation.
-    microstate:
-        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Circle>>,
+    microstate: Microstate<
+        Point<Cartesian<2>>,
+        Point<Cartesian<2>>,
+        AllPairs<SiteKey>,
+        Closed<Circle>,
+    >,
     /// How sites interact with other sites and fields.
     hamiltonian: Zero,
     /// Trial moves to apply.
@@ -90,7 +95,8 @@ impl CustomRandomWalk {
         // ANCHOR: microstate
         let circle = Circle { radius };
 
-        let microstate = MicrostateBuilder::with_boundary(Closed(circle))
+        let microstate = Microstate::builder()
+            .boundary(Closed(circle))
             .bodies(iter::repeat_n(Body::point(Cartesian::default()), n))
             .try_build()?;
         // ANCHOR_END: microstate
@@ -143,16 +149,14 @@ impl Simulation for CustomRandomWalk {
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
     let mut simulation = CustomRandomWalk::new()?;
-    // TODO: Write GSD file.
-
-    for _ in 0..100_000 {
+    for _ in 0..1_000_000 {
         simulation.advance()?;
     }
 
     Ok(())
 }
-// ANCHOR_END: main
 // ANCHOR_END: all
+// ANCHOR_END: main
 
 #[cfg(feature = "bevy")]
 mod custom_random_walk_interactive;

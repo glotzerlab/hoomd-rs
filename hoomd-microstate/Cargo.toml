@@ -1,30 +1,45 @@
 [package]
 name = "hoomd-microstate"
 categories.workspace = true
-description = "Store and manage a system microstate."
+description = "Implement the Microstate type for hoomd-rs."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
+
 [lints]
 workspace = true
 
 [dependencies]
-hoomd-manifold.workspace = true
-hoomd-geometry.workspace = true
-hoomd-vector.workspace = true
-hoomd-utility.workspace = true
+arrayvec.workspace = true
 rand.workspace = true
+serde.workspace = true
 thiserror.workspace = true
-tinyvec.workspace = true
+robust.workspace = true
+
+hoomd-derive.workspace = true
+hoomd-geometry.workspace = true
+hoomd-gsd.workspace = true
+hoomd-manifold.workspace = true
+hoomd-spatial.workspace = true
+hoomd-utility.workspace = true
+hoomd-rand.workspace = true
+hoomd-vector.workspace = true
 
 [dev-dependencies]
+assert2.workspace = true
 anyhow.workspace = true
 approxim.workspace = true
 divan.workspace = true
+itertools.workspace = true
+log.workspace = true
 rand.workspace = true
 rstest.workspace = true
+tempfile.workspace = true

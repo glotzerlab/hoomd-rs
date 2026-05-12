@@ -1,13 +1,11 @@
 [book]
 language = "en"
-multilingual = false
 src = "src"
 title = "hoomd-rs Documentation"
 
 [build]
 create-missing = false
 
-[preprocessor.alerts]
 [preprocessor.katex]
 after = ["links"]
 block-delimiter = { left = "```math", right = "```" }
@@ -15,10 +13,9 @@ inline-delimiter = { left = "$`", right = "`$" }
 
 # [output.html] must be the last table so that .readthedocs.yaml can easily add a key to it
 [output.html]
+additional-css = ["./theme/catppuccin.css"]
 git-repository-url = "https://github.com/glotzerlab/hoomd-rs"
 mathjax-support = false
 edit-url-template = "https://github.com/glotzerlab/hoomd-rs/edit/trunk/doc/{path}"
-
-# enable the pagtoc plugin
-additional-css = ["theme/pagetoc.css"]
-additional-js = ["theme/pagetoc.js"]
+fold.enable = true
+fold.level = 0

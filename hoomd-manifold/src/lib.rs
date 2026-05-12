@@ -1,11 +1,11 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 
 //! Tools for non-Euclidean geometries.
@@ -131,6 +131,7 @@
 //! Boost point in 3D hyperbolic space in x direction using biquaternion
 //! algebra:
 //! ```
+//! use approxim::assert_relative_eq;
 //! use hoomd_manifold::{
 //!     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
 //! };
@@ -140,17 +141,28 @@
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
 //! let q = Biquaternion::from([
-//!     Complex::new(0.0, PI / 4.0).sinh(),
+//!     Complex::new(0.0, (0.2_f64).sinh()),
 //!     Complex::new(0.0, 0.0),
 //!     Complex::new(0.0, 0.0),
-//!     Complex::new(0.0, PI / 4.0).cosh(),
+//!     Complex::new((0.2_f64).cosh(), 0.0),
 //! ]);
 //! let v = q.to_unit()?;
 //! let boosted = v.hyperbolic_rotate(&x);
-//! // boosted is approximately [(PI/2.0).sinh(), 0.0, 0.0, (PI/2.0).cosh()]
+//! assert_relative_eq!(
+//!     boosted,
+//!     [(0.4_f64).sinh(), 0.0, 0.0, (0.4_f64).cosh()].into(),
+//!     epsilon = 1e-12
+//! );
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! # Complete documentation
+//!
+//! `hoomd-manifold` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 mod biquaternion;
 mod hyperbolic_angle;

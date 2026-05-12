@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Linear algebra optimized for small matrices.
@@ -166,6 +166,13 @@
 //! * [`Singular value decomposition (2x2)`](matrix::Matrix22::svd)
 //! * [`Singular value decomposition (3x3)`](matrix::Matrix33::svd)
 //! * [`Quadratic form`](QuadraticForm)
+//!
+//! # Complete documentation
+//!
+//! `hoomd-linear-algebra` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 use std::ops::{Add, AddAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 

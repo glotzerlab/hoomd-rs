@@ -1,15 +1,16 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
+
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::fmt;
+
+use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 
 /// ``std::ops`` implementations for [`Matrix`]
 mod ops;
 
 pub use crate::diagonal::DiagonalMatrix;
-
-use std::fmt;
-
-/// A lightweight representation of a diagonal matrix.
-use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 ///
@@ -21,9 +22,11 @@ use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix
 ///     rows: [[-1.0, 4.0, -6.0], [2.0, -3.0, 1.0]],
 /// };
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Matrix<const N: usize, const M: usize> {
     /// The elements of the matrix
+    #[serde_as(as = "[[_; M]; N]")]
     pub rows: [[f64; M]; N],
 }
 /// A 2x2 matrix, allocated on the stack.
@@ -746,7 +749,7 @@ impl Matrix<2, 2> {
     ///
     /// `svd` sets all singular values to be positive.
     ///
-    /// [Blinn 1996]: https://dx.doi/10.1109/38.486688
+    /// [Blinn 1996]: https://doi.org/10.1109/38.486688
     ///
     /// # Examples
     /// ```
@@ -820,7 +823,7 @@ impl Matrix<3, 3> {
     /// As a result, the third singular value may be negative. For a conventional
     /// SVD with non-negative singular values, the sign can be absorbed into U.
     ///
-    /// [McAdams 2011]: http://digital.library.wisc.edu/1793/60736
+    /// [McAdams 2011]: https://digital.library.wisc.edu/1793/60736
     ///
     /// # Examples
     /// ```
@@ -962,7 +965,7 @@ impl Matrix<3, 3> {
 }
 /// Macro to generate impls for a given row size `N` and multiple column sizes `M`.
 macro_rules! impl_copy_for_m {
-    ($N:literal, $($M:literal),+) => { $(#[doc(hidden)]impl Copy for Matrix<$N, $M> {})+ };
+    ($N:literal, $($M:literal),+) => { $(impl Copy for Matrix<$N, $M> {})+ };
 }
 /// Implement Copy for matrices of an input size `N`, `M`
 macro_rules! impl_copy_for_n_m {
