@@ -66,8 +66,9 @@ hoomd-interaction = { version = "1.1.0", path = "hoomd-interaction" }
 hoomd-linear-algebra = { version = "1.1.0", path = "hoomd-linear-algebra" }
 hoomd-manifold = { version = "1.1.0", path = "hoomd-manifold" }
 hoomd-mc = { version = "1.1.0", path = "hoomd-mc" }
+hoomd-meshless-voronoi = { version = "1.1.0", path = "hoomd-meshless-voronoi" }
 hoomd-microstate = { version = "1.1.0", path = "hoomd-microstate" }
-hoomd-order = { version = "1.1.0", path = "hoomd-order }
+hoomd-order = { version = "1.1.0", path = "hoomd-order" }
 hoomd-simulation = { version = "1.1.0", path = "hoomd-simulation" }
 hoomd-spatial = { version = "1.1.0", path = "hoomd-spatial" }
 hoomd-utility = { version = "1.1.0", path = "hoomd-utility" }

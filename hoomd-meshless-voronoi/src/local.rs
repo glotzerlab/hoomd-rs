@@ -9,7 +9,7 @@ use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::{
     Microstate,
     boundary::{GenerateGhosts, Open, Periodic},
-    property::Position,
+    property::{Point, Position},
 };
 use hoomd_vector::{Cartesian, Metric};
 use ndarray::prelude::*;
@@ -21,19 +21,19 @@ use thiserror::Error;
 /// The neighbor list for a given microstate is a vector of two-element tuples
 /// giving the pair of nearest neighbors. Nearest neighbors are found using
 /// the voronoi diagram.
-pub struct NeighborList<'a, B, S, C> {
+pub struct NeighborList<'a, B, S, X, C> {
     /// Ordered vector of 2-tuples with nearest-neighbor pairs.
     pub neighbors: Vec<(usize, usize)>,
     /// Microstate
-    pub microstate: &'a Microstate<B, S, C>,
+    pub microstate: &'a Microstate<B, S, X, C>,
 }
 
-pub trait GenerateNeighborList<B, S, C, M> {
+pub trait GenerateNeighborList<B, S, X, C, M> {
     /// Generate the neighbor list from a given microstate.
-    fn from_microstate(microstate: &Microstate<B, S, C>) -> Result<NeighborList<'_, B, S, C>, Error>;
+    fn from_microstate(microstate: &Microstate<B, S, X, C>) -> Result<NeighborList<'_, B, S, X, C>, Error>;
 }
 
-impl<B, S, C> NeighborList<'_, B, S, C> {
+impl<B, S, X, C> NeighborList<'_, B, S, X, C> {
     /// Get the neighbor list.
     pub fn neighbors(&self) -> &Vec<(usize, usize)> {
         &self.neighbors
@@ -113,19 +113,19 @@ impl<B, S, C> NeighborList<'_, B, S, C> {
     }
 }
 
-pub trait DirectorField<B, S, C, M> {
+pub trait DirectorField<B, S, X, C, M> {
     /// Calculate the hexatic order $`\psi_6`$ for a given site index belonging
     /// to a microstate.
     fn hexatic(
         &self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         site_index: Option<usize>,
     ) -> Result<Complex<f64>, Error>;
     /// Get a histrogram of hexatic orders $`\psi_6`$ across all body sites in a 
     /// given microstate.
     fn orientational_order(
         &self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         r_min: f64,
         r_max: f64,
         nbins: usize,
@@ -140,14 +140,14 @@ pub struct ComplexField {
     pub n_bins: usize,
 }
 
-impl<B, S, C> DirectorField<B, S, C, Cartesian<2>> for NeighborList<'_, B, S, C>
+impl<B, S, X, C> DirectorField<B, S, X, C, Cartesian<2>> for NeighborList<'_, B, S, X, C>
 where
     S: Position<Position = Cartesian<2>>,
 {
     /// Compute the hexatic director field at a point from the microstate.
     fn hexatic(
         &self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         site_index: Option<usize>,
     ) -> Result<Complex<f64>, Error> {
         match site_index {
@@ -177,7 +177,7 @@ where
     #[inline]
     fn orientational_order(
         &self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         r_min: f64,
         r_max: f64,
         nbins: usize,
@@ -236,14 +236,14 @@ where
     }
 }
 
-impl<B, S, C> DirectorField<B, S, C, Hyperbolic<3>> for NeighborList<'_, B, S, C>
+impl<B, S, X, C> DirectorField<B, S, X, C, Hyperbolic<3>> for NeighborList<'_, B, S, X, C>
 where
     S: Position<Position = Hyperbolic<3>>,
 {
     /// Compute the hexatic director field at a point from the microstate.
     fn hexatic(
         &self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         site_index: Option<usize>,
     ) -> Result<Complex<f64>, Error> {
         match site_index {
@@ -253,7 +253,7 @@ where
                     return Err(Error::NoNearestNeighbors);
                 }
                 let point = microstate.sites()[num].properties.position();
-                let boost = -(point.coordinates()[2] / point.skirt()).acosh();
+                let boost = -(point.coordinates()[2] / 1.0).acosh();
                 let rot = -point.coordinates()[1].atan2(point.coordinates()[0]);
                 let neighbors_translated: Vec<[f64; 2]> = site_neighbors
                     .iter()
@@ -285,7 +285,7 @@ where
     #[inline]
     fn orientational_order(
         &self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         r_min: f64,
         r_max: f64,
         nbins: usize,
@@ -393,7 +393,7 @@ impl From<voronoi_neighborlist::Error> for Error {
 /// # Ok(())
 /// # }
 /// ```
-impl<B, S> GenerateNeighborList<B, S, Open, Cartesian<2>> for NeighborList<'_, B, S, Open>
+impl<B, S, X> GenerateNeighborList<B, S, X, Open, Cartesian<2>> for NeighborList<'_, B, S, X, Open>
 where
     S: Position<Position = Cartesian<2>>,
 {
@@ -401,8 +401,8 @@ where
     /// boundary conditions.
     #[inline]
     fn from_microstate(
-        microstate: &Microstate<B, S, Open>,
-    ) -> Result<NeighborList<'_, B, S, Open>, Error> {
+        microstate: &Microstate<B, S, X, Open>,
+    ) -> Result<NeighborList<'_, B, S, X, Open>, Error> {
         let mut nlist = vec![];
         let mut seeds: Vec<PDSeed<2>> = vec![];
         let mut coordinate_numbers = vec![];
@@ -455,7 +455,7 @@ where
         })
     }
 }
-impl<B, S> GenerateNeighborList<B, S, Open, Cartesian<3>> for NeighborList<'_, B, S, Open>
+impl<B, S, X> GenerateNeighborList<B, S, X, Open, Cartesian<3>> for NeighborList<'_, B, S, X, Open>
 where
     S: Position<Position = Cartesian<3>>,
 {
@@ -463,8 +463,8 @@ where
     /// boundary conditions.
     #[inline]
     fn from_microstate(
-        microstate: &Microstate<B, S, Open>,
-    ) -> Result<NeighborList<'_, B, S, Open>, Error> {
+        microstate: &Microstate<B, S, X, Open>,
+    ) -> Result<NeighborList<'_, B, S, X, Open>, Error> {
         let mut nlist = vec![];
         let mut seeds: Vec<PDSeed<3>> = vec![];
         let mut coordinate_numbers = vec![];
@@ -522,8 +522,8 @@ where
     }
 }
 
-impl<B, S> GenerateNeighborList<B, S, Periodic<Hypercuboid<3>>, Cartesian<3>>
-    for NeighborList<'_, B, S, Periodic<Hypercuboid<3>>>
+impl<B, S, X> GenerateNeighborList<B, S, X, Periodic<Hypercuboid<3>>, Cartesian<3>>
+    for NeighborList<'_, B, S, X, Periodic<Hypercuboid<3>>>
 where
     S: Position<Position = Cartesian<3>> + Copy + Default,
 {
@@ -531,8 +531,8 @@ where
     /// `Hypercuboid<3>` boundary conditions.
     #[inline]
     fn from_microstate(
-        microstate: &Microstate<B, S, Periodic<Hypercuboid<3>>>,
-    ) -> Result<NeighborList<'_, B, S, Periodic<Hypercuboid<3>>>, Error> {
+        microstate: &Microstate<B, S, X, Periodic<Hypercuboid<3>>>,
+    ) -> Result<NeighborList<'_, B, S, X, Periodic<Hypercuboid<3>>>, Error> {
         let mut nlist = vec![];
         let mut seeds_with_ghosts = vec![];
         let n_particles = microstate.sites().len();
@@ -631,8 +631,8 @@ where
     }
 }
 
-impl<B, S> GenerateNeighborList<B, S, Periodic<Hypercuboid<2>>, Cartesian<2>>
-    for NeighborList<'_, B, S, Periodic<Hypercuboid<2>>>
+impl<B, S, X> GenerateNeighborList<B, S, X, Periodic<Hypercuboid<2>>, Cartesian<2>>
+    for NeighborList<'_, B, S, X, Periodic<Hypercuboid<2>>>
 where
     S: Position<Position = Cartesian<2>> + Copy + Default,
 {
@@ -640,8 +640,8 @@ where
     /// `Hypercuboid<2>` boundary conditions.
     #[inline]
     fn from_microstate(
-        microstate: &Microstate<B, S, Periodic<Hypercuboid<2>>>,
-    ) -> Result<NeighborList<'_, B, S, Periodic<Hypercuboid<2>>>, Error> {
+        microstate: &Microstate<B, S, X, Periodic<Hypercuboid<2>>>,
+    ) -> Result<NeighborList<'_, B, S, X, Periodic<Hypercuboid<2>>>, Error> {
         let mut nlist = vec![];
         let mut seeds_with_ghosts = vec![];
         let n_particles = microstate.sites().len();
@@ -731,7 +731,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<B, S> GenerateNeighborList<B, S, Open, Hyperbolic<3>> for NeighborList<'_, B, S, Open>
+impl<B, S, X> GenerateNeighborList<B, S, X, Open, Hyperbolic<3>> for NeighborList<'_, B, S, X, Open>
 where
     S: Position<Position = Hyperbolic<3>>,
 {
@@ -739,8 +739,8 @@ where
     /// boundary conditions.
     #[inline]
     fn from_microstate(
-        microstate: &Microstate<B, S, Open>,
-    ) -> Result<NeighborList<'_, B, S, Open>, Error> {
+        microstate: &Microstate<B, S, X, Open>,
+    ) -> Result<NeighborList<'_, B, S, X, Open>, Error> {
         let mut nlist = vec![];
         let to_seed = |id: &usize| {
             let coords = microstate.sites()[*id].properties.position().coordinates();
@@ -797,17 +797,15 @@ where
     }
 }
 
-impl<B, S> GenerateNeighborList<B, S, Periodic<EightEight>, Hyperbolic<3>>
-    for NeighborList<'_, B, S, Periodic<EightEight>>
-where
-    S: Position<Position = Hyperbolic<3>> + Copy + Default,
+impl<B, X> GenerateNeighborList<B, Point<Hyperbolic<3>>, X, Periodic<EightEight>, Hyperbolic<3>>
+    for NeighborList<'_, B, Point<Hyperbolic<3>>, X, Periodic<EightEight>>
 {
     /// Compute the neighbor list from a microstate in `Hyperbolic` with periodic
     /// boundary conditions.
     #[inline]
     fn from_microstate(
-        microstate: &Microstate<B, S, Periodic<EightEight>>,
-    ) -> Result<NeighborList<'_, B, S, Periodic<EightEight>>, Error> {
+        microstate: &Microstate<B, Point<Hyperbolic<3>>, X, Periodic<EightEight>>,
+    ) -> Result<NeighborList<'_, B, Point<Hyperbolic<3>>, X, Periodic<EightEight>>, Error> {
         let mut nlist = vec![];
         let to_seed = |id: &usize| {
             let coords = microstate.sites()[*id].properties.position().coordinates();
@@ -907,7 +905,7 @@ mod tests {
 
     #[test]
     fn nlist_2d_cartesian_open() -> Result<(), Box<dyn std::error::Error>> {
-        let microstate = MicrostateBuilder::new()
+        let microstate = Microstate::builder()
             .bodies([
                 Body::point(Cartesian::from([0.5, 0.25])),
                 Body::point(Cartesian::from([-1.01, 1.01])),
@@ -938,7 +936,8 @@ mod tests {
             Hypercuboid::<3>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
         )
         .expect("no interactions");
-        let microstate = MicrostateBuilder::with_boundary(boundary)
+        let microstate = Microstate::builder()
+            .boundary(boundary)
             .bodies([
                 Body::point(Cartesian::from([-0.6, 0.01, 0.01])),
                 Body::point(Cartesian::from([0.01, 0.01, 0.01])),
@@ -962,7 +961,8 @@ mod tests {
             Hypercuboid::<2>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
         )
         .expect("no interactions");
-        let microstate = MicrostateBuilder::with_boundary(boundary)
+        let microstate = Microstate::builder()
+            .boundary(boundary)
             .bodies([
                 Body::point(Cartesian::from([-0.6, 0.01])),
                 Body::point(Cartesian::from([0.01, 0.01])),
@@ -981,28 +981,29 @@ mod tests {
 
     #[test]
     fn nlist_hyperbolic() -> Result<(), Box<dyn std::error::Error>> {
-        let microstate = MicrostateBuilder::with_boundary(Open)
+        let microstate = Microstate::builder()
+            .boundary(Open)
             .bodies([
-                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
+                Body::point(Hyperbolic::from_minkowski_coordinates([
                     1.0,
                     -2.0,
                     6.0_f64.sqrt(),
-                ]), 1.0)),
-                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
+                ].into())),
+                Body::point(Hyperbolic::from_minkowski_coordinates([
                     1.0,
                     -1.0,
                     3.0_f64.sqrt(),
-                ]), 1.0)),
-                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
+                ].into())),
+                Body::point(Hyperbolic::from_minkowski_coordinates([
                     -1.0,
                     -2.0,
                     6.0_f64.sqrt(),
-                ]),1.0)),
-                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
+                ].into())),
+                Body::point(Hyperbolic::from_minkowski_coordinates([
                     -1.0,
                     1.0,
                     3.0_f64.sqrt(),
-                ]), 1.0)),
+                ].into())),
             ])
             .try_build()
             .expect("hard-coded distributions should be valid");
@@ -1023,7 +1024,8 @@ mod tests {
 
     #[test]
     fn coordination_numbers_cartesian() -> Result<(), Box<dyn std::error::Error>> {
-        let microstate = MicrostateBuilder::with_boundary(Open)
+        let microstate = Microstate::builder()
+            .boundary(Open)
             .bodies([
                 Body::point(Cartesian::from([0.5, 0.25])),
                 Body::point(Cartesian::from([-1.0, 1.0])),
@@ -1044,7 +1046,8 @@ mod tests {
 
     #[test]
     fn hexatic_order_cartesian() -> Result<(), Box<dyn std::error::Error>> {
-        let microstate = MicrostateBuilder::with_boundary(Open)
+        let microstate = Microstate::builder()
+            .boundary(Open)
             .bodies([
                 Body::point(Cartesian::from([1.0, 1.0])),
                 Body::point(Cartesian::from([2.0, 1.0])),
