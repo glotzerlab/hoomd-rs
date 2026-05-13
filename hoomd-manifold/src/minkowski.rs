@@ -22,9 +22,9 @@ use crate::{Error, HyperbolicRotate};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Metric, Vector};
 
-/// A vector in N-dimensional Minkowski space.
+/// A vector in $`N`$-dimensional Minkowski space.
 ///
-/// [`Minkowski<N>`] implements $`(N-1,1)`$-dimensional Minkowski space with the
+/// [`Minkowski<N>`] implements $`N`$-dimensional Minkowski space with the
 /// metric signature $`(+ , \cdots , + , -)`$. [`Minkowski`] supports
 /// [`Vector`] operations such as vector addition and rescaling. Use [`Minkowski`]
 /// as an embedding space for [`Hyperbolic`], analogously to how [`Cartesian`] is
@@ -32,7 +32,7 @@ use hoomd_vector::{Metric, Vector};
 ///
 /// ## Constructing Minkowski vectors
 ///
-/// Similar to [`Cartesian`], N-dimensional vectors can be
+/// Similar to [`Cartesian`], $`N`$-dimensional vectors can be
 /// constructed using an array of (real-valued) coordinates. Three- and
 /// four-dimensional vectors can also be constructed from tuples:
 /// ```
@@ -453,7 +453,7 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 /// Point on the top sheet of a Hyperboloid.
 ///
 /// [`Hyperbolic`] implements an embedding of the top sheet of an
-/// $`(N-1)`$-dimensional two-sheeted hyperboloid in N-dimensional Minkowski space.
+/// $`(N-1)`$-dimensional two-sheeted hyperboloid in $`N`$-dimensional Minkowski space.
 /// This surface has constant negative curvature and therefore serves as a model
 /// of $`(N-1)`$-dimensional hyperbolic space.
 ///
@@ -705,7 +705,7 @@ impl Metric for Hyperbolic<4> {
 /// Hyperbolic rotations in Minkowski Space
 ///
 /// Construct a [`HyperbolicRotationMatrix`] to apply $`SO(N-1, 1)`$
-/// transformations to N-dimensional Minkowski vectors. See documentation in
+/// transformations to $`N`$-dimensional Minkowski vectors. See documentation in
 /// [`HyperbolicAngle`] for details on $`SO(2,1)`$ transformations (i.e., two-
 /// dimensional hyperbolic space), and in [`Biquaternion`] for details on
 /// $`SO(3,1)`$ transformations (i.e., three-dimensional hyperbolic space).

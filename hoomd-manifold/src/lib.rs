@@ -12,23 +12,23 @@
 //!
 //! ## Spherical points
 //!
-//! [`Spherical`] describes a point on an N-sphere of unit radius embedded in
-//! [`Cartesian<N+1>`]. The components of a point on an N-sphere
+//! [`Spherical`] describes a point on an $`N`$-sphere of unit radius embedded in
+//! [`Cartesian<N+1>`]. The components of a point on an $`N`$-sphere
 //! satisfy
 //! ```math
 //! \sum_{i=1}^{N+1}x_i^2 = 1.0
 //! ```
 //! [`Spherical`] implements a distance metric through the trait
 //! [`Metric`] which calculates the geodesic distance on the
-//! surface of an N-sphere. Use [`Spherical`] to describe spaces with constant
+//! surface of an $`N`$-sphere. Use [`Spherical`] to describe spaces with constant
 //! positive curvature.
 //!
 //! [`Cartesian<N+1>`]: hoomd_vector::Cartesian
 //! [`Metric`]: hoomd_vector::Metric
 //!
 //! ## Hyperbolic
-//! [`Hyperbolic`] describes a point on the upper sheet of an N-dimensional
-//! two-sheeted hyperboloid embedded in (N+1)-dimensional Minkowski space. The
+//! [`Hyperbolic`] describes a point on the upper sheet of an $`N`$-dimensional
+//! two-sheeted hyperboloid embedded in $`N`$-dimensional Minkowski space. The
 //! components of a point on the hyperboloid satisfy
 //! ```math
 //! x_1^2 + \cdots + x_{N-1}^2 - x_{N}^2 = -1.0
@@ -40,7 +40,7 @@
 //!
 //! ## Minkowski
 //!
-//! [`Minkowski<N>`] implements $`(N-1,1)`$-dimensional Minkowski space with the
+//! [`Minkowski<N>`] implements $`N`$-dimensional Minkowski space with the
 //! metric signature $`(+ \;\cdots\; +\; -)`$. [`Minkowski`] supports
 //! [`Vector`] operations such as vector addition and rescaling, but is not a
 //! true inner product space as it admits vectors with a negative norm. The

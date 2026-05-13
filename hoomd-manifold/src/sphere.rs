@@ -16,9 +16,9 @@ use hoomd_vector::{Cartesian, InnerProduct, Metric, Quaternion, Rotate, Versor};
 
 /// Point on the surface of a sphere.
 ///
-/// [`Spherical`] is a point on a unit N-sphere embedded in (N+1)-dimensional
-/// euclidean space. Explicitly, the N-sphere is defined by the set of
-/// (N+1)-dimensional points whose components satisfy
+/// [`Spherical`] is a point on a unit $`N`$-sphere embedded in $`(N+1)`$-dimensional
+/// euclidean space. Explicitly, the $`N`$-sphere is defined by the set of
+/// $`(N+1)`$-dimensional points whose components satisfy
 /// ```math
 /// x_1^2 + x_2^2 + \cdots + x_{N+1}^1 = 1.0
 /// ```
@@ -53,7 +53,7 @@ impl<const N: usize> Spherical<N> {
         assert_relative_eq!(rad, 1.0_f64, epsilon = 1e-6);
         Spherical { point }
     }
-    /// Implements a stereographic projection from the N-sphere to an n-dimensional
+    /// Implements a stereographic projection from the $`N`$-sphere to an $`N`$-dimensional
     /// plane by projecting through the $`(0,\cdots, 0,1)`$ axis.
     ///
     /// # Example
@@ -206,13 +206,13 @@ impl Metric for Spherical<3> {
     /// The distance between two [`Spherical<3>`] points.
     ///
     /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a
-    /// 2-sphere with radius $`R`$ is given by
+    /// 2-sphere with unit radius is given by
     ///
     /// ```math
-    /// d_{S_2}(\vec{u}, \vec{v}) = R \arccos\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3)\right]
+    /// d_{S_2}(\vec{u}, \vec{v}) = \arccos\left[u_1v_1 + u_2v_2 + u_3v_3\right]
     /// ```
     /// This choice of metric furnishes a representation of 2-dimensional spherical
-    /// space with Gaussian curvature $`K = 1/R^2`$.
+    /// space with Gaussian curvature $`K = 1`$.
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
@@ -232,15 +232,14 @@ impl Metric for Spherical<3> {
 impl Metric for Spherical<4> {
     /// The distance between two [`Spherical<4>`] points.
     ///
-    /// Explicitly, the
-    /// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a 3-sphere with
-    /// radius  $`R`$ is given by
+    /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a
+    /// 3-sphere with unit radius is given by
     ///
     /// ```math
-    /// d_{S_3}(\vec{u}, \vec{v}) = R \arccos\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3 + u_4v_4)\right]
+    /// d_{S_3}(\vec{u}, \vec{v}) = \arccos\left[u_1v_1 + u_2v_2 + u_3v_3 + u_4v_4\right]
     /// ```
     /// This choice of metric furnishes a representation of 3-dimensional spherical
-    /// space with Gaussian curvature $`K = 1/R^2`$.
+    /// space with Gaussian curvature $`K = 1`$.
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
@@ -257,7 +256,7 @@ impl Metric for Spherical<4> {
     }
 }
 
-/// Randomly distribute points locally on a sphere.
+/// Struct for randomly distributing points locally on a sphere.
 ///
 /// [`SphericalDisk`] is a uniform distribution of points within distance `r` of
 /// a point on the unit 2-sphere.
@@ -352,7 +351,6 @@ impl Distribution<Spherical<3>> for SphericalDisk<3> {
         let u: f64 = Uniform::new(0.0, 1.0).expect("u is positive").sample(rng);
         let cos_theta = 1.0 - u * (1.0 - max_angle.cos());
         let sin_theta = (cos_theta.acos()).sin();
-        // exponential map exp_p(v) = R\cos(v)*p_hat + R\sin(v)*v_hat
         let new_point = [
             cos_theta * p_hat[0] + sin_theta * dir[0],
             cos_theta * p_hat[1] + sin_theta * dir[1],
