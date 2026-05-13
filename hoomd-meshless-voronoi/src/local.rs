@@ -899,8 +899,8 @@ mod tests {
     use super::*;
     use approxim::assert_relative_eq;
     use hoomd_geometry::shape::Hypercuboid;
-    use hoomd_manifold::{Hyperbolic, Minkowski};
-    use hoomd_microstate::{Body, MicrostateBuilder, boundary::Open, boundary::Periodic};
+    use hoomd_manifold::Hyperbolic;
+    use hoomd_microstate::{Body, boundary::Open, boundary::Periodic};
     use hoomd_vector::Cartesian;
 
     #[test]
