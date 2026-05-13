@@ -26,8 +26,9 @@ use hoomd_vector::Quaternion;
 /// where $`a,b,c,d`$ are complex numbers and $`\{1,\mathbf{i},\mathbf{j},\mathbf{k}\}`$
 /// are the quaternion algebra. Biquaternions can be thought of as a
 /// generalization of quaternions which allow for complex coefficients.
-/// Analogous to quaternions and SO(3), biquaternions furnish a representation
-/// of SO(3,1)
+/// Analogous to quaternions and $`SO(3)`$, biquaternions furnish a representation
+/// of $`SO(3,1)`$. Use [`Biquaternion`] alongside `Hyperbolic<4>` to implement
+/// three-dimensional hyperbolic space.
 ///
 /// ## Construction of Biquaternions
 ///
@@ -570,10 +571,10 @@ impl DivAssign<f64> for Biquaternion {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-/// Represent SO(3,1) with a normalized biquaternion.
+/// Represent $`SO(3,1)`$ with a normalized biquaternion.
 ///
-/// Unit-norm Biquaternions furnish a representation of SO(3,1), analogous to
-/// quaternions and SO(3). If $`\vec{x} = (x_1, x_2, x_3, x_4)`$ is a vector
+/// Unit-norm Biquaternions furnish a representation of $`SO(3,1)`$, analogous to
+/// quaternions and $`SO(3)`$. If $`\vec{x} = (x_1, x_2, x_3, x_4)`$ is a vector
 /// in Minkowski space, then $`\vec{x}`$ can be mapped to a biquaternion
 /// ```math
 /// \vec{x} \mapsto X = [x_1, x_2, x_3,h x_4]
@@ -592,7 +593,7 @@ impl DivAssign<f64> for Biquaternion {
 /// |X|^2 = |X'|^2
 /// ```
 /// We therefore have that this action by unit biquaternions
-/// produces a representation of SO(3,1). The biquaternion algebra can be used
+/// produces a representation of $`SO(3,1)`$. The biquaternion algebra can be used
 /// directly to transform Minkowski 4-vectors, or unit biquaternions can be
 /// represented as matrices using [`HyperbolicRotationMatrix<4>`].
 ///

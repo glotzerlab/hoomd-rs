@@ -24,9 +24,11 @@ use hoomd_vector::{Metric, Vector};
 
 /// A vector in N-dimensional Minkowski space.
 ///
-/// [`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the
+/// [`Minkowski<N>`] implements $`(N-1,1)`$-dimensional Minkowski space with the
 /// metric signature $`(+ , \cdots , + , -)`$. [`Minkowski`] supports
-/// [`Vector`] operations such as vector addition and rescaling.
+/// [`Vector`] operations such as vector addition and rescaling. Use [`Minkowski`]
+/// as an embedding space for [`Hyperbolic`], analogously to how [`Cartesian`] is
+/// an embedding space for [`Spherical`].
 ///
 /// ## Constructing Minkowski vectors
 ///
@@ -71,9 +73,9 @@ use hoomd_vector::{Metric, Vector};
 /// d_M^2(\vec{u},\vec{v}) = (\vec{u}-\vec{v})^T \eta (\vec{u}-\vec{v})
 /// = (u_1-v_1)^2 +\cdots + (u_{N-1}-v_{N-1})^2 - (u_N - v_N)^2
 /// ```
-/// Note that because this metric is not positive-definite, [`Minkowski`] this
-/// "spacetime interval" is not a true inner-product, and therefore
-/// [`Minkowski`] does not implement the methods of [`InnerProduct`].
+/// Note that because this metric is not positive-definite, the "spacetime
+/// interval" is not a true inner-product, and therefore [`Minkowski`] does not
+/// implement the methods of [`InnerProduct`].
 ///
 /// [`InnerProduct`]: hoomd_vector::InnerProduct
 /// [`Cartesian`]: hoomd_vector::Cartesian
@@ -451,15 +453,15 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 /// Point on the top sheet of a Hyperboloid.
 ///
 /// [`Hyperbolic`] implements an embedding of the top sheet of an
-/// (N-1)-dimensional two-sheeted hyperboloid in N-dimensional Minkowski space.
+/// $`(N-1)`$-dimensional two-sheeted hyperboloid in N-dimensional Minkowski space.
 /// This surface has constant negative curvature and therefore serves as a model
-/// of (N-1)-dimensional hyperbolic space.
+/// of $`(N-1)`$-dimensional hyperbolic space.
 ///
 /// Explicitly, for N-dimensional Minkowski space with metric $`\eta =
-/// \operatorname{diag}(+,\cdots,+,-)`$, the hyperboloid with skirt width $`R`$ is
-/// defined by the set of points with components satisfying
+/// \operatorname{diag}(+,\cdots,+,-)`$, the unit hyperboloid with is defined by
+/// the set of points with components satisfying
 /// ```math
-/// x_1^2 +\cdots x_{N-1}^2 - x_{N}^2 = -R^2
+/// x_1^2 +\cdots x_{N-1}^2 - x_{N}^2 = -1.0
 /// ```
 /// Where the "top sheet" is defined by the $`x_N>0`$ solutions. In Minkowski
 /// space, the hyperboloid has a natural interpretation as the set of points
@@ -468,14 +470,14 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 /// \Delta s^2 = \vec{x}^T \eta \vec{x} = x_1^2 +\cdots x_{N-1}^2 - x_{N}^2
 /// ```
 ///
-/// Note that the skirt width is fixed at $`R=1.0`$. In simulation, the global
+/// Note that the skirt width is fixed at $`\rho=1.0`$. In simulation, the global
 /// curvature may be tuned by changing the length scale of interactions.
 ///
 /// [`Hyperbolic`] implements a [`Metric`] that computes the distance of the
 /// geodesic passing between two points on a hyperboloid with some given skirt
 /// width.
 ///
-/// Two points on the hyperboloid with skirt width $` R = 1.0 `$:
+/// Two points on the hyperboloid:
 /// ```
 /// use hoomd_manifold::{Hyperbolic, Minkowski};
 /// use hoomd_vector::Metric;
@@ -565,7 +567,7 @@ impl<const N: usize> Hyperbolic<N> {
     /// Compute the distance from a point to the cusp.
     ///
     /// Computes the length of the geodesic passing between the cusp
-    /// $`(0,\cdots,0,\rho)`$ and a given point on the hyperboloid.
+    /// $`(0,\cdots,0,1.0)`$ and a given point on the hyperboloid.
     ///
     /// # Example
     /// ```
@@ -702,13 +704,11 @@ impl Metric for Hyperbolic<4> {
 
 /// Hyperbolic rotations in Minkowski Space
 ///
-/// Construct a [`HyperbolicRotationMatrix`] to apply SO(N-1, 1)
-/// transformations to N-dimensional Minkowski vectors. For Minkowski 4-vectors,
-/// [`Biquaternion`] should be used instead for numerical stability. See
-/// documentation in [`HyperbolicAngle`] for details on SO(2,1) transformations
-/// (i.e., two-dimensional hyperbolic space), and in [`Biquaternion`] for
-/// details on SO(3,1) transformations (i.e., three-dimensional hyperbolic
-/// space).
+/// Construct a [`HyperbolicRotationMatrix`] to apply $`SO(N-1, 1)`$
+/// transformations to N-dimensional Minkowski vectors. See documentation in
+/// [`HyperbolicAngle`] for details on $`SO(2,1)`$ transformations (i.e., two-
+/// dimensional hyperbolic space), and in [`Biquaternion`] for details on
+/// $`SO(3,1)`$ transformations (i.e., three-dimensional hyperbolic space).
 ///
 /// [`Biquaternion`]: crate::Biquaternion
 /// [`HyperbolicAngle`]: crate::HyperbolicAngle
@@ -873,7 +873,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     }
 }
 
-/// Randomly distribute points locally on a hyperboloid.
+/// Struct for randomly distributing points locally on the hyperboloid.
 ///
 /// [`HyperbolicDisk`] is a uniform distribution of points within distance `r`
 /// of a point on the 2-dimensional hyperboloid.
@@ -923,10 +923,7 @@ impl Distribution<Hyperbolic<3>> for HyperbolicDisk {
     /// Sample a random point in the hyperbolic disk.
     ///
     /// The implementation translates Minkowski 3-vector `point` along
-    /// the Hyperbolic by maximum distance of `disk_radius`. Note that because SO(2,1) is
-    /// non-Abelian, the point must be transformed to the cusp before a trial
-    /// move is applied (and then the point is transformed back). This ensures
-    /// that the max distance translated by the trial move does not exceed `disk_radius`.
+    /// the hyperboloid by maximum distance of `disk_radius`.
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Hyperbolic<3> {
         let max_boost = self.disk_radius.get();
