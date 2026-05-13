@@ -1,9 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement order parameters relating to the density of the system.
 
-use hoomd_geometry::shape::{Hypercuboid, EightEight};
+use hoomd_geometry::shape::{EightEight, Hypercuboid};
 use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::{
     Microstate, Transform,
@@ -14,30 +14,45 @@ use hoomd_vector::{Cartesian, Metric};
 use ndarray::prelude::*;
 use thiserror::Error;
 
-///  Struct for creating and manipulating histograms. 
-/// 
+///  Struct for creating and manipulating histograms.
+///
 /// `N` specifies the dimension of the histogram bins (may be 1, 2 or 3), `C`
-/// is the boundary condition of the data (e.g. `Open`, `Periodic``), and `A` 
-/// is the type for the data itself. `A` must be able to implement `Add` 
+/// is the boundary condition of the data (e.g. `Open`, `Periodic`), and `A`
+/// is the type for the data itself. `A` must be able to implement `Add`
 /// and `PartialOrd`.
-/// 
-// The default output `bin_counts` is an array of the frequencies for each of 
+// The default output `bin_counts` is an array of the frequencies for each of
 /// the bins and is stored as the type `usize`.
-/// 
+///
 /// ```
 /// use hoomd_microstate::{Microstate, property::Position};
-/// use hoomd_order::{SpatialHistogram, GenerateHistogram};
+/// use hoomd_order::{GenerateHistogram, SpatialHistogram};
 /// use hoomd_vector::Metric;
 /// use ndarray::prelude::*;
-/// 
-/// let numbers = vec![[1],[2],[4],[10],[11],[12],[14],[20],[21],[22],[23]];
+///
+/// let numbers = vec![
+///     [1],
+///     [2],
+///     [4],
+///     [10],
+///     [11],
+///     [12],
+///     [14],
+///     [20],
+///     [21],
+///     [22],
+///     [23],
+/// ];
 /// let bin_edges = array![
 ///     [0_usize, 10_usize, 20_usize, 30_usize],
 ///     [0_usize, 0_usize, 0_usize, 0_usize]
 /// ];
 /// let bounds = [[0_usize, 30_usize]; 1];
-/// let hist =
-///     SpatialHistogram::<1, usize>::histogram(&numbers, bin_edges, bounds, [3_usize]);
+/// let hist = SpatialHistogram::<1, usize>::histogram(
+///     &numbers,
+///     bin_edges,
+///     bounds,
+///     [3_usize],
+/// );
 /// let ans = array![4_usize, 4_usize, 3_usize];
 /// assert_eq!(ans, hist.bin_counts);
 /// ```
@@ -89,7 +104,7 @@ impl FloatHistogram {
     }
 }
 
-/// Compute a histogram with `N` dimensional data of type `A` which implements `Add` 
+/// Compute a histogram with `N` dimensional data of type `A` which implements `Add`
 /// and `PartialOrd`
 pub trait GenerateHistogram<const N: usize, A> {
     /// Generate a histogram from a given microstate.
@@ -139,7 +154,7 @@ pub enum Error {
 }
 
 impl<const N: usize, A> SpatialHistogram<N, A> {
-    /// A 2D array with the bin edges of the histogram. Each row gives the edges along 
+    /// A 2D array with the bin edges of the histogram. Each row gives the edges along
     /// one of the axes.
     #[inline]
     pub fn bin_edges(&self) -> &Array<A, Dim<[usize; 2]>> {
@@ -239,12 +254,13 @@ where
     }
 }
 
-impl<B, S, X> CorrelationFunction<B, S, X, Periodic<Hypercuboid<2>>, Cartesian<2>> for SpatialHistogram<1, f64>
+impl<B, S, X> CorrelationFunction<B, S, X, Periodic<Hypercuboid<2>>, Cartesian<2>>
+    for SpatialHistogram<1, f64>
 where
     S: Position<Position = Cartesian<2>> + Copy + Default,
     B: Transform<S> + Position<Position = Cartesian<2>> + Copy,
 {
-    /// Calculate the radial distribution function (RDF), g(r), for a given microstate 
+    /// Calculate the radial distribution function (RDF), g(r), for a given microstate
     /// with periodic boundary conditions.
     #[inline]
     fn rdf(
@@ -274,11 +290,11 @@ where
 
         let max_boundary = Periodic::new(boundary_max, microstate.boundary().shape().clone())
             .expect("copy of valid boundary");
-        let new_microstate =
-            Microstate::builder().boundary(max_boundary)
-                .bodies(microstate.bodies().iter().map(|b| b.clone().item))
-                .try_build()
-                .expect("copy of existing valid microstate");
+        let new_microstate = Microstate::builder()
+            .boundary(max_boundary)
+            .bodies(microstate.bodies().iter().map(|b| b.clone().item))
+            .try_build()
+            .expect("copy of existing valid microstate");
         let mut all_ghosts: Vec<Cartesian<2>> = vec![];
         for site_b in new_microstate.sites() {
             let ghosts =
@@ -310,12 +326,13 @@ where
     }
 }
 
-impl<B, S, X> CorrelationFunction<B, S, X, Periodic<Hypercuboid<3>>, Cartesian<3>> for SpatialHistogram<1, f64>
+impl<B, S, X> CorrelationFunction<B, S, X, Periodic<Hypercuboid<3>>, Cartesian<3>>
+    for SpatialHistogram<1, f64>
 where
     S: Position<Position = Cartesian<3>> + Copy + Default,
     B: Transform<S> + Position<Position = Cartesian<3>> + Copy,
 {
-    /// Calculate the radial distribution function (RDF), g(r), for a given microstate 
+    /// Calculate the radial distribution function (RDF), g(r), for a given microstate
     /// with periodic boundary conditions.
     #[inline]
     fn rdf(
@@ -345,11 +362,11 @@ where
 
         let max_boundary = Periodic::new(boundary_max, microstate.boundary().shape().clone())
             .expect("copy of valid boundary");
-        let new_microstate =
-            Microstate::builder().boundary(max_boundary)
-                .bodies(microstate.bodies().iter().map(|b| b.clone().item))
-                .try_build()
-                .expect("copy of existing valid microstate");
+        let new_microstate = Microstate::builder()
+            .boundary(max_boundary)
+            .bodies(microstate.bodies().iter().map(|b| b.clone().item))
+            .try_build()
+            .expect("copy of existing valid microstate");
         let mut all_ghosts: Vec<Cartesian<3>> = vec![];
         for site_b in new_microstate.sites() {
             let ghosts =
@@ -381,14 +398,25 @@ where
     }
 }
 
-impl<X> CorrelationFunction<Point<Hyperbolic<3>>, Point<Hyperbolic<3>>, X, Periodic<EightEight>, Hyperbolic<3>>
-    for SpatialHistogram<1, f64>
+impl<X>
+    CorrelationFunction<
+        Point<Hyperbolic<3>>,
+        Point<Hyperbolic<3>>,
+        X,
+        Periodic<EightEight>,
+        Hyperbolic<3>,
+    > for SpatialHistogram<1, f64>
 {
-    /// Calculate the radial distribution function (RDF), g(r), for a given microstate 
+    /// Calculate the radial distribution function (RDF), g(r), for a given microstate
     /// with periodic boundary conditions.
     #[inline]
     fn rdf(
-        microstate: &Microstate<Point<Hyperbolic<3>>, Point<Hyperbolic<3>>, X, Periodic<EightEight>>,
+        microstate: &Microstate<
+            Point<Hyperbolic<3>>,
+            Point<Hyperbolic<3>>,
+            X,
+            Periodic<EightEight>,
+        >,
         r_min: f64,
         r_max: f64,
         nbins: usize,
@@ -412,16 +440,12 @@ impl<X> CorrelationFunction<Point<Hyperbolic<3>>, Point<Hyperbolic<3>>, X, Perio
             ndarray::stack![Axis(0), bin_edges_arr, bin_edges_arr];
         let mut distances: Vec<[f64; 1]> = vec![];
 
-        let max_boundary = Periodic::new(
-            boundary_max,
-            EightEight{},
-        )
-        .expect("hard coded");
-        let new_microstate=
-            Microstate::builder().boundary(max_boundary)
-                .bodies(microstate.bodies().iter().map(|b| b.clone().item))
-                .try_build()
-                .expect("copy of existing valid microstate");
+        let max_boundary = Periodic::new(boundary_max, EightEight {}).expect("hard coded");
+        let new_microstate = Microstate::builder()
+            .boundary(max_boundary)
+            .bodies(microstate.bodies().iter().map(|b| b.clone().item))
+            .try_build()
+            .expect("copy of existing valid microstate");
         let mut all_ghosts: Vec<Hyperbolic<3>> = vec![];
         for site_b in new_microstate.sites() {
             let ghosts =
@@ -636,7 +660,8 @@ mod tests {
     fn rdf_cartesian_square() -> Result<(), Box<dyn std::error::Error>> {
         const SIZE: usize = 2;
         let a: f64 = 1.0;
-        let mut microstate = Microstate::builder().boundary(Open)
+        let mut microstate = Microstate::builder()
+            .boundary(Open)
             .try_build()
             .expect("empty microstate");
         for i in 0..SIZE {
@@ -665,7 +690,8 @@ mod tests {
             Hypercuboid::<2>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
         )
         .expect("no interactions");
-        let microstate = Microstate::builder().boundary(boundary)
+        let microstate = Microstate::builder()
+            .boundary(boundary)
             .bodies([
                 Body::point(Cartesian::from([-0.5, 0.8])),
                 Body::point(Cartesian::from([0.75, 0.8])),
@@ -687,7 +713,8 @@ mod tests {
 
     #[test]
     fn rdf_hyperbolic() -> Result<(), Box<dyn std::error::Error>> {
-        let microstate = Microstate::builder().boundary(Open)
+        let microstate = Microstate::builder()
+            .boundary(Open)
             .bodies([
                 Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                     1.0,
@@ -730,10 +757,17 @@ mod tests {
     fn rdf_hyperbolic_periodic() -> Result<(), Box<dyn std::error::Error>> {
         const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
         let boundary = Periodic::new(1.0, EightEight {})?;
-        let microstate = Microstate::builder().boundary(boundary)
+        let microstate = Microstate::builder()
+            .boundary(boundary)
             .bodies([
-                Body::point(Hyperbolic::<3>::from_polar_coordinates(EIGHTEIGHT - 0.2, 0.0)),
-                Body::point(Hyperbolic::<3>::from_polar_coordinates(EIGHTEIGHT - 0.25, 0.0)),
+                Body::point(Hyperbolic::<3>::from_polar_coordinates(
+                    EIGHTEIGHT - 0.2,
+                    0.0,
+                )),
+                Body::point(Hyperbolic::<3>::from_polar_coordinates(
+                    EIGHTEIGHT - 0.25,
+                    0.0,
+                )),
                 Body::point(Hyperbolic::<3>::from_polar_coordinates(
                     1.8,
                     0.01 + PI * 3.0 / 4.0,
@@ -744,7 +778,10 @@ mod tests {
         let rdf_hist = SpatialHistogram::<1, f64>::rdf(&microstate, 0.01_f64, 1.01_f64, 2_usize)?;
         let ans = array![4_usize, 2_usize];
         assert_eq!(ans, rdf_hist.bin_counts);
-        assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.01, 0.51, 1.01]);
+        assert_eq!(
+            rdf_hist.bin_edges.slice(s![0, ..]),
+            array![0.01, 0.51, 1.01]
+        );
 
         let rdf_hist_normalized = FloatHistogram::normalize(&rdf_hist);
         let ans_normed = array![2.0 / 3.0, 1.0 / 3.0];

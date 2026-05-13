@@ -1,11 +1,10 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /// TODO: documentation
 /// Constructs power diagrams using TODO: link algorithm. This algorithm works
 /// by lifting spheres in N-dimensional space (stored as `PDSeed<N>`) to points
 /// in (N+1)-dimensional space, and then constructing the voronoi diagram.
-///
 use kd_tree::KdTree;
 use robust::{Coord, Coord3D, orient2d, orient3d};
 use thiserror::Error;
@@ -123,10 +122,8 @@ impl PowerDiagram<2> {
             / (2.0 * ((pt_j[0] - pt_i[0]).powi(2) + (pt_j[1] - pt_i[1]).powi(2)));
         let x_1 = (pt_i[1] - pt_j[1]) + (0.5) * (pt_j[0] + pt_i[0]) + lambda * (pt_j[0] - pt_i[0]);
         let y_1 = (pt_j[0] - pt_i[0]) + (0.5) * (pt_j[1] + pt_i[1]) + lambda * (pt_j[1] - pt_i[1]);
-        let x_2 =
-            -(pt_i[1] - pt_j[1]) + (0.5) * (pt_j[0] + pt_i[0]) + lambda * (pt_j[0] - pt_i[0]);
-        let y_2 =
-            -(pt_j[0] - pt_i[0]) + (0.5) * (pt_j[1] + pt_i[1]) + lambda * (pt_j[1] - pt_i[1]);
+        let x_2 = -(pt_i[1] - pt_j[1]) + (0.5) * (pt_j[0] + pt_i[0]) + lambda * (pt_j[0] - pt_i[0]);
+        let y_2 = -(pt_j[0] - pt_i[0]) + (0.5) * (pt_j[1] + pt_i[1]) + lambda * (pt_j[1] - pt_i[1]);
         let pt_a = Coord { x: x_1, y: y_1 };
         let pt_b = Coord { x: x_2, y: y_2 };
         let pt_c = Coord { x: 0.0, y: 0.0 };
@@ -316,7 +313,7 @@ impl PowerDiagram<3> {
             let prev_is_below = orient3d(bisect_a, bisect_b, bisect_c, vertex_p1) > 0.0;
             let current_is_below = orient3d(bisect_a, bisect_b, bisect_c, vertex_p2) > 0.0;
 
-            let origin_below = orient3d(bisect_a, bisect_b, bisect_c, pt_d) > 0.0; 
+            let origin_below = orient3d(bisect_a, bisect_b, bisect_c, pt_d) > 0.0;
             let prev_is_inside =
                 (prev_is_below && origin_below) || (!prev_is_below && !origin_below);
             let current_is_inside =

@@ -1,10 +1,10 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement Voronoi tesselations of a given point set
 
 use crate::{PDSeed, PowerDiagram, voronoi_neighborlist};
-use hoomd_geometry::shape::{Hypercuboid, EightEight};
+use hoomd_geometry::shape::{EightEight, Hypercuboid};
 use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::{
     Microstate,
@@ -30,7 +30,9 @@ pub struct NeighborList<'a, B, S, X, C> {
 
 pub trait GenerateNeighborList<B, S, X, C, M> {
     /// Generate the neighbor list from a given microstate.
-    fn from_microstate(microstate: &Microstate<B, S, X, C>) -> Result<NeighborList<'_, B, S, X, C>, Error>;
+    fn from_microstate(
+        microstate: &Microstate<B, S, X, C>,
+    ) -> Result<NeighborList<'_, B, S, X, C>, Error>;
 }
 
 impl<B, S, X, C> NeighborList<'_, B, S, X, C> {
@@ -43,17 +45,19 @@ impl<B, S, X, C> NeighborList<'_, B, S, X, C> {
     /// #Example
     ///
     /// ```
-    /// use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
-    /// use hoomd_vector::Cartesian;
     /// use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
+    /// use hoomd_microstate::{Body, Microstate, boundary::Open, property::Point};
+    /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let microstate = MicrostateBuilder::new()
-    ///    .bodies([Body::point(Cartesian::from([0.5, 0.25])),
-    ///            Body::point(Cartesian::from([-1.0, 1.0])),
-    ///            Body::point(Cartesian::from([1.0, -0.75])),
-    ///            Body::point(Cartesian::from([-0.5, -0.5]))])
-    ///    .try_build()?;
+    /// let microstate = Microstate::builder()
+    ///     .bodies([
+    ///         Body::point(Cartesian::from([0.5, 0.25])),
+    ///         Body::point(Cartesian::from([-1.0, 1.0])),
+    ///         Body::point(Cartesian::from([1.0, -0.75])),
+    ///         Body::point(Cartesian::from([-0.5, -0.5])),
+    ///     ])
+    ///     .try_build()?;
     ///
     /// let nlist = NeighborList::from_microstate(&microstate)?;
     /// let nlist_for_0 = nlist.neighbors_of_site(microstate.site_indices()[0]);
@@ -86,21 +90,26 @@ impl<B, S, X, C> NeighborList<'_, B, S, X, C> {
     /// #Example
     ///
     /// ```
-    /// use hoomd_microstate::{MicrostateBuilder, Body, boundary::Open};
-    /// use hoomd_vector::Cartesian;
     /// use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
+    /// use hoomd_microstate::{Body, Microstate, boundary::Open};
+    /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let microstate = MicrostateBuilder::new()
-    ///     .bodies([Body::point(Cartesian::from([0.5, 0.25])),
-    ///             Body::point(Cartesian::from([-1.0, 1.0])),
-    ///             Body::point(Cartesian::from([1.0, -0.75])),
-    ///             Body::point(Cartesian::from([-0.5, -0.5]))])
+    /// let microstate = Microstate::builder()
+    ///     .bodies([
+    ///         Body::point(Cartesian::from([0.5, 0.25])),
+    ///         Body::point(Cartesian::from([-1.0, 1.0])),
+    ///         Body::point(Cartesian::from([1.0, -0.75])),
+    ///         Body::point(Cartesian::from([-0.5, -0.5])),
+    ///     ])
     ///     .try_build()?;
     ///
     /// let nlist = NeighborList::from_microstate(&microstate)?;
     /// let coordination_numbers = nlist.coordination_numbers();
-    /// assert_eq!(vec![3 as usize, 2 as usize, 2 as usize, 3 as usize], coordination_numbers);
+    /// assert_eq!(
+    ///     vec![3 as usize, 2 as usize, 2 as usize, 3 as usize],
+    ///     coordination_numbers
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -121,7 +130,7 @@ pub trait DirectorField<B, S, X, C, M> {
         microstate: &Microstate<B, S, X, C>,
         site_index: Option<usize>,
     ) -> Result<Complex<f64>, Error>;
-    /// Get a histrogram of hexatic orders $`\psi_6`$ across all body sites in a 
+    /// Get a histrogram of hexatic orders $`\psi_6`$ across all body sites in a
     /// given microstate.
     fn orientational_order(
         &self,
@@ -258,10 +267,7 @@ where
                 let neighbors_translated: Vec<[f64; 2]> = site_neighbors
                     .iter()
                     .map(|s| {
-                        let nn = microstate.sites()[*s]
-                            .properties
-                            .position()
-                            .coordinates();
+                        let nn = microstate.sites()[*s].properties.position().coordinates();
                         [
                             nn[0] * (boost.cosh()) * (rot.cos())
                                 - nn[1] * (boost.cosh()) * (rot.sin())
@@ -371,25 +377,31 @@ impl From<voronoi_neighborlist::Error> for Error {
 /// #Example
 ///
 /// ```
-/// use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
-/// use hoomd_vector::Cartesian;
 /// use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
+/// use hoomd_microstate::{Body, Microstate, boundary::Open, property::Point};
+/// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let microstate = MicrostateBuilder::new()
-///     .bodies([Body::point(Cartesian::from([0.5, 0.25])),
-///              Body::point(Cartesian::from([-1.0, 1.0])),
-///              Body::point(Cartesian::from([1.0, -0.75])),
-///              Body::point(Cartesian::from([-0.5, -0.5]))])
+/// let microstate = Microstate::builder()
+///     .bodies([
+///         Body::point(Cartesian::from([0.5, 0.25])),
+///         Body::point(Cartesian::from([-1.0, 1.0])),
+///         Body::point(Cartesian::from([1.0, -0.75])),
+///         Body::point(Cartesian::from([-0.5, -0.5])),
+///     ])
 ///     .try_build()?;
 ///
 /// let nlist = NeighborList::from_microstate(&microstate)?;
-/// assert_eq!(vec![(0 as usize, 1 as usize),
-///                 (0 as usize, 2 as usize),
-///                 (0 as usize, 3 as usize),
-///                 (1 as usize, 3 as usize),
-///                 (2 as usize, 3 as usize)],
-///             *nlist.neighbors());
+/// assert_eq!(
+///     vec![
+///         (0 as usize, 1 as usize),
+///         (0 as usize, 2 as usize),
+///         (0 as usize, 3 as usize),
+///         (1 as usize, 3 as usize),
+///         (2 as usize, 3 as usize)
+///     ],
+///     *nlist.neighbors()
+/// );
 /// # Ok(())
 /// # }
 /// ```
@@ -679,7 +691,7 @@ where
                 count += 1;
             }
         }
-        let power_diagram = PowerDiagram::<2>::build(&seeds_with_ghosts, simulation_box, 14_usize)?; 
+        let power_diagram = PowerDiagram::<2>::build(&seeds_with_ghosts, simulation_box, 14_usize)?;
         let nnlist = power_diagram.neighborlist();
 
         for elt in nnlist {
@@ -709,25 +721,40 @@ where
 /// #Example
 ///
 /// ```
-/// use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
 /// use hoomd_manifold::{Hyperbolic, Minkowski};
 /// use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
+/// use hoomd_microstate::{Body, Microstate, boundary::Open, property::Point};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let microstate = MicrostateBuilder::with_boundary(Open)
-///     .bodies([Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
-///         Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([1.0, -1.0, 3.0_f64.sqrt()]),1.0)),
-///         Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([-1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
-///         Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()]),1.0))])
+/// let microstate = Microstate::builder()
+///     .boundary(Open)
+///     .bodies([
+///         Body::point(Hyperbolic::from_minkowski_coordinates(
+///             [1.0, -2.0, 6.0_f64.sqrt()].into(),
+///         )),
+///         Body::point(Hyperbolic::from_minkowski_coordinates(
+///             [1.0, -1.0, 3.0_f64.sqrt()].into(),
+///         )),
+///         Body::point(Hyperbolic::from_minkowski_coordinates(
+///             [-1.0, -2.0, 6.0_f64.sqrt()].into(),
+///         )),
+///         Body::point(Hyperbolic::from_minkowski_coordinates(
+///             [-1.0, 1.0, 3.0_f64.sqrt()].into(),
+///         )),
+///     ])
 ///     .try_build()?;
 ///
 /// let nlist = NeighborList::from_microstate(&microstate)?;
-/// assert_eq!(vec![(0 as usize, 1 as usize),
-///                 (0 as usize, 2 as usize),
-///                 (1 as usize, 2 as usize),
-///                 (1 as usize, 3 as usize),
-///                 (2 as usize, 3 as usize)],
-///             *nlist.neighbors());
+/// assert_eq!(
+///     vec![
+///         (0 as usize, 1 as usize),
+///         (0 as usize, 2 as usize),
+///         (1 as usize, 2 as usize),
+///         (1 as usize, 3 as usize),
+///         (2 as usize, 3 as usize)
+///     ],
+///     *nlist.neighbors()
+/// );
 /// # Ok(())
 /// # }
 /// ```
@@ -810,11 +837,12 @@ impl<B, X> GenerateNeighborList<B, Point<Hyperbolic<3>>, X, Periodic<EightEight>
         let to_seed = |id: &usize| {
             let coords = microstate.sites()[*id].properties.position().coordinates();
             let klein: [f64; 2] = [coords[0] / coords[2], coords[1] / coords[2]];
-            let prefactor = 1.0 / (2.0 * (f64::from(1.0 - klein[0].powi(2) - klein[1].powi(2))).sqrt());
+            let prefactor =
+                1.0 / (2.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)).sqrt());
             let seed_coords = [prefactor * klein[0], prefactor * klein[1]];
             let radius = (klein[0].powi(2) + klein[1].powi(2))
                 / (4.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)))
-                - 1.0 / (f64::from(1.0 - klein[0].powi(2) - klein[1].powi(2))).sqrt();
+                - 1.0 / (1.0 - klein[0].powi(2) - klein[1].powi(2)).sqrt();
             PDSeed {
                 coordinate: seed_coords,
                 weight: radius.powi(2),
@@ -828,7 +856,7 @@ impl<B, X> GenerateNeighborList<B, Point<Hyperbolic<3>>, X, Periodic<EightEight>
             .map(to_seed)
             .collect();
         let n_particles = microstate.sites().len();
-        //all subsequent additions are ghosts
+        // all subsequent additions are ghosts
         let mut ghost_list: Vec<usize> = vec![];
         let mut count = n_particles;
         for site in microstate.sites() {
@@ -839,12 +867,15 @@ impl<B, X> GenerateNeighborList<B, Point<Hyperbolic<3>>, X, Periodic<EightEight>
                     ghost_coord[0] / ghost_coord[2],
                     ghost_coord[1] / ghost_coord[2],
                 ];
-                let prefactor =
-                    1.0 / (2.0 * (f64::from(1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2))).sqrt());
+                let prefactor = 1.0
+                    / (2.0
+                        * (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2))
+                            .sqrt());
                 let ghost_seed_coords = [prefactor * ghost_klein[0], prefactor * ghost_klein[1]];
                 let ghost_radius = (ghost_klein[0].powi(2) + ghost_klein[1].powi(2))
                     / (4.0 * (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)))
-                    - 1.0 / (f64::from(1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2))).sqrt();
+                    - 1.0
+                        / (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)).sqrt();
                 seeds_with_ghosts.push(PDSeed {
                     coordinate: ghost_seed_coords,
                     weight: ghost_radius,
@@ -869,7 +900,7 @@ impl<B, X> GenerateNeighborList<B, Point<Hyperbolic<3>>, X, Periodic<EightEight>
         ];
 
         let power_diagram =
-            PowerDiagram::<2>::build(&seeds_with_ghosts, simulation_box_vertices, 14_usize)?; 
+            PowerDiagram::<2>::build(&seeds_with_ghosts, simulation_box_vertices, 14_usize)?;
         let nnlist = power_diagram.neighborlist();
 
         for elt in nnlist {
@@ -900,7 +931,10 @@ mod tests {
     use approxim::assert_relative_eq;
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_manifold::Hyperbolic;
-    use hoomd_microstate::{Body, boundary::Open, boundary::Periodic};
+    use hoomd_microstate::{
+        Body,
+        boundary::{Open, Periodic},
+    };
     use hoomd_vector::Cartesian;
 
     #[test]
@@ -984,26 +1018,18 @@ mod tests {
         let microstate = Microstate::builder()
             .boundary(Open)
             .bodies([
-                Body::point(Hyperbolic::from_minkowski_coordinates([
-                    1.0,
-                    -2.0,
-                    6.0_f64.sqrt(),
-                ].into())),
-                Body::point(Hyperbolic::from_minkowski_coordinates([
-                    1.0,
-                    -1.0,
-                    3.0_f64.sqrt(),
-                ].into())),
-                Body::point(Hyperbolic::from_minkowski_coordinates([
-                    -1.0,
-                    -2.0,
-                    6.0_f64.sqrt(),
-                ].into())),
-                Body::point(Hyperbolic::from_minkowski_coordinates([
-                    -1.0,
-                    1.0,
-                    3.0_f64.sqrt(),
-                ].into())),
+                Body::point(Hyperbolic::from_minkowski_coordinates(
+                    [1.0, -2.0, 6.0_f64.sqrt()].into(),
+                )),
+                Body::point(Hyperbolic::from_minkowski_coordinates(
+                    [1.0, -1.0, 3.0_f64.sqrt()].into(),
+                )),
+                Body::point(Hyperbolic::from_minkowski_coordinates(
+                    [-1.0, -2.0, 6.0_f64.sqrt()].into(),
+                )),
+                Body::point(Hyperbolic::from_minkowski_coordinates(
+                    [-1.0, 1.0, 3.0_f64.sqrt()].into(),
+                )),
             ])
             .try_build()
             .expect("hard-coded distributions should be valid");

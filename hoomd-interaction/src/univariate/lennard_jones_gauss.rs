@@ -12,11 +12,11 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// ```math
 /// U(r) = 1[\mathrm{energy}]\cdot\left[ \left(\frac{\ell}{r}\right)^{12} - 2\left(\frac{\ell}{r}\right)^{6}\right] - \varepsilon \exp \left(-\frac{(r/\ell-r_0)^2}{2\sigma^2}\right)
 /// ```
-/// 
+///
 /// Compute the Lennard-Jones-Gauss (LJG) potential and force as a function of `r`.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::univariate::{
@@ -40,9 +40,9 @@ use super::{UnivariateEnergy, UnivariateForce};
 ///     epsilon = 1e-12
 /// );
 /// ```
-/// 
+///
 /// The parameters are public fields and may be accessed directly:
-/// 
+///
 /// ```
 /// use hoomd_interaction::univariate::LennardJonesGauss;
 ///

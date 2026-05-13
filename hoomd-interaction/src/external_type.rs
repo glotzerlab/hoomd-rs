@@ -362,7 +362,7 @@ impl<P, B, S, X, C, E> DeltaEnergyInsert<B, S, X, C> for External<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
-    S: Position<Position=P>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
 {
     /// Evaluate the change in energy contributed by `External` when a single body is inserted.
@@ -568,7 +568,7 @@ mod test_finite {
 
     impl<S> SiteEnergy<S> for TestSE
     where
-        S: Position<Position= Cartesian<2>>,
+        S: Position<Position = Cartesian<2>>,
     {
         fn site_energy(&self, site_properties: &S) -> f64 {
             site_properties.position()[0] + site_properties.position()[1]

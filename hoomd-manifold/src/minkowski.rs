@@ -520,7 +520,10 @@ impl<const N: usize> Hyperbolic<N> {
     /// ```
     #[must_use]
     #[inline]
-    #[allow(clippy::cast_possible_truncation, reason="float is truncated before converting to i32")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "float is truncated before converting to i32"
+    )]
     pub fn from_minkowski_coordinates(point: Minkowski<N>) -> Hyperbolic<N> {
         let pt = point.coordinates;
         // let lhs = pt[0]*pt[0] + pt[1]*pt[1];
