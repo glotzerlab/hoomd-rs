@@ -47,11 +47,8 @@ struct HardTriclinicSelfAssembly {
     /// Quick insert algorithm.
     quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Triclinic>>>,
     /// How sites interact when inserted and compressed.
-    overlap_penalty_hamiltonian: PairwiseCutoff<
-        Anisotropic<
-            ApproximateShapeOverlap<OverlapPenalty, Convex<ConvexPolyhedron>>,
-        >,
-    >,
+    overlap_penalty_hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolyhedron>>>,
+    
     /// The current phase of the simulation.
     phase: Phase,
 }
@@ -70,11 +67,10 @@ impl HardTriclinicSelfAssembly {
     /// simulation.
     fn new() -> anyhow::Result<HardTriclinicSelfAssembly> {
         let initial_packing_fraction = 0.01;
-        let target_packing_fraction = 0.5;
-        let n_bodies = 512;
+        let target_packing_fraction = 0.2;
+        let n_bodies = 200;
         let maximum_distance = 0.07;
         let maximum_rotation = 0.3;
-        let sigma = 1.0;
         let macrostate = Isothermal { temperature: 1.0 };
 
         // Build a triclinic particle whose box vector matches the 2D rhomboid:
@@ -99,25 +95,16 @@ impl HardTriclinicSelfAssembly {
         let half_a3: Cartesian<3> = (a3 * 0.5).into();
 
         // All 8 corners: ±½a₁ ± ½a₂ ± ½a₃
-        let vertices: Vec<Cartesian<3>> = [
-            [-1.0_f64, -1.0, -1.0],
-            [1.0, -1.0, -1.0],
-            [-1.0, 1.0, -1.0],
-            [1.0, 1.0, -1.0],
-            [-1.0, -1.0, 1.0],
-            [1.0, -1.0, 1.0],
-            [-1.0, 1.0, 1.0],
-            [1.0, 1.0, 1.0],
-        ]
-        .iter()
-        .map(|&[s1, s2, s3]| {
-            Cartesian::from([
-                s1 * half_a1[0] + s2 * half_a2[0] + s3 * half_a3[0],
-                s1 * half_a1[1] + s2 * half_a2[1] + s3 * half_a3[1],
-                s1 * half_a1[2] + s2 * half_a2[2] + s3 * half_a3[2],
-            ])
-        })
-        .collect();
+        let vertices: Vec<Cartesian<3>> = vec![
+            Cartesian::from([-0.750000, -0.433013, -0.288675]),
+            Cartesian::from([0.250000, -0.433013, -0.288675]),
+            Cartesian::from([-0.250000, 0.433013, -0.288675]),
+            Cartesian::from([0.750000, 0.433013, -0.288675]),
+            Cartesian::from([-0.750000, -0.433013, 0.288675]),
+            Cartesian::from([0.250000, -0.433013, 0.288675]),
+            Cartesian::from([-0.250000, 0.433013, 0.288675]),
+            Cartesian::from([0.750000, 0.433013, 0.288675])
+        ];
 
         let particle = ConvexPolyhedron::with_vertices(vertices)?;
         let hamiltonian = PairwiseCutoff(HardShape(Convex(particle.clone())));
@@ -125,10 +112,8 @@ impl HardTriclinicSelfAssembly {
         // Build the initial simulation box as a scaled triclinic box with the
         // same tilt factors as the particle, so the particles tile perfectly
         // under compression.
-        let initial_box_volume = n_bodies as f64 * particle_shape.volume()
-            / initial_packing_fraction;
-        let initial_box_edge_length = initial_box_volume.cbrt();
-        let scale = initial_box_edge_length / particle_box_vector[0]; // Lx=1
+        let scale: f64  = (n_bodies as f64 / initial_packing_fraction).cbrt();
+        println!("initial box scale factor = {scale}");
         let initial_box = Triclinic::from_box_vector([
             particle_box_vector[0] * scale,
             particle_box_vector[1] * scale,
@@ -169,16 +154,20 @@ impl HardTriclinicSelfAssembly {
 
         let target_box_volume =
             n_bodies as f64 * particle_shape.volume() / target_packing_fraction;
+        println!("target_box_volume = {target_box_volume}");
         let quick_compress =
             QuickCompress::with_target_volume(target_box_volume.try_into()?);
 
+        println!("{:?}", particle);
+
+        
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
                 Convex(particle),
-                OverlapPenalty::default(),
-                0.1.try_into()?,
+                OverlapPenalty::scaled_default(10.0),
+                0.01.try_into()?,
             ),
-            r_cut: sigma,
+            r_cut: hamiltonian.maximum_interaction_range().try_into()?,
         };
 
         let overlap_penalty_hamiltonian =
@@ -186,8 +175,8 @@ impl HardTriclinicSelfAssembly {
 
         Ok(HardTriclinicSelfAssembly {
             microstate,
-            overlap_penalty_hamiltonian,
-            hamiltonian,
+            hamiltonian: hamiltonian.clone(),
+            overlap_penalty_hamiltonian: hamiltonian,
             translate_sweep,
             rotate_sweep,
             quick_compress,
@@ -311,12 +300,16 @@ fn main() -> anyhow::Result<()> {
     for _ in 0..100_000 {
         simulation.advance()?;
 
-        if simulation.step().is_multiple_of(1000) {
+        if simulation.step().is_multiple_of(100) {
             let energy = simulation.energy();
-            println!("Step {}: energy = {}", simulation.step(), energy);
+            println!("Step {}: energy = {} Volume = {} QuickInsertComplete = {} QuickCompressComplete = {:?}", simulation.step(), energy, simulation.microstate.boundary().volume(), simulation.quick_insert.is_complete(), simulation.quick_compress);
             hoomd_gsd_file
                 .append_microstate(&simulation.microstate)?
                 .end()?;
+        }
+        if simulation.step().is_multiple_of(1000) {
+                let closest_distance = simulation.microstate.bodies().len();
+                println!("Step {}: closest distance = {}", simulation.step(), closest_distance);
         }
     }
     println!("Simulation_Finished");

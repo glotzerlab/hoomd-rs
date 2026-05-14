@@ -522,8 +522,8 @@ impl Scale for Triclinic {
     /// ```
     #[inline]
     fn scale_volume(&self, v: PositiveReal) -> Self {
-        let v = v.get().cbrt();
-        self.scale_length(v.try_into().expect("v^{1/3} should be a positive real"))
+        let v = v.get().cbrt().try_into().expect("v^{1/3} should be a positive real");
+        self.scale_length(v)
     }
 }
 
@@ -555,7 +555,7 @@ impl Distribution<Cartesian<3>> for Triclinic {
 
         let scaled_x =
             self.Lx().get() * x + self.xy() * self.Ly().get() * y + self.xz() * self.Lz().get() * z;
-        let scaled_y = self.Ly().get() * x + self.yz() * self.Lz().get() * z;
+        let scaled_y = self.Ly().get() * y + self.yz() * self.Lz().get() * z;
         let scaled_z = self.Lz().get() * z;
 
         Cartesian {

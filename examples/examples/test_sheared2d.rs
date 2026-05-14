@@ -25,7 +25,6 @@ type Orientation = Angle;
 type BodyProperties = OrientedPoint<PositionVector, Orientation>;
 type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 
-#[cfg_attr(feature = "bevy", derive(Resource))]
 struct HardRhomboidSelfAssembly {
     /// Positions and orientations of all the bodies in the simulation.
     microstate: Microstate<
@@ -63,11 +62,11 @@ impl HardRhomboidSelfAssembly {
     /// Construct a new hard rhomboid self-assembly simulation.
     fn new() -> anyhow::Result<HardRhomboidSelfAssembly> {
         let initial_packing_fraction = 0.01;
-        let target_packing_fraction = 0.5;
+        let target_packing_fraction = 0.8;
         let n_bodies = 512;
         let maximum_distance = 0.07;
         let maximum_rotation = 0.3;
-        let sigma = 1.0;
+        let sigma = 1.5;
         let aspect = 5.0;
         let macrostate = Isothermal { temperature: 1.0 };
         assert!(aspect >= 1.0);
@@ -127,9 +126,9 @@ impl HardRhomboidSelfAssembly {
             interaction: ApproximateShapeOverlap::new(
                 rhomboid,
                 OverlapPenalty::default(),
-                0.1.try_into()?,
+                0.01.try_into()?,
             ),
-            r_cut: sigma,
+            r_cut: hamiltonian.maximum_interaction_range().try_into()?,
         };
 
         let overlap_penalty_hamiltonian =

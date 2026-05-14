@@ -88,12 +88,12 @@ impl Periodic<Rhomboid> {
     /// # }
     /// ```
     pub fn to_absolute(&self, frac: &Cartesian<2>) -> Cartesian<2> {
-        let Lx = self.shape.Lx().get();
-        let Ly = self.shape.Ly().get();
+        let lx = self.shape.Lx().get();
+        let ly = self.shape.Ly().get();
         let xy = self.shape.xy();
 
-        let r1 = Lx * frac[0] + xy * Ly * frac[1];
-        let r2 = Ly * frac[1];
+        let r1 = lx * frac[0] + xy * ly * frac[1];
+        let r2 = ly * frac[1];
 
         Cartesian::from([r1, r2])
     }
