@@ -547,7 +547,7 @@ impl Hyperbolic<3> {
             v_sinh * (theta_mod.sin()),
             v.cosh(),
         ]);
-        Hyperbolic::from_minkowski_coordinates(point)
+        Hyperbolic { point }
     }
 }
 
@@ -565,7 +565,7 @@ impl Hyperbolic<4> {
             v_sinh * (theta_mod.sin()) * (phi_mod.sin()),
             v.cosh(),
         ]);
-        Hyperbolic::from_minkowski_coordinates(point)
+        Hyperbolic { point }
     }
 }
 
