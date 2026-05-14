@@ -67,14 +67,16 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
         body_properties: Point<Hyperbolic<3>>,
     ) -> Point<Hyperbolic<3>> {
         let mut trial = body_properties;
-        // let disk = HyperbolicDisk {
-        // disk_radius: *self.maximum_distance(),
-        // point: *trial.position_mut(),
-        // };
-        // let trial_sample: Hyperbolic<3> = disk.sample(rng);
-        // let new = trial_sample.coordinates();
+        let max_distance: PositiveReal = self.maximum_distance
+            * PositiveReal::try_from(0.9).expect("hard-coded positive number");
+        let disk = HyperbolicDisk {
+            disk_radius: max_distance,
+            point: *trial.position_mut(),
+        };
+        let trial_sample: Hyperbolic<3> = disk.sample(rng);
+        let new = trial_sample.coordinates();
 
-        let trial_array = trial.position.coordinates();
+        /* let trial_array = trial.position.coordinates();
         let dist = Uniform::new(0.0, self.maximum_distance().get() * 0.9)
             .expect("max distance must be positive real");
         let displacement = dist.sample(rng);
@@ -93,7 +95,7 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
             trial_array[0] * csh + unit.coordinates[0] * snh,
             trial_array[1] * csh + unit.coordinates[1] * snh,
             trial_array[2] * csh + unit.coordinates[2] * snh,
-        ];
+        ]; */
         // store in polar coordinates to ensure point is on disk
         let theta = new[1].atan2(new[0]);
         let boost = (new[2]).acosh();
