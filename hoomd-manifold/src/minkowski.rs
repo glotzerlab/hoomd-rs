@@ -526,10 +526,21 @@ impl<const N: usize> Hyperbolic<N> {
     )]
     pub fn from_minkowski_coordinates(point: Minkowski<N>) -> Hyperbolic<N> {
         let pt = point.coordinates;
-        // let lhs = pt[0]*pt[0] + pt[1]*pt[1];
-        let lhs = pt[0..N - 1].iter().fold(0.0, |sum, x| sum + x * x);
-        let rhs = pt[N - 1] * pt[N - 1] - 1.0;
-        let tolerance = 8_i32 - (point.coordinates[N - 1].log10().trunc() as i32);
+        let min_coord_index = pt[0..N - 1]
+            .iter()
+            .enumerate()
+            .min_by(|(_, a), (_, b)| a.total_cmp(b))
+            .map_or(0,|(i, _)| i);
+        let min_coord = pt[min_coord_index];
+        let lhs = min_coord.mul_add(min_coord, 1.0);
+        let rhs = pt[0..N - 1]
+            .iter()
+            .enumerate()
+            .filter(|(j, _)| *j != min_coord_index)
+            .fold(pt[N - 1] * pt[N - 1], |sum, (_, x)| {
+                f64::mul_add(-x, *x, sum)
+            });
+        let tolerance = 9_i32 - (point.coordinates[N - 1].log10().trunc() as i32);
         assert_relative_eq!(lhs, rhs, epsilon = 10.0_f64.powi(-tolerance));
         Hyperbolic { point }
     }
