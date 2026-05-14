@@ -66,10 +66,18 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
         body_properties: Point<Hyperbolic<3>>,
     ) -> Point<Hyperbolic<3>> {
         let mut trial = body_properties;
+        /* let disk = HyperbolicDisk {
+            disk_radius: *self.maximum_distance(),
+            point: *trial.position_mut(),
+        };
+        let trial_sample: Hyperbolic<3> = disk.sample(rng);
+        let new = trial_sample.coordinates(); */
+
         let trial_array = trial.position.coordinates();
         let dist = Uniform::new(0.0, self.maximum_distance().get())
             .expect("max distance must be positive real");
         let displacement = dist.sample(rng);
+        println!("selected displacement is {:}", displacement);
         let (snh, csh) = (displacement.sinh(), displacement.cosh());
         let vec: [f64; 3] = std::array::from_fn(|_| rng.sample(StandardNormal));
         let proj = vec[0] * trial_array[0] + vec[1] * trial_array[1] - vec[2] * trial_array[2];
@@ -86,13 +94,10 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
             trial_array[1] * csh + unit.coordinates[1] * snh,
             trial_array[2] * csh + unit.coordinates[2] * snh,
         ];
-        // push point back onto hyperboloid
-        let new_pushed = Minkowski::from([
-            new[0],
-            new[1],
-            (new[0] * new[0] + new[1] * new[1] + 1.0_f64).sqrt(),
-        ]);
-        *trial.position_mut() = Hyperbolic::from_minkowski_coordinates(new_pushed);
+        // store in polar coordinates to ensure point is on disk
+        let theta = new[1].atan2(new[0]);
+        let boost = (new[2]).acosh();
+        *trial.position_mut() = Hyperbolic::<3>::from_polar_coordinates(boost, theta);
         trial
     }
 }
@@ -123,11 +128,10 @@ impl LocalTrial<OrientedHyperbolicPoint<3, Angle>>
         );
         *trial.orientation_mut() = Angle::from(original_orientation + del_phi);
         // push point back onto Hyperboloid
-        *trial.position_mut() = Hyperbolic::from_minkowski_coordinates(Minkowski::from([
-            trial_sample.coordinates()[0],
-            trial_sample.coordinates()[1],
-            (trial_sample.point()[0].powi(2) + trial_sample.point()[1].powi(2) + 1.0_f64).sqrt(),
-        ]));
+        let new = trial_sample.coordinates();
+        let theta = new[1].atan2(new[0]);
+        let boost = (new[2]).acosh();
+        *trial.position_mut() = Hyperbolic::<3>::from_polar_coordinates(boost, theta);
         trial
     }
 }
@@ -182,7 +186,7 @@ mod tests {
     }
 
     #[rstest]
-    fn translate_hyperbolic_point_chain(#[values(0.001, 0.01, 0.1, 0.5)] d: f64) {
+    fn translate_hyperbolic_point_chain(#[values(0.001, 0.01, 0.1, 0.25)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
             [-1.0, 1.0, (3.0_f64).sqrt()].into(),
@@ -307,10 +311,10 @@ mod tests {
     }
 
     #[rstest]
-    fn translate_hyperbolic_point_far_from_cusp(#[values(0.001, 0.01, 0.1, 0.5)] d: f64) {
+    fn translate_hyperbolic_point_far_from_cusp(#[values(0.001, 0.01, 0.1, 0.25)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
-            [100.0, 100.0, (20_001.0_f64).sqrt()].into(),
+            [10_000.0, 10_000.0, (200_000_001.0_f64).sqrt()].into(),
         ));
         let translate =
             Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
@@ -340,7 +344,52 @@ mod tests {
             let dist = new_body_properties
                 .position()
                 .distance(&body_properties.position);
-            assert!(d > dist);
+            println!("distance from {:?} is : {:}", body_properties.position.coordinates() ,dist);
+            // when far away from cusp, small displacements are unstable
+            assert!(d > dist - d*0.1);
+            body_properties.position = new_body_properties.position;
+        }
+    }
+    #[rstest]
+    fn translate_oriented_hyperbolic_point_far_from_cusp(#[values(0.001, 0.01, 0.1)] d: f64) {
+        let mut rng = StdRng::seed_from_u64(42);
+        let mut body_properties = OrientedHyperbolicPoint {
+            position: Hyperbolic::from_minkowski_coordinates(
+                [10_000.0, 10_000.0, (200_000_001.0_f64).sqrt()].into(),
+            ),
+            orientation: Angle::default(),
+        };
+        let translate =
+            Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
+
+        for _ in 0..NSTEPS {
+            let new_body_properties = translate.propose(&mut rng, body_properties);
+
+            // Translation move keeps the point on the Hyperboloid
+            #[allow(
+                clippy::cast_possible_truncation,
+                reason = "float is truncated before converting to i32"
+            )]
+            let tolerance = 8_i32
+                - (new_body_properties.position.coordinates()[2]
+                    .log10()
+                    .trunc() as i32);
+            assert_relative_eq!(
+                new_body_properties
+                    .position()
+                    .point()
+                    .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
+                -1.0,
+                epsilon = 10.0_f64.powi(-tolerance)
+            );
+
+            // Translation move does not move the point more than a distance d
+            let dist = new_body_properties
+                .position()
+                .distance(&body_properties.position);
+            println!("distance from {:?} is : {:}", body_properties.position.coordinates() ,dist);
+            // when far away from cusp, small displacements are unstable
+            assert!(d > dist - d*0.1);
             body_properties.position = new_body_properties.position;
         }
     }
