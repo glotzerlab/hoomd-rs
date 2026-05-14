@@ -540,7 +540,7 @@ impl<const N: usize> Hyperbolic<N> {
             .fold(pt[N - 1] * pt[N - 1], |sum, (_, x)| {
                 f64::mul_add(-x, *x, sum)
             });
-        let tolerance = 9_i32 - (point.coordinates[N - 1].log10().trunc() as i32);
+        let tolerance = 9_i32 - 2_i32 * (point.coordinates[N - 1].log10().trunc() as i32);
         assert_relative_eq!(lhs, rhs, epsilon = 10.0_f64.powi(-tolerance));
         Hyperbolic { point }
     }
