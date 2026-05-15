@@ -125,7 +125,7 @@ impl<B, S, X, C> NeighborList<'_, B, S, X, C> {
 pub trait DirectorField<B, S, X, C, M> {
     /// Calculate the hexatic order $`\psi_6`$ for a given site index belonging
     /// to a microstate.
-    fn hexatic(
+    fn hexatic_at_site(
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_index: Option<usize>,
@@ -153,8 +153,8 @@ impl<B, S, X, C> DirectorField<B, S, X, C, Cartesian<2>> for NeighborList<'_, B,
 where
     S: Position<Position = Cartesian<2>>,
 {
-    /// Compute the hexatic director field at a point from the microstate.
-    fn hexatic(
+    /// Compute the complex hexatic director field at a point from the microstate.
+    fn hexatic_at_site(
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_index: Option<usize>,
@@ -182,7 +182,8 @@ where
             None => Err(Error::InvalidSiteIndex),
         }
     }
-    /// TODO: description.
+    /// Get a histrogram of hexatic orders $`\psi_6`$ across all body sites in a
+    /// given `Cartesian` microstate.
     #[inline]
     fn orientational_order(
         &self,
@@ -213,8 +214,8 @@ where
                                 .distance(microstate.sites()[*site_2_index].properties.position());
                             let index = bin_edges.iter().filter(|edge| **edge <= distance).count()
                                 - 1_usize;
-                            let dir1 = self.hexatic(microstate, *site_1)?;
-                            let dir2 = self.hexatic(microstate, *site_2)?;
+                            let dir1 = self.hexatic_at_site(microstate, *site_1)?;
+                            let dir2 = self.hexatic_at_site(microstate, *site_2)?;
                             directors_tagged.push((dir1.conj() * dir2, index));
                         }
                         // return error if microstate is empty
@@ -250,7 +251,7 @@ where
     S: Position<Position = Hyperbolic<3>>,
 {
     /// Compute the hexatic director field at a point from the microstate.
-    fn hexatic(
+    fn hexatic_at_site(
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_index: Option<usize>,
@@ -318,8 +319,8 @@ where
                                 .distance(microstate.sites()[*site_2_index].properties.position());
                             let index = bin_edges.iter().filter(|edge| **edge <= distance).count()
                                 - 1_usize;
-                            let dir1 = self.hexatic(microstate, *site_1)?;
-                            let dir2 = self.hexatic(microstate, *site_2)?;
+                            let dir1 = self.hexatic_at_site(microstate, *site_1)?;
+                            let dir2 = self.hexatic_at_site(microstate, *site_2)?;
                             directors_tagged.push((dir1.conj() * dir2, index));
                         }
                         // return error if microstate is empty
@@ -837,8 +838,7 @@ impl<B, X> GenerateNeighborList<B, Point<Hyperbolic<3>>, X, Periodic<EightEight>
         let to_seed = |id: &usize| {
             let coords = microstate.sites()[*id].properties.position().coordinates();
             let klein: [f64; 2] = [coords[0] / coords[2], coords[1] / coords[2]];
-            let prefactor =
-                1.0 / (2.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)).sqrt());
+            let prefactor = 1.0 / (2.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)).sqrt());
             let seed_coords = [prefactor * klein[0], prefactor * klein[1]];
             let radius = (klein[0].powi(2) + klein[1].powi(2))
                 / (4.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)))
@@ -867,15 +867,12 @@ impl<B, X> GenerateNeighborList<B, Point<Hyperbolic<3>>, X, Periodic<EightEight>
                     ghost_coord[0] / ghost_coord[2],
                     ghost_coord[1] / ghost_coord[2],
                 ];
-                let prefactor = 1.0
-                    / (2.0
-                        * (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2))
-                            .sqrt());
+                let prefactor =
+                    1.0 / (2.0 * (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)).sqrt());
                 let ghost_seed_coords = [prefactor * ghost_klein[0], prefactor * ghost_klein[1]];
                 let ghost_radius = (ghost_klein[0].powi(2) + ghost_klein[1].powi(2))
                     / (4.0 * (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)))
-                    - 1.0
-                        / (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)).sqrt();
+                    - 1.0 / (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)).sqrt();
                 seeds_with_ghosts.push(PDSeed {
                     coordinate: ghost_seed_coords,
                     weight: ghost_radius,
@@ -1087,7 +1084,7 @@ mod tests {
             .expect("hard-coded distributions should be valid");
 
         let nlist = NeighborList::from_microstate(&microstate)?;
-        let hexatic_0 = nlist.hexatic(&microstate, microstate.site_indices()[0])?;
+        let hexatic_0 = nlist.hexatic_at_site(&microstate, microstate.site_indices()[0])?;
         assert_relative_eq!(1.0, hexatic_0.re, epsilon = 1e-12);
         assert_relative_eq!(0.0, hexatic_0.im, epsilon = 1e-12);
         Ok(())

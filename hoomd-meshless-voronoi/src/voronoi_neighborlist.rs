@@ -1,10 +1,10 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/// TODO: documentation
-/// Constructs power diagrams using TODO: link algorithm. This algorithm works
-/// by lifting spheres in N-dimensional space (stored as `PDSeed<N>`) to points
-/// in (N+1)-dimensional space, and then constructing the voronoi diagram.
+/// Constructs meshless power diagrams using algorithm described in "Meshless power
+/// diagrams" Xiao et al. (2023). This algorithm works by lifting spheres in
+/// $`N`$-dimensional space (stored as `PDSeed<N>`) to points in $`(N+1)`$-dimensional
+/// space, and then constructing the voronoi diagram.
 use kd_tree::KdTree;
 use robust::{Coord, Coord3D, orient2d, orient3d};
 use thiserror::Error;
@@ -74,7 +74,7 @@ impl<const N: usize> LiftedCells<N> {
     }
 }
 
-/// A power diagram in N-dimensional space.
+/// A power diagram in $`N`$-dimensional space.
 pub struct PowerDiagram<const N: usize> {
     cells: Vec<LiftedCells<N>>,
 }
@@ -92,7 +92,7 @@ impl<const N: usize> PowerDiagram<N> {
 
 impl PowerDiagram<2> {
     /// Clip subject vertices along bisector of pt_i and pt_j
-    pub fn clip_2d(
+    fn clip_2d(
         subject_vertices: &[[f64; 2]],
         center_pt: &[f64; 3],
         pt_i_u: &[f64; 3],
@@ -189,7 +189,7 @@ impl PowerDiagram<2> {
 
 impl PowerDiagram<3> {
     /// Clip subject vertices along bisector of pt_i and pt_j
-    pub fn clip_3d(
+    fn clip_3d(
         subject_vertices: &[[f64; 3]],
         center_pt: &[f64; 4],
         pt_i_u: &[f64; 4],

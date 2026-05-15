@@ -1,6 +1,6 @@
 [package]
 name = "hoomd-meshless-voronoi"
-description = "Meshless Voronoi package from meshless-voro"
+description = "Calculate meshless voronoi diagrams for hoomd microstates"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
