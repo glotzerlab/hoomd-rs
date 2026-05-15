@@ -1016,10 +1016,11 @@ pub mod test_utils {
         }
     }
 
-    pub(crate) fn assert_diags_ulps_eq<const N: usize, T: Diagonal>(
-        m0: &T,
-        m1: &impl std::ops::Index<usize, Output = f64>,
-    ) {
+    pub(crate) fn assert_diags_ulps_eq<const N: usize, T0, T1>(m0: &T0, m1: &T1)
+    where
+        T0: Index<usize, Output = f64> + ?Sized,
+        T1: Index<usize, Output = f64> + ?Sized,
+    {
         for i in 0..N {
             assert_ulps_eq!(m0[i], m1[i], epsilon = EPS);
         }
@@ -1189,7 +1190,7 @@ mod tests {
         }
 
         assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &faeru);
-        assert_diags_ulps_eq(&s, &faers);
+        assert_diags_ulps_eq::<2, _, _>(&s, &faers);
         // Note that faer returns V, not Vt
         assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &faerv.transpose());
     }
@@ -1223,7 +1224,7 @@ mod tests {
         let (nau, nas, navt) = (nasvd.u.unwrap(), nasvd.singular_values, nasvd.v_t.unwrap());
 
         assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &nau);
-        assert_diags_ulps_eq::<2>(&s, &nas);
+        assert_diags_ulps_eq::<2, _, _>(&s, &nas);
         assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &navt);
     }
 
@@ -1256,7 +1257,7 @@ mod tests {
 
         let faers = faersvd.S();
         // Our implementation allows negative singular value
-        assert_diags_ulps_eq(
+        assert_diags_ulps_eq::<3, _, _>(
             &DiagonalMatrix {
                 elements: s.elements.map(f64::abs),
             },
@@ -1332,7 +1333,7 @@ mod tests {
         let expected_diag = DiagonalMatrix {
             elements: [1.0, 5.0, 9.0],
         };
-        assert_diags_ulps_eq(&diag, &expected_diag);
+        assert_diags_ulps_eq::<3, _, _>(&diag, &expected_diag);
 
         let from_diag = diag.to_dense();
         let expected_from_diag = Matrix {

@@ -33,7 +33,7 @@ impl<const N: usize> Default for Hyperparallelepiped<N> {
 }
 
 impl<const N: usize> Hyperparallelepiped<N> {
-    /// Construct a new hyperparallelepiped from edge vectors.
+    /// Construct a new hyperparallelepiped (parallelotope) from edge vectors.
     ///
     /// # Example
     ///
