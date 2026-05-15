@@ -122,6 +122,58 @@ impl<B, S, X, C> NeighborList<'_, B, S, X, C> {
     }
 }
 
+trait RelativeLocalOrientation<P> {
+    /// Get the orientations of points_i relative to point_j in the local frame
+    /// of point j.
+    fn relative_orientations(points_i: Vec<&P>, point_j: &P) -> Vec<f64>;
+}
+
+impl RelativeLocalOrientation<Cartesian<2>> for Cartesian<2> {
+    /// Get the orientations of points_i relative to point_j in the local frame
+    /// of point j in two-dimensional Cartesian space.
+    fn relative_orientations(points_i: Vec<&Cartesian<2>>, point_j: &Cartesian<2>) -> Vec<f64> {
+        let points_i_transformed: Vec<Cartesian<2>> = points_i
+            .iter()
+            .map(|query_point| **query_point - *point_j)
+            .collect();
+        let angles: Vec<f64> = points_i_transformed
+            .iter()
+            .map(|pt_i| pt_i[1].atan2(pt_i[0]))
+            .collect();
+        angles
+    }
+}
+
+impl RelativeLocalOrientation<Hyperbolic<3>> for Hyperbolic<3> {
+    /// Get the orientations of points_i relative to point_j in the local frame
+    /// of point j in two-dimensional hyperbolic space.
+    fn relative_orientations(points_i: Vec<&Hyperbolic<3>>, point_j: &Hyperbolic<3>) -> Vec<f64> {
+        let boost = -(point_j.coordinates()[2].acosh());
+        let rot = -point_j.coordinates()[1].atan2(point_j.coordinates()[0]);
+        let points_i_transformed: Vec<Hyperbolic<3>> = points_i
+            .iter()
+            .map(|query_point| {
+                let nn = query_point.coordinates();
+                Hyperbolic::<3>::from_minkowski_coordinates(
+                    [
+                        nn[0] * (boost.cosh()) * (rot.cos()) - nn[1] * (boost.cosh()) * (rot.sin())
+                            + nn[2] * (boost.sinh()),
+                        nn[0] * (rot.sin()) + nn[1] * (rot.cos()),
+                        nn[0] * (boost.sinh()) * (rot.cos()) - nn[1] * (boost.sinh()) * (rot.sin())
+                            + nn[2] * (boost.cosh()),
+                    ]
+                    .into(),
+                )
+            })
+            .collect();
+        let angles: Vec<f64> = points_i_transformed
+            .iter()
+            .map(|pt_i| pt_i.coordinates()[1].atan2(pt_i.coordinates()[0]))
+            .collect();
+        angles
+    }
+}
+
 pub trait DirectorField<B, S, X, C, M> {
     /// Calculate the hexatic order $`\psi_6`$ for a given site index belonging
     /// to a microstate.
@@ -149,9 +201,10 @@ pub struct ComplexField {
     pub n_bins: usize,
 }
 
-impl<B, S, X, C> DirectorField<B, S, X, C, Cartesian<2>> for NeighborList<'_, B, S, X, C>
+impl<B, S, X, C, P> DirectorField<B, S, X, C, P> for NeighborList<'_, B, S, X, C>
 where
-    S: Position<Position = Cartesian<2>>,
+    S: Position<Position = P>,
+    P: RelativeLocalOrientation<P> + Metric,
 {
     /// Compute the complex hexatic director field at a point from the microstate.
     fn hexatic_at_site(
@@ -166,14 +219,15 @@ where
                     return Err(Error::NoNearestNeighbors);
                 }
                 let point = microstate.sites()[num].properties.position();
-                let neighbors_translated: Vec<Cartesian<2>> = site_neighbors
+                // get the positions of neighbors in the query site frame
+                let neighbor_coords: Vec<&P> = site_neighbors
                     .iter()
-                    .map(|s| *microstate.sites()[*s].properties.position() - *point)
+                    .map(|s| microstate.sites()[*s].properties.position())
                     .collect();
-                let angles: Vec<f64> = neighbors_translated
-                    .iter()
-                    .map(|site| (site[1]).atan2(site[0]))
-                    .collect();
+                let angles = <P as RelativeLocalOrientation<P>>::relative_orientations(
+                    neighbor_coords,
+                    point,
+                );
                 let hex: Complex<f64> = angles.iter().fold(Complex::new(0.0, 0.0), |sum, theta| {
                     sum + Complex::new(0.0, 6.0 * theta).exp()
                 });
@@ -183,112 +237,7 @@ where
         }
     }
     /// Get a histrogram of hexatic orders $`\psi_6`$ across all body sites in a
-    /// given `Cartesian` microstate.
-    #[inline]
-    fn orientational_order(
-        &self,
-        microstate: &Microstate<B, S, X, C>,
-        r_min: f64,
-        r_max: f64,
-        nbins: usize,
-    ) -> Result<ComplexField, Error> {
-        let bin_size: f64 = (r_max - r_min) / (nbins as f64);
-        let bin_edges = Array::from_vec(
-            (0..=nbins)
-                .collect::<Vec<usize>>()
-                .iter()
-                .map(|i| (*i as f64) * bin_size + r_min)
-                .collect::<Vec<f64>>(),
-        );
-        // iterate through all pairs of sites and place director into correct spot
-        // all directors are stored with an index marking where they belong
-        let mut directors_tagged: Vec<(Complex<f64>, usize)> = vec![];
-        for site_1 in microstate.site_indices() {
-            for site_2 in microstate.site_indices() {
-                match site_1 {
-                    Some(site_1_index) => match site_2 {
-                        Some(site_2_index) => {
-                            let distance = microstate.sites()[*site_1_index]
-                                .properties
-                                .position()
-                                .distance(microstate.sites()[*site_2_index].properties.position());
-                            let index = bin_edges.iter().filter(|edge| **edge <= distance).count()
-                                - 1_usize;
-                            let dir1 = self.hexatic_at_site(microstate, *site_1)?;
-                            let dir2 = self.hexatic_at_site(microstate, *site_2)?;
-                            directors_tagged.push((dir1.conj() * dir2, index));
-                        }
-                        // return error if microstate is empty
-                        None => return Err(Error::InvalidSiteIndex),
-                    },
-                    None => return Err(Error::InvalidSiteIndex),
-                }
-            }
-        }
-        let mut directors: Vec<Complex<f64>> = vec![];
-        for index in 0..=nbins {
-            let dirs: Vec<&(Complex<f64>, usize)> = directors_tagged
-                .iter()
-                .filter(|(_val, bin)| *bin == index)
-                .collect();
-            let num = dirs.len();
-            let avg_dirs = dirs
-                .iter()
-                .fold(Complex::new(0.0, 0.0), |sum, (val, _bin)| sum + val);
-            directors.push(avg_dirs.scale(1.0 / (num as f64)));
-        }
-        Ok(ComplexField {
-            bin_edges,
-            bounds: [r_min, r_max],
-            field_value: Array::from_vec(directors),
-            n_bins: nbins,
-        })
-    }
-}
-
-impl<B, S, X, C> DirectorField<B, S, X, C, Hyperbolic<3>> for NeighborList<'_, B, S, X, C>
-where
-    S: Position<Position = Hyperbolic<3>>,
-{
-    /// Compute the hexatic director field at a point from the microstate.
-    fn hexatic_at_site(
-        &self,
-        microstate: &Microstate<B, S, X, C>,
-        site_index: Option<usize>,
-    ) -> Result<Complex<f64>, Error> {
-        match site_index {
-            Some(num) => {
-                let site_neighbors = self.neighbors_of_site(site_index);
-                if site_neighbors == vec![0_usize] {
-                    return Err(Error::NoNearestNeighbors);
-                }
-                let point = microstate.sites()[num].properties.position();
-                let boost = -(point.coordinates()[2] / 1.0).acosh();
-                let rot = -point.coordinates()[1].atan2(point.coordinates()[0]);
-                let neighbors_translated: Vec<[f64; 2]> = site_neighbors
-                    .iter()
-                    .map(|s| {
-                        let nn = microstate.sites()[*s].properties.position().coordinates();
-                        [
-                            nn[0] * (boost.cosh()) * (rot.cos())
-                                - nn[1] * (boost.cosh()) * (rot.sin())
-                                + nn[2] * (boost.sinh()),
-                            nn[0] * (rot.sin()) + nn[1] * (rot.cos()),
-                        ]
-                    })
-                    .collect();
-                let angles: Vec<f64> = neighbors_translated
-                    .iter()
-                    .map(|site| (site[1]).atan2(site[0]))
-                    .collect();
-                let hex: Complex<f64> = angles.iter().fold(Complex::new(0.0, 0.0), |sum, theta| {
-                    sum + Complex::new(0.0, 6.0 * theta).exp()
-                });
-                Ok(hex.scale(1.0 / (site_neighbors.len() as f64)))
-            }
-            None => Err(Error::InvalidSiteIndex),
-        }
-    }
+    /// given microstate.
     #[inline]
     fn orientational_order(
         &self,
