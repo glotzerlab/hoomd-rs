@@ -175,16 +175,22 @@ impl RelativeLocalOrientation<Hyperbolic<3>> for Hyperbolic<3> {
 }
 
 pub trait DirectorField<B, S, X, C, M> {
-    /// Calculate the hexatic order $`\psi_6`$ for a given site index belonging
-    /// to a microstate.
+    /// Calculate the hexatic order 
+    /// ```math 
+    /// \psi_6(\vec{r}_i) = \frac{1}{N}\sum_{\text{neighbors }j}^{N}e^{i6\theta_{ij}}
+    /// ```
+    /// for a given site index belonging to a microstate.
     fn hexatic_at_site(
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_index: Option<usize>,
     ) -> Result<Complex<f64>, Error>;
-    /// Get a histrogram of hexatic orders $`\psi_6`$ across all body sites in a
-    /// given microstate.
-    fn orientational_order(
+    /// Compute the orientational correlation
+    /// ```math
+    /// G_6(|\vec{r}_i-\vec{r}_k|) = \langle \psi_6(\vec{r}_i\cdot\psi^*_6(\vec{r}_k))\rangle
+    /// ```
+    /// where $`\psi_6(\vec{r}_i)`$ is the complex-valued hexatic director at position $`\vec{r}_i`$
+    fn orientational_correlation(
         &self,
         microstate: &Microstate<B, S, X, C>,
         r_min: f64,
@@ -236,10 +242,10 @@ where
             None => Err(Error::InvalidSiteIndex),
         }
     }
-    /// Get a histrogram of hexatic orders $`\psi_6`$ across all body sites in a
+    /// Get a histogram of hexatic orders $`\psi_6`$ across all body sites in a
     /// given microstate.
     #[inline]
-    fn orientational_order(
+    fn orientational_correlation(
         &self,
         microstate: &Microstate<B, S, X, C>,
         r_min: f64,
