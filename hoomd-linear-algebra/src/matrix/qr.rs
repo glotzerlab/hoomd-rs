@@ -71,70 +71,101 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
     (qr, taus)
 }
 
-/// Explicitly construct the Q factor from a packed QR decomposition.
-///
-/// Note: Typically you shouldn't need to form Q explicitly. If all you need
-/// is to multiply by Q or Q^T, use `times_q` or `times_qt` instead.
-fn get_q<const N: usize, const M: usize>(qr: &Matrix<N, M>, taus: &[f64]) -> Matrix<N, N> {
-    let mut q = Matrix::<N, N>::identity();
+/// Apply a single Householder reflector on the left:
+/// result[iter..N, 0..K] = (I - tau * v * v^T) * result[iter..N, 0..K]
+/// where v has a leading 1 at position `iter` and stored values below.
+#[inline]
+fn apply_householder_left<const N: usize, const M: usize, const K: usize>(
+    result: &mut Matrix<N, K>,
+    qr: &Matrix<N, M>,
+    iter: usize,
+    tau: f64,
+) {
+    let tail = (iter + 1)..N;
 
-    for (iter, &tau) in taus.iter().enumerate().rev() {
-        if tau == 0.0 {
-            continue;
-        }
+    // w^T = v^T * result[iter..N, 0..K]
+    let mut w_t = vec![0.0; K];
 
-        let active_cols = iter..N;
-        let tail = (iter + 1)..N; // rows where reflector is stored
-
-        // Compute w^T = v^T * Q[iter..N, iter..N], where v has a leading 1
-        let mut w_t = vec![0.0; N - iter];
-
-        // Contribution from the leading element of v (always 1): w^T += Q[iter, iter..N]
-        for (col, &q_val) in q
-            .submatrix_slice_iter(iter..iter + 1, active_cols.clone())
-            .next()
-            .unwrap()
-            .iter()
-            .enumerate()
-        {
-            w_t[col] += q_val;
-        }
-
-        // Contribution from the stored subdiagonal part of v: w^T += v[1:] * Q[iter+1..N, iter..N]
-        for (row_slice, v_r) in q
-            .submatrix_slice_iter(tail.clone(), active_cols.clone())
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
-        {
-            for (col, &q_val) in row_slice.iter().enumerate() {
-                w_t[col] += q_val * v_r;
-            }
-        }
-
-        // Apply the rank-1 update: Q[iter..N, iter..N] -= tau * v * w^T
-
-        // Leading row (v[0] = 1): Q[iter, iter..N] -= tau * w^T
-        for (col, q_val) in q
-            .submatrix_slice_iter_mut(iter..iter + 1, active_cols.clone())
-            .next()
-            .unwrap()
-            .iter_mut()
-            .enumerate()
-        {
-            *q_val -= tau * w_t[col];
-        }
-
-        // Remaining rows: Q[iter+1..N, iter..N] -= tau * v[1:] * w^T
-        for (row_slice_mut, v_r) in q
-            .submatrix_slice_iter_mut(tail.clone(), active_cols.clone())
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
-        {
-            for (col, q_val) in row_slice_mut.iter_mut().enumerate() {
-                *q_val -= tau * v_r * w_t[col];
-            }
+    for (col, &val) in result.get_row(iter).as_slice().iter().enumerate() {
+        w_t[col] += val; // leading element of v is 1
+    }
+    for (row_slice, v_r) in result
+        .submatrix_slice_iter(tail.clone(), 0..K)
+        .zip(qr.get_col_slice_iter(iter, tail.clone()))
+    {
+        for (col, &val) in row_slice.iter().enumerate() {
+            w_t[col] += val * v_r;
         }
     }
 
-    q
+    // result[iter..N, 0..K] -= tau * v * w^T
+    for (col, val) in result
+        .submatrix_slice_iter_mut(iter..iter + 1, 0..K)
+        .next()
+        .unwrap()
+        .iter_mut()
+        .enumerate()
+    {
+        *val -= tau * w_t[col]; // leading element of v is 1
+    }
+    for (row_slice_mut, v_r) in result
+        .submatrix_slice_iter_mut(tail.clone(), 0..K)
+        .zip(qr.get_col_slice_iter(iter, tail.clone()))
+    {
+        for (col, val) in row_slice_mut.iter_mut().enumerate() {
+            *val -= tau * v_r * w_t[col];
+        }
+    }
+}
+
+/// Apply a single Householder reflector on the right:
+/// result[0..K, iter..N] = result[0..K, iter..N] * (I - tau * v * v^T)
+/// where v has a leading 1 at position `iter` and stored values below.
+#[inline]
+fn apply_householder_right<const N: usize, const M: usize, const K: usize>(
+    result: &mut Matrix<K, N>,
+    qr: &Matrix<N, M>,
+    iter: usize,
+    tau: f64,
+) {
+    let tail = (iter + 1)..N;
+
+    // w = result[0..K, iter..N] * v
+    let mut w = vec![0.0; K];
+
+    for (row, row_slice) in result
+        .submatrix_slice_iter(0..K, iter..iter + 1)
+        .enumerate()
+    {
+        w[row] += row_slice[0]; // leading element of v is 1
+    }
+    for (row, row_slice) in result.submatrix_slice_iter(0..K, tail.clone()).enumerate() {
+        for (&val, v_r) in row_slice
+            .iter()
+            .zip(qr.get_col_slice_iter(iter, tail.clone()))
+        {
+            w[row] += val * v_r;
+        }
+    }
+
+    // result[0..K, iter..N] -= tau * w * v^T
+    for (row, row_slice_mut) in result
+        .submatrix_slice_iter_mut(0..K, iter..iter + 1)
+        .enumerate()
+    {
+        row_slice_mut[0] -= tau * w[row]; // leading element of v is 1
+    }
+    for (row, row_slice_mut) in result
+        .submatrix_slice_iter_mut(0..K, tail.clone())
+        .enumerate()
+    {
+        for (val, v_r) in row_slice_mut
+            .iter_mut()
+            .zip(qr.get_col_slice_iter(iter, tail.clone()))
+        {
+            *val -= tau * w[row] * v_r;
+        }
+    }
 }
 
 fn get_r<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> {
@@ -147,238 +178,71 @@ fn get_r<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> {
     r
 }
 
-/// Compute A * Q^T where Q comes from a QR decomposition.
-/// Applies Householder reflectors left to right: H_0, H_1, ..., H_{k-1}
-fn times_qt<const N: usize, const M: usize, const K: usize>(
-    a: &Matrix<N, K>,
-    qr: &Matrix<N, M>,
-    taus: &[f64],
-) -> Matrix<N, K> {
-    let mut result = a.clone();
-
-    for (iter, &tau) in taus.iter().enumerate() {
-        if tau == 0.0 {
-            continue;
-        }
-
-        let tail = (iter + 1)..N;
-
-        // Compute w^T = v^T * result[iter..N, 0..K]
-        // v has a leading 1 at row `iter`, then stored values below.
-        let mut w_t = vec![0.0; K];
-
-        // Leading element (v[0] = 1): w^T += result[iter, 0..K]
-        for (col, &val) in result.get_row(iter).as_slice().iter().enumerate() {
-            w_t[col] += val;
-        }
-
-        // Remaining elements: w^T += v[1:] * result[iter+1..N, 0..K]
-        for (row_slice, v_r) in result
-            .submatrix_slice_iter(tail.clone(), 0..K)
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
-        {
-            for (col, &val) in row_slice.iter().enumerate() {
-                w_t[col] += val * v_r;
-            }
-        }
-
-        // Apply rank-1 update: result[iter..N, 0..K] -= tau * v * w^T
-
-        // Leading row (v[0] = 1):
-        for (col, val) in result
-            .submatrix_slice_iter_mut(iter..iter + 1, 0..K)
-            .next()
-            .unwrap()
-            .iter_mut()
-            .enumerate()
-        {
-            *val -= tau * w_t[col];
-        }
-
-        // Remaining rows:
-        for (row_slice_mut, v_r) in result
-            .submatrix_slice_iter_mut(tail.clone(), 0..K)
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
-        {
-            for (col, val) in row_slice_mut.iter_mut().enumerate() {
-                *val -= tau * v_r * w_t[col];
-            }
-        }
-    }
-
-    result
-}
-
-/// Compute A * Q where Q comes from a QR decomposition.
-/// Applies Householder reflectors right to left: H_{k-1}, ..., H_1, H_0
-fn times_q<const N: usize, const M: usize, const K: usize>(
-    a: &Matrix<N, K>,
-    qr: &Matrix<N, M>,
-    taus: &[f64],
-) -> Matrix<N, K> {
-    let mut result = a.clone();
-
+fn get_q<const N: usize, const M: usize>(qr: &Matrix<N, M>, taus: &[f64]) -> Matrix<N, N> {
+    let mut q = Matrix::<N, N>::identity();
     for (iter, &tau) in taus.iter().enumerate().rev() {
-        if tau == 0.0 {
-            continue;
-        }
-
-        let tail = (iter + 1)..N;
-
-        // Same w^T computation as times_qt
-        let mut w_t = vec![0.0; K];
-
-        for (col, &val) in result.get_row(iter).as_slice().iter().enumerate() {
-            w_t[col] += val;
-        }
-
-        for (row_slice, v_r) in result
-            .submatrix_slice_iter(tail.clone(), 0..K)
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
-        {
-            for (col, &val) in row_slice.iter().enumerate() {
-                w_t[col] += val * v_r;
-            }
-        }
-
-        // Same rank-1 update as times_qt
-        for (col, val) in result
-            .submatrix_slice_iter_mut(iter..iter + 1, 0..K)
-            .next()
-            .unwrap()
-            .iter_mut()
-            .enumerate()
-        {
-            *val -= tau * w_t[col];
-        }
-
-        for (row_slice_mut, v_r) in result
-            .submatrix_slice_iter_mut(tail.clone(), 0..K)
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
-        {
-            for (col, val) in row_slice_mut.iter_mut().enumerate() {
-                *val -= tau * v_r * w_t[col];
-            }
+        if tau != 0.0 {
+            apply_householder_left(&mut q, qr, iter, tau);
         }
     }
-
-    result
+    q
 }
 
-/// Compute Q * A where Q comes from a QR decomposition.
-/// Applies Householder reflectors right to left: H_{k-1}, ..., H_1, H_0
-/// Compute Q * A where Q comes from a QR decomposition.
-/// Applies Householder reflectors right to left: H_{k-1}, ..., H_1, H_0
-fn q_times<const N: usize, const M: usize, const K: usize>(
-    a: &Matrix<N, K>,
-    qr: &Matrix<N, M>,
-    taus: &[f64],
-) -> Matrix<N, K> {
-    let mut result = a.clone();
-
-    for (iter, &tau) in taus.iter().enumerate().rev() {
-        if tau == 0.0 {
-            continue;
-        }
-
-        let tail = (iter + 1)..N;
-
-        // Compute w^T = v^T * result[iter..N, 0..K]
-        let mut w_t = vec![0.0; K];
-
-        // Leading element (v[0] = 1): w^T += result[iter, 0..K]
-        for (col, &val) in result.get_row(iter).as_slice().iter().enumerate() {
-            w_t[col] += val;
-        }
-
-        // Remaining elements: w^T += v[1:] * result[iter+1..N, 0..K]
-        for (row_slice, v_r) in result
-            .submatrix_slice_iter(tail.clone(), 0..K)
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
-        {
-            for (col, &val) in row_slice.iter().enumerate() {
-                w_t[col] += val * v_r;
-            }
-        }
-
-        // Apply rank-1 update: result[iter..N, 0..K] -= tau * v * w^T
-
-        // Leading row (v[0] = 1):
-        for (col, val) in result
-            .submatrix_slice_iter_mut(iter..iter + 1, 0..K)
-            .next()
-            .unwrap()
-            .iter_mut()
-            .enumerate()
-        {
-            *val -= tau * w_t[col];
-        }
-
-        // Remaining rows:
-        for (row_slice_mut, v_r) in result
-            .submatrix_slice_iter_mut(tail.clone(), 0..K)
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
-        {
-            for (col, val) in row_slice_mut.iter_mut().enumerate() {
-                *val -= tau * v_r * w_t[col];
-            }
-        }
-    }
-
-    result
-}
-
-/// Compute Q^T * A where Q comes from a QR decomposition.
-/// Applies Householder reflectors left to right: H_0, H_1, ..., H_{k-1}
 fn qt_times<const N: usize, const M: usize, const K: usize>(
     a: &Matrix<N, K>,
     qr: &Matrix<N, M>,
     taus: &[f64],
 ) -> Matrix<N, K> {
     let mut result = a.clone();
-
     for (iter, &tau) in taus.iter().enumerate() {
-        if tau == 0.0 {
-            continue;
-        }
-
-        let tail = (iter + 1)..N;
-
-        let mut w_t = vec![0.0; K];
-
-        for (col, &val) in result.get_row(iter).as_slice().iter().enumerate() {
-            w_t[col] += val;
-        }
-
-        for (row_slice, v_r) in result
-            .submatrix_slice_iter(tail.clone(), 0..K)
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
-        {
-            for (col, &val) in row_slice.iter().enumerate() {
-                w_t[col] += val * v_r;
-            }
-        }
-
-        for (col, val) in result
-            .submatrix_slice_iter_mut(iter..iter + 1, 0..K)
-            .next()
-            .unwrap()
-            .iter_mut()
-            .enumerate()
-        {
-            *val -= tau * w_t[col];
-        }
-
-        for (row_slice_mut, v_r) in result
-            .submatrix_slice_iter_mut(tail.clone(), 0..K)
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
-        {
-            for (col, val) in row_slice_mut.iter_mut().enumerate() {
-                *val -= tau * v_r * w_t[col];
-            }
+        if tau != 0.0 {
+            apply_householder_left(&mut result, qr, iter, tau);
         }
     }
+    result
+}
 
+fn q_times<const N: usize, const M: usize, const K: usize>(
+    a: &Matrix<N, K>,
+    qr: &Matrix<N, M>,
+    taus: &[f64],
+) -> Matrix<N, K> {
+    let mut result = a.clone();
+    for (iter, &tau) in taus.iter().enumerate().rev() {
+        if tau != 0.0 {
+            apply_householder_left(&mut result, qr, iter, tau);
+        }
+    }
+    result
+}
+
+fn times_q<const N: usize, const M: usize, const K: usize>(
+    a: &Matrix<K, N>,
+    qr: &Matrix<N, M>,
+    taus: &[f64],
+) -> Matrix<K, N> {
+    let mut result = a.clone();
+    for (iter, &tau) in taus.iter().enumerate() {
+        // forward: H_{k-1} first, H_0 last
+        if tau != 0.0 {
+            apply_householder_right(&mut result, qr, iter, tau);
+        }
+    }
+    result
+}
+
+fn times_qt<const N: usize, const M: usize, const K: usize>(
+    a: &Matrix<K, N>,
+    qr: &Matrix<N, M>,
+    taus: &[f64],
+) -> Matrix<K, N> {
+    let mut result = a.clone();
+    for (iter, &tau) in taus.iter().enumerate().rev() {
+        // reverse: H_0 first, H_{k-1} last
+        if tau != 0.0 {
+            apply_householder_right(&mut result, qr, iter, tau);
+        }
+    }
     result
 }
 
@@ -493,6 +357,10 @@ mod tests {
         assert_matrixes_ulps_eq::<4, 4, _, _>(&identity, &times_q(&q.transpose(), &qr, &taus));
         assert_matrixes_ulps_eq::<4, 4, _, _>(&identity, &times_qt(&q, &qr, &taus));
         assert_matrixes_ulps_eq::<4, 4, _, _>(&identity, &qt_times(&q, &qr, &taus));
+        assert_matrixes_ulps_eq::<4, 4, _, _>(&q, &q_times(&identity, &qr, &taus));
+        assert_matrixes_ulps_eq::<4, 4, _, _>(&q, &times_q(&identity, &qr, &taus));
+        assert_matrixes_ulps_eq::<4, 4, _, _>(&q.transpose(), &qt_times(&identity, &qr, &taus));
+        assert_matrixes_ulps_eq::<4, 4, _, _>(&q.transpose(), &times_qt(&identity, &qr, &taus));
 
         let b = Matrix::<4, 1> {
             rows: [[0.], [16.], [12.], [28.]],
