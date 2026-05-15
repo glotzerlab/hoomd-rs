@@ -175,8 +175,8 @@ impl RelativeLocalOrientation<Hyperbolic<3>> for Hyperbolic<3> {
 }
 
 pub trait DirectorField<B, S, X, C, M> {
-    /// Calculate the hexatic order 
-    /// ```math 
+    /// Calculate the hexatic order
+    /// ```math
     /// \psi_6(\vec{r}_i) = \frac{1}{N}\sum_{\text{neighbors }j}^{N}e^{i6\theta_{ij}}
     /// ```
     /// for a given site index belonging to a microstate.
