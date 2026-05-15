@@ -142,8 +142,8 @@ impl Triclinic {
         [
             1.0 / self.Lx().get()
                 * (v[0] - self.xy() * v[1] - (self.xz() + self.xy() * self.yz()) * v[2]),
-            1.0 / self.Ly().get() * (v[1] - self.yz()),
-            1.0 / self.Lz().get(),
+            1.0 / self.Ly().get() * (v[1] - self.yz()*v[2]),
+            1.0 / self.Lz().get() * v[2],
         ]
     }
 
