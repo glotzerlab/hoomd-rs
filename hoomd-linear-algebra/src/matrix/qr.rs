@@ -7,8 +7,86 @@ use std::cmp::min;
 
 /// Compute the QR decomposition of a matrix using Householder reflections.
 ///
-/// Returns the packed QR matrix (R in upper triangle, Householder vectors in lower triangle)
-/// and the vector of tau values for each reflection.
+/// # QR Decomposition
+///
+/// Factors a matrix `A` ($`N \times M`$) into an orthogonal matrix $`Q`$ ($`N \times N`$) and an
+/// upper triangular matrix $`R`$ ($`N \times M`$) such that $`A = Q R`$. The columns of
+/// $`Q`$ form an orthonormal basis for the column space of $`A`$, and $`R`$ encodes
+/// the change of basis from $`A`$'s columns into that orthonormal basis.
+///
+/// ## Algorithm
+///
+/// The implementation is inspired by the LAPACK routines `DGEQR2` and
+/// `DLARFG`. It uses successive **Householder reflections** to reduce $`A`$ to
+/// upper triangular form in place. A Householder reflection has the form
+///
+/// ```math
+/// H = I - \tau v v^T, \qquad \tau = (\beta - \alpha) / \beta
+/// ```
+///
+/// where $`v`$ is the reflection vector (normal to the reflection plane) with a
+/// leading element normalized to 1, $`\alpha = `$ `qr[(i, i)]` is the pivot element,
+/// and $`\beta = -\text{sgn}(\alpha) \|y\|`$ is the target value after reflection. The
+/// sign convention ensures that $`\alpha`$ and $`\beta`$ have opposite signs,
+/// avoiding catastrophic cancellation when computing $`\alpha - \beta`$.
+///
+/// At step $`i`$, the reflection $`H_i`$ acts on the submatrix `A[i..N, i..M]`,
+/// zeroing out the subdiagonal entries of column $`i`$ while leaving rows and
+/// columns $`0..i`$ unchanged. After $`\min(N, M)`$ steps:
+///
+/// ```math
+/// H_{n-1} \cdots H_1 H_0 A = R
+/// ```
+///
+/// so that $`Q = H_0 H_1 \cdots H_{n-1}`$ (since each $`H_i`$ is its own
+/// inverse).
+///
+/// ## Packed Storage
+///
+/// Rather than forming $`Q`$ explicitly at each step, the reflection vectors are
+/// stored in the subdiagonal entries of the working matrix as it is reduced.
+/// After the decomposition, the output `qr` matrix contains:
+///
+/// - **Upper triangle** (including diagonal): the matrix $`R`$.
+/// - **Subdiagonal entries of column $`i`$** (rows `i+1..N`): the stored part
+///   of the reflection vector $`v_i`$, with the leading element (always 1)
+///   implicit.
+///
+/// ```text
+/// [ r  r  r ]
+/// [ v0 r  r ]
+/// [ v0 v1 r ]
+/// [ v0 v1 v2]
+/// ```
+///
+/// The corresponding `taus` vector holds the scalar $`\tau_i`$ for each step.
+///
+/// ## Applying Q and Q^T
+///
+/// Since forming $`Q`$ explicitly is often unnecessary and costly, this module
+/// provides functions to multiply by $`Q`$ or $`Q^T`$ directly from the packed
+/// representation. Each applies the sequence of reflections in the appropriate
+/// order, exploiting the identity $`H_i^T = H_i`$:
+///
+/// | Function   | Computes      | `A` shape |
+/// |------------|---------------|-----------|
+/// | `q_times`  | $`Q A`$       | `N×K`     |
+/// | `qt_times` | $`Q^T A`$     | `N×K`     |
+/// | `times_q`  | $`A Q`$       | `K×N`     |
+/// | `times_qt` | $`A Q^T`$     | `K×N`     |
+///
+/// If you need $`Q`$ as an explicit matrix (e.g. for inspection or testing),
+/// use `get_q`, which applies the reflections to the $`N \times N`$ identity.
+/// This is equivalent to calling `q_times` on the identity but is provided
+/// for convenience.
+///
+/// ## Solving Linear Systems
+///
+/// `qr_solve` uses the packed decomposition to solve $`A x = b`$ for
+/// overdetermined ($`N > M`$) systems in the least-squares sense. It applies
+/// $`Q^T`$ to $`b`$ via `qt_times`, then solves the resulting upper triangular
+/// system $`R x = Q^T b`$ by back substitution.
+///
 pub(super) fn qr_decomposition<const N: usize, const M: usize>(
     a: &Matrix<N, M>,
 ) -> (Matrix<N, M>, Vec<f64>) {
@@ -247,47 +325,21 @@ fn times_qt<const N: usize, const M: usize, const K: usize>(
 }
 
 #[inline]
-pub fn qr_solve<const N: usize, const M: usize>(
-    a: &Matrix<N, M>,
-    mut b: Matrix<N, 1>,
-) -> Matrix<M, 1> {
+pub fn qr_solve<const N: usize, const M: usize>(a: &Matrix<N, M>, b: Matrix<N, 1>) -> Matrix<M, 1> {
     let (qr, taus) = super::qr_decomposition(a);
     let n = N.min(M);
 
-    // Compute Q^T * b by applying H_0, H_1, ..., H_{n-1} in order.
-    // Mirrors qt_times with K=1.
-    for i in 0..n {
-        if taus[i] == 0.0 {
-            continue;
-        }
+    // Compute c = Q^T * b
+    let c = qt_times(&b, &qr, &taus);
 
-        let tail = (i + 1)..N;
-
-        // alpha = v^T * b[i..N], with leading element of v = 1
-        let mut alpha = b[(i, 0)];
-        for (u_j, b_j) in qr
-            .get_col_slice_iter(i, tail.clone())
-            .zip(tail.clone().map(|j| b[(j, 0)]))
-        {
-            alpha += u_j * b_j;
-        }
-        alpha *= taus[i];
-
-        // b[i..N] -= alpha * v
-        b[(i, 0)] -= alpha; // leading element of v = 1
-        for (j, u_j) in qr.get_col_slice_iter(i, tail.clone()).enumerate() {
-            b[(i + 1 + j, 0)] -= alpha * u_j;
-        }
-    }
-
-    // Solve R * x = b[0..n] by back substitution.
+    // Solve R * x = c by back substitution.
     let mut x = Matrix::<M, 1>::zeros();
     for row_id in (0..n).rev() {
         let mut sum = 0.0;
         for k in (row_id + 1)..n {
             sum += qr[(row_id, k)] * x[(k, 0)];
         }
-        x[(row_id, 0)] = (b[(row_id, 0)] - sum) / qr[(row_id, row_id)];
+        x[(row_id, 0)] = (c[(row_id, 0)] - sum) / qr[(row_id, row_id)];
     }
     x
 }
@@ -335,21 +387,6 @@ mod tests {
 
         let q = get_q(&qr, &taus);
         let r = get_r(&qr);
-
-        // println!("Q:");
-        // for row in 0..4 {
-        //     for col in 0..4 {
-        //         print!("{:8.2} ", q[(row, col)]);
-        //     }
-        //     println!();
-        // }
-        // println!("R:");
-        // for row in 0..4 {
-        //     for col in 0..3 {
-        //         print!("{:8.2} ", r[(row, col)]);
-        //     }
-        //     println!();
-        // }
 
         let identity = Matrix::<4, 4>::identity();
         assert_matrixes_ulps_eq::<4, 3, _, _>(&a, &q.matmul(&r));
