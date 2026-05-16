@@ -48,7 +48,7 @@ struct HardTriclinicSelfAssembly {
     quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Triclinic>>>,
     /// How sites interact when inserted and compressed.
     overlap_penalty_hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolyhedron>>>,
-    
+
     /// The current phase of the simulation.
     phase: Phase,
 }
@@ -160,7 +160,7 @@ impl HardTriclinicSelfAssembly {
 
         println!("{:?}", particle);
 
-        
+
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
                 Convex(particle),
