@@ -50,12 +50,12 @@ impl MaximumAllowableInteractionRange for Rhomboid {
 
 impl Periodic<Rhomboid> {
     pub fn to_fractional(&self, pos: &Cartesian<2>) -> Cartesian<2> {
-        let Lx = self.shape.Lx().get();
-        let Ly = self.shape.Ly().get();
+        let lx = self.shape.lx().get();
+        let ly = self.shape.ly().get();
         let xy = self.shape.xy();
 
-        let s1 = (pos[0] - xy * pos[1]) / Lx;
-        let s2 = pos[1] / Ly;
+        let s1 = (pos[0] - xy * pos[1]) / lx;
+        let s2 = pos[1] / ly;
 
         Cartesian::from([s1, s2])
     }
@@ -88,8 +88,8 @@ impl Periodic<Rhomboid> {
     /// # }
     /// ```
     pub fn to_absolute(&self, frac: &Cartesian<2>) -> Cartesian<2> {
-        let lx = self.shape.Lx().get();
-        let ly = self.shape.Ly().get();
+        let lx = self.shape.lx().get();
+        let ly = self.shape.ly().get();
         let xy = self.shape.xy();
 
         let r1 = lx * frac[0] + xy * ly * frac[1];
@@ -292,7 +292,7 @@ mod tests {
     fn maximum_allowable_tilted(get_sheared_rhomboid: Rhomboid) {
         // Test with tilted rhomboid
         let max_range = get_sheared_rhomboid.maximum_allowable_interaction_range();
-        // For Lx=Ly=2, xy=sqrt(2), the distance to parallel planes in x is:
+        // For lx=ly=2, xy=sqrt(2), the distance to parallel planes in x is:
         // dx = 2 / sqrt(1 + 2) = 2 / sqrt(3)
         // dy = 2
         // max_range = min(dx, dy) / 2 = (2/sqrt(3)) / 2 = 1/sqrt(3)

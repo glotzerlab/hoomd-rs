@@ -27,7 +27,7 @@ use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume, shape::Hyper
 /// # Construction
 ///
 /// Triclinic boxes can most easily be constructed using the `from_box_vector` method,
-/// which takes an array of 6 values: `[Lx, Ly, Lz, xy, xz, yz]`. It can also be generated
+/// which takes an array of 6 values: `[lx, ly, lz, xy, xz, yz]`. It can also be generated
 /// from a 3D parallelepiped using the `from_parallelepiped` method.
 ///
 /// # Examples
@@ -67,16 +67,16 @@ use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume, shape::Hyper
 /// let triclinic = Triclinic::from_box_vector([10.0, 12.0, 14.0, 1.0, 0.5, -0.2]);
 ///
 /// let scaled = triclinic.scale_length(2.0.try_into()?);
-/// assert_eq!(scaled.Lx().get(), 20.0);
-/// assert_eq!(scaled.Ly().get(), 24.0);
-/// assert_eq!(scaled.Lz().get(), 28.0);
+/// assert_eq!(scaled.lx().get(), 20.0);
+/// assert_eq!(scaled.ly().get(), 24.0);
+/// assert_eq!(scaled.lz().get(), 28.0);
 /// # Ok(())
 /// # }
 /// ```
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Triclinic {
-    /// The extents of each edge of the triclinic box. [Lx, Ly, Lz]
+    /// The extents of each edge of the triclinic box. [lx, ly, lz]
     #[serde_as(as = "[_; 3]")]
     pub extents: [PositiveReal; 3],
     /// The tilt factors that define the shear of the box.
@@ -87,24 +87,24 @@ pub struct Triclinic {
 }
 
 impl Triclinic {
-    /// Returns the box extent in the x-direction (Lx)
+    /// Returns the box extent in the x-direction (lx)
     #[inline]
     #[allow(non_snake_case)]
-    pub fn Lx(&self) -> PositiveReal {
+    pub fn lx(&self) -> PositiveReal {
         self.extents[0]
     }
 
-    /// Returns the box extent in the y-direction (Ly)
+    /// Returns the box extent in the y-direction (ly)
     #[inline]
     #[allow(non_snake_case)]
-    pub fn Ly(&self) -> PositiveReal {
+    pub fn ly(&self) -> PositiveReal {
         self.extents[1]
     }
 
-    /// Returns the box extent in the z-direction (Lz)
+    /// Returns the box extent in the z-direction (lz)
     #[inline]
     #[allow(non_snake_case)]
-    pub fn Lz(&self) -> PositiveReal {
+    pub fn lz(&self) -> PositiveReal {
         self.extents[2]
     }
 
@@ -129,21 +129,21 @@ impl Triclinic {
     #[inline]
     fn matmul(&self, v: [f64; 3]) -> [f64; 3] {
         [
-            self.Lx().get() * v[0]
-                + self.Ly().get() * self.xy() * v[1]
-                + self.Lz().get() * self.xz() * v[2],
-            self.Ly().get() * v[1] + self.Lz().get() * self.yz() * v[2],
-            self.Lz().get() * v[2],
+            self.lx().get() * v[0]
+                + self.ly().get() * self.xy() * v[1]
+                + self.lz().get() * self.xz() * v[2],
+            self.ly().get() * v[1] + self.lz().get() * self.yz() * v[2],
+            self.lz().get() * v[2],
         ]
     }
 
     #[inline]
     fn matmul_inv(&self, v: [f64; 3]) -> [f64; 3] {
         [
-            1.0 / self.Lx().get()
+            1.0 / self.lx().get()
                 * (v[0] - self.xy() * v[1] - (self.xz() + self.xy() * self.yz()) * v[2]),
-            1.0 / self.Ly().get() * (v[1] - self.yz()*v[2]),
-            1.0 / self.Lz().get() * v[2],
+            1.0 / self.ly().get() * (v[1] - self.yz() * v[2]),
+            1.0 / self.lz().get() * v[2],
         ]
     }
 
@@ -151,21 +151,21 @@ impl Triclinic {
     #[inline]
     fn matmul_t(&self, v: [f64; 3]) -> [f64; 3] {
         [
-            self.Lx().get() * v[0],
-            self.Ly().get() * self.xy() * v[0] + self.Ly().get() * v[1],
-            self.Lz().get() * (self.xz() * v[0] + self.yz() * v[1] + v[2]),
+            self.lx().get() * v[0],
+            self.ly().get() * self.xy() * v[0] + self.ly().get() * v[1],
+            self.lz().get() * (self.xz() * v[0] + self.yz() * v[1] + v[2]),
         ]
     }
 
     /// Construct a triclinic box from box dimensions.
     ///
-    /// The dimensions array should contain [Lx, Ly, Lz, xy, xz, yz] where:
-    /// - Lx, Ly, Lz are the box extents (must be positive)
+    /// The dimensions array should contain [lx, ly, lz, xy, xz, yz] where:
+    /// - lx, ly, lz are the box extents (must be positive)
     /// - xy, xz, yz are the tilt factors
     ///
     /// # Panics
     ///
-    /// Panics if any of Lx, Ly, Lz are not positive.
+    /// Panics if any of lx, ly, lz are not positive.
     ///
     /// # Example
     ///
@@ -174,7 +174,7 @@ impl Triclinic {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic = Triclinic::from_box_vector([10.0, 12.0, 14.0, 1.0, 0.5, -0.2]);
-    /// assert_eq!(triclinic.Lx().get(), 10.0);
+    /// assert_eq!(triclinic.lx().get(), 10.0);
     /// assert_eq!(triclinic.xy(), 1.0);
     /// # Ok(())
     /// # }
@@ -184,13 +184,13 @@ impl Triclinic {
             extents: [
                 box_dimensions[0]
                     .try_into()
-                    .expect("Extent Lx must be positive"),
+                    .expect("Extent lx must be positive"),
                 box_dimensions[1]
                     .try_into()
-                    .expect("Extent Ly must be positive"),
+                    .expect("Extent ly must be positive"),
                 box_dimensions[2]
                     .try_into()
-                    .expect("Extent Lz must be positive"),
+                    .expect("Extent lz must be positive"),
             ],
             tilt_factors: [box_dimensions[3], box_dimensions[4], box_dimensions[5]],
         }
@@ -219,7 +219,7 @@ impl Triclinic {
     ///     Cartesian::from([2.0/3.0, 2.0/3.0, -1.0/3.0]),
     /// ]); // Rotated unit cube
     /// let triclinic = Triclinic::from_parallelepiped(parallelepiped);
-    /// assert_relative_eq!(triclinic.Lx().get(), 1.0, epsilon = 1e-8);
+    /// assert_relative_eq!(triclinic.lx().get(), 1.0, epsilon = 1e-8);
     /// assert_relative_eq!(triclinic.xy(), 0.0, epsilon = 1e-8);
     /// # Ok(())
     /// # }
@@ -252,9 +252,9 @@ impl Triclinic {
 
         Self {
             extents: [
-                lx.try_into().expect("Lx must be positive"),
-                ly.try_into().expect("Ly must be positive"),
-                lz.try_into().expect("Lz must be positive"),
+                lx.try_into().expect("lx must be positive"),
+                ly.try_into().expect("ly must be positive"),
+                lz.try_into().expect("lz must be positive"),
             ],
             tilt_factors: [xy, xz, yz],
         }
@@ -282,19 +282,19 @@ impl Triclinic {
     /// let edges = triclinic.get_edge_vectors();
     ///
     /// assert_eq!(edges[0], Cartesian::from([2.0, 0.0, 0.0]));
-    /// assert_eq!(edges[1], Cartesian::from([1.5, 3.0, 0.0])); // xy * Ly = 0.5 * 3.0
+    /// assert_eq!(edges[1], Cartesian::from([1.5, 3.0, 0.0])); // xy * ly = 0.5 * 3.0
     /// assert_eq!(edges[2], Cartesian::from([0.0, 0.0, 4.0]));
     /// # Ok(())
     /// # }
     /// ```
     pub fn get_edge_vectors(&self) -> [Cartesian<3>; 3] {
         let mut edge_vectors = [Cartesian::<3>::default(); 3];
-        edge_vectors[0] = [self.Lx().get(), 0., 0.].into();
-        edge_vectors[1] = [self.Ly().get() * self.xy(), self.Ly().get(), 0.].into();
+        edge_vectors[0] = [self.lx().get(), 0., 0.].into();
+        edge_vectors[1] = [self.ly().get() * self.xy(), self.ly().get(), 0.].into();
         edge_vectors[2] = [
-            self.Lz().get() * self.xz(),
-            self.Lz().get() * self.yz(),
-            self.Lz().get(),
+            self.lz().get() * self.xz(),
+            self.lz().get() * self.yz(),
+            self.lz().get(),
         ]
         .into();
         edge_vectors
@@ -375,14 +375,14 @@ impl Triclinic {
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 3];
-        dist[0] = self.Lx()
+        dist[0] = self.lx()
             / (f64::sqrt(
                 1.0 + self.xy() * self.xy() + (self.xy() * self.yz() - self.xz()).powi(2),
             ))
             .try_into()
             .unwrap();
-        dist[1] = self.Ly() / (f64::sqrt(1.0 + self.yz() * self.yz())).try_into().unwrap();
-        dist[2] = self.Lz();
+        dist[1] = self.ly() / (f64::sqrt(1.0 + self.yz() * self.yz())).try_into().unwrap();
+        dist[2] = self.lz();
         dist
     }
 }
@@ -444,16 +444,16 @@ impl Triclinic {
 impl IsPointInside<Cartesian<3>> for Triclinic {
     fn is_point_inside(&self, point: &Cartesian<3>) -> bool {
         let [x, y, z] = point.coordinates;
-        if z.abs() >= self.Lz().get() / 2.0 {
+        if z.abs() >= self.lz().get() / 2.0 {
             return false;
         };
 
-        if (y - self.yz() * z).abs() >= self.Ly().get() / 2.0 {
+        if (y - self.yz() * z).abs() >= self.ly().get() / 2.0 {
             return false;
         };
 
         if (x - (self.xz() - self.xy() * self.yz()) * z - self.xy() * y).abs()
-            >= self.Lx().get() / 2.0
+            >= self.lx().get() / 2.0
         {
             return false;
         }
@@ -483,7 +483,7 @@ impl Scale for Triclinic {
     ///
     /// let scaled_triclinic = triclinic.scale_length(0.5.try_into()?);
     ///
-    /// assert_eq!(scaled_triclinic.Lx().get(), 2.5);
+    /// assert_eq!(scaled_triclinic.lx().get(), 2.5);
     /// # Ok(())
     /// # }
     /// ```
@@ -516,13 +516,17 @@ impl Scale for Triclinic {
     ///
     /// let scaled_triclinic = triclinic.scale_volume(8.0.try_into()?);
     ///
-    /// assert_eq!(scaled_triclinic.Lx().get(), 10.0);
+    /// assert_eq!(scaled_triclinic.lx().get(), 10.0);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     fn scale_volume(&self, v: PositiveReal) -> Self {
-        let v = v.get().cbrt().try_into().expect("v^{1/3} should be a positive real");
+        let v = v
+            .get()
+            .cbrt()
+            .try_into()
+            .expect("v^{1/3} should be a positive real");
         self.scale_length(v)
     }
 }
@@ -554,9 +558,9 @@ impl Distribution<Cartesian<3>> for Triclinic {
         let z = uniform.sample(rng);
 
         let scaled_x =
-            self.Lx().get() * x + self.xy() * self.Ly().get() * y + self.xz() * self.Lz().get() * z;
-        let scaled_y = self.Ly().get() * y + self.yz() * self.Lz().get() * z;
-        let scaled_z = self.Lz().get() * z;
+            self.lx().get() * x + self.xy() * self.ly().get() * y + self.xz() * self.lz().get() * z;
+        let scaled_y = self.ly().get() * y + self.yz() * self.lz().get() * z;
+        let scaled_z = self.lz().get() * z;
 
         Cartesian {
             coordinates: [scaled_x, scaled_y, scaled_z],

@@ -21,7 +21,7 @@ use crate::{
 /// # Construction
 ///
 /// Rhomboids can be constructed using the `from_box_vector` method, which takes
-/// an array of 3 values: `[Lx, Ly, xy]`. They can also be created from a 2D
+/// an array of 3 values: `[lx, ly, xy]`. They can also be created from a 2D
 /// parallelepiped using the `from_parallelogram` method, or directly from a tuple
 /// of `(PositiveReal, PositiveReal, f64)`.
 ///
@@ -35,8 +35,8 @@ use crate::{
 /// let rhomboid = Rhomboid::from_box_vector([10.0, 12.0, 1.0]);
 /// assert_eq!(rhomboid.volume(), 120.0);
 ///
-/// assert_eq!(rhomboid.Lx().get(), 10.0);
-/// assert_eq!(rhomboid.Ly().get(), 12.0);
+/// assert_eq!(rhomboid.lx().get(), 10.0);
+/// assert_eq!(rhomboid.ly().get(), 12.0);
 /// # Ok(())
 /// # }
 /// ```
@@ -62,8 +62,8 @@ use crate::{
 /// let rhomboid = Rhomboid::from_box_vector([10.0, 12.0, 1.0]);
 ///
 /// let scaled = rhomboid.scale_length(2.0.try_into()?);
-/// assert_eq!(scaled.Lx().get(), 20.0);
-/// assert_eq!(scaled.Ly().get(), 24.0);
+/// assert_eq!(scaled.lx().get(), 20.0);
+/// assert_eq!(scaled.ly().get(), 24.0);
 /// # Ok(())
 /// # }
 /// ```
@@ -88,13 +88,13 @@ impl From<(PositiveReal, PositiveReal, f64)> for Rhomboid {
 impl Rhomboid {
     /// Construct a rhomboid from box dimensions.
     ///
-    /// The dimensions array should contain [Lx, Ly, xy] where:
-    /// - Lx, Ly are the edge lengths (must be positive)
+    /// The dimensions array should contain [lx, ly, xy] where:
+    /// - lx, ly are the edge lengths (must be positive)
     /// - xy is the shear factor
     ///
     /// # Panics
     ///
-    /// Panics if any of Lx, Ly are not positive.
+    /// Panics if any of lx, ly are not positive.
     ///
     /// # Example
     ///
@@ -103,7 +103,7 @@ impl Rhomboid {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let rhomboid = Rhomboid::from_box_vector([10.0, 12.0, 1.0]);
-    /// assert_eq!(rhomboid.Lx().get(), 10.0);
+    /// assert_eq!(rhomboid.lx().get(), 10.0);
     /// assert_eq!(rhomboid.xy(), 1.0);
     /// # Ok(())
     /// # }
@@ -113,10 +113,10 @@ impl Rhomboid {
             extents: [
                 box_dimensions[0]
                     .try_into()
-                    .expect("Extent Lx must be positive"),
+                    .expect("Extent lx must be positive"),
                 box_dimensions[1]
                     .try_into()
-                    .expect("Extent Ly must be positive"),
+                    .expect("Extent ly must be positive"),
             ],
             xy: box_dimensions[2],
         }
@@ -144,7 +144,7 @@ impl Rhomboid {
     ///     Cartesian::from([0.5, 1.0]),
     /// ]);
     /// let rhomboid = Rhomboid::from_parallelogram(parallelepiped);
-    /// assert_relative_eq!(rhomboid.Lx().get(), 1.0, epsilon = 1e-8);
+    /// assert_relative_eq!(rhomboid.lx().get(), 1.0, epsilon = 1e-8);
     /// assert_relative_eq!(rhomboid.xy(), 0.5, epsilon = 1e-8);
     /// # Ok(())
     /// # }
@@ -163,24 +163,24 @@ impl Rhomboid {
 
         Self {
             extents: [
-                lx.try_into().expect("Lx must be positive"),
-                ly.try_into().expect("Ly must be positive"),
+                lx.try_into().expect("lx must be positive"),
+                ly.try_into().expect("ly must be positive"),
             ],
             xy: xy,
         }
     }
 
-    /// Returns the edge length in the x-direction (Lx)
+    /// Returns the edge length in the x-direction (lx)
     #[inline]
     #[allow(non_snake_case)]
-    pub fn Lx(&self) -> PositiveReal {
+    pub fn lx(&self) -> PositiveReal {
         self.extents[0]
     }
 
-    /// Returns the edge length in the y-direction (Ly)
+    /// Returns the edge length in the y-direction (ly)
     #[inline]
     #[allow(non_snake_case)]
-    pub fn Ly(&self) -> PositiveReal {
+    pub fn ly(&self) -> PositiveReal {
         self.extents[1]
     }
 
@@ -194,8 +194,8 @@ impl Rhomboid {
     #[inline]
     fn matmul(&self, v: [f64; 2]) -> [f64; 2] {
         [
-            self.Lx().get() * v[0] + self.Ly().get() * self.xy() * v[1],
-            self.Ly().get() * v[1],
+            self.lx().get() * v[0] + self.ly().get() * self.xy() * v[1],
+            self.ly().get() * v[1],
         ]
     }
 
@@ -203,8 +203,8 @@ impl Rhomboid {
     #[inline]
     fn matmul_inv(&self, v: [f64; 2]) -> [f64; 2] {
         [
-            1.0 / self.Lx().get() * (v[0] - self.xy() * v[1]),
-            1.0 / self.Ly().get() * v[1],
+            1.0 / self.lx().get() * (v[0] - self.xy() * v[1]),
+            1.0 / self.ly().get() * v[1],
         ]
     }
 
@@ -212,8 +212,8 @@ impl Rhomboid {
     #[inline]
     fn matmul_t(&self, v: [f64; 2]) -> [f64; 2] {
         [
-            self.Lx().get() * v[0],
-            self.Ly().get() * self.xy() * v[0] + self.Ly().get() * v[1],
+            self.lx().get() * v[0],
+            self.ly().get() * self.xy() * v[0] + self.ly().get() * v[1],
         ]
     }
 
@@ -247,8 +247,8 @@ impl Rhomboid {
 
     pub fn get_edge_vectors(&self) -> [Cartesian<2>; 2] {
         let mut edge_vectors = [Cartesian::<2>::default(); 2];
-        edge_vectors[0] = [self.Lx().get(), 0.].into();
-        edge_vectors[1] = [self.Ly().get() * self.xy(), self.Ly().get()].into();
+        edge_vectors[0] = [self.lx().get(), 0.].into();
+        edge_vectors[1] = [self.ly().get() * self.xy(), self.ly().get()].into();
         edge_vectors
     }
 
@@ -305,8 +305,8 @@ impl Rhomboid {
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 2] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 2];
-        dist[0] = self.Lx() / (f64::sqrt(1.0 + self.xy() * self.xy())).try_into().unwrap();
-        dist[1] = self.Ly();
+        dist[0] = self.lx() / (f64::sqrt(1.0 + self.xy() * self.xy())).try_into().unwrap();
+        dist[1] = self.ly();
         dist
     }
 }
@@ -321,7 +321,7 @@ impl Volume for Rhomboid {
     #[inline]
     fn volume(&self) -> f64 {
         // When A is triangular, det(A) = det(diag(A))
-        self.Lx().get() * self.Ly().get()
+        self.lx().get() * self.ly().get()
     }
 }
 
@@ -346,7 +346,7 @@ impl Scale for Rhomboid {
     ///
     /// let scaled_rhomboid = rhomboid.scale_length(0.5.try_into()?);
     ///
-    /// assert_eq!(scaled_rhomboid.Lx().get(), 2.5);
+    /// assert_eq!(scaled_rhomboid.lx().get(), 2.5);
     /// # Ok(())
     /// # }
     /// ```
@@ -378,7 +378,7 @@ impl Scale for Rhomboid {
     ///
     /// let scaled_rhomboid = rhomboid.scale_volume(4.0.try_into()?);
     ///
-    /// assert_eq!(scaled_rhomboid.Lx().get(), 10.0);
+    /// assert_eq!(scaled_rhomboid.lx().get(), 10.0);
     /// # Ok(())
     /// # }
     /// ```
@@ -401,11 +401,11 @@ impl IsPointInside<Cartesian<2>> for Rhomboid {
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<2>) -> bool {
         let [x, y] = point.coordinates;
-        let ly_half = self.Ly().get() / 2.0;
+        let ly_half = self.ly().get() / 2.0;
         if y < -ly_half || y >= ly_half {
             return false;
         }
-        let lx_half = self.Lx().get() / 2.0;
+        let lx_half = self.lx().get() / 2.0;
         let x_skew = x - self.xy() * y;
         if x_skew < -lx_half || x_skew >= lx_half {
             return false;
@@ -433,7 +433,7 @@ impl BoundingSphereRadius for Rhomboid {
     fn bounding_sphere_radius(&self) -> PositiveReal {
         // || maximal_extent || / 2.0 = { lx + ly * |xy|, ly } || / 2.0
         (0.5 * f64::sqrt(
-            (self.Lx().get() + self.Ly().get() * self.xy().abs()).powi(2) + self.Ly().get().powi(2),
+            (self.lx().get() + self.ly().get() * self.xy().abs()).powi(2) + self.ly().get().powi(2),
         ))
         .try_into()
         .expect("Norm is always positive.")
@@ -470,8 +470,8 @@ impl Distribution<Cartesian<2>> for Rhomboid {
         let x = uniform.sample(rng);
         let y = uniform.sample(rng);
 
-        let scaled_x = self.Lx().get() * x + self.Ly().get() * self.xy() * y;
-        let scaled_y = self.Ly().get() * y;
+        let scaled_x = self.lx().get() * x + self.ly().get() * self.xy() * y;
+        let scaled_y = self.ly().get() * y;
 
         Cartesian {
             coordinates: [scaled_x, scaled_y],
@@ -494,8 +494,8 @@ where
         let o_j = RotationMatrix::from(*o_ij);
         let [c, s] = [o_j.rows()[0][0], o_j.rows()[1][0]];
 
-        let (lx1, ly1, xy1) = (self.Lx().get(), self.Ly().get(), self.xy());
-        let (lx2, ly2, xy2) = (other.Lx().get(), other.Ly().get(), other.xy());
+        let (lx1, ly1, xy1) = (self.lx().get(), self.ly().get(), self.xy());
+        let (lx2, ly2, xy2) = (other.lx().get(), other.ly().get(), other.xy());
         let [tx, ty] = [v_ij[0], v_ij[1]];
 
         // The SAT check projects the distance between centers onto the normals of each
@@ -760,16 +760,16 @@ mod tests {
     fn scale_preserves_aspect_ratio_and_volume() {
         let rhomboid: Rhomboid = (3.0.try_into().unwrap(), 2.0.try_into().unwrap(), 1.5).into();
         let original_volume = rhomboid.volume();
-        let original_lx_over_ly = rhomboid.Lx().get() / rhomboid.Ly().get();
+        let original_lx_over_ly = rhomboid.lx().get() / rhomboid.ly().get();
 
         let scaled = rhomboid.scale_length(2.0.try_into().unwrap());
         assert_relative_eq!(scaled.volume(), 4.0 * original_volume);
-        assert_relative_eq!(scaled.Lx().get() / scaled.Ly().get(), original_lx_over_ly);
+        assert_relative_eq!(scaled.lx().get() / scaled.ly().get(), original_lx_over_ly);
         assert_eq!(scaled.xy(), rhomboid.xy());
 
         let scaled = rhomboid.scale_volume(9.0.try_into().unwrap());
         assert_relative_eq!(scaled.volume(), 9.0 * original_volume);
-        assert_relative_eq!(scaled.Lx().get() / scaled.Ly().get(), original_lx_over_ly);
+        assert_relative_eq!(scaled.lx().get() / scaled.ly().get(), original_lx_over_ly);
         assert_eq!(scaled.xy(), rhomboid.xy());
     }
 
@@ -858,11 +858,11 @@ mod tests {
                  b=({}, {}, {})\n\
                  t=({}, {})\n\
                  theta={}",
-                a.Lx().get(),
-                a.Ly().get(),
+                a.lx().get(),
+                a.ly().get(),
                 a.xy(),
-                b.Lx().get(),
-                b.Ly().get(),
+                b.lx().get(),
+                b.ly().get(),
                 b.xy(),
                 v_ij[0],
                 v_ij[1],
