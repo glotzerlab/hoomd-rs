@@ -4,7 +4,6 @@
 //! Implement periodic boundary conditions for rhomboid boxes in cartesian space.
 
 use arrayvec::ArrayVec;
-use std::cmp::min;
 
 use crate::{
     boundary::{

@@ -10,12 +10,12 @@ use crate::{
     property::Position,
 };
 use arrayvec::ArrayVec;
-use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
+use hoomd_geometry::shape::Hyperparallelepiped;
 use hoomd_linear_algebra::{
     MatMul,
-    matrix::{Matrix, Matrix33, qr},
+    matrix::{Matrix, qr},
 };
-use hoomd_vector::{Cartesian, Cross, InnerProduct};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N> {
     /// The largest value that the maximum interaction range can take.
@@ -101,7 +101,7 @@ where
 
     // /// Place periodic images of sites near the edge of the periodic boundary.
     #[inline]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         // let mut result = ArrayVec::new();
 
         // let r = site_properties.position();

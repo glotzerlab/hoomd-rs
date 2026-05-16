@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::shape::{
-    Capsule, ConvexPolytope, Cylinder, Hypercuboid, Hyperellipsoid, Hyperparallelepiped,
+    Capsule, Cylinder, Hypercuboid, Hyperellipsoid, Hyperparallelepiped,
     Hypersphere, Simplex3,
 };
 use hoomd_linear_algebra::{MatMul, SquareMatrix, matrix::Matrix};
