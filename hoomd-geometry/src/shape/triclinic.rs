@@ -147,16 +147,6 @@ impl Triclinic {
         ]
     }
 
-    /// A^T @ [x, y] = [lx·x, ly·xy·x + ly·y]
-    #[inline]
-    fn matmul_t(&self, v: [f64; 3]) -> [f64; 3] {
-        [
-            self.lx().get() * v[0],
-            self.ly().get() * self.xy() * v[0] + self.ly().get() * v[1],
-            self.lz().get() * (self.xz() * v[0] + self.yz() * v[1] + v[2]),
-        ]
-    }
-
     /// Construct a triclinic box from box dimensions.
     ///
     /// The dimensions array should contain [lx, ly, lz, xy, xz, yz] where:

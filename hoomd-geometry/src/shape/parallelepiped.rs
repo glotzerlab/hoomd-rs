@@ -1,10 +1,7 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use hoomd_linear_algebra::{
-    GeneralMatrix, SquareMatrix,
-    matrix::{Matrix, qr},
-};
+use hoomd_linear_algebra::matrix::{Matrix, qr};
 use hoomd_vector::{Cartesian, InnerProduct};
 
 use crate::{IsPointInside, MapPoint, SupportMapping};
