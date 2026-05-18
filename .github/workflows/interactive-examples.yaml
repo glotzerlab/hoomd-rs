@@ -12,6 +12,8 @@ on:
 
   workflow_dispatch:
 
+permissions: {}
+
 defaults:
   run:
     shell: bash
@@ -24,10 +26,14 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
 
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
     - name: Remove native build configuration
       run: rm .cargo/config.toml
     - name: Configure Rust
@@ -52,7 +58,7 @@ jobs:
     - name: Cache
       uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
-        key: ${{ 'wasm32-unknown-unknown' }}-${{ hashFiles('Cargo.lock') }}
+        key: wasm32-unknown-unknown-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
         save-if: ${{ github.ref == 'refs/heads/trunk' }}
 
@@ -108,7 +114,11 @@ jobs:
     if: always()
     needs: [build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+    - run: jq --exit-status 'all(.result == "success")' <<< "${NEEDS}"
+      env:
+        NEEDS: ${{ toJson(needs) }}
     - name: Done
       run: exit 0
