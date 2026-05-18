@@ -125,17 +125,24 @@ pub trait CorrelationFunction<B, S, X, C, P>
 where
     P: Metric + ShellMeasure,
 {
-    /// Computes the raw historgram of distances between sites in a given microstate
-    /// TODO:
+    /// Computes the raw unnormalized historgram of distances between sites in a
+    /// given microstate.
+    ///
     /// # Errors
+    /// Returns `EmptyMicrostate` error when given microstate contains `None` type
+    /// indices.
     fn radial_distance_histogram(
         microstate: &Microstate<B, S, X, C>,
         r_min: f64,
         r_max: f64,
         nbins: usize,
     ) -> Result<SpatialHistogram<1, f64>, Error>;
-    /// Get the radial distribution function g(r) from a given microstate.
+    /// Get the radial distribution function g(r) from a given microstate. The
+    /// output is normalized over an ideal gas with the specified density.
+    ///
     /// # Errors
+    /// Returns `EmptyMicrostate` error when given microstate contains `None` type
+    /// indices.
     #[inline]
     fn rdf(
         microstate: &Microstate<B, S, X, C>,
@@ -165,9 +172,9 @@ where
     }
 }
 
-/// TODO: documentation
-pub trait ShellMeasure {
-    /// Get the volume of a shell of radius `r`.
+/// Calculate the measure of a spherical shell in the appropriate metric space.
+pub trait ShellMeasure: Metric {
+    /// Get the volume of a shell of radius `r` and width `shell_width`.
     fn shell_measure(r: f64, shell_width: f64) -> f64;
 }
 
@@ -618,6 +625,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approxim::assert_relative_eq;
     use hoomd_manifold::{Hyperbolic, Minkowski};
     use hoomd_microstate::{Body, boundary::Open};
     use hoomd_vector::Cartesian;
@@ -736,20 +744,24 @@ mod tests {
                     .expect("hard coded distributions should be valid");
             }
         }
-        let rdf_hist = SpatialHistogram::<1, f64>::radial_distance_histogram(
+        let rdf_unnormalized = SpatialHistogram::<1, f64>::radial_distance_histogram(
             &microstate,
             0.0_f64,
             2.0_f64,
             2_usize,
         )?;
         let ans = array![4_usize, 2_usize];
-        assert_eq!(ans, rdf_hist.bin_counts);
-        assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.0, 1.0, 2.0]);
+        assert_eq!(ans, rdf_unnormalized.bin_counts);
+        assert_eq!(
+            rdf_unnormalized.bin_edges.slice(s![0, ..]),
+            array![0.0, 1.0, 2.0]
+        );
 
-        // TODO: fix!!
-        // let rdf_hist_normalized = FloatHistogram::normalize_rdf(&rdf_hist);
-        // let ans_normed = array![2.0 / 3.0, 1.0 / 3.0];
-        // assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
+        let rdf = SpatialHistogram::rdf(&microstate, 0.0_f64, 2.0_f64, 2_usize, 1.0)?;
+        let ans_normed = array![2.0 / PI, 1.0 / 3.0 / PI];
+        assert_eq!(ans_normed.shape(), rdf.bin_counts.shape());
+        assert_relative_eq!(ans_normed[0], rdf.bin_counts[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_normed[1], rdf.bin_counts[1], epsilon = 1e-12);
         Ok(())
     }
 
@@ -770,20 +782,24 @@ mod tests {
             .try_build()
             .expect("hard-coded distributions should be valid");
 
-        let rdf_hist = SpatialHistogram::<1, f64>::radial_distance_histogram(
+        let rdf_unnormalized = SpatialHistogram::<1, f64>::radial_distance_histogram(
             &microstate,
             0.0_f64,
             1.0_f64,
             2_usize,
         )?;
         let ans = array![2_usize, 4_usize];
-        assert_eq!(ans, rdf_hist.bin_counts);
-        assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.0, 0.5, 1.0]);
+        assert_eq!(ans, rdf_unnormalized.bin_counts);
+        assert_eq!(
+            rdf_unnormalized.bin_edges.slice(s![0, ..]),
+            array![0.0, 0.5, 1.0]
+        );
 
-        // TODO: Fix examples!!!!!
-        // let rdf_hist_normalized = FloatHistogram::normalize(&rdf_hist);
-        // let ans_normed = array![1.0 / 3.0, 2.0 / 3.0];
-        // assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
+        let rdf = SpatialHistogram::rdf(&microstate, 0.0_f64, 1.0_f64, 2_usize, 1.5)?;
+        let ans_normed = array![32.0 / 9.0 / PI, 64.0 / 27.0 / PI];
+        assert_eq!(ans_normed.shape(), rdf.bin_counts.shape());
+        assert_relative_eq!(ans_normed[0], rdf.bin_counts[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_normed[1], rdf.bin_counts[1], epsilon = 1e-12);
         Ok(())
     }
 
@@ -815,22 +831,31 @@ mod tests {
             ])
             .try_build()
             .expect("hard coded distribution should be valid");
-        let rdf_hist = SpatialHistogram::<1, f64>::radial_distance_histogram(
+        let rdf_unnormalized = SpatialHistogram::<1, f64>::radial_distance_histogram(
             &microstate,
             0.0_f64,
             2.0_f64,
             4_usize,
         )?;
         let ans = array![0_usize, 5_usize, 1_usize, 0_usize];
-        assert_eq!(ans, rdf_hist.bin_counts);
+        assert_eq!(ans, rdf_unnormalized.bin_counts);
         assert_eq!(
-            rdf_hist.bin_edges.slice(s![0, ..]),
+            rdf_unnormalized.bin_edges.slice(s![0, ..]),
             array![0.0, 0.5, 1.0, 1.5, 2.0]
         );
 
-        // let rdf_hist_normalized = FloatHistogram::normalize(&rdf_hist);
-        // let ans_normed = array![0.0, 5.0 / 6.0, 1.0 / 6.0, 0.0];
-        // assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
+        let rdf = SpatialHistogram::rdf(&microstate, 0.0_f64, 2.0_f64, 4_usize, 1.0)?;
+        let ans_normed = array![
+            0.0,
+            5.0 / (2.0 * PI * ((0.75_f64).sinh())),
+            1.0 / (2.0 * PI * ((1.25_f64).sinh())),
+            0.0
+        ];
+        assert_eq!(ans_normed.shape(), rdf.bin_counts.shape());
+        assert_relative_eq!(ans_normed[0], rdf.bin_counts[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_normed[1], rdf.bin_counts[1], epsilon = 1e-12);
+        assert_relative_eq!(ans_normed[2], rdf.bin_counts[2], epsilon = 1e-12);
+        assert_relative_eq!(ans_normed[3], rdf.bin_counts[3], epsilon = 1e-12);
         Ok(())
     }
 
@@ -856,22 +881,27 @@ mod tests {
             ])
             .try_build()
             .expect("hard coded distribution should be valid");
-        let rdf_hist = SpatialHistogram::<1, f64>::radial_distance_histogram(
+        let rdf_unnormalized = SpatialHistogram::<1, f64>::radial_distance_histogram(
             &microstate,
             0.01_f64,
             1.01_f64,
             2_usize,
         )?;
         let ans = array![4_usize, 2_usize];
-        assert_eq!(ans, rdf_hist.bin_counts);
+        assert_eq!(ans, rdf_unnormalized.bin_counts);
         assert_eq!(
-            rdf_hist.bin_edges.slice(s![0, ..]),
+            rdf_unnormalized.bin_edges.slice(s![0, ..]),
             array![0.01, 0.51, 1.01]
         );
 
-        // let rdf_hist_normalized = FloatHistogram::normalize(&rdf_hist);
-        // let ans_normed = array![2.0 / 3.0, 1.0 / 3.0];
-        // assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
+        let rdf = SpatialHistogram::rdf(&microstate, 0.01_f64, 1.01_f64, 2_usize, 1.0)?;
+        let ans_normed = array![
+            8.0 / (3.0 * PI * ((0.26_f64).sinh())),
+            4.0 / (3.0 * PI * ((0.76_f64).sinh()))
+        ];
+        assert_eq!(ans_normed.shape(), rdf.bin_counts.shape());
+        assert_relative_eq!(ans_normed[0], rdf.bin_counts[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_normed[1], rdf.bin_counts[1], epsilon = 1e-12);
         Ok(())
     }
 }
