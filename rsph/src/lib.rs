@@ -6,6 +6,22 @@
 //! typically attempt to evaluate all values of `l` up to the target. When computing
 //! Steinhardt order parameters or similar algorithms, this code is much faster than
 //! alternatives, with competetive numerical stability even out to large values of `l`.
+//!
+//! # Example
+//! ```
+//! use rsph::SphericalHarmonic;
+//!
+//! // Initialize the SphericalHarmonic container, which can be reused
+//! // to compute Y_6^m at a large number of points.
+//! let y_6 = SphericalHarmonic::<6>::new();
+//!
+//! // Values of m in 0..=L are returned as a HarmonicOutput<L> container, which behaves
+//! // like a [f64; L+1] array.
+//! let sh = y_6.eval(0.0, 0.0, 1.0);
+//! assert_eq!(sh.len(), 6+1);
+//!
+//!
+//! ```
 
 use num_complex::Complex64;
 use std::{
