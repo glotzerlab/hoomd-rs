@@ -18,7 +18,7 @@ fn main() {
     sample_count = 1_000,
     sample_size = 10_000,
 )]
-fn bench_rsph<const L: usize>(bencher: divan::Bencher<'_, '_>) {
+fn recurrence<const L: usize>(bencher: divan::Bencher<'_, '_>) {
     let mut rng = StdRng::seed_from_u64(1);
     bencher
         .with_inputs(|| create_random_tuple::<StdRng>(&mut rng))
