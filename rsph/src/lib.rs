@@ -1,4 +1,11 @@
-//! ...
+//! Tools for evaluating complex spherical harmonics in rust.
+//!
+//! This library uses a recurrence relation to evaluate spherical harmonics of a
+//! particular azimuthal quantum number `l` and all positive magnetic quantum numbers
+//! `m=0..=L`. The approach taken is much faster than more general recurrences, which
+//! typically attempt to evaluate all values of `l` up to the target. When computing
+//! Steinhardt order parameters or similar algorithms, this code is much faster than
+//! alternatives, with competetive numerical stability even out to large values of `l`.
 
 use num_complex::Complex64;
 use std::{
