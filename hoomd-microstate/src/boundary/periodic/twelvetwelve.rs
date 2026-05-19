@@ -25,7 +25,7 @@ impl MaximumAllowableInteractionRange for TwelveTwelve {
     /// This bound is determined by the edge length of the dodecagon.
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-        self.skirt * TwelveTwelve::CUSP_TO_EDGE
+        TwelveTwelve::CUSP_TO_EDGE
     }
 }
 
@@ -35,22 +35,13 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
     /// Note that the function fails to wrap points that are outside the
     /// dodecagon and further than `TwelveTwelve::EDGE_LENGTH/2` from any of
     /// the vertices.
-    ///
-    /// TODO: example
     #[inline]
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     fn wrap(&self, properties: Point<Hyperbolic<3>>) -> Result<Point<Hyperbolic<3>>, Error> {
         let mut properties = properties;
         let r = properties.position_mut();
         let r_coords = r.coordinates();
-        assert_eq!(
-            r.skirt(),
-            self.shape.skirt,
-            "point must be wrapped onto a Hyperboloid with the same skirt"
-        );
-        let angle = r_coords[1]
-            .atan2(r_coords[0])
-            .rem_euclid(2.0 * PI);
+        let angle = r_coords[1].atan2(r_coords[0]).rem_euclid(2.0 * PI);
 
         // distance to the boundary; if positive, r is within the tile and does not need to be wrapped
         let d = TwelveTwelve::distance_to_boundary(r);
@@ -73,11 +64,9 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                 (-vertex_angle).sin(),
             );
             let transformed_point = Minkowski::from([
-                r_coords[0] * v_cosh * v_cos - r_coords[1] * v_cosh * v_sin
-                    + r_coords[2] * v_sinh,
+                r_coords[0] * v_cosh * v_cos - r_coords[1] * v_cosh * v_sin + r_coords[2] * v_sinh,
                 r_coords[0] * v_sin + r_coords[1] * v_cos,
-                r_coords[0] * v_sinh * v_cos - r_coords[1] * v_sinh * v_sin
-                    + r_coords[2] * v_cosh,
+                r_coords[0] * v_sinh * v_cos - r_coords[1] * v_sinh * v_sin + r_coords[2] * v_cosh,
             ]);
             // get coords of point in transformed frame
             let trans_angle =
@@ -173,7 +162,7 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                     let wrapped_3 =
                         TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
                     let theta_4 = (theta_3 - 5.0).rem_euclid(12.0);
-                    wrapped = TwelveTwelve::gamma(eta, theta_4 * PI/6.0 - PI/12.0, &wrapped_3);
+                    wrapped = TwelveTwelve::gamma(eta, theta_4 * PI / 6.0 - PI / 12.0, &wrapped_3);
                 }
                 1.0 => {
                     let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
@@ -187,15 +176,18 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                         TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
                     let theta_4 = (theta_3 - 5.0).rem_euclid(12.0);
                     let wrapped_4 =
-                        TwelveTwelve::gamma(eta, theta_4 * PI/6.0 + PI/12.0, &wrapped_3);
+                        TwelveTwelve::gamma(eta, theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
                     let theta_5 = (theta_4 - 5.0).rem_euclid(12.0);
-                    wrapped = TwelveTwelve::gamma(eta, theta_5 * PI/6.0 + 12.0, &wrapped_4);
+                    wrapped = TwelveTwelve::gamma(eta, theta_5 * PI / 6.0 + 12.0, &wrapped_4);
                 }
                 0.0 => {
                     if transformed_point.coordinates[1] >= 0.0 {
                         let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
-                        let wrapped_1 =
-                            TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                        let wrapped_1 = TwelveTwelve::gamma(
+                            eta,
+                            theta_1 * PI / 6.0 + PI / 12.0,
+                            r.coordinates(),
+                        );
                         let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
                         let wrapped_2 =
                             TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
@@ -204,16 +196,20 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                             TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
                         let theta_4 = (theta_3 - 5.0).rem_euclid(12.0);
                         let wrapped_4 =
-                            TwelveTwelve::gamma(eta, theta_4 * PI/6.0 + PI/12.0, &wrapped_3);
+                            TwelveTwelve::gamma(eta, theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
                         let theta_5 = (theta_4 - 5.0).rem_euclid(12.0);
                         let wrapped_5 =
-                        TwelveTwelve::gamma(eta, theta_5 * PI/6.0 + 12.0, &wrapped_4);
+                            TwelveTwelve::gamma(eta, theta_5 * PI / 6.0 + 12.0, &wrapped_4);
                         let theta_6 = (theta_5 - 5.0).rem_euclid(12.0);
-                        wrapped = TwelveTwelve::gamma(eta, theta_6*PI/6.0 + PI/12.0, &wrapped_5);
+                        wrapped =
+                            TwelveTwelve::gamma(eta, theta_6 * PI / 6.0 + PI / 12.0, &wrapped_5);
                     } else {
                         let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
-                        let wrapped_1 =
-                            TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                        let wrapped_1 = TwelveTwelve::gamma(
+                            eta,
+                            theta_1 * PI / 6.0 + PI / 12.0,
+                            r.coordinates(),
+                        );
                         let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
                         let wrapped_2 =
                             TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
@@ -227,13 +223,14 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                         let wrapped_5 =
                             TwelveTwelve::gamma(eta, theta_5 * PI / 6.0 + PI / 12.0, &wrapped_4);
                         let theta_6 = (theta_5 + 5.0).rem_euclid(12.0);
-                        wrapped = TwelveTwelve::gamma(eta, theta_6 * PI/6.0 + PI/12.0, &wrapped_5);
+                        wrapped =
+                            TwelveTwelve::gamma(eta, theta_6 * PI / 6.0 + PI / 12.0, &wrapped_5);
                     }
                 }
                 _ => return Err(Error::CannotWrapProperties),
             }
             let wrapped_hyperbolic =
-                Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from(wrapped), r.skirt());
+                Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from(wrapped));
             *r = wrapped_hyperbolic;
             Ok(properties)
         } else {
@@ -249,7 +246,10 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
     }
     /// Place periodic images of sites near the edges of the periodic boundary
     #[inline]
-    fn generate_ghosts(&self, site_properties: &Point<Hyperbolic<3>>) -> ArrayVec<Point<Hyperbolic<3>>, MAX_GHOSTS> {
+    fn generate_ghosts(
+        &self,
+        site_properties: &Point<Hyperbolic<3>>,
+    ) -> ArrayVec<Point<Hyperbolic<3>>, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
         let r = site_properties.position();
 
@@ -257,8 +257,7 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
         let eta = TwelveTwelve::CUSP_TO_EDGE;
         let gamma_pt = |theta: f64, point: &[f64; 3]| {
             let ghost = TwelveTwelve::gamma(eta, theta, point);
-            let new_hyperbolic =
-                Hyperbolic::from_minkowski_coordinates(Minkowski::from(ghost), r.skirt());
+            let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(Minkowski::from(ghost));
             let mut new_site = *site_properties;
             *new_site.position_mut() = new_hyperbolic;
             new_site
@@ -311,7 +310,7 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
         let theta_4b = (theta_3b + 5.0).rem_euclid(12.0);
         let ghost_4b = gamma_pt(
             theta_4b * PI / 6.0 + PI / 12.0,
-            ghost_3b.position.coordinates()
+            ghost_3b.position.coordinates(),
         );
         result.push(ghost_4b);
 
@@ -324,17 +323,107 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
         let theta_5b = (theta_4b + 5.0).rem_euclid(12.0);
         let ghost_5b = gamma_pt(
             theta_5b * PI / 6.0 + PI / 12.0,
-            ghost_4b.position.coordinates()
+            ghost_4b.position.coordinates(),
         );
         result.push(ghost_5b);
 
         let theta_6 = (theta_5a - 5.0).rem_euclid(12.0);
         let ghost_6 = gamma_pt(
             theta_6 * PI / 6.0 + PI / 12.0,
-            ghost_5a.position.coordinates()
+            ghost_5a.position.coordinates(),
         );
         result.push(ghost_6);
 
         result
+    }
+}
+
+// TODO!!! Write test code!!
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::property::Point;
+    use approxim::assert_relative_eq;
+    use hoomd_manifold::{Hyperbolic, HyperbolicDisk};
+    use rand::{RngExt, SeedableRng, distr::Distribution, rngs::StdRng};
+    use std::f64::consts::PI;
+
+    #[test]
+    fn doesnt_wrap_if_inside() {
+        let r = TwelveTwelve::CUSP_TO_EDGE;
+        let mut rng = StdRng::seed_from_u64(239);
+        let disk = HyperbolicDisk {
+            disk_radius: r.try_into().expect("hard-coded positive number"),
+            point: Hyperbolic::from_minkowski_coordinates(Minkowski::from([0.0, 0.0, 1.0])),
+        };
+        for _ in 0..250 {
+            let random_point: Hyperbolic<3> = disk.sample(&mut rng);
+            let random_point = Point::new(random_point);
+
+            let periodic = Periodic::new(0.5, TwelveTwelve {}).expect("hard-coded positive number");
+            let wrapped_point = periodic.wrap(random_point).expect("hard-coded");
+            assert_eq!(
+                random_point.position.coordinates(),
+                wrapped_point.position.coordinates()
+            );
+        }
+    }
+
+    #[test]
+    fn wraps_to_opposite_edge() {
+        let mut rng = StdRng::seed_from_u64(54321);
+        let side = f64::from(rng.random_range(0..12));
+        let boost = TwelveTwelve::CUSP_TO_EDGE + 0.5;
+        let offset = PI / 12.0;
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, side * PI / 6.0 + offset);
+        let point = Point::new(point);
+        let periodic = Periodic::new(1.0, TwelveTwelve {}).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(point).expect("hard-coded");
+
+        let wrapped_side = (side + 6.0).rem_euclid(12.0);
+        let octant = (((wrapped_point.position.coordinates()[1]
+            .atan2(wrapped_point.position.coordinates()[0]))
+            / (PI / 6.0))
+            .floor())
+        .rem_euclid(12.0);
+
+        // Check that point is wrapped to correct octant
+        assert_eq!(wrapped_side, octant);
+
+        // Check that point mapping is correct
+        let new_boost = 2.0
+            * (TwelveTwelve::TWELVETWELVE.tanh() * ((PI / 6.0).sin())
+                / (2.0 * ((PI / 12.0).sin())))
+            .atanh()
+            - boost;
+        let ans = Hyperbolic::<3>::from_polar_coordinates(
+            new_boost,
+            (wrapped_side + 1.0) * (PI / 6.0) - offset,
+        );
+        assert_relative_eq!(ans, wrapped_point.position, epsilon = 1e-12);
+        assert_relative_eq!(
+            -TwelveTwelve::distance_to_boundary(&point.position),
+            TwelveTwelve::distance_to_boundary(&wrapped_point.position),
+            epsilon = 1e-12
+        );
+    }
+
+    #[test]
+    fn wraps_to_opposite_edge_distance() {
+        let mut rng = StdRng::seed_from_u64(1);
+        let side = f64::from(rng.random_range(0..12));
+        let boost = TwelveTwelve::CUSP_TO_EDGE + 0.2;
+        let offset = PI / 12.0 + rng.random::<f64>() * (PI / 24.0);
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, side * PI / 6.0 + offset);
+        let point = Point::new(point);
+        let periodic = Periodic::new(1.0, TwelveTwelve {}).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(point).expect("hard-coded");
+
+        // Check that mapping preserves the distance to the boundary
+        assert_relative_eq!(
+            -TwelveTwelve::distance_to_boundary(&point.position),
+            TwelveTwelve::distance_to_boundary(&wrapped_point.position),
+            epsilon = 1e-12
+        );
     }
 }

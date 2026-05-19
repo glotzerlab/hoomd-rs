@@ -17,10 +17,7 @@ use std::f64::consts::PI;
 /// that each of the angles is $` \frac{2\pi}{12} `$ so that twelve equivalent
 /// dodecagons meet at each vertex.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct TwelveTwelve {
-    /// Skirt width of the Hyperboloid.
-    pub skirt: f64,
-}
+pub struct TwelveTwelve {}
 
 impl IsPointInside<Hyperbolic<3>> for TwelveTwelve {
     /// Checks if a given Hyperbolic point is inside [`TwelveTwelve`].
@@ -32,9 +29,9 @@ impl IsPointInside<Hyperbolic<3>> for TwelveTwelve {
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let twelve_twelve = TwelveTwelve { skirt: 1.0 };
+    /// let twelve_twelve = TwelveTwelve {};
     ///
-    /// let point = Hyperbolic::<3>::from_polar_coordinates(1.0, PI / 8.0, 1.0);
+    /// let point = Hyperbolic::<3>::from_polar_coordinates(1.0, PI / 8.0);
     /// assert!(twelve_twelve.is_point_inside(&point));
     /// # Ok(())
     /// # }
@@ -62,16 +59,14 @@ impl TwelveTwelve {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let v: f64 = TwelveTwelve::CUSP_TO_EDGE - 0.4;
-    /// let rho: f64 = 1.0;
     /// let theta: f64 = PI / 12.0;
     /// let x = Hyperbolic::from_minkowski_coordinates(
     ///     [
-    ///         rho * (v.sinh()) * (theta.cos()),
-    ///         rho * (v.sinh()) * (theta.sin()),
-    ///         rho * (v.cosh()),
+    ///         (v.sinh()) * (theta.cos()),
+    ///         (v.sinh()) * (theta.sin()),
+    ///         (v.cosh()),
     ///     ]
     ///     .into(),
-    ///     1.0,
     /// );
     /// assert_relative_eq!(
     ///     TwelveTwelve::distance_to_boundary(&x),
@@ -84,30 +79,24 @@ impl TwelveTwelve {
     #[inline]
     #[must_use]
     pub fn distance_to_boundary(point: &Hyperbolic<3>) -> f64 {
-        let rho = point.skirt();
         let theta =
             (point.coordinates()[1].atan2(point.coordinates()[0])).rem_euclid(PI / 6.0) - PI / 12.0;
-        let boost = (point.coordinates()[2] / rho).acosh();
-        let (b_sinh, b_cosh) = (boost.sinh(), point.coordinates()[2] / rho);
+        let boost = (point.coordinates()[2]).acosh();
+        let (b_sinh, b_cosh) = (boost.sinh(), point.coordinates()[2]);
         let xi = Self::CUSP_TO_EDGE;
         let (xi_sinh, xi_cosh) = (xi.sinh(), xi.cosh());
         // boost into frame where edge is the vertical diameter
-        let edge_as_diameter: Hyperbolic<3> = Hyperbolic::<3>::from_minkowski_coordinates(
-            Minkowski::from([
-                rho * xi_cosh * b_sinh * (theta.cos()) - rho * xi_sinh * b_cosh,
-                rho * b_sinh * (theta.sin()),
-                -rho * xi_sinh * b_sinh * (theta.cos()) + rho * xi_cosh * b_cosh,
-            ]),
-            rho,
-        );
-        let flipped = Hyperbolic::<3>::from_minkowski_coordinates(
-            Minkowski::from([
-                -edge_as_diameter.coordinates()[0],
-                edge_as_diameter.coordinates()[1],
-                edge_as_diameter.coordinates()[2],
-            ]),
-            rho,
-        );
+        let edge_as_diameter: Hyperbolic<3> =
+            Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([
+                xi_cosh * b_sinh * (theta.cos()) - xi_sinh * b_cosh,
+                b_sinh * (theta.sin()),
+                -xi_sinh * b_sinh * (theta.cos()) + xi_cosh * b_cosh,
+            ]));
+        let flipped = Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([
+            -edge_as_diameter.coordinates()[0],
+            edge_as_diameter.coordinates()[1],
+            edge_as_diameter.coordinates()[2],
+        ]));
         let sign = -(edge_as_diameter.coordinates()[0]).signum();
         sign * (edge_as_diameter.distance(&flipped)) / 2.0
     }
@@ -165,12 +154,12 @@ mod tests {
     #[test]
     fn boundary_distance() {
         // Distance to the edge of the {12,12} fundamental domain
-        let e = Hyperbolic::<3>::from_polar_coordinates(1.0, 0.1, 1.0);
+        let e = Hyperbolic::<3>::from_polar_coordinates(1.0, 0.1);
         let e_edge_distance = TwelveTwelve::distance_to_boundary(&e);
         let e_edge_distance_numeric = 1.028_489_242_583_61;
         assert_relative_eq!(e_edge_distance, e_edge_distance_numeric, epsilon = 1e-12);
 
-        let f = Hyperbolic::<3>::from_polar_coordinates(0.6, 0.2 + PI / 6.0, 1.0);
+        let f = Hyperbolic::<3>::from_polar_coordinates(0.6, 0.2 + PI / 6.0);
         let f_edge_distance = TwelveTwelve::distance_to_boundary(&f);
         let f_edge_distance_numeric = 1.393_774_804_611_314;
         assert_relative_eq!(f_edge_distance, f_edge_distance_numeric, epsilon = 1e-12);
@@ -178,33 +167,30 @@ mod tests {
 
     #[test]
     fn inside_is_inside() {
-        let twelve_twelve = TwelveTwelve { skirt: 1.0 };
+        let twelve_twelve = TwelveTwelve {};
         let r = TwelveTwelve::CUSP_TO_EDGE;
         let mut rng = StdRng::seed_from_u64(239);
         let disk = HyperbolicDisk {
             disk_radius: r.try_into().expect("hard-coded positive number"),
-            point: Hyperbolic::<3>::from_minkowski_coordinates(
-                Minkowski::from([0.0, 0.0, 1.0]),
-                1.0,
-            ),
+            point: Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([0.0, 0.0, 1.0])),
         };
         let random_point: Hyperbolic<3> = disk.sample(&mut rng);
         assert!(twelve_twelve.is_point_inside(&random_point));
 
-        let point_1 = Hyperbolic::<3>::from_polar_coordinates(1.99, PI / 12.0, 1.0);
+        let point_1 = Hyperbolic::<3>::from_polar_coordinates(1.99, PI / 12.0);
         assert!(twelve_twelve.is_point_inside(&point_1));
 
-        let point_2 = Hyperbolic::<3>::from_polar_coordinates(3.32, PI / 6.0, 1.0);
+        let point_2 = Hyperbolic::<3>::from_polar_coordinates(3.32, PI / 6.0);
         assert!(twelve_twelve.is_point_inside(&point_2));
     }
 
     #[test]
     fn outside_is_outside() {
-        let twelve_twelve = TwelveTwelve { skirt: 1.0 };
-        let point_1 = Hyperbolic::<3>::from_polar_coordinates(2.0, PI / 12.0, 1.0);
+        let twelve_twelve = TwelveTwelve {};
+        let point_1 = Hyperbolic::<3>::from_polar_coordinates(2.0, PI / 12.0);
         assert!((twelve_twelve.is_point_inside(&point_1)).not());
 
-        let point_2 = Hyperbolic::<3>::from_polar_coordinates(3.33, PI / 6.0, 1.0);
+        let point_2 = Hyperbolic::<3>::from_polar_coordinates(3.33, PI / 6.0);
         assert!((twelve_twelve.is_point_inside(&point_2)).not());
     }
 }
