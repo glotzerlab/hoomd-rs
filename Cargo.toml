@@ -18,7 +18,7 @@ members = ["benchmarks",
            "hoomd-vector",
            "tools/build-wasm-doc-examples",
            "hoomd-rand"
-          ]
+          , "rsph"]
 
 # Include only core hoomd simulation crates by default so that `cargo build`,
 # `cargo test` and similar commands operate only on the core code by default.
