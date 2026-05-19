@@ -1,13 +1,36 @@
 //! ...
 
 use std::f64::consts::PI;
+use std::ops::Index;
 
-/// Compute all real spherical harmonics Y_l^m(x, y, z) for m = -l..=l.
+/// Real spherical harmonics Y_L^m for a single degree L.
+///
+/// Index with `[m]` to access Y_L^m for m = 0..L.
+pub struct HarmonicOutput<const L: usize> {
+    /// Y_L^0 (zonal harmonic).
+    pub m0: f64,
+    /// Y_L^{+m} for m = 1..L, stored at index m − 1.
+    pub mp: [f64; L],
+}
+
+impl<const L: usize> Index<usize> for HarmonicOutput<L> {
+    type Output = f64;
+
+    #[inline]
+    fn index(&self, m: usize) -> &f64 {
+        match m {
+            0 => &self.m0,
+            n => &self.mp[n - 1],
+        }
+    }
+}
+
+/// Compute real spherical harmonics Y_L^m(x, y, z) for m = 0..L.
 ///
 /// The point (x, y, z) must lie on the unit sphere.
 #[must_use]
 #[inline]
-pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64; L]) {
+pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOutput<L> {
     let rxy2 = x * x + y * y;
 
     // Normalized seed: prefactor(L, L) * (2L-1)!! = sqrt((2L+1) * r(L) / (2π))
@@ -68,7 +91,7 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64;
         }
     }
 
-    (h_0, out_pos)
+    HarmonicOutput { m0: h_0, mp: out_pos }
 }
 
 #[cfg(test)]
@@ -81,41 +104,41 @@ mod tests {
 
     #[test]
     fn l0() {
-        let (y0, y_pos) = spherical_harmonic::<0>(0.0, 0.0, 1.0);
-        assert!(approx_eq(y0, 1.0 / (2.0 * f64::sqrt(PI)), 1e-12));
-        assert_eq!(y_pos.len(), 0);
+        let sh = spherical_harmonic::<0>(0.0, 0.0, 1.0);
+        assert!(approx_eq(sh[0], 1.0 / (2.0 * f64::sqrt(PI)), 1e-12));
+        assert_eq!(sh.mp.len(), 0);
     }
 
     #[test]
     fn l1_north_pole() {
-        let (y0, y_pos) = spherical_harmonic::<1>(0.0, 0.0, 1.0);
+        let sh = spherical_harmonic::<1>(0.0, 0.0, 1.0);
         let c = f64::sqrt(3.0 / (4.0 * PI));
-        assert!(approx_eq(y0, c, 1e-12));
-        assert!(approx_eq(y_pos[0], 0.0, 1e-12));
+        assert!(approx_eq(sh[0], c, 1e-12));
+        assert!(approx_eq(sh[1], 0.0, 1e-12));
     }
 
     #[test]
     fn l1_x_axis() {
-        let (y0, y_pos) = spherical_harmonic::<1>(1.0, 0.0, 0.0);
+        let sh = spherical_harmonic::<1>(1.0, 0.0, 0.0);
         let c = f64::sqrt(3.0 / (4.0 * PI));
-        assert!(approx_eq(y0, 0.0, 1e-12));
-        assert!(approx_eq(y_pos[0], c, 1e-12));
+        assert!(approx_eq(sh[0], 0.0, 1e-12));
+        assert!(approx_eq(sh[1], c, 1e-12));
     }
 
     #[test]
     fn l1_y_axis() {
-        let (y0, y_pos) = spherical_harmonic::<1>(0.0, 1.0, 0.0);
-        assert!(approx_eq(y0, 0.0, 1e-12));
-        assert!(approx_eq(y_pos[0], 0.0, 1e-12));
+        let sh = spherical_harmonic::<1>(0.0, 1.0, 0.0);
+        assert!(approx_eq(sh[0], 0.0, 1e-12));
+        assert!(approx_eq(sh[1], 0.0, 1e-12));
     }
 
     #[test]
     fn l2_finite() {
         let inv3 = 1.0 / 3.0_f64.sqrt();
-        let (y0, y_pos) = spherical_harmonic::<2>(inv3, inv3, inv3);
-        assert_eq!(y_pos.len(), 2);
-        assert!(y0.is_finite());
-        for &v in &y_pos {
+        let sh = spherical_harmonic::<2>(inv3, inv3, inv3);
+        assert_eq!(sh.mp.len(), 2);
+        assert!(sh.m0.is_finite());
+        for &v in &sh.mp {
             assert!(v.is_finite());
         }
     }
@@ -125,15 +148,15 @@ mod tests {
         use approxim::assert_abs_diff_eq;
         use sphrs::{Coordinates, RealSH, SHEval};
 
-        let (m0, mp) = spherical_harmonic::<L>(x, y, z);
+        let sh = spherical_harmonic::<L>(x, y, z);
         let p = Coordinates::cartesian(x, y, z);
 
         let expected_m0: f64 = RealSH::Spherical.eval(L as i64, 0, &p);
-        assert_abs_diff_eq!(m0, expected_m0, epsilon = 1e-8);
+        assert_abs_diff_eq!(sh[0], expected_m0, epsilon = 1e-8);
 
         for m in 1..=L {
             let expected: f64 = RealSH::Spherical.eval(L as i64, m as i64, &p);
-            assert_abs_diff_eq!(mp[m - 1], expected, epsilon = 1e-8);
+            assert_abs_diff_eq!(sh[m], expected, epsilon = 1e-8);
         }
     }
 
@@ -194,13 +217,13 @@ mod tests {
 
         macro_rules! check_l {
             ($l:literal) => {{
-                let (h0, h_pos) = spherical_harmonic::<$l>(x, y, z);
-                let mut sum = h0 * h0;
+                let sh = spherical_harmonic::<$l>(x, y, z);
+                let mut sum = sh.m0 * sh.m0;
                 let mut cm = x;
                 let mut sm = y;
                 for k in 0..$l {
-                    let neg = h_pos[k] * sm / cm;
-                    sum += h_pos[k] * h_pos[k] + neg * neg;
+                    let neg = sh.mp[k] * sm / cm;
+                    sum += sh.mp[k] * sh.mp[k] + neg * neg;
                     let prev_cm = cm;
                     let prev_sm = sm;
                     cm = prev_cm * x - prev_sm * y;
