@@ -1,6 +1,6 @@
 //! ...
 
-use std::f64::consts::{FRAC_1_SQRT_2, PI};
+use std::f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2};
 use std::ops::Index;
 
 /// A complex number with 64-bit floating-point real and imaginary parts.
@@ -61,14 +61,14 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
         for k in 1..=L {
             r *= (2 * k - 1) as f64 / (2 * k) as f64;
         }
-        f64::sqrt((2 * L + 1) as f64 * r / (2.0 * PI))
+        f64::sqrt((2 * L + 1) as f64 * r / (2.0 * PI)) * FRAC_1_SQRT_2
     };
 
     // h[k] = prefactor(L, k+1) * Q_l^{k+1}, h_0 = prefactor(L, 0) * Q_l^0
     // All values O(1) — the prefactor is folded into the recurrence to avoid
     // the large (2L-1)!! intermediate.
-    // h[k] includes the real-SH √2 normalization; the complex-SH 1/√2 factor
-    // is applied in the azimuthal assembly below.
+    // h[k] includes the complex-SH normalization (1/√2 baked into the seed).
+    // h_0 needs √2 correction since m=0 has no √2 factor.
     let h_0;
     let mut h = [0.0; L];
 
@@ -94,26 +94,23 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
         // m = 0 step: carry = sqrt((L-1)(L+2)) after loop (or sqrt(2L) if L≤2; * 0 when L=1)
         let denom = f64::sqrt((2 * L * (L + 1)) as f64);
         let h1 = if L > 1 { h[1] } else { 0.0 };
-        h_0 = (2.0 * z * h[0] - rxy2 * carry * h1) / denom;
+        h_0 = (2.0 * z * h[0] - rxy2 * carry * h1) / denom * SQRT_2;
     }
 
     // Assemble complex output using both azimuthal components (cm, sm).
-    // h[k] carries the real-SH √2 normalization; dividing by √2 gives complex SH.
     let mut out_pos = [Complex64 { re: 0.0, im: 0.0 }; L];
 
     if L > 0 {
         let mut cm = x;
         let mut sm = y;
-        let hc = h[0] * FRAC_1_SQRT_2;
-        out_pos[0] = Complex64::new(hc * cm, hc * sm);
+        out_pos[0] = Complex64::new(h[0] * cm, h[0] * sm);
 
         for m in 1..L {
             let prev_cm = cm;
             let prev_sm = sm;
             cm = prev_cm * x - prev_sm * y;
             sm = prev_cm * y + prev_sm * x;
-            let hc = h[m] * FRAC_1_SQRT_2;
-            out_pos[m] = Complex64::new(hc * cm, hc * sm);
+            out_pos[m] = Complex64::new(h[m] * cm, h[m] * sm);
         }
     }
 
