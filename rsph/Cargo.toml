@@ -1,5 +1,6 @@
 [package]
 name = "rsph"
+description = "Evaluate Spherical Harmonics at a given Cartesian point."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
