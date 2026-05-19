@@ -357,6 +357,17 @@ mod tests {
     }
 
     #[test]
+    fn into_iter_matches_index() {
+        let sh = SphericalHarmonic::<4>::new();
+        let reference = sh.eval([0.6, 0.3, 0.4]);
+        let out = sh.eval([0.6, 0.3, 0.4]);
+        for (m, val) in out.into_iter().enumerate() {
+            assert_abs_diff_eq!(val.re, reference[m].re, epsilon = 1e-15);
+            assert_abs_diff_eq!(val.im, reference[m].im, epsilon = 1e-15);
+        }
+    }
+
+    #[test]
     fn iter_matches_index() {
         let sh = SphericalHarmonic::<4>::new();
         let out = sh.eval([0.6, 0.3, 0.4]);
