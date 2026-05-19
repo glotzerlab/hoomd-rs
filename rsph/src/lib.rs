@@ -135,13 +135,8 @@ impl<const L: usize> SphericalHarmonic<L> {
     /// Evaluate `Y_L^m` for m = 0..=L at a point on the unit sphere.
     #[must_use]
     #[inline]
-    pub fn eval<P>(&self, point: P) -> HarmonicOutput<L>
-    where
-        P: Index<usize, Output = f64>,
-    {
-        let x = point[0];
-        let y = point[1];
-        let z = point[2];
+    pub fn eval(&self, point: [f64; 3]) -> HarmonicOutput<L> {
+        let [x, y, z] = point;
         let rxy2 = x * x + y * y;
 
         let h_0;
