@@ -12,6 +12,8 @@ on:
 
   workflow_dispatch:
 
+permissions: {}
+
 env:
   CARGO_TERM_COLOR: always
   CLICOLOR: 1
@@ -19,9 +21,13 @@ env:
 jobs:
   cargo-check-clippy:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
     - name: Remove native build configuration
       run: rm .cargo/config.toml
     - name: Configure Rust
@@ -108,9 +114,13 @@ jobs:
 
   cargo-fmt:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
     - name: Remove native build configuration
       run: rm .cargo/config.toml
     - name: Configure Rust
@@ -122,22 +132,42 @@ jobs:
 
   prek:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
     - name: prek
-      uses: j178/prek-action@53276d8b0d10f8b6672aa85b4588c6921d0370cc # v2.0.1
+      uses: j178/prek-action@6ad80277337ad479fe43bd70701c3f7f8aa74db3 # v2.0.3
       with:
         prek-version: '0.3.8'
+
+  zizmor:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Run zizmor
+      uses: zizmorcore/zizmor-action@b1d7e1fb5de872772f31590499237e7cce841e8e # v0.5.3
+      with:
+        advanced-security: false
 
   # This job is used to provide a single requirement for branch merge conditions.
   tests_complete:
     name: All style checks
     if: always()
-    needs: [cargo-check-clippy, cargo-fmt, prek]
+    needs: [cargo-check-clippy, cargo-fmt, prek, zizmor]
     runs-on: ubuntu-24.04
 
     steps:
-    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
-    - name: Done
-      run: exit 0
+    - run: jq --exit-status 'all(.result == "success")' <<< "${NEEDS}"
+      env:
+        NEEDS: ${{ toJson(needs) }}
+    - run: exit 0
