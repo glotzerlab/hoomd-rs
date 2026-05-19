@@ -1,27 +1,8 @@
 //! ...
 
+use num_complex::Complex64;
 use std::f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2};
 use std::ops::Index;
-
-/// A complex number with 64-bit floating-point real and imaginary parts.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-#[repr(C)]
-pub struct Complex64 {
-    pub re: f64,
-    pub im: f64,
-}
-
-impl Complex64 {
-    #[inline]
-    pub const fn new(re: f64, im: f64) -> Self {
-        Self { re, im }
-    }
-
-    #[inline]
-    pub fn norm_sq(self) -> f64 {
-        self.re * self.re + self.im * self.im
-    }
-}
 
 /// Complex spherical harmonics Y_L^m for a single degree L.
 ///
@@ -98,7 +79,7 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
     }
 
     // Assemble complex output using both azimuthal components (cm, sm).
-    let mut out_pos = [Complex64 { re: 0.0, im: 0.0 }; L];
+    let mut out_pos = [Complex64::ZERO; L];
 
     if L > 0 {
         let mut cm = x;
@@ -244,9 +225,9 @@ mod tests {
     /// Completeness: |Y_l^0|² + 2·Σ_{m=1}^l |Y_l^m|² = (2l+1) / (4π).
     fn check_completeness<const L: usize>(x: f64, y: f64, z: f64) {
         let sh = spherical_harmonic::<L>(x, y, z);
-        let mut sum = sh[0].norm_sq();
+        let mut sum = sh[0].norm_sqr();
         for m in 1..=L {
-            sum += 2.0 * sh[m].norm_sq();
+            sum += 2.0 * sh[m].norm_sqr();
         }
         let expected = (2 * L + 1) as f64 / (4.0 * PI);
         let abs_err = (sum - expected).abs();
