@@ -17,7 +17,7 @@
 //!
 //! // Values of m in 0..=L are returned as a HarmonicOutput<L> container, which behaves
 //! // like a [f64; L+1] array.
-//! let sh = y_6.eval(0.0, 0.0, 1.0);
+//! let sh = y_6.eval([0.0, 0.0, 1.0]);
 //! assert_eq!(sh.len(), 6+1);
 //!
 //!
@@ -82,10 +82,11 @@ impl<const L: usize> SphericalHarmonic<L> {
         }
     }
 
-    /// Evaluate `Y_L^m(x, y, z)` for m = 0..=L at a point on the unit sphere.
+    /// Evaluate `Y_L^m` for m = 0..=L at a point on the unit sphere.
     #[must_use]
     #[inline]
-    pub fn eval(&self, x: f64, y: f64, z: f64) -> HarmonicOutput<L> {
+    pub fn eval(&self, point: impl Into<[f64; 3]>) -> HarmonicOutput<L> {
+        let [x, y, z] = point.into();
         let rxy2 = x * x + y * y;
 
         let h_0;
@@ -174,7 +175,7 @@ mod tests {
     #[test]
     fn l0() {
         let sh = SphericalHarmonic::<0>::new();
-        let out = sh.eval(0.0, 0.0, 1.0);
+        let out = sh.eval([0.0, 0.0, 1.0]);
         let expected = 1.0 / (2.0 * f64::sqrt(PI));
         assert_abs_diff_eq!(out[0].re, expected, epsilon = 1e-12);
         assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
@@ -184,7 +185,7 @@ mod tests {
     #[test]
     fn l1_north_pole() {
         let sh = SphericalHarmonic::<1>::new();
-        let out = sh.eval(0.0, 0.0, 1.0);
+        let out = sh.eval([0.0, 0.0, 1.0]);
         let c = f64::sqrt(3.0 / (4.0 * PI));
         assert_abs_diff_eq!(out[0].re, c, epsilon = 1e-12);
         assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
@@ -195,7 +196,7 @@ mod tests {
     #[test]
     fn l1_x_axis() {
         let sh = SphericalHarmonic::<1>::new();
-        let out = sh.eval(1.0, 0.0, 0.0);
+        let out = sh.eval([1.0, 0.0, 0.0]);
         let c = f64::sqrt(3.0 / (8.0 * PI));
         assert_abs_diff_eq!(out[0].re, 0.0, epsilon = 1e-12);
         assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
@@ -206,7 +207,7 @@ mod tests {
     #[test]
     fn l1_y_axis() {
         let sh = SphericalHarmonic::<1>::new();
-        let out = sh.eval(0.0, 1.0, 0.0);
+        let out = sh.eval([0.0, 1.0, 0.0]);
         let c = f64::sqrt(3.0 / (8.0 * PI));
         assert_abs_diff_eq!(out[0].re, 0.0, epsilon = 1e-12);
         assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
@@ -218,7 +219,7 @@ mod tests {
     fn l2_finite() {
         let inv3 = 3.0_f64.sqrt().recip();
         let sh = SphericalHarmonic::<2>::new();
-        let out = sh.eval(inv3, inv3, inv3);
+        let out = sh.eval([inv3, inv3, inv3]);
         assert_eq!(out.mp.len(), 2);
         assert!(out.m0.re.is_finite());
         assert!(out.m0.im.is_finite());
@@ -229,22 +230,23 @@ mod tests {
     }
 
     /// Validate against sphrs via Y_l^m = (S_l^{+m} + i·S_l^{-m}) / √2.
-    fn check_against_sphrs<const L: usize>(x: f64, y: f64, z: f64) {
+    fn check_against_sphrs<const L: usize>(point: [f64; 3]) {
         use sphrs::{Coordinates, RealSH, SHEval};
         let l = i64::try_from(L).expect("L would overflow i64");
 
         let sh = SphericalHarmonic::<L>::new();
-        let out = sh.eval(x, y, z);
-        let point = Coordinates::cartesian(x, y, z);
+        let out = sh.eval(point);
+        let [x, y, z] = point;
+        let coords = Coordinates::cartesian(x, y, z);
 
-        let expected_m0: f64 = RealSH::Spherical.eval(l, 0, &point);
+        let expected_m0: f64 = RealSH::Spherical.eval(l, 0, &coords);
         assert_abs_diff_eq!(out[0].re, expected_m0, epsilon = 1e-8);
         assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-8);
 
         for m in 1..=L {
             let m_i64 = i64::try_from(m).expect("m would overflow i64");
-            let s_pos: f64 = RealSH::Spherical.eval(l, m_i64, &point);
-            let s_neg: f64 = RealSH::Spherical.eval(l, -m_i64, &point);
+            let s_pos: f64 = RealSH::Spherical.eval(l, m_i64, &coords);
+            let s_neg: f64 = RealSH::Spherical.eval(l, -m_i64, &coords);
             assert_abs_diff_eq!(out[m].re, s_pos * FRAC_1_SQRT_2, epsilon = 1e-8);
             assert_abs_diff_eq!(out[m].im, s_neg * FRAC_1_SQRT_2, epsilon = 1e-8);
         }
@@ -268,22 +270,21 @@ mod tests {
         )]
         _d: Degree<L>,
         #[values(
-            (0.0, 0.0, 1.0),
-            (1.0, 0.0, 0.0),
-            (0.0, 1.0, 0.0),
-            (3.0_f64.sqrt().recip(), 3.0_f64.sqrt().recip(), 3.0_f64.sqrt().recip()),
-            (0.6_f64.sin() * 0.3_f64.cos(), 0.6_f64.sin() * 0.3_f64.sin(), 0.6_f64.cos()),
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [3.0_f64.sqrt().recip(); 3],
+            [0.6_f64.sin() * 0.3_f64.cos(), 0.6_f64.sin() * 0.3_f64.sin(), 0.6_f64.cos()],
         )]
-        point: (f64, f64, f64),
+        point: [f64; 3],
     ) {
-        let (x, y, z) = point;
-        check_against_sphrs::<L>(x, y, z);
+        check_against_sphrs::<L>(point);
     }
 
     /// Completeness: |Y_l^0|² + 2·Σ_{m=1}^l |Y_l^m|² = (2l+1) / (4π).
-    fn check_completeness<const L: usize>(x: f64, y: f64, z: f64) {
+    fn check_completeness<const L: usize>(point: [f64; 3]) {
         let sh = SphericalHarmonic::<L>::new();
-        let out = sh.eval(x, y, z);
+        let out = sh.eval(point);
         let mut sum = out[0].norm_sqr();
         for m in 1..=L {
             sum += 2.0 * out[m].norm_sqr();
@@ -311,9 +312,11 @@ mod tests {
         )]
         _d: Degree<L>,
     ) {
-        let x = 0.7_f64.sin() * 0.3_f64.cos();
-        let y = 0.7_f64.sin() * 0.3_f64.sin();
-        let z = 0.7_f64.cos();
-        check_completeness::<L>(x, y, z);
+        let point = [
+            0.7_f64.sin() * 0.3_f64.cos(),
+            0.7_f64.sin() * 0.3_f64.sin(),
+            0.7_f64.cos(),
+        ];
+        check_completeness::<L>(point);
     }
 }

@@ -21,8 +21,11 @@ fn recurrence<const L: usize>(bencher: divan::Bencher<'_, '_>) {
     let sh = SphericalHarmonic::<L>::new();
     let mut rng = StdRng::seed_from_u64(1);
     bencher
-        .with_inputs(|| create_random_tuple::<StdRng>(&mut rng))
-        .bench_local_values(|(x, y, z)| sh.eval(x, y, z));
+        .with_inputs(|| {
+            let (x, y, z) = create_random_tuple::<StdRng>(&mut rng);
+            [x, y, z]
+        })
+        .bench_local_values(|xyz| sh.eval(xyz));
 }
 
 /// Spherical-harmonic core for l = 6. Returns [p_6^m * Q_6^m] for m = 0..6.
