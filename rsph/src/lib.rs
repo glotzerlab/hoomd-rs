@@ -33,12 +33,11 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
 ///
 /// Create once with [`new`](Self::new), call [`eval`](Self::eval) for each point.
 pub struct SphericalHarmonic<const L: usize> {
-    norm_seed: f64,
-    /// Fused recurrence coefficients:
-    /// `h[m-1] = coeff_a[m]*z*h[m] - rxy2*coeff_b[m]*h_plus1`
-    /// Index 0 is the m=0 step (with √2 fused in).
-    coeff_a: [f64; L],
-    coeff_b: [f64; L],
+    normalized_recurrence_seed: f64,
+    /// Coefficient of the `z * h[m]` term in the Legendre recurrence.
+    z_coeff: [f64; L],
+    /// Coefficient of the `rxy2 * h[m+1]` term in the Legendre recurrence.
+    rxy_coeff: [f64; L],
 }
 
 impl<const L: usize> SphericalHarmonic<L> {
@@ -46,7 +45,7 @@ impl<const L: usize> SphericalHarmonic<L> {
     #[must_use]
     #[inline]
     pub fn new() -> Self {
-        let norm_seed = {
+        let normalized_recurrence_seed = {
             let mut r = 1.0;
             for k in 1..=L {
                 r *= (2 * k - 1) as f64 / (2 * k) as f64;
@@ -54,30 +53,30 @@ impl<const L: usize> SphericalHarmonic<L> {
             f64::sqrt((2 * L + 1) as f64 * r / (2.0 * PI)) * FRAC_1_SQRT_2
         };
 
-        let mut coeff_a = [0.0; L];
-        let mut coeff_b = [0.0; L];
+        let mut z_coeff = [0.0; L];
+        let mut rxy_coeff = [0.0; L];
 
         let sqrt_2l = f64::sqrt(2.0 * L as f64);
         let mut carry = sqrt_2l;
 
         for m in (1..L).rev() {
             let denom = f64::sqrt(((L - m) * (L + m + 1)) as f64);
-            coeff_a[m] = 2.0 * (m + 1) as f64 / denom;
-            coeff_b[m] = carry / denom;
+            z_coeff[m] = 2.0 * (m + 1) as f64 / denom;
+            rxy_coeff[m] = carry / denom;
             carry = denom;
         }
 
         // m=0 step: √2 fused into coefficients
         if L > 0 {
             let denom_0 = f64::sqrt((2 * L * (L + 1)) as f64);
-            coeff_a[0] = 2.0 * SQRT_2 / denom_0;
-            coeff_b[0] = carry * SQRT_2 / denom_0;
+            z_coeff[0] = 2.0 * SQRT_2 / denom_0;
+            rxy_coeff[0] = carry * SQRT_2 / denom_0;
         }
 
         Self {
-            norm_seed,
-            coeff_a,
-            coeff_b,
+            normalized_recurrence_seed,
+            z_coeff,
+            rxy_coeff,
         }
     }
 
@@ -93,15 +92,15 @@ impl<const L: usize> SphericalHarmonic<L> {
         if L == 0 {
             h_0 = f64::sqrt(1.0 / (4.0 * PI));
         } else {
-            h[L - 1] = self.norm_seed;
+            h[L - 1] = self.normalized_recurrence_seed;
             let mut h_plus1 = 0.0;
 
             for m in (1..L).rev() {
-                h[m - 1] = self.coeff_a[m] * z * h[m] - rxy2 * self.coeff_b[m] * h_plus1;
+                h[m - 1] = self.z_coeff[m] * z * h[m] - rxy2 * self.rxy_coeff[m] * h_plus1;
                 h_plus1 = h[m];
             }
 
-            h_0 = self.coeff_a[0] * z * h[0] - rxy2 * self.coeff_b[0] * h_plus1;
+            h_0 = self.z_coeff[0] * z * h[0] - rxy2 * self.rxy_coeff[0] * h_plus1;
         }
 
         let mut result = [Complex64::ZERO; L];
