@@ -206,18 +206,20 @@ mod tests {
     /// Validate against sphrs via Y_l^m = (S_l^{+m} + i·S_l^{-m}) / √2.
     fn check_against_sphrs<const L: usize>(x: f64, y: f64, z: f64) {
         use sphrs::{Coordinates, RealSH, SHEval};
+        let l = i64::try_from(L).expect("L would overflow i64");
 
         let sh = SphericalHarmonic::<L>::new();
         let out = sh.eval(x, y, z);
-        let p = Coordinates::cartesian(x, y, z);
+        let point = Coordinates::cartesian(x, y, z);
 
-        let expected_m0: f64 = RealSH::Spherical.eval(L as i64, 0, &p);
+        let expected_m0: f64 = RealSH::Spherical.eval(l, 0, &point);
         assert_abs_diff_eq!(out[0].re, expected_m0, epsilon = 1e-8);
         assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-8);
 
         for m in 1..=L {
-            let s_pos: f64 = RealSH::Spherical.eval(L as i64, m as i64, &p);
-            let s_neg: f64 = RealSH::Spherical.eval(L as i64, -(m as i64), &p);
+            let m = i64::try_from(m).expect("m would overflow i64");
+            let s_pos: f64 = RealSH::Spherical.eval(l, m, &point);
+            let s_neg: f64 = RealSH::Spherical.eval(l, -m, &point);
             assert_abs_diff_eq!(out[m].re, s_pos * FRAC_1_SQRT_2, epsilon = 1e-8);
             assert_abs_diff_eq!(out[m].im, s_neg * FRAC_1_SQRT_2, epsilon = 1e-8);
         }
