@@ -80,25 +80,25 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
     }
 
     // Assemble complex output using both azimuthal components (cm, sm).
-    let mut out_pos = [Complex64::ZERO; L];
+    let mut result = [Complex64::ZERO; L];
 
     if L > 0 {
         let mut cm = x;
         let mut sm = y;
-        out_pos[0] = Complex64::new(h[0] * cm, h[0] * sm);
+        result[0] = Complex64::new(h[0] * cm, h[0] * sm);
 
         for m in 1..L {
             let prev_cm = cm;
             let prev_sm = sm;
             cm = prev_cm * x - prev_sm * y;
             sm = prev_cm * y + prev_sm * x;
-            out_pos[m] = Complex64::new(h[m] * cm, h[m] * sm);
+            result[m] = Complex64::new(h[m] * cm, h[m] * sm);
         }
     }
 
     HarmonicOutput {
         m0: Complex64::new(h_0, 0.0),
-        mp: out_pos,
+        mp: result,
     }
 }
 
