@@ -47,6 +47,7 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
         f64::sqrt((2 * L + 1) as f64 * r / (2.0 * PI)) * FRAC_1_SQRT_2
     };
 
+    // h[k] are the normalized polar parts of the spherical harmonic, defined as:
     // h[k] = prefactor(L, k+1) * Q_l^{k+1}, h_0 = prefactor(L, 0) * Q_l^0
     // All values of h remain small, as the prefactor and recurrence mostly cancel at
     // each step. h[k>1] includes the correct normalization for complex SHs √2.
@@ -58,8 +59,8 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
     } else {
         h[L - 1] = norm_seed;
 
-        // sqrt(2L): reused as h[L-2] prefactor and carried through recurrence as num.
-        // After the loop, carry = sqrt((L-1)(L+2)), which is the m=0 step's num.
+        // sqrt(2*L): is reused as the h[L-2] prefactor and carried through recurrence
+        // After the loop, carry = sqrt((L-1)(L+2)), which is the m=0 step's numerator
         let mut carry = f64::sqrt(2.0 * L as f64);
 
         if L > 1 {
