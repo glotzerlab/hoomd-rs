@@ -91,15 +91,29 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
         }
     }
 
-    HarmonicOutput { m0: h_0, mp: out_pos }
+    HarmonicOutput {
+        m0: h_0,
+        mp: out_pos,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
+    use std::marker::PhantomData;
+
+    type Degree<const L: usize> = PhantomData<[(); L]>;
+    fn degree<const L: usize>() -> Degree<L> {
+        Degree::default()
+    }
 
     fn approx_eq(a: f64, b: f64, tol: f64) -> bool {
         (a - b).abs() < tol
+    }
+
+    fn inv3() -> f64 {
+        1.0 / 3.0_f64.sqrt()
     }
 
     #[test]
@@ -143,7 +157,6 @@ mod tests {
         }
     }
 
-    /// Compare against sphrs for a given L at a point on the unit sphere.
     fn check_against_sphrs<const L: usize>(x: f64, y: f64, z: f64) {
         use approxim::assert_abs_diff_eq;
         use sphrs::{Coordinates, RealSH, SHEval};
@@ -160,151 +173,86 @@ mod tests {
         }
     }
 
-    fn test_points() -> Vec<(f64, f64, f64)> {
-        let inv3 = 1.0 / 3.0_f64.sqrt();
-        let th = 0.6_f64;
-        let ph = 0.3_f64;
-        vec![
+    #[rstest]
+    fn sphrs_test<const L: usize>(
+        #[values(
+            degree::<0>(),
+            degree::<1>(),
+            degree::<2>(),
+            degree::<3>(),
+            degree::<4>(),
+            degree::<5>(),
+            degree::<6>(),
+            degree::<7>(),
+            degree::<8>(),
+            degree::<9>(),
+            degree::<10>()
+        )]
+        _d: Degree<L>,
+        #[values(
             (0.0, 0.0, 1.0),
             (1.0, 0.0, 0.0),
             (0.0, 1.0, 0.0),
-            (inv3, inv3, inv3),
-            (th.sin() * ph.cos(), th.sin() * ph.sin(), th.cos()),
-        ]
+            (inv3(), inv3(), inv3()),
+            (0.6_f64.sin() * 0.3_f64.cos(), 0.6_f64.sin() * 0.3_f64.sin(), 0.6_f64.cos()),
+        )]
+        point: (f64, f64, f64),
+    ) {
+        let (x, y, z) = point;
+        check_against_sphrs::<L>(x, y, z);
     }
-
-    macro_rules! sphrs_test {
-        ($($name:ident, $l:literal);* $(;)?) => {
-            $(
-                #[test]
-                fn $name() {
-                    for &(x, y, z) in &test_points() {
-                        check_against_sphrs::<$l>(x, y, z);
-                    }
-                }
-            )*
-        };
-    }
-
-    sphrs_test!(
-        sphrs_l0, 0;
-        sphrs_l1, 1;
-        sphrs_l2, 2;
-        sphrs_l3, 3;
-        sphrs_l4, 4;
-        sphrs_l5, 5;
-        sphrs_l6, 6;
-        sphrs_l7, 7;
-        sphrs_l8, 8;
-        sphrs_l9, 9;
-        sphrs_l10, 10;
-    );
 
     /// Completeness check: sum_m |Y_l^m|^2 = (2L+1) / (4π).
-    /// Reconstructs negative-m terms from positive-m output via sm/cm ratio:
-    ///   out_pos[k] = h[k]·cm[k],  neg[k] = h[k]·sm[k] = out_pos[k]·sm/cm
-    #[test]
-    fn completeness_sweep() {
-        let theta = 0.7_f64;
-        let phi = 0.3_f64;
-        let x = theta.sin() * phi.cos();
-        let y = theta.sin() * phi.sin();
-        let z = theta.cos();
-
-        let mut max_abs_err = 0.0_f64;
-        let mut max_rel_err = 0.0_f64;
-        let mut max_err_l = 0_usize;
-
-        macro_rules! check_l {
-            ($l:literal) => {{
-                let sh = spherical_harmonic::<$l>(x, y, z);
-                let mut sum = sh.m0 * sh.m0;
-                let mut cm = x;
-                let mut sm = y;
-                for k in 0..$l {
-                    let neg = sh.mp[k] * sm / cm;
-                    sum += sh.mp[k] * sh.mp[k] + neg * neg;
-                    let prev_cm = cm;
-                    let prev_sm = sm;
-                    cm = prev_cm * x - prev_sm * y;
-                    sm = prev_cm * y + prev_sm * x;
-                }
-                let expected = (2 * $l + 1) as f64 / (4.0 * PI);
-                let abs_err = (sum - expected).abs();
-                let rel_err = abs_err / expected;
-                eprintln!(
-                    "L={:3}  abs_err={:.3e}  rel_err={:.3e}",
-                    $l, abs_err, rel_err
-                );
-                if abs_err > max_abs_err {
-                    max_abs_err = abs_err;
-                    max_rel_err = rel_err;
-                    max_err_l = $l;
-                }
-            }};
+    fn check_completeness<const L: usize>(x: f64, y: f64, z: f64) {
+        let sh = spherical_harmonic::<L>(x, y, z);
+        let mut sum = sh[0] * sh[0];
+        let mut cm = x;
+        let mut sm = y;
+        for k in 0..L {
+            let pos = sh.mp[k];
+            let neg = pos * sm / cm;
+            sum += pos * pos + neg * neg;
+            let prev_cm = cm;
+            let prev_sm = sm;
+            cm = prev_cm * x - prev_sm * y;
+            sm = prev_cm * y + prev_sm * x;
         }
-
-        check_l!(0);
-        check_l!(1);
-        check_l!(2);
-        check_l!(3);
-        check_l!(4);
-        check_l!(5);
-        check_l!(6);
-        check_l!(7);
-        check_l!(8);
-        check_l!(9);
-        check_l!(10);
-        check_l!(11);
-        check_l!(12);
-        check_l!(13);
-        check_l!(14);
-        check_l!(15);
-        check_l!(16);
-        check_l!(17);
-        check_l!(18);
-        check_l!(19);
-        check_l!(20);
-        check_l!(21);
-        check_l!(22);
-        check_l!(23);
-        check_l!(24);
-        check_l!(25);
-        check_l!(26);
-        check_l!(27);
-        check_l!(28);
-        check_l!(29);
-        check_l!(30);
-        check_l!(31);
-        check_l!(32);
-        check_l!(33);
-        check_l!(34);
-        check_l!(35);
-        check_l!(36);
-        check_l!(37);
-        check_l!(38);
-        check_l!(39);
-        check_l!(40);
-        check_l!(41);
-        check_l!(42);
-        check_l!(43);
-        check_l!(44);
-        check_l!(45);
-        check_l!(46);
-        check_l!(47);
-        check_l!(48);
-        check_l!(49);
-        check_l!(50);
-
+        let expected = (2 * L + 1) as f64 / (4.0 * PI);
+        let abs_err = (sum - expected).abs();
+        let rel_err = abs_err / expected;
         eprintln!(
-            "\nWorst: L={}  abs_err={:.3e}  rel_err={:.3e}",
-            max_err_l, max_abs_err, max_rel_err
+            "L={:3}  abs_err={:.3e}  rel_err={:.3e}",
+            L, abs_err, rel_err
         );
         assert!(
-            max_abs_err < 1e-5,
-            "completeness violated at L={}: abs_err={:.3e}",
-            max_err_l,
-            max_abs_err
+            abs_err < 1e-5,
+            "completeness violated: abs_err={:.3e}",
+            abs_err
         );
+    }
+
+    #[rstest]
+    fn completeness_test<const L: usize>(
+        #[values(
+            degree::<0>(),  degree::<1>(),  degree::<2>(),  degree::<3>(),
+            degree::<4>(),  degree::<5>(),  degree::<6>(),  degree::<7>(),
+            degree::<8>(),  degree::<9>(),  degree::<10>(), degree::<11>(),
+            degree::<12>(), degree::<13>(), degree::<14>(), degree::<15>(),
+            degree::<16>(), degree::<17>(), degree::<18>(), degree::<19>(),
+            degree::<20>(), degree::<21>(), degree::<22>(), degree::<23>(),
+            degree::<24>(), degree::<25>(), degree::<26>(), degree::<27>(),
+            degree::<28>(), degree::<29>(), degree::<30>(), degree::<31>(),
+            degree::<32>(), degree::<33>(), degree::<34>(), degree::<35>(),
+            degree::<36>(), degree::<37>(), degree::<38>(), degree::<39>(),
+            degree::<40>(), degree::<41>(), degree::<42>(), degree::<43>(),
+            degree::<44>(), degree::<45>(), degree::<46>(), degree::<47>(),
+            degree::<48>(), degree::<49>(), degree::<50>(),
+        )]
+        _d: Degree<L>,
+    ) {
+        let x = 0.7_f64.sin() * 0.3_f64.cos();
+        let y = 0.7_f64.sin() * 0.3_f64.sin();
+        let z = 0.7_f64.cos();
+        check_completeness::<L>(x, y, z);
     }
 }
