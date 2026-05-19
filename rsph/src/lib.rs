@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! Tools for evaluating complex spherical harmonics in rust.
 //!
 //! This library uses a recurrence relation to evaluate spherical harmonics of a
