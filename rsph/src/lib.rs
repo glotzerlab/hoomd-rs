@@ -145,4 +145,61 @@ mod tests {
             assert!(v.is_finite());
         }
     }
+
+    /// Compare against sphrs for a given L at a point on the unit sphere.
+    fn check_against_sphrs<const L: usize>(x: f64, y: f64, z: f64) {
+        use approxim::assert_abs_diff_eq;
+        use sphrs::{Coordinates, RealSH, SHEval};
+
+        let (m0, mp) = spherical_harmonic::<L>(x, y, z);
+        let p = Coordinates::cartesian(x, y, z);
+
+        let expected_m0: f64 = RealSH::Spherical.eval(L as i64, 0, &p);
+        assert_abs_diff_eq!(m0, expected_m0, epsilon = 1e-8);
+
+        for m in 1..=L {
+            let expected: f64 = RealSH::Spherical.eval(L as i64, m as i64, &p);
+            assert_abs_diff_eq!(mp[m - 1], expected, epsilon = 1e-8);
+        }
+    }
+
+    fn test_points() -> Vec<(f64, f64, f64)> {
+        let inv3 = 1.0 / 3.0_f64.sqrt();
+        let th = 0.6_f64;
+        let ph = 0.3_f64;
+        vec![
+            (0.0, 0.0, 1.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+            (inv3, inv3, inv3),
+            (th.sin() * ph.cos(), th.sin() * ph.sin(), th.cos()),
+        ]
+    }
+
+    macro_rules! sphrs_test {
+        ($($name:ident, $l:literal);* $(;)?) => {
+            $(
+                #[test]
+                fn $name() {
+                    for &(x, y, z) in &test_points() {
+                        check_against_sphrs::<$l>(x, y, z);
+                    }
+                }
+            )*
+        };
+    }
+
+    sphrs_test!(
+        sphrs_l0, 0;
+        sphrs_l1, 1;
+        sphrs_l2, 2;
+        sphrs_l3, 3;
+        sphrs_l4, 4;
+        sphrs_l5, 5;
+        sphrs_l6, 6;
+        sphrs_l7, 7;
+        sphrs_l8, 8;
+        sphrs_l9, 9;
+        sphrs_l10, 10;
+    );
 }

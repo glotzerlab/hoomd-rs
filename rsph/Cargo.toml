@@ -13,8 +13,10 @@ categories.workspace = true
 [dependencies]
 
 [dev-dependencies]
+approxim.workspace = true
 divan.workspace = true
 rand.workspace = true
+sphrs.workspace = true
 
 [lints]
 workspace = true
