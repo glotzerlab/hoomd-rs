@@ -161,6 +161,12 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
 }
 
 impl<const L: usize> HarmonicOutput<L> {
+    /// Iterate over all `L + 1` values, starting with `Y_L^0`.
+    #[inline]
+    #[must_use]
+    pub fn iter(&self) -> impl Iterator<Item = Complex64> + '_ {
+        std::iter::once(self.m0).chain(self.mp.iter().copied())
+    }
     /// The length of the container, equal to `L + 1`.
     #[inline]
     #[must_use]
