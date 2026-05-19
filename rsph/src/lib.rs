@@ -53,25 +53,21 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
         h_0 = f64::sqrt(1.0 / (4.0 * PI));
     } else {
         h[L - 1] = norm_seed;
-        if L == 1 {
-            // m=0 step: h_0 = z * h[0]
-            h_0 = z * h[0];
-        } else {
-            // Initial step: h[L-2] = z * sqrt(2L) * h[L-1]
+        if L > 1 {
             h[L - 2] = z * f64::sqrt(2.0 * L as f64) * h[L - 1];
 
-            // General recurrence from m = L-2 down to m = 1
             for m in (1..L - 1).rev() {
                 let denom = f64::sqrt(((L - m) * (L + m + 1)) as f64);
                 let num = f64::sqrt(((L - m - 1) * (L + m + 2)) as f64);
                 h[m - 1] = (2.0 * (m + 1) as f64 * z * h[m] - rxy2 * num * h[m + 1]) / denom;
             }
-
-            // m = 0 step
-            let denom = f64::sqrt((2 * L * (L + 1)) as f64);
-            let num = f64::sqrt(((L - 1) * (L + 2)) as f64);
-            h_0 = (2.0 * z * h[0] - rxy2 * num * h[1]) / denom;
         }
+
+        // m = 0 step: for L=1, num = 0 and h1 = 0, reducing to h_0 = z · h[0]
+        let denom = f64::sqrt((2 * L * (L + 1)) as f64);
+        let num = f64::sqrt(((L - 1) * (L + 2)) as f64);
+        let h1 = if L > 1 { h[1] } else { 0.0 };
+        h_0 = (2.0 * z * h[0] - rxy2 * num * h1) / denom;
     }
 
     // Assemble output with fused azimuthal recurrence
@@ -187,6 +183,7 @@ mod tests {
             degree::<8>(),
             degree::<9>(),
             degree::<10>()
+            // Values of L>10 overflow sphrs's factorial implementation
         )]
         _d: Degree<L>,
         #[values(
