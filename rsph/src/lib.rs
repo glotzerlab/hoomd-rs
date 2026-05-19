@@ -137,6 +137,7 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approxim::assert_abs_diff_eq;
     use rstest::rstest;
     use std::marker::PhantomData;
 
@@ -145,21 +146,13 @@ mod tests {
         Degree::default()
     }
 
-    fn approx_eq(a: f64, b: f64, tol: f64) -> bool {
-        (a - b).abs() < tol
-    }
-
-    fn inv3() -> f64 {
-        1.0 / 3.0_f64.sqrt()
-    }
-
     #[test]
     fn l0() {
         let sh = SphericalHarmonic::<0>::new();
         let out = sh.eval(0.0, 0.0, 1.0);
         let expected = 1.0 / (2.0 * f64::sqrt(PI));
-        assert!(approx_eq(out[0].re, expected, 1e-12));
-        assert!(approx_eq(out[0].im, 0.0, 1e-12));
+        assert_abs_diff_eq!(out[0].re, expected, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
         assert_eq!(out.mp.len(), 0);
     }
 
@@ -168,10 +161,10 @@ mod tests {
         let sh = SphericalHarmonic::<1>::new();
         let out = sh.eval(0.0, 0.0, 1.0);
         let c = f64::sqrt(3.0 / (4.0 * PI));
-        assert!(approx_eq(out[0].re, c, 1e-12));
-        assert!(approx_eq(out[0].im, 0.0, 1e-12));
-        assert!(approx_eq(out[1].re, 0.0, 1e-12));
-        assert!(approx_eq(out[1].im, 0.0, 1e-12));
+        assert_abs_diff_eq!(out[0].re, c, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1].re, 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1].im, 0.0, epsilon = 1e-12);
     }
 
     #[test]
@@ -179,10 +172,10 @@ mod tests {
         let sh = SphericalHarmonic::<1>::new();
         let out = sh.eval(1.0, 0.0, 0.0);
         let c = f64::sqrt(3.0 / (8.0 * PI));
-        assert!(approx_eq(out[0].re, 0.0, 1e-12));
-        assert!(approx_eq(out[0].im, 0.0, 1e-12));
-        assert!(approx_eq(out[1].re, c, 1e-12));
-        assert!(approx_eq(out[1].im, 0.0, 1e-12));
+        assert_abs_diff_eq!(out[0].re, 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1].re, c, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1].im, 0.0, epsilon = 1e-12);
     }
 
     #[test]
@@ -190,15 +183,15 @@ mod tests {
         let sh = SphericalHarmonic::<1>::new();
         let out = sh.eval(0.0, 1.0, 0.0);
         let c = f64::sqrt(3.0 / (8.0 * PI));
-        assert!(approx_eq(out[0].re, 0.0, 1e-12));
-        assert!(approx_eq(out[0].im, 0.0, 1e-12));
-        assert!(approx_eq(out[1].re, 0.0, 1e-12));
-        assert!(approx_eq(out[1].im, c, 1e-12));
+        assert_abs_diff_eq!(out[0].re, 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1].re, 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1].im, c, epsilon = 1e-12);
     }
 
     #[test]
     fn l2_finite() {
-        let inv3 = 1.0 / 3.0_f64.sqrt();
+        let inv3 = 3.0_f64.sqrt().recip();
         let sh = SphericalHarmonic::<2>::new();
         let out = sh.eval(inv3, inv3, inv3);
         assert_eq!(out.mp.len(), 2);
@@ -212,7 +205,6 @@ mod tests {
 
     /// Validate against sphrs via Y_l^m = (S_l^{+m} + i·S_l^{-m}) / √2.
     fn check_against_sphrs<const L: usize>(x: f64, y: f64, z: f64) {
-        use approxim::assert_abs_diff_eq;
         use sphrs::{Coordinates, RealSH, SHEval};
 
         let sh = SphericalHarmonic::<L>::new();
@@ -252,7 +244,7 @@ mod tests {
             (0.0, 0.0, 1.0),
             (1.0, 0.0, 0.0),
             (0.0, 1.0, 0.0),
-            (inv3(), inv3(), inv3()),
+            (3.0_f64.sqrt().recip(), 3.0_f64.sqrt().recip(), 3.0_f64.sqrt().recip()),
             (0.6_f64.sin() * 0.3_f64.cos(), 0.6_f64.sin() * 0.3_f64.sin(), 0.6_f64.cos()),
         )]
         point: (f64, f64, f64),
@@ -272,10 +264,7 @@ mod tests {
         let expected = (2 * L + 1) as f64 / (4.0 * PI);
         let abs_err = (sum - expected).abs();
         let rel_err = abs_err / expected;
-        eprintln!(
-            "L={:3}  abs_err={:.3e}  rel_err={:.3e}",
-            L, abs_err, rel_err
-        );
+        eprintln!("L={L:3}  abs_err={abs_err:.3e}  rel_err={rel_err:.3e}");
         assert!(
             abs_err < 1e-5,
             "completeness violated: abs_err={:.3e}",
