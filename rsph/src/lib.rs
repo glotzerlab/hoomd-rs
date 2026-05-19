@@ -22,7 +22,7 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64;
     // h[k] = prefactor(L, k+1) * Q_l^{k+1}, h_0 = prefactor(L, 0) * Q_l^0
     // All values O(1) — the prefactor is folded into the recurrence to avoid
     // the large (2L-1)!! intermediate.
-    let mut h_0 = 0.0;
+    let h_0;
     let mut h = [0.0; L];
 
     if L == 0 {
@@ -175,4 +175,104 @@ mod tests {
         sphrs_l9, 9;
         sphrs_l10, 10;
     );
+
+    /// Completeness check: sum_m |Y_l^m|^2 = (2L+1) / (4π).
+    /// At φ=0 all sine azimuthal factors vanish, so the positive-m output
+    /// alone recovers the full sum: h_0² + Σ (h[k]·cm)^2.
+    #[test]
+    fn completeness_sweep() {
+        let theta = 0.7_f64;
+        let x = theta.sin();
+        let y = 0.0;
+        let z = theta.cos();
+
+        let mut max_abs_err = 0.0_f64;
+        let mut max_rel_err = 0.0_f64;
+        let mut max_err_l = 0_usize;
+
+        macro_rules! check_l {
+            ($l:literal) => {{
+                let (h0, h_pos) = spherical_harmonic::<$l>(x, y, z);
+                let mut sum = h0 * h0;
+                for &v in &h_pos {
+                    sum += v * v;
+                }
+                let expected = (2 * $l + 1) as f64 / (4.0 * PI);
+                let abs_err = (sum - expected).abs();
+                let rel_err = abs_err / expected;
+                eprintln!(
+                    "L={:3}  abs_err={:.3e}  rel_err={:.3e}",
+                    $l, abs_err, rel_err
+                );
+                if abs_err > max_abs_err {
+                    max_abs_err = abs_err;
+                    max_rel_err = rel_err;
+                    max_err_l = $l;
+                }
+            }};
+        }
+
+        check_l!(0);
+        check_l!(1);
+        check_l!(2);
+        check_l!(3);
+        check_l!(4);
+        check_l!(5);
+        check_l!(6);
+        check_l!(7);
+        check_l!(8);
+        check_l!(9);
+        check_l!(10);
+        check_l!(11);
+        check_l!(12);
+        check_l!(13);
+        check_l!(14);
+        check_l!(15);
+        check_l!(16);
+        check_l!(17);
+        check_l!(18);
+        check_l!(19);
+        check_l!(20);
+        check_l!(21);
+        check_l!(22);
+        check_l!(23);
+        check_l!(24);
+        check_l!(25);
+        check_l!(26);
+        check_l!(27);
+        check_l!(28);
+        check_l!(29);
+        check_l!(30);
+        check_l!(31);
+        check_l!(32);
+        check_l!(33);
+        check_l!(34);
+        check_l!(35);
+        check_l!(36);
+        check_l!(37);
+        check_l!(38);
+        check_l!(39);
+        check_l!(40);
+        check_l!(41);
+        check_l!(42);
+        check_l!(43);
+        check_l!(44);
+        check_l!(45);
+        check_l!(46);
+        check_l!(47);
+        check_l!(48);
+        check_l!(49);
+        check_l!(50);
+
+        eprintln!(
+            "\nWorst: L={}  abs_err={:.3e}  rel_err={:.3e}",
+            max_err_l, max_abs_err, max_rel_err
+        );
+        assert!(
+            max_abs_err < 1e-5,
+            "completeness violated at L={}: abs_err={:.3e}",
+            max_err_l,
+            max_abs_err
+        );
+    }
 }
