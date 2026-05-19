@@ -922,9 +922,7 @@ mod tests {
 
     #[rstest]
     fn test_many_bottom_points() {
-        let mut points: Vec<[f64; 2]> = (0..10).map(|i| [f64::from(i) * 2.0 / 9.0, 0.0]).collect();
-        points.push([1.0, 1.0]); // Apex
-        let points: Vec<Cartesian<2>> = points.into_iter().map(Cartesian::from).collect();
+        let points: Vec<Cartesian<2>> = (0..10).map(|i| [f64::from(i) * 2.0 / 9.0, 0.0]).chain([[1.0, 1.0]]).map(Cartesian::from).collect();
         let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
             .expect("hard-coded points should lie on a convex hull");
         // Leftmost [0,0] and rightmost [2,0] should be in hull with apex
