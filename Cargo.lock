@@ -5725,6 +5725,7 @@ dependencies = [
  "approxim",
  "divan",
  "rand 0.10.1",
+ "rstest",
  "sphrs",
 ]
 

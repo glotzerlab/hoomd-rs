@@ -16,6 +16,7 @@ categories.workspace = true
 approxim.workspace = true
 divan.workspace = true
 rand.workspace = true
+rstest.workspace = true
 sphrs.workspace = true
 
 [lints]
