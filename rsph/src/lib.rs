@@ -59,24 +59,19 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
     } else {
         h[L - 1] = norm_seed;
 
-        // sqrt(2*L): is reused as the h[L-2] prefactor and carried through recurrence
-        // After the loop, carry = sqrt((L-1)(L+2)), which is the m=0 step's numerator
         let mut carry = f64::sqrt(2.0 * L as f64);
+        let mut h_plus1 = 0.0; // represents h[L] = 0 at the top of the recurrence
 
-        if L > 1 {
-            h[L - 2] = z * carry * h[L - 1];
-
-            for m in (1..L - 1).rev() {
-                let denom = f64::sqrt(((L - m) * (L + m + 1)) as f64);
-                h[m - 1] = (2.0 * (m + 1) as f64 * z * h[m] - rxy2 * carry * h[m + 1]) / denom;
-                carry = denom;
-            }
+        for m in (1..L).rev() {
+            let denom = f64::sqrt(((L - m) * (L + m + 1)) as f64);
+            h[m - 1] = (2.0 * (m + 1) as f64 * z * h[m] - rxy2 * carry * h_plus1) / denom;
+            h_plus1 = h[m];
+            carry = denom;
         }
 
-        // m = 0 step: carry = sqrt((L-1)(L+2)) after loop (or sqrt(2L) if L≤2; * 0 when L=1)
+        // m = 0 step
         let denom = f64::sqrt((2 * L * (L + 1)) as f64);
-        let h1 = if L > 1 { h[1] } else { 0.0 };
-        h_0 = (2.0 * z * h[0] - rxy2 * carry * h1) / denom * SQRT_2;
+        h_0 = (2.0 * z * h[0] - rxy2 * carry * h_plus1) / denom * SQRT_2;
     }
 
     // Assemble complex output using both azimuthal components (cm, sm).
