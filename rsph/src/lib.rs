@@ -250,6 +250,18 @@ mod tests {
         }
     }
 
+    #[test]
+    fn iter_matches_index() {
+        let sh = SphericalHarmonic::<4>::new();
+        let out = sh.eval([0.6, 0.3, 0.4]);
+        let values: Vec<_> = out.iter().collect();
+        assert_eq!(values.len(), 5);
+        for m in 0..=4 {
+            assert_abs_diff_eq!(values[m].re, out[m].re, epsilon = 1e-15);
+            assert_abs_diff_eq!(values[m].im, out[m].im, epsilon = 1e-15);
+        }
+    }
+
     /// Validate against sphrs via Y_l^m = (S_l^{+m} + i·S_l^{-m}) / √2.
     fn check_against_sphrs<const L: usize>(point: [f64; 3]) {
         use sphrs::{Coordinates, RealSH, SHEval};
