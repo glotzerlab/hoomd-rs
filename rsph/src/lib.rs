@@ -7,7 +7,6 @@ use std::f64::consts::PI;
 /// The point (x, y, z) must lie on the unit sphere.
 /// Returns a vector of length `2*l + 1` where `result[l + m]` = Y_l^m.
 #[inline]
-#[inline]
 pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64; L]) {
     let rxy2 = x * x + y * y;
 
