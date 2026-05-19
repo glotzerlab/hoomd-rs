@@ -130,10 +130,7 @@ jobs:
     - name: Remove native build configuration
       run: rm .cargo/config.toml
     - name: Configure Rust
-      id: rust_toolchain
-      uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
-      with:
-        toolchain: 1.94.0
+      run: rustup toolchain install 1.95.0
     - name: Authorize with crates.io
       uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe # v1.0.4
       id: auth
