@@ -33,14 +33,21 @@
 //!
 //! /// Implement the Steinhardt order parameter q6.
 //! fn q6(bonds: &[Cartesian<3>]) -> f64 {
-//!    let mut qlmi = [Complex64::ZERO; 7];
+//!     let mut accum = [Complex64::ZERO; 7];
+//!     let y6 = SphericalHarmonic::<6>::new();
 //!
-//!    for &bond in bonds {
-//!        let projected_onto_sphere = bond / bond.norm();
+//!     for &bond in bonds {
+//!         let projected_onto_sphere = bond / bond.norm();
+//!         let qlmi = y6.eval(projected_onto_sphere);
+//!         for m in 0..7 { accum[m] += qlmi[m]; }
+//!     }
 //!
-//!    }
-//!    0.0
+//!     let n = bonds.len() as f64;
+//!     // We multiply the `m>0` components by two to account for `-m` contributions.
+//!     let sum_sq = accum[0].norm_sqr()
+//!         + 2.0 * accum[1..].iter().map(Complex64::norm_sqr).sum::<f64>();
 //!
+//!     (4.0 * PI / 13.0 * sum_sq).sqrt() / n
 //! }
 //!
 //! ```
