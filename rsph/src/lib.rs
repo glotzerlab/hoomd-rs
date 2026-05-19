@@ -33,7 +33,7 @@ use std::{
 /// Precomputed coefficients for evaluating complex spherical harmonics of degree L.
 ///
 /// Create once with [`new`](Self::new), call [`eval`](Self::eval) for each point.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct SphericalHarmonic<const L: usize> {
     /// Initial value for the recurrence.
     normalized_recurrence_seed: f64,
