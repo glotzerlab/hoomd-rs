@@ -26,6 +26,7 @@
 use num_complex::Complex64;
 use std::{
     f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2},
+    fmt,
     ops::Index,
 };
 
@@ -140,7 +141,7 @@ impl<const L: usize> Default for SphericalHarmonic<L> {
 ///
 /// Index with `[m]` to access `Y_L^m` for m = 0..=L.
 /// The m = 0 term is always purely real.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct HarmonicOutput<const L: usize> {
     /// `Y_L^0` (zonal harmonic, always real).
     m0: Complex64,
@@ -157,6 +158,26 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
             0 => &self.m0,
             n => &self.mp[n - 1],
         }
+    }
+}
+
+impl<const L: usize> fmt::Display for HarmonicOutput<L> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let re: Vec<String> = (0..=L)
+            .map(|m| format!("{:+}", self[m].re))
+            .collect();
+        let im: Vec<String> = (0..=L)
+            .map(|m| format!("{}", self[m].im.abs()))
+            .collect();
+        let w_re = re.iter().map(String::len).max().unwrap_or(0);
+        let w_im = im.iter().map(String::len).max().unwrap_or(0);
+
+        writeln!(f, "[")?;
+        for m in 0..=L {
+            let sign_im = if self[m].im >= 0.0 { '+' } else { '-' };
+            writeln!(f, "  {:<w_re$} {sign_im} {:<w_im$}i,  // m={m}", re[m], im[m])?;
+        }
+        write!(f, "]")
     }
 }
 
@@ -260,6 +281,13 @@ mod tests {
             assert_abs_diff_eq!(values[m].re, out[m].re, epsilon = 1e-15);
             assert_abs_diff_eq!(values[m].im, out[m].im, epsilon = 1e-15);
         }
+    }
+
+    #[test]
+    fn display() {
+        let sh = SphericalHarmonic::<4>::new();
+        let out = sh.eval([0.6, 0.3, 0.4]);
+        println!("{out}");
     }
 
     /// Validate against sphrs via Y_l^m = (S_l^{+m} + i·S_l^{-m}) / √2.
