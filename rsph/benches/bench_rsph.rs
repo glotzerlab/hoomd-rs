@@ -1,3 +1,4 @@
+//! ...
 use rand::rngs::StdRng;
 use rand::{Rng, RngExt, SeedableRng};
 use rsph::spherical_harmonic;
@@ -11,14 +12,15 @@ fn main() {
     divan::main();
 }
 
+/// Measure per-point performance at each l.
 #[divan::bench(
-    args = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    consts = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
     sample_count = 1_000,
     sample_size = 10_000,
 )]
-fn bench_rsph(bencher: divan::Bencher<'_, '_>, l: usize) {
+fn bench_rsph<const L: usize>(bencher: divan::Bencher<'_, '_>) {
     let mut rng = StdRng::seed_from_u64(1);
     bencher
         .with_inputs(|| create_random_tuple::<StdRng>(&mut rng))
-        .bench_local_values(|(x, y, z)| spherical_harmonic(l, x, y, z));
+        .bench_local_values(|(x, y, z)| spherical_harmonic::<L>(x, y, z));
 }
