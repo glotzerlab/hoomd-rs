@@ -110,9 +110,8 @@ jobs:
 
     - name: Create release
       if: github.ref_type == 'tag'
-      run: gh release create "${TAG}" ./*.zst* -F release-notes.md --verify-tag
+      run: gh release create "${GITHUB_REF_NAME}" ./*.zst* -F release-notes.md --verify-tag --repo "${GITHUB_REPOSITORY}"
       env:
-        TAG: ${{ github.ref_name }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish_cargo:
