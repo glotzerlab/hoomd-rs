@@ -1,8 +1,10 @@
 //! ...
 
 use num_complex::Complex64;
-use std::f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2};
-use std::ops::Index;
+use std::{
+    f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2},
+    ops::Index,
+};
 
 /// Complex spherical harmonics `Y_L^m` for a single degree L.
 ///

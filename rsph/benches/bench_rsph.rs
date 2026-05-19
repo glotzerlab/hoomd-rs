@@ -1,6 +1,5 @@
 //! ...
-use rand::rngs::StdRng;
-use rand::{Rng, RngExt, SeedableRng};
+use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 use rsph::spherical_harmonic;
 
 /// Generate a tuple of uniform random values in [0, 1].
