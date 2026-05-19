@@ -10,67 +10,65 @@ use std::f64::consts::PI;
 pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64; L]) {
     let rxy2 = x * x + y * y;
 
-    // Cartesian associated Legendre polynomials Q_l^m
-    let mut q_0 = 0.0;
-    let mut q = [0.0; L];
+    // Normalized seed: prefactor(L, L) * (2L-1)!! = sqrt((2L+1) * r(L) / (2π))
+    // where r(L) = (2L-1)!! / (2^L * L!) stays O(1) via r(l) = r(l-1) * (2l-1)/(2l)
+    let norm_seed = {
+        let mut r = 1.0;
+        for k in 1..=L {
+            r *= (2 * k - 1) as f64 / (2 * k) as f64;
+        }
+        f64::sqrt((2 * L + 1) as f64 * r / (2.0 * PI))
+    };
+
+    // h[k] = prefactor(L, k+1) * Q_l^{k+1}, h_0 = prefactor(L, 0) * Q_l^0
+    // All values O(1) — the prefactor is folded into the recurrence to avoid
+    // the large (2L-1)!! intermediate.
+    let mut h_0 = 0.0;
+    let mut h = [0.0; L];
 
     if L == 0 {
-        q_0 = seed(0);
+        h_0 = f64::sqrt(1.0 / (4.0 * PI));
     } else {
-        q[L - 1] = seed(L);
+        h[L - 1] = norm_seed;
         if L == 1 {
-            q_0 = -z * q[0];
+            // m=0 step: h_0 = z * h[0]
+            h_0 = z * h[0];
         } else {
-            q[L - 2] = -z * q[L - 1];
-        }
+            // Initial step: h[L-2] = z * sqrt(2L) * h[L-1]
+            h[L - 2] = z * f64::sqrt(2.0 * L as f64) * h[L - 1];
 
-        // Loop from L-1 down to 0
-        for m in (0..L.saturating_sub(1)).rev() {
-            let coeff = -1.0 / (((L + m + 1) as f64) * ((L - m) as f64));
-            let twomz = 2.0 * (m + 1) as f64 * z;
-
-            if m == 0 {
-                q_0 = coeff * (twomz * q[0] + rxy2 * q[1]);
-            } else {
-                q[m - 1] = coeff * (twomz * q[m] + rxy2 * q[m + 1]);
+            // General recurrence from m = L-2 down to m = 1
+            for m in (1..L - 1).rev() {
+                let denom = f64::sqrt(((L - m) * (L + m + 1)) as f64);
+                let num = f64::sqrt(((L - m - 1) * (L + m + 2)) as f64);
+                h[m - 1] = (2.0 * (m + 1) as f64 * z * h[m] - rxy2 * num * h[m + 1]) / denom;
             }
+
+            // m = 0 step
+            let denom = f64::sqrt((2 * L * (L + 1)) as f64);
+            let num = f64::sqrt(((L - 1) * (L + 2)) as f64);
+            h_0 = (2.0 * z * h[0] - rxy2 * num * h[1]) / denom;
         }
     }
 
-    // Assemble output with fused azimuthal + prefactor recurrence
-    let p0 = f64::sqrt((2 * L + 1) as f64 / (4.0 * PI));
-    let out_0 = p0 * q_0;
+    // Assemble output with fused azimuthal recurrence
     let mut out_pos = [0.0; L];
 
     if L > 0 {
         let mut cm = x;
         let mut sm = y;
-        let mut p = -p0 * f64::sqrt(2.0 / ((L * (L + 1)) as f64));
-        out_pos[0] = p * q[0] * cm;
+        out_pos[0] = h[0] * cm;
 
         for m in 1..L {
             let prev_cm = cm;
             let prev_sm = sm;
             cm = prev_cm * x - prev_sm * y;
             sm = prev_cm * y + prev_sm * x;
-            p = -p * f64::sqrt(1.0 / (((L - m) * (L + m + 1)) as f64));
-            out_pos[m] = p * q[m] * cm;
+            out_pos[m] = h[m] * cm;
         }
     }
 
-    // Returns: (m=0, positive m terms)
-    (out_0, out_pos)
-}
-
-/// Seed: Q_l^l = (-1)^l · (2l-1)!!
-#[inline]
-fn seed(l: usize) -> f64 {
-    let sign = if l % 2 == 0 { 1.0 } else { -1.0 };
-    let mut df = 1.0;
-    for k in (1..=(2 * l)).step_by(2) {
-        df *= k as f64;
-    }
-    sign * df
+    (h_0, out_pos)
 }
 
 #[cfg(test)]
