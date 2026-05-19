@@ -33,6 +33,7 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
 ///
 /// Create once with [`new`](Self::new), call [`eval`](Self::eval) for each point.
 pub struct SphericalHarmonic<const L: usize> {
+    /// Initial value for the recurrence.
     normalized_recurrence_seed: f64,
     /// Coefficient of the `z * h[m]` term in the Legendre recurrence.
     z_coeff: [f64; L],
