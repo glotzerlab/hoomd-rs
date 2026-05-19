@@ -29,71 +29,106 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
     }
 }
 
-/// Compute complex spherical harmonics `Y_L^m(x`, y, z) for m = 0..L.
+/// Precomputed coefficients for evaluating complex spherical harmonics of degree L.
 ///
-/// The point (x, y, z) must lie on the unit sphere.
-#[must_use]
-#[inline]
-pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOutput<L> {
-    let rxy2 = x * x + y * y;
+/// Create once with [`new`](Self::new), call [`eval`](Self::eval) for each point.
+pub struct SphericalHarmonic<const L: usize> {
+    norm_seed: f64,
+    /// Fused recurrence coefficients:
+    /// `h[m-1] = coeff_a[m]*z*h[m] - rxy2*coeff_b[m]*h_plus1`
+    /// Index 0 is the m=0 step (with √2 fused in).
+    coeff_a: [f64; L],
+    coeff_b: [f64; L],
+}
 
-    // Normalized seed: prefactor(L, L) * (2L-1)!! = sqrt((2L+1) * r(L) / (2π))
-    // where r(L) = (2L-1)!! / (2^L * L!) stays small via r(l) = r(l-1) * (2l-1)/(2l)
-    let norm_seed = {
-        let mut r = 1.0;
-        for k in 1..=L {
-            r *= (2 * k - 1) as f64 / (2 * k) as f64;
-        }
-        f64::sqrt((2 * L + 1) as f64 * r / (2.0 * PI)) * FRAC_1_SQRT_2
-    };
+impl<const L: usize> SphericalHarmonic<L> {
+    /// Precompute L-dependent coefficients.
+    #[must_use]
+    pub fn new() -> Self {
+        let norm_seed = {
+            let mut r = 1.0;
+            for k in 1..=L {
+                r *= (2 * k - 1) as f64 / (2 * k) as f64;
+            }
+            f64::sqrt((2 * L + 1) as f64 * r / (2.0 * PI)) * FRAC_1_SQRT_2
+        };
 
-    // h[k] are the normalized polar parts of the spherical harmonic, defined as:
-    // h[k] = prefactor(L, k+1) * Q_l^{k+1}, h_0 = prefactor(L, 0) * Q_l^0
-    // All values of h remain small, as the prefactor and recurrence mostly cancel at
-    // each step. h[k>1] includes the correct normalization for complex SHs √2.
-    let h_0;
-    let mut h = [0.0; L];
+        let mut coeff_a = [0.0; L];
+        let mut coeff_b = [0.0; L];
 
-    if L == 0 {
-        h_0 = f64::sqrt(1.0 / (4.0 * PI));
-    } else {
-        h[L - 1] = norm_seed;
-
-        let mut carry = f64::sqrt(2.0 * L as f64);
-        let mut h_plus1 = 0.0; // represents h[L] = 0 at the top of the recurrence
+        let sqrt_2l = f64::sqrt(2.0 * L as f64);
+        let mut carry = sqrt_2l;
 
         for m in (1..L).rev() {
             let denom = f64::sqrt(((L - m) * (L + m + 1)) as f64);
-            h[m - 1] = (2.0 * (m + 1) as f64 * z * h[m] - rxy2 * carry * h_plus1) / denom;
-            h_plus1 = h[m];
+            coeff_a[m] = 2.0 * (m + 1) as f64 / denom;
+            coeff_b[m] = carry / denom;
             carry = denom;
         }
 
-        // m = 0 step
-        let denom = f64::sqrt((2 * L * (L + 1)) as f64);
-        h_0 = (2.0 * z * h[0] - rxy2 * carry * h_plus1) / denom * SQRT_2;
-    }
+        // m=0 step: √2 fused into coefficients
+        if L > 0 {
+            let denom_0 = f64::sqrt((2 * L * (L + 1)) as f64);
+            coeff_a[0] = 2.0 * SQRT_2 / denom_0;
+            coeff_b[0] = carry * SQRT_2 / denom_0;
+        }
 
-    // Assemble complex output using both azimuthal components (cm, sm).
-    let mut result = [Complex64::ZERO; L];
-
-    if L > 0 {
-        let mut cm = x;
-        let mut sm = y;
-        result[0] = Complex64::new(h[0] * cm, h[0] * sm);
-
-        for m in 1..L {
-            let prev_cm = cm;
-            let prev_sm = sm;
-            cm = prev_cm * x - prev_sm * y;
-            sm = prev_cm * y + prev_sm * x;
-            result[m] = Complex64::new(h[m] * cm, h[m] * sm);
+        Self {
+            norm_seed,
+            coeff_a,
+            coeff_b,
         }
     }
 
-    HarmonicOutput {
-        m0: Complex64::new(h_0, 0.0),
-        mp: result,
+    /// Evaluate `Y_L^m(x, y, z)` for m = 0..L at a point on the unit sphere.
+    #[must_use]
+    #[inline]
+    pub fn eval(&self, x: f64, y: f64, z: f64) -> HarmonicOutput<L> {
+        let rxy2 = x * x + y * y;
+
+        let h_0;
+        let mut h = [0.0; L];
+
+        if L == 0 {
+            h_0 = f64::sqrt(1.0 / (4.0 * PI));
+        } else {
+            h[L - 1] = self.norm_seed;
+            let mut h_plus1 = 0.0;
+
+            for m in (1..L).rev() {
+                h[m - 1] = self.coeff_a[m] * z * h[m] - rxy2 * self.coeff_b[m] * h_plus1;
+                h_plus1 = h[m];
+            }
+
+            h_0 = self.coeff_a[0] * z * h[0] - rxy2 * self.coeff_b[0] * h_plus1;
+        }
+
+        let mut result = [Complex64::ZERO; L];
+
+        if L > 0 {
+            let mut cm = x;
+            let mut sm = y;
+            result[0] = Complex64::new(h[0] * cm, h[0] * sm);
+
+            for m in 1..L {
+                let prev_cm = cm;
+                let prev_sm = sm;
+                cm = prev_cm * x - prev_sm * y;
+                sm = prev_cm * y + prev_sm * x;
+                result[m] = Complex64::new(h[m] * cm, h[m] * sm);
+            }
+        }
+
+        HarmonicOutput {
+            m0: Complex64::new(h_0, 0.0),
+            mp: result,
+        }
+    }
+}
+
+impl<const L: usize> Default for SphericalHarmonic<L> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -118,51 +153,56 @@ mod tests {
 
     #[test]
     fn l0() {
-        let sh = spherical_harmonic::<0>(0.0, 0.0, 1.0);
+        let sh = SphericalHarmonic::<0>::new();
+        let out = sh.eval(0.0, 0.0, 1.0);
         let expected = 1.0 / (2.0 * f64::sqrt(PI));
-        assert!(approx_eq(sh[0].re, expected, 1e-12));
-        assert!(approx_eq(sh[0].im, 0.0, 1e-12));
-        assert_eq!(sh.mp.len(), 0);
+        assert!(approx_eq(out[0].re, expected, 1e-12));
+        assert!(approx_eq(out[0].im, 0.0, 1e-12));
+        assert_eq!(out.mp.len(), 0);
     }
 
     #[test]
     fn l1_north_pole() {
-        let sh = spherical_harmonic::<1>(0.0, 0.0, 1.0);
+        let sh = SphericalHarmonic::<1>::new();
+        let out = sh.eval(0.0, 0.0, 1.0);
         let c = f64::sqrt(3.0 / (4.0 * PI));
-        assert!(approx_eq(sh[0].re, c, 1e-12));
-        assert!(approx_eq(sh[0].im, 0.0, 1e-12));
-        assert!(approx_eq(sh[1].re, 0.0, 1e-12));
-        assert!(approx_eq(sh[1].im, 0.0, 1e-12));
+        assert!(approx_eq(out[0].re, c, 1e-12));
+        assert!(approx_eq(out[0].im, 0.0, 1e-12));
+        assert!(approx_eq(out[1].re, 0.0, 1e-12));
+        assert!(approx_eq(out[1].im, 0.0, 1e-12));
     }
 
     #[test]
     fn l1_x_axis() {
-        let sh = spherical_harmonic::<1>(1.0, 0.0, 0.0);
+        let sh = SphericalHarmonic::<1>::new();
+        let out = sh.eval(1.0, 0.0, 0.0);
         let c = f64::sqrt(3.0 / (8.0 * PI));
-        assert!(approx_eq(sh[0].re, 0.0, 1e-12));
-        assert!(approx_eq(sh[0].im, 0.0, 1e-12));
-        assert!(approx_eq(sh[1].re, c, 1e-12));
-        assert!(approx_eq(sh[1].im, 0.0, 1e-12));
+        assert!(approx_eq(out[0].re, 0.0, 1e-12));
+        assert!(approx_eq(out[0].im, 0.0, 1e-12));
+        assert!(approx_eq(out[1].re, c, 1e-12));
+        assert!(approx_eq(out[1].im, 0.0, 1e-12));
     }
 
     #[test]
     fn l1_y_axis() {
-        let sh = spherical_harmonic::<1>(0.0, 1.0, 0.0);
+        let sh = SphericalHarmonic::<1>::new();
+        let out = sh.eval(0.0, 1.0, 0.0);
         let c = f64::sqrt(3.0 / (8.0 * PI));
-        assert!(approx_eq(sh[0].re, 0.0, 1e-12));
-        assert!(approx_eq(sh[0].im, 0.0, 1e-12));
-        assert!(approx_eq(sh[1].re, 0.0, 1e-12));
-        assert!(approx_eq(sh[1].im, c, 1e-12));
+        assert!(approx_eq(out[0].re, 0.0, 1e-12));
+        assert!(approx_eq(out[0].im, 0.0, 1e-12));
+        assert!(approx_eq(out[1].re, 0.0, 1e-12));
+        assert!(approx_eq(out[1].im, c, 1e-12));
     }
 
     #[test]
     fn l2_finite() {
         let inv3 = 1.0 / 3.0_f64.sqrt();
-        let sh = spherical_harmonic::<2>(inv3, inv3, inv3);
-        assert_eq!(sh.mp.len(), 2);
-        assert!(sh.m0.re.is_finite());
-        assert!(sh.m0.im.is_finite());
-        for v in &sh.mp {
+        let sh = SphericalHarmonic::<2>::new();
+        let out = sh.eval(inv3, inv3, inv3);
+        assert_eq!(out.mp.len(), 2);
+        assert!(out.m0.re.is_finite());
+        assert!(out.m0.im.is_finite());
+        for v in &out.mp {
             assert!(v.re.is_finite());
             assert!(v.im.is_finite());
         }
@@ -173,18 +213,19 @@ mod tests {
         use approxim::assert_abs_diff_eq;
         use sphrs::{Coordinates, RealSH, SHEval};
 
-        let sh = spherical_harmonic::<L>(x, y, z);
+        let sh = SphericalHarmonic::<L>::new();
+        let out = sh.eval(x, y, z);
         let p = Coordinates::cartesian(x, y, z);
 
         let expected_m0: f64 = RealSH::Spherical.eval(L as i64, 0, &p);
-        assert_abs_diff_eq!(sh[0].re, expected_m0, epsilon = 1e-8);
-        assert_abs_diff_eq!(sh[0].im, 0.0, epsilon = 1e-8);
+        assert_abs_diff_eq!(out[0].re, expected_m0, epsilon = 1e-8);
+        assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-8);
 
         for m in 1..=L {
             let s_pos: f64 = RealSH::Spherical.eval(L as i64, m as i64, &p);
             let s_neg: f64 = RealSH::Spherical.eval(L as i64, -(m as i64), &p);
-            assert_abs_diff_eq!(sh[m].re, s_pos * FRAC_1_SQRT_2, epsilon = 1e-8);
-            assert_abs_diff_eq!(sh[m].im, s_neg * FRAC_1_SQRT_2, epsilon = 1e-8);
+            assert_abs_diff_eq!(out[m].re, s_pos * FRAC_1_SQRT_2, epsilon = 1e-8);
+            assert_abs_diff_eq!(out[m].im, s_neg * FRAC_1_SQRT_2, epsilon = 1e-8);
         }
     }
 
@@ -220,10 +261,11 @@ mod tests {
 
     /// Completeness: |Y_l^0|² + 2·Σ_{m=1}^l |Y_l^m|² = (2l+1) / (4π).
     fn check_completeness<const L: usize>(x: f64, y: f64, z: f64) {
-        let sh = spherical_harmonic::<L>(x, y, z);
-        let mut sum = sh[0].norm_sqr();
+        let sh = SphericalHarmonic::<L>::new();
+        let out = sh.eval(x, y, z);
+        let mut sum = out[0].norm_sqr();
         for m in 1..=L {
-            sum += 2.0 * sh[m].norm_sqr();
+            sum += 2.0 * out[m].norm_sqr();
         }
         let expected = (2 * L + 1) as f64 / (4.0 * PI);
         let abs_err = (sum - expected).abs();

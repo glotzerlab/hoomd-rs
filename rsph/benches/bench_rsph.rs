@@ -1,6 +1,6 @@
 //! ...
 use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
-use rsph::spherical_harmonic;
+use rsph::SphericalHarmonic;
 
 /// Generate a tuple of uniform random values in [0, 1].
 #[inline]
@@ -18,10 +18,11 @@ fn main() {
     sample_size = 10_000,
 )]
 fn recurrence<const L: usize>(bencher: divan::Bencher<'_, '_>) {
+    let sh = SphericalHarmonic::<L>::new();
     let mut rng = StdRng::seed_from_u64(1);
     bencher
         .with_inputs(|| create_random_tuple::<StdRng>(&mut rng))
-        .bench_local_values(|(x, y, z)| spherical_harmonic::<L>(x, y, z));
+        .bench_local_values(|(x, y, z)| sh.eval(x, y, z));
 }
 
 /// Spherical-harmonic core for l = 6. Returns [p_6^m * Q_6^m] for m = 0..6.
