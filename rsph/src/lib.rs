@@ -9,7 +9,7 @@ use std::{
 /// Complex spherical harmonics `Y_L^m` for a single degree L.
 ///
 /// Index with `[m]` to access `Y_L^m` for m = 0..L.
-/// The m = 0 term is always purely real (im = 0).
+/// The m = 0 term is always purely real.
 pub struct HarmonicOutput<const L: usize> {
     /// `Y_L^0` (zonal harmonic, always real).
     pub m0: Complex64,
@@ -48,10 +48,8 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
     };
 
     // h[k] = prefactor(L, k+1) * Q_l^{k+1}, h_0 = prefactor(L, 0) * Q_l^0
-    // All values O(1) — the prefactor is folded into the recurrence to avoid
-    // the large (2L-1)!! intermediate.
-    // h[k] includes the complex-SH normalization (1/√2 baked into the seed).
-    // h_0 needs √2 correction since m=0 has no √2 factor.
+    // All values of h remain small, as the prefactor and recurrence mostly cancel at
+    // each step. h[k>1] includes the correct normalization for complex SHs √2.
     let h_0;
     let mut h = [0.0; L];
 
