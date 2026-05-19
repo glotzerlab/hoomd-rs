@@ -10,20 +10,6 @@ use std::f64::consts::PI;
 pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64; L]) {
     let rxy2 = x * x + y * y;
 
-    // Azimuthal factors c_m, s_m
-    let mut cm = [0.0; L];
-
-    if L > 0 {
-        cm[0] = x;
-        let mut sm = y;
-        for m in 1..L {
-            let prev_cm = cm[m - 1];
-            let prev_sm = sm;
-            cm[m] = prev_cm * x - prev_sm * y;
-            sm = prev_cm * y + prev_sm * x;
-        }
-    }
-
     // Cartesian associated Legendre polynomials Q_l^m
     let mut q_0 = 0.0;
     let mut q = [0.0; L];
@@ -51,19 +37,24 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64;
         }
     }
 
+    // Assemble output with fused azimuthal + prefactor recurrence
     let p0 = f64::sqrt((2 * L + 1) as f64 / (4.0 * PI));
     let out_0 = p0 * q_0;
     let mut out_pos = [0.0; L];
 
     if L > 0 {
-        // prefactor(L, 1) = -p0 * sqrt(2 / (L*(L+1)))
+        let mut cm = x;
+        let mut sm = y;
         let mut p = -p0 * f64::sqrt(2.0 / ((L * (L + 1)) as f64));
-        out_pos[0] = p * q[0] * cm[0];
+        out_pos[0] = p * q[0] * cm;
 
         for m in 1..L {
-            // prefactor(L, m+1) = -prefactor(L, m) * sqrt(1 / ((L-m)*(L+m+1)))
+            let prev_cm = cm;
+            let prev_sm = sm;
+            cm = prev_cm * x - prev_sm * y;
+            sm = prev_cm * y + prev_sm * x;
             p = -p * f64::sqrt(1.0 / (((L - m) * (L + m + 1)) as f64));
-            out_pos[m] = p * q[m] * cm[m];
+            out_pos[m] = p * q[m] * cm;
         }
     }
 
