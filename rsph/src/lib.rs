@@ -5,6 +5,7 @@ use std::f64::consts::PI;
 /// Compute all real spherical harmonics Y_l^m(x, y, z) for m = -l..=l.
 ///
 /// The point (x, y, z) must lie on the unit sphere.
+#[must_use]
 #[inline]
 pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64; L]) {
     let rxy2 = x * x + y * y;
