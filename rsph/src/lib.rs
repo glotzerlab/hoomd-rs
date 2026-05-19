@@ -262,9 +262,6 @@ mod tests {
             sum += 2.0 * out[m].norm_sqr();
         }
         let expected = (2 * L + 1) as f64 / (4.0 * PI);
-        let abs_err = (sum - expected).abs();
-        let rel_err = abs_err / expected;
-        eprintln!("L={L:3}  abs_err={abs_err:.3e}  rel_err={rel_err:.3e}");
         assert_abs_diff_eq!(sum, expected, epsilon = 1e-5);
     }
 
