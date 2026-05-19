@@ -262,7 +262,7 @@ mod tests {
             sum += 2.0 * out[m].norm_sqr();
         }
         let expected = (2 * L + 1) as f64 / (4.0 * PI);
-        assert_abs_diff_eq!(sum, expected, epsilon = 1e-5);
+        assert_abs_diff_eq!(sum, expected, epsilon = 1e-10);
     }
 
     #[rstest]
