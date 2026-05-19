@@ -60,7 +60,7 @@ pub fn sph_core_l6(x: f64, y: f64, z: f64) -> [f64; 7] {
 
 /// Measure per-point performance for hardcoded l=6.
 #[divan::bench(sample_count = 1_000, sample_size = 10_000)]
-fn ls_real_hardcoded(bencher: divan::Bencher<'_, '_>) {
+fn l6_real_hardcoded(bencher: divan::Bencher<'_, '_>) {
     let mut rng = StdRng::seed_from_u64(1);
     bencher
         .with_inputs(|| create_random_tuple::<StdRng>(&mut rng))
