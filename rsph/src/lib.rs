@@ -217,9 +217,9 @@ mod tests {
         assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-8);
 
         for m in 1..=L {
-            let m = i64::try_from(m).expect("m would overflow i64");
-            let s_pos: f64 = RealSH::Spherical.eval(l, m, &point);
-            let s_neg: f64 = RealSH::Spherical.eval(l, -m, &point);
+            let m_i64 = i64::try_from(m).expect("m would overflow i64");
+            let s_pos: f64 = RealSH::Spherical.eval(l, m_i64, &point);
+            let s_neg: f64 = RealSH::Spherical.eval(l, -m_i64, &point);
             assert_abs_diff_eq!(out[m].re, s_pos * FRAC_1_SQRT_2, epsilon = 1e-8);
             assert_abs_diff_eq!(out[m].im, s_neg * FRAC_1_SQRT_2, epsilon = 1e-8);
         }
