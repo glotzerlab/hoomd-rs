@@ -9,6 +9,7 @@ use std::{
 /// Precomputed coefficients for evaluating complex spherical harmonics of degree L.
 ///
 /// Create once with [`new`](Self::new), call [`eval`](Self::eval) for each point.
+#[derive(Copy, Clone)]
 pub struct SphericalHarmonic<const L: usize> {
     /// Initial value for the recurrence.
     normalized_recurrence_seed: f64,
@@ -115,11 +116,12 @@ impl<const L: usize> Default for SphericalHarmonic<L> {
 ///
 /// Index with `[m]` to access `Y_L^m` for m = 0..=L.
 /// The m = 0 term is always purely real.
+#[derive(Copy, Clone, PartialEq)]
 pub struct HarmonicOutput<const L: usize> {
     /// `Y_L^0` (zonal harmonic, always real).
-    pub m0: Complex64,
+    m0: Complex64,
     /// `Y_L^m` for m = 1..=L, stored at index m − 1.
-    pub mp: [Complex64; L],
+    mp: [Complex64; L],
 }
 
 impl<const L: usize> Index<usize> for HarmonicOutput<L> {
