@@ -20,6 +20,9 @@
 //! let sh = y_6.eval([0.0, 0.0, 1.0]);
 //! assert_eq!(sh.len(), 6+1);
 //!
+//! // Zonal harmonic (m=0) is always purely real
+//! assert_eq!(sh[0].im, 0.0);
+//!
 //!
 //! ```
 
