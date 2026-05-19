@@ -31,7 +31,9 @@ jobs:
     - name: Remove native build configuration
       run: rm .cargo/config.toml
     - name: Configure Rust
-      run: rustup toolchain install 1.95.0 --component clippy --target wasm32-unknown-unknown
+      run: rustup toolchain install 1.95.0 --component clippy
+    - name: Install wasm32 target
+      run: rustup target add wasm32-unknown-unknown
     - name: Cache
       uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
