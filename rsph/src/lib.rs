@@ -4,14 +4,14 @@ use num_complex::Complex64;
 use std::f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2};
 use std::ops::Index;
 
-/// Complex spherical harmonics Y_L^m for a single degree L.
+/// Complex spherical harmonics `Y_L^m` for a single degree L.
 ///
-/// Index with `[m]` to access Y_L^m for m = 0..L.
+/// Index with `[m]` to access `Y_L^m` for m = 0..L.
 /// The m = 0 term is always purely real (im = 0).
 pub struct HarmonicOutput<const L: usize> {
-    /// Y_L^0 (zonal harmonic, always real).
+    /// `Y_L^0` (zonal harmonic, always real).
     pub m0: Complex64,
-    /// Y_L^m for m = 1..L, stored at index m − 1.
+    /// `Y_L^m` for m = 1..L, stored at index m − 1.
     pub mp: [Complex64; L],
 }
 
@@ -27,7 +27,7 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
     }
 }
 
-/// Compute complex spherical harmonics Y_L^m(x, y, z) for m = 0..L.
+/// Compute complex spherical harmonics `Y_L^m(x`, y, z) for m = 0..L.
 ///
 /// The point (x, y, z) must lie on the unit sphere.
 #[must_use]
