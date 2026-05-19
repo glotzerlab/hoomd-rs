@@ -160,6 +160,21 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
     }
 }
 
+impl<const L: usize> HarmonicOutput<L> {
+    /// The length of the container, equal to `L + 1`.
+    #[inline]
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        L + 1
+    }
+    /// Check if the container is empty. This will always be false.
+    #[inline]
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        false
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
