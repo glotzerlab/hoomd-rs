@@ -162,12 +162,11 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
 }
 
 impl<const L: usize> fmt::Display for HarmonicOutput<L> {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "[")?;
         for m in 0..=L {
-            let c = self[m];
-            let sign_im = if c.im >= 0.0 { '+' } else { '-' };
-            writeln!(f, "  {:+.12} {sign_im} {:.12}i,  // m={m}", c.re, c.im.abs())?;
+            writeln!(f, "  {:+.12}{:+.12}i,  // m={m}", self[m].re, self[m].im)?;
         }
         write!(f, "]")
     }
