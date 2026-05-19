@@ -11,7 +11,7 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64;
     let rxy2 = x * x + y * y;
 
     // Normalized seed: prefactor(L, L) * (2L-1)!! = sqrt((2L+1) * r(L) / (2π))
-    // where r(L) = (2L-1)!! / (2^L * L!) stays O(1) via r(l) = r(l-1) * (2l-1)/(2l)
+    // where r(L) = (2L-1)!! / (2^L * L!) stays small via r(l) = r(l-1) * (2l-1)/(2l)
     let norm_seed = {
         let mut r = 1.0;
         for k in 1..=L {
@@ -178,13 +178,14 @@ mod tests {
     );
 
     /// Completeness check: sum_m |Y_l^m|^2 = (2L+1) / (4π).
-    /// At φ=0 all sine azimuthal factors vanish, so the positive-m output
-    /// alone recovers the full sum: h_0² + Σ (h[k]·cm)^2.
+    /// Reconstructs negative-m terms from positive-m output via sm/cm ratio:
+    ///   out_pos[k] = h[k]·cm[k],  neg[k] = h[k]·sm[k] = out_pos[k]·sm/cm
     #[test]
     fn completeness_sweep() {
         let theta = 0.7_f64;
-        let x = theta.sin();
-        let y = 0.0;
+        let phi = 0.3_f64;
+        let x = theta.sin() * phi.cos();
+        let y = theta.sin() * phi.sin();
         let z = theta.cos();
 
         let mut max_abs_err = 0.0_f64;
@@ -195,8 +196,15 @@ mod tests {
             ($l:literal) => {{
                 let (h0, h_pos) = spherical_harmonic::<$l>(x, y, z);
                 let mut sum = h0 * h0;
-                for &v in &h_pos {
-                    sum += v * v;
+                let mut cm = x;
+                let mut sm = y;
+                for k in 0..$l {
+                    let neg = h_pos[k] * sm / cm;
+                    sum += h_pos[k] * h_pos[k] + neg * neg;
+                    let prev_cm = cm;
+                    let prev_sm = sm;
+                    cm = prev_cm * x - prev_sm * y;
+                    sm = prev_cm * y + prev_sm * x;
                 }
                 let expected = (2 * $l + 1) as f64 / (4.0 * PI);
                 let abs_err = (sum - expected).abs();
