@@ -12,14 +12,15 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64;
 
     // Azimuthal factors c_m, s_m
     let mut cm = [0.0; L];
-    let mut sm = [0.0; L];
 
     if L > 0 {
         cm[0] = x;
-        sm[0] = y;
+        let mut sm = y;
         for m in 1..L {
-            cm[m] = cm[m - 1] * x - sm[m - 1] * y;
-            sm[m] = cm[m - 1] * y + sm[m - 1] * x;
+            let prev_cm = cm[m - 1];
+            let prev_sm = sm;
+            cm[m] = prev_cm * x - prev_sm * y;
+            sm = prev_cm * y + prev_sm * x;
         }
     }
 
