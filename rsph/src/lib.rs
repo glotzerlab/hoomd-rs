@@ -42,10 +42,10 @@
 //!         for m in 0..7 { accum[m] += qlmi[m]; }
 //!     }
 //!
-//!     let n = bonds.len() as f64;
 //!     // We multiply the `m>0` components by two to account for `-m` contributions.
 //!     let sum_sq = accum[0].norm_sqr()
 //!         + 2.0 * accum[1..].iter().map(Complex64::norm_sqr).sum::<f64>();
+//!     let n = bonds.len() as f64;
 //!
 //!     (4.0 * PI / 13.0 * sum_sq).sqrt() / n
 //! }
