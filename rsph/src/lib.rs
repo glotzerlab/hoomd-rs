@@ -53,21 +53,22 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> HarmonicOut
         h_0 = f64::sqrt(1.0 / (4.0 * PI));
     } else {
         h[L - 1] = norm_seed;
+
+        let mut carry = f64::sqrt(2.0 * L as f64);
         if L > 1 {
-            h[L - 2] = z * f64::sqrt(2.0 * L as f64) * h[L - 1];
+            h[L - 2] = z * carry * h[L - 1];
 
             for m in (1..L - 1).rev() {
                 let denom = f64::sqrt(((L - m) * (L + m + 1)) as f64);
-                let num = f64::sqrt(((L - m - 1) * (L + m + 2)) as f64);
-                h[m - 1] = (2.0 * (m + 1) as f64 * z * h[m] - rxy2 * num * h[m + 1]) / denom;
+                h[m - 1] = (2.0 * (m + 1) as f64 * z * h[m] - rxy2 * carry * h[m + 1]) / denom;
+                carry = denom;
             }
         }
 
-        // m = 0 step: for L=1, num = 0 and h1 = 0, reducing to h_0 = z · h[0]
+        // m = 0 step: carry = sqrt((L-1)(L+2)) after loop (or sqrt(2L) if L≤2; * 0 when L=1)
         let denom = f64::sqrt((2 * L * (L + 1)) as f64);
-        let num = f64::sqrt(((L - 1) * (L + 2)) as f64);
         let h1 = if L > 1 { h[1] } else { 0.0 };
-        h_0 = (2.0 * z * h[0] - rxy2 * num * h1) / denom;
+        h_0 = (2.0 * z * h[0] - rxy2 * carry * h1) / denom;
     }
 
     // Assemble output with fused azimuthal recurrence
