@@ -163,19 +163,11 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
 
 impl<const L: usize> fmt::Display for HarmonicOutput<L> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let re: Vec<String> = (0..=L)
-            .map(|m| format!("{:+}", self[m].re))
-            .collect();
-        let im: Vec<String> = (0..=L)
-            .map(|m| format!("{}", self[m].im.abs()))
-            .collect();
-        let w_re = re.iter().map(String::len).max().unwrap_or(0);
-        let w_im = im.iter().map(String::len).max().unwrap_or(0);
-
         writeln!(f, "[")?;
         for m in 0..=L {
-            let sign_im = if self[m].im >= 0.0 { '+' } else { '-' };
-            writeln!(f, "  {:<w_re$} {sign_im} {:<w_im$}i,  // m={m}", re[m], im[m])?;
+            let c = self[m];
+            let sign_im = if c.im >= 0.0 { '+' } else { '-' };
+            writeln!(f, "  {:+.12} {sign_im} {:.12}i,  // m={m}", c.re, c.im.abs())?;
         }
         write!(f, "]")
     }
