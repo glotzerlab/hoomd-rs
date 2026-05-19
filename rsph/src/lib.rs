@@ -10,6 +10,8 @@
 //! # Example
 //! ```
 //! use rsph::SphericalHarmonic;
+//! use num_complex::Complex64;
+//! use hoomd_vector::{Cartesian, InnerProduct};
 //! use approxim::assert_abs_diff_eq;
 //! use std::f64::consts::PI;
 //!
@@ -28,6 +30,18 @@
 //! // Y_6^0 = sqrt(13/(4pi)) * P_6(1/sqrt(3)) = sqrt(13/(4pi)) * 2/9
 //! let expected_m0 = 2.0 * f64::sqrt(13.0 / (4.0 * PI)) / 9.0;
 //! assert_abs_diff_eq!(sh[0].re, expected_m0, epsilon = 1e-15);
+//!
+//! /// Implement the Steinhardt order parameter q6.
+//! fn q6(bonds: &[Cartesian<3>]) -> f64 {
+//!    let mut qlmi = [Complex64::ZERO; 7];
+//!
+//!    for &bond in bonds {
+//!        let projected_onto_sphere = bond / bond.norm();
+//!
+//!    }
+//!    0.0
+//!
+//! }
 //!
 //! ```
 

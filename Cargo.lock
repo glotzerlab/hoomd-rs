@@ -451,7 +451,7 @@ dependencies = [
  "hoomd-rand",
  "hoomd-simulation",
  "hoomd-spatial",
- "hoomd-vector",
+ "hoomd-vector 1.1.0",
  "log",
  "parquet",
  "parquet_derive",
@@ -2817,8 +2817,8 @@ dependencies = [
  "hoomd-microstate",
  "hoomd-simulation",
  "hoomd-spatial",
- "hoomd-utility",
- "hoomd-vector",
+ "hoomd-utility 1.1.0",
+ "hoomd-vector 1.1.0",
  "parquet",
  "parquet_derive",
  "rand 0.10.1",
@@ -3634,7 +3634,7 @@ dependencies = [
  "hoomd-manifold",
  "hoomd-microstate",
  "hoomd-simulation",
- "hoomd-vector",
+ "hoomd-vector 1.1.0",
  "itertools",
  "wayland-sys",
 ]
@@ -3657,10 +3657,10 @@ dependencies = [
  "arrayvec",
  "assert2",
  "divan",
- "hoomd-linear-algebra",
+ "hoomd-linear-algebra 1.1.0",
  "hoomd-manifold",
- "hoomd-utility",
- "hoomd-vector",
+ "hoomd-utility 1.1.0",
+ "hoomd-vector 1.1.0",
  "itertools",
  "rand 0.10.1",
  "robust",
@@ -3677,7 +3677,7 @@ dependencies = [
  "anyhow",
  "assert2",
  "clap",
- "hoomd-vector",
+ "hoomd-vector 1.1.0",
  "itertools",
  "memmap2",
  "tempfile",
@@ -3696,8 +3696,8 @@ dependencies = [
  "hoomd-geometry",
  "hoomd-microstate",
  "hoomd-spatial",
- "hoomd-utility",
- "hoomd-vector",
+ "hoomd-utility 1.1.0",
+ "hoomd-vector 1.1.0",
  "rand 0.10.1",
  "rstest",
  "serde",
@@ -3718,13 +3718,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "hoomd-linear-algebra"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71cdc3ecd5a9301198375544d900e83603effd4608adb7e2fe50cf8a4cec2d46"
+dependencies = [
+ "serde",
+ "serde_with",
+]
+
+[[package]]
 name = "hoomd-manifold"
 version = "1.1.0"
 dependencies = [
  "approxim",
  "divan",
- "hoomd-utility",
- "hoomd-vector",
+ "hoomd-utility 1.1.0",
+ "hoomd-vector 1.1.0",
  "num",
  "paste",
  "rand 0.10.1",
@@ -3748,8 +3758,8 @@ dependencies = [
  "hoomd-microstate",
  "hoomd-simulation",
  "hoomd-spatial",
- "hoomd-utility",
- "hoomd-vector",
+ "hoomd-utility 1.1.0",
+ "hoomd-vector 1.1.0",
  "itertools",
  "log",
  "rand 0.10.1",
@@ -3775,8 +3785,8 @@ dependencies = [
  "hoomd-manifold",
  "hoomd-rand",
  "hoomd-spatial",
- "hoomd-utility",
- "hoomd-vector",
+ "hoomd-utility 1.1.0",
+ "hoomd-vector 1.1.0",
  "itertools",
  "log",
  "rand 0.10.1",
@@ -3815,8 +3825,8 @@ name = "hoomd-spatial"
 version = "1.1.0"
 dependencies = [
  "assert2",
- "hoomd-utility",
- "hoomd-vector",
+ "hoomd-utility 1.1.0",
+ "hoomd-vector 1.1.0",
  "log",
  "rand 0.10.1",
  "rstest",
@@ -3839,6 +3849,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "hoomd-utility"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9174f96aa110e76dd39c1d61cea1d414ba59d5f0ad3c86a58a4aeb82e552201b"
+dependencies = [
+ "parquet",
+ "parquet_derive",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "hoomd-vector"
 version = "1.1.0"
 dependencies = [
@@ -3846,13 +3868,29 @@ dependencies = [
  "approxim",
  "assert2",
  "divan",
- "hoomd-linear-algebra",
+ "hoomd-linear-algebra 1.1.0",
  "hoomd-rand",
- "hoomd-utility",
+ "hoomd-utility 1.1.0",
  "paste",
  "rand 0.10.1",
  "rand_distr 0.6.0",
  "rstest",
+ "serde",
+ "serde_with",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "hoomd-vector"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fbb457e90d8c763336856a2d3b0e8c69219e96b71be92ebafd4a843f8bfd993d"
+dependencies = [
+ "approxim",
+ "hoomd-linear-algebra 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hoomd-utility 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.10.1",
+ "rand_distr 0.6.0",
  "serde",
  "serde_with",
  "thiserror 2.0.18",
@@ -5725,6 +5763,7 @@ version = "1.1.0"
 dependencies = [
  "approxim",
  "divan",
+ "hoomd-vector 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-complex",
  "rand 0.10.1",
  "rstest",
