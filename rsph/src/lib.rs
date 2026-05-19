@@ -44,6 +44,7 @@ pub struct SphericalHarmonic<const L: usize> {
 impl<const L: usize> SphericalHarmonic<L> {
     /// Precompute L-dependent coefficients.
     #[must_use]
+    #[inline]
     pub fn new() -> Self {
         let norm_seed = {
             let mut r = 1.0;
