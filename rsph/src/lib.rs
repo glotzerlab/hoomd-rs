@@ -210,6 +210,16 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
     }
 }
 
+impl<const L: usize> IntoIterator for HarmonicOutput<L> {
+    type Item = Complex64;
+    type IntoIter = std::iter::Chain<std::iter::Once<Complex64>, std::array::IntoIter<Complex64, L>>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        std::iter::once(self.m0).chain(self.mp)
+    }
+}
+
 impl<const L: usize> fmt::Display for HarmonicOutput<L> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
