@@ -21,8 +21,8 @@ impl<const L: usize> Index<usize> for HarmonicOutput<L> {
     type Output = Complex64;
 
     #[inline]
-    fn index(&self, m: usize) -> &Complex64 {
-        match m {
+    fn index(&self, index: usize) -> &Complex64 {
+        match index {
             0 => &self.m0,
             n => &self.mp[n - 1],
         }
