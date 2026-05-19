@@ -265,11 +265,7 @@ mod tests {
         let abs_err = (sum - expected).abs();
         let rel_err = abs_err / expected;
         eprintln!("L={L:3}  abs_err={abs_err:.3e}  rel_err={rel_err:.3e}");
-        assert!(
-            abs_err < 1e-5,
-            "completeness violated: abs_err={:.3e}",
-            abs_err
-        );
+        assert_abs_diff_eq!(sum, expected, epsilon = 1e-5);
     }
 
     #[rstest]
