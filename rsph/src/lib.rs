@@ -105,6 +105,7 @@ impl<const L: usize> SphericalHarmonic<L> {
 }
 
 impl<const L: usize> Default for SphericalHarmonic<L> {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
