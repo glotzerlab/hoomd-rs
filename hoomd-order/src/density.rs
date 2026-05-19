@@ -16,11 +16,11 @@ use thiserror::Error;
 
 ///  Struct for creating and manipulating histograms.
 ///
-/// `N` specifies the dimension of the histogram bins (may be 1, 2 or 3), `C`
-/// is the boundary condition of the data (e.g. `Open`, `Periodic`), and `A`
-/// is the type for the data itself. `A` must be able to implement `Add`
-/// and `PartialOrd`.
-// The default output `bin_counts` is an array of the frequencies for each of
+/// `N` specifies the dimension of the histogram bins (may be 1, 2 or 3), `A` is
+/// the type for the input data, and `D` is the type for the output data. `A` must
+/// be able to implement `Add` and `PartialOrd`.
+///
+/// The default output `bin_counts` is an array of the frequencies for each of
 /// the bins and is stored as the type `usize`.
 ///
 /// ```
@@ -42,12 +42,9 @@ use thiserror::Error;
 ///     [22],
 ///     [23],
 /// ];
-/// let bin_edges = array![
-///     [0_usize, 10_usize, 20_usize, 30_usize],
-///     [0_usize, 0_usize, 0_usize, 0_usize]
-/// ];
+/// let bin_edges = array![[0_usize, 10_usize, 20_usize, 30_usize],];
 /// let bounds = [[0_usize, 30_usize]; 1];
-/// let hist = SpatialHistogram::<1, usize>::histogram(
+/// let hist = SpatialHistogram::<1, usize, usize>::histogram(
 ///     &numbers,
 ///     bin_edges,
 ///     bounds,
@@ -56,50 +53,35 @@ use thiserror::Error;
 /// let ans = array![4_usize, 4_usize, 3_usize];
 /// assert_eq!(ans, hist.bin_counts);
 /// ```
-pub struct SpatialHistogram<const N: usize, A> {
-    /// A vector containing the bin edges of the histogram.
+pub struct SpatialHistogram<const N: usize, A, D> {
+    /// A two-dimensional containing the bin edges of the histogram. Each row gives
+    /// the bin edges along a particular dimension.
     pub bin_edges: Array<A, Dim<[usize; 2]>>,
     /// An array containing the upper and lower bounds of the histogram.
     pub bounds: [[A; 2]; N],
     /// The bin counts in the histogram.
-    pub bin_counts: Array<usize, Dim<[usize; N]>>,
+    pub bin_counts: Array<D, Dim<[usize; N]>>,
     /// The number of bins in each dimension.
     pub n_bins: [usize; N],
 }
 
-/// A one-dimensional histogram storing data of type `f64`.
-pub struct FloatHistogram {
-    /// a vector containing the bin edges of the histogram
-    pub bin_edges: Array<f64, Dim<[usize; 1]>>,
-    /// an array containing the upper and lower bounds of the histogram
-    pub bounds: [f64; 2],
-    /// the bin counts in the histogram
-    pub bin_counts: Array<f64, Dim<[usize; 1]>>,
-    /// number of bins in each dimension
-    pub n_bins: usize,
-}
-
-impl FloatHistogram {
+impl SpatialHistogram<1, f64, usize> {
     /// Normalize the 1D histogram.
     #[inline]
     fn normalize_rdf(
-        histogram: &SpatialHistogram<1, f64>,
+        &self,
         weights: &Array<f64, Dim<[usize; 1]>>,
-    ) -> FloatHistogram {
-        //         let sum = histogram
-        // .bin_counts
-        // .iter()
-        // .fold(0.0_f64, |sum, x| sum + *x as f64);
-        let normed_counts: Vec<f64> = histogram
+    ) -> SpatialHistogram<1, f64, f64> {
+        let normed_counts: Vec<f64> = self
             .bin_counts
             .iter()
             .zip(weights.iter())
             .map(|(count, weight)| *count as f64 * *weight)
             .collect();
-        let n_bins = histogram.n_bins[0];
-        let bounds = histogram.bounds[0];
-        let bin_edges: Array<f64, Dim<[usize; 1]>> = histogram.bin_edges.row(0).to_owned();
-        FloatHistogram {
+        let n_bins = [self.n_bins[0]];
+        let bounds = [self.bounds[0]];
+        let bin_edges: Array<f64, Dim<[usize; 2]>> = self.bin_edges.to_owned();
+        SpatialHistogram {
             bin_edges,
             bounds,
             bin_counts: Array::from_vec(normed_counts),
@@ -111,13 +93,13 @@ impl FloatHistogram {
 /// Compute a histogram with `N` dimensional data of type `A` which implements `Add`
 /// and `PartialOrd`
 pub trait GenerateHistogram<const N: usize, A> {
-    /// Generate a histogram from a given microstate.
+    /// Generate a histogram of raw frequency counts from a given microstate.
     fn histogram(
         data: &[[A; N]],
         bin_edges: Array<A, Dim<[usize; 2]>>,
         bounds: [[A; 2]; N],
         nbins: [usize; N],
-    ) -> SpatialHistogram<N, A>;
+    ) -> SpatialHistogram<N, A, usize>;
 }
 
 /// Correlation functions from a microstate.
@@ -125,24 +107,19 @@ pub trait CorrelationFunction<B, S, X, C, P>
 where
     P: Metric + ShellMeasure,
 {
-    /// Computes the raw unnormalized historgram of distances between sites in a
-    /// given microstate.
+    /// Computes the raw unnormalized histogram of distances between sites in
+    /// a given microstate
     ///
     /// # Errors
-    /// Returns `EmptyMicrostate` error when given microstate contains `None` type
-    /// indices.
+    /// Returns `EmptyMicrostate` error when given microstate contains
     fn radial_distance_histogram(
         microstate: &Microstate<B, S, X, C>,
         r_min: f64,
         r_max: f64,
         nbins: usize,
-    ) -> Result<SpatialHistogram<1, f64>, Error>;
-    /// Get the radial distribution function g(r) from a given microstate. The
-    /// output is normalized over an ideal gas with the specified density.
-    ///
+    ) -> Result<SpatialHistogram<1, f64, usize>, Error>;
+    /// Get the radial distribution function g(r) from a given microstate.
     /// # Errors
-    /// Returns `EmptyMicrostate` error when given microstate contains `None` type
-    /// indices.
     #[inline]
     fn rdf(
         microstate: &Microstate<B, S, X, C>,
@@ -150,7 +127,7 @@ where
         r_max: f64,
         nbins: usize,
         density: f64,
-    ) -> Result<FloatHistogram, Error> {
+    ) -> Result<SpatialHistogram<1, f64, f64>, Error> {
         let unnormed_rdf = Self::radial_distance_histogram(microstate, r_min, r_max, nbins)?;
         let number_of_particles = microstate
             .sites()
@@ -168,7 +145,10 @@ where
                 2.0 / number_of_particles / density / shell_measure
             })
             .collect();
-        Ok(FloatHistogram::normalize_rdf(&unnormed_rdf, &weights))
+        Ok(SpatialHistogram::<1, f64, usize>::normalize_rdf(
+            &unnormed_rdf,
+            &weights,
+        ))
     }
 }
 
@@ -223,7 +203,7 @@ pub enum Error {
     RDFRangeTooLarge(f64, f64),
 }
 
-impl<const N: usize, A> SpatialHistogram<N, A> {
+impl<const N: usize, A, D> SpatialHistogram<N, A, D> {
     /// A 2D array with the bin edges of the histogram. Each row gives the edges along
     /// one of the axes.
     #[inline]
@@ -237,12 +217,12 @@ impl<const N: usize, A> SpatialHistogram<N, A> {
     }
     /// The frequency counts for each of the bins.
     #[inline]
-    pub fn bin_counts(&self) -> &Array<usize, Dim<[usize; N]>> {
+    pub fn bin_counts(&self) -> &Array<D, Dim<[usize; N]>> {
         &self.bin_counts
     }
 }
 
-impl<A> GenerateHistogram<1, A> for SpatialHistogram<1, A>
+impl<A> GenerateHistogram<1, A> for SpatialHistogram<1, A, usize>
 where
     A: std::ops::Add<Output = A> + std::cmp::PartialOrd,
 {
@@ -270,7 +250,7 @@ where
     }
 }
 
-impl<B, S, X, P> CorrelationFunction<B, S, X, Open, P> for SpatialHistogram<1, f64>
+impl<B, S, X, P> CorrelationFunction<B, S, X, Open, P> for SpatialHistogram<1, f64, usize>
 where
     S: Position<Position = P>,
     P: Metric + ShellMeasure,
@@ -316,7 +296,7 @@ where
                 }
             }
         }
-        Ok(SpatialHistogram::<1, f64>::histogram(
+        Ok(SpatialHistogram::<1, f64, usize>::histogram(
             &distances,
             bin_edges,
             [[r_min, r_max]; 1],
@@ -326,7 +306,7 @@ where
 }
 
 impl<B, S, X> CorrelationFunction<B, S, X, Periodic<Hypercuboid<2>>, Cartesian<2>>
-    for SpatialHistogram<1, f64>
+    for SpatialHistogram<1, f64, usize>
 where
     S: Position<Position = Cartesian<2>> + Copy + Default,
     B: Transform<S> + Position<Position = Cartesian<2>> + Copy,
@@ -388,7 +368,7 @@ where
             }
         }
 
-        Ok(SpatialHistogram::<1, f64>::histogram(
+        Ok(SpatialHistogram::<1, f64, usize>::histogram(
             &distances,
             bin_edges,
             [[r_min, r_max]; 1],
@@ -398,13 +378,13 @@ where
 }
 
 impl<B, S, X> CorrelationFunction<B, S, X, Periodic<Hypercuboid<3>>, Cartesian<3>>
-    for SpatialHistogram<1, f64>
+    for SpatialHistogram<1, f64, usize>
 where
     S: Position<Position = Cartesian<3>> + Copy + Default,
     B: Transform<S> + Position<Position = Cartesian<3>> + Copy,
 {
-    /// Calculate the radial distribution function (RDF), g(r), for a given microstate
-    /// with periodic boundary conditions.
+    /// Calculate the raw unnormalized histogram of radial distances for a given
+    /// microstate with periodic boundary conditions.
     #[inline]
     fn radial_distance_histogram(
         microstate: &Microstate<B, S, X, Periodic<Hypercuboid<3>>>,
@@ -460,7 +440,7 @@ where
             }
         }
 
-        Ok(SpatialHistogram::<1, f64>::histogram(
+        Ok(SpatialHistogram::<1, f64, usize>::histogram(
             &distances,
             bin_edges,
             [[r_min, r_max]; 1],
@@ -476,7 +456,7 @@ impl<X>
         X,
         Periodic<EightEight>,
         Hyperbolic<3>,
-    > for SpatialHistogram<1, f64>
+    > for SpatialHistogram<1, f64, usize>
 {
     /// Calculate the radial distribution function (RDF), g(r), for a given microstate
     /// with periodic boundary conditions.
@@ -539,7 +519,7 @@ impl<X>
             }
         }
 
-        Ok(SpatialHistogram::<1, f64>::histogram(
+        Ok(SpatialHistogram::<1, f64, usize>::histogram(
             &distances,
             bin_edges,
             [[r_min, r_max]; 1],
@@ -548,7 +528,7 @@ impl<X>
     }
 }
 
-impl<A> GenerateHistogram<2, A> for SpatialHistogram<2, A>
+impl<A> GenerateHistogram<2, A> for SpatialHistogram<2, A, usize>
 where
     A: std::ops::Add<Output = A> + std::cmp::PartialOrd,
 {
@@ -583,7 +563,7 @@ where
     }
 }
 
-impl<A> GenerateHistogram<3, A> for SpatialHistogram<3, A>
+impl<A> GenerateHistogram<3, A> for SpatialHistogram<3, A, usize>
 where
     A: std::ops::Add<Output = A> + std::cmp::PartialOrd,
 {
@@ -647,12 +627,10 @@ mod tests {
             [22],
             [23],
         ];
-        let bin_edges = array![
-            [0_usize, 10_usize, 20_usize, 30_usize],
-            [0_usize, 0_usize, 0_usize, 0_usize]
-        ];
+        let bin_edges = array![[0_usize, 10_usize, 20_usize, 30_usize],];
         let bounds = [[0_usize, 30_usize]; 1];
-        let hist = SpatialHistogram::<1, usize>::histogram(&numbers, bin_edges, bounds, [3_usize]);
+        let hist =
+            SpatialHistogram::<1, usize, usize>::histogram(&numbers, bin_edges, bounds, [3_usize]);
         let ans = array![4_usize, 4_usize, 3_usize];
         assert_eq!(ans, hist.bin_counts);
     }
@@ -662,12 +640,10 @@ mod tests {
         for i in 1..=20 {
             numbers.push([f64::from(i) * 0.5]);
         }
-        let bin_edges = array![
-            [0.0_f64, 2.5_f64, 5.0_f64, 7.5_f64, 10.0_f64],
-            [0.0_f64, 0.0_f64, 0.0_f64, 0.0_f64, 0.0_f64]
-        ];
+        let bin_edges = array![[0.0_f64, 2.5_f64, 5.0_f64, 7.5_f64, 10.0_f64],];
         let bounds = [[0.0_f64, 10.0_f64]; 1];
-        let hist = SpatialHistogram::<1, f64>::histogram(&numbers, bin_edges, bounds, [4_usize]);
+        let hist =
+            SpatialHistogram::<1, f64, usize>::histogram(&numbers, bin_edges, bounds, [4_usize]);
         let ans = array![5_usize, 5_usize, 5_usize, 5_usize];
         assert_eq!(ans, hist.bin_counts);
     }
@@ -676,7 +652,8 @@ mod tests {
         let numbers: Vec<[usize; 2]> = vec![[1, 1], [3, 1], [1, 4], [1, 5]];
         let bin_edges = array![[0_usize, 2_usize, 4_usize], [0_usize, 3_usize, 6_usize]];
         let bounds = [[0_usize, 4_usize], [0_usize, 6_usize]];
-        let hist = SpatialHistogram::<2, usize>::histogram(&numbers, bin_edges, bounds, [2, 2]);
+        let hist =
+            SpatialHistogram::<2, usize, usize>::histogram(&numbers, bin_edges, bounds, [2, 2]);
         let ans = array![[1_usize, 2_usize], [1_usize, 0_usize]];
         assert_eq!(ans, hist.bin_counts);
     }
@@ -691,7 +668,8 @@ mod tests {
         ];
         let bin_edges = array![[0.0_f64, 1_f64, 2_f64], [0_f64, 1_f64, 2_f64]];
         let bounds = [[0.0_f64, 2.0_f64], [0.0_f64, 2.0_f64]];
-        let hist = SpatialHistogram::<2, f64>::histogram(&numbers, bin_edges, bounds, [2, 2]);
+        let hist =
+            SpatialHistogram::<2, f64, usize>::histogram(&numbers, bin_edges, bounds, [2, 2]);
         let ans = array![[3_usize, 0_usize], [1_usize, 1_usize]];
         assert_eq!(ans, hist.bin_counts);
     }
@@ -704,7 +682,8 @@ mod tests {
             [0_usize, 2_usize, 4_usize]
         ];
         let bounds = [[0_usize, 4_usize], [0_usize, 4_usize], [0_usize, 4_usize]];
-        let hist = SpatialHistogram::<3, usize>::histogram(&numbers, bin_edges, bounds, [2, 2, 2]);
+        let hist =
+            SpatialHistogram::<3, usize, usize>::histogram(&numbers, bin_edges, bounds, [2, 2, 2]);
         let ans = array![
             [[0_usize, 1_usize], [1_usize, 0_usize]],
             [[1_usize, 0_usize], [0_usize, 1_usize]]
@@ -720,7 +699,8 @@ mod tests {
             [0_f64, 1_f64, 2_f64]
         ];
         let bounds = [[0_f64, 2_f64], [0_f64, 2_f64], [0_f64, 2_f64]];
-        let hist = SpatialHistogram::<3, f64>::histogram(&numbers, bin_edges, bounds, [2, 2, 2]);
+        let hist =
+            SpatialHistogram::<3, f64, usize>::histogram(&numbers, bin_edges, bounds, [2, 2, 2]);
         let ans = array![
             [[1_usize, 1_usize], [0_usize, 0_usize]],
             [[0_usize, 0_usize], [0_usize, 1_usize]]
@@ -744,7 +724,7 @@ mod tests {
                     .expect("hard coded distributions should be valid");
             }
         }
-        let rdf_unnormalized = SpatialHistogram::<1, f64>::radial_distance_histogram(
+        let rdf_unnormalized = SpatialHistogram::<1, f64, usize>::radial_distance_histogram(
             &microstate,
             0.0_f64,
             2.0_f64,
@@ -782,7 +762,7 @@ mod tests {
             .try_build()
             .expect("hard-coded distributions should be valid");
 
-        let rdf_unnormalized = SpatialHistogram::<1, f64>::radial_distance_histogram(
+        let rdf_unnormalized = SpatialHistogram::<1, f64, usize>::radial_distance_histogram(
             &microstate,
             0.0_f64,
             1.0_f64,
@@ -831,7 +811,7 @@ mod tests {
             ])
             .try_build()
             .expect("hard coded distribution should be valid");
-        let rdf_unnormalized = SpatialHistogram::<1, f64>::radial_distance_histogram(
+        let rdf_unnormalized = SpatialHistogram::<1, f64, usize>::radial_distance_histogram(
             &microstate,
             0.0_f64,
             2.0_f64,
@@ -881,7 +861,7 @@ mod tests {
             ])
             .try_build()
             .expect("hard coded distribution should be valid");
-        let rdf_unnormalized = SpatialHistogram::<1, f64>::radial_distance_histogram(
+        let rdf_unnormalized = SpatialHistogram::<1, f64, usize>::radial_distance_histogram(
             &microstate,
             0.01_f64,
             1.01_f64,
