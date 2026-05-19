@@ -39,25 +39,31 @@ pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64;
 
         // Loop from L-1 down to 0
         for m in (0..L.saturating_sub(1)).rev() {
-            let c = -1.0 / (((L + m + 1) as f64) * ((L - m) as f64));
+            let coeff = -1.0 / (((L + m + 1) as f64) * ((L - m) as f64));
             let twomz = 2.0 * (m + 1) as f64 * z;
 
             if m == 0 {
-                q_0 = c * (twomz * q[0] + rxy2 * q[1]);
+                q_0 = coeff * (twomz * q[0] + rxy2 * q[1]);
             } else {
-                q[m - 1] = c * (twomz * q[m] + rxy2 * q[m + 1]);
+                q[m - 1] = coeff * (twomz * q[m] + rxy2 * q[m + 1]);
             }
         }
     }
 
-    // Assemble real spherical harmonics (positive m only)
-    let out_0 = prefactor(L, 0) * q_0;
+    let p0 = f64::sqrt((2 * L + 1) as f64 / (4.0 * PI));
+    let out_0 = p0 * q_0;
     let mut out_pos = [0.0; L];
 
-    for m in 1..=L {
-        let p = prefactor(L, m);
-        // out_pos represents the original out[l + m]
-        out_pos[m - 1] = p * q[m - 1] * cm[m - 1];
+    if L > 0 {
+        // prefactor(L, 1) = -p0 * sqrt(2 / (L*(L+1)))
+        let mut p = -p0 * f64::sqrt(2.0 / ((L * (L + 1)) as f64));
+        out_pos[0] = p * q[0] * cm[0];
+
+        for m in 1..L {
+            // prefactor(L, m+1) = -prefactor(L, m) * sqrt(1 / ((L-m)*(L+m+1)))
+            p = -p * f64::sqrt(1.0 / (((L - m) * (L + m + 1)) as f64));
+            out_pos[m] = p * q[m] * cm[m];
+        }
     }
 
     // Returns: (m=0, positive m terms)
@@ -73,28 +79,6 @@ fn seed(l: usize) -> f64 {
         df *= k as f64;
     }
     sign * df
-}
-
-/// Normalization prefactor p_l^m
-#[inline]
-fn prefactor(l: usize, m: usize) -> f64 {
-    if m == 0 {
-        f64::sqrt((2 * l + 1) as f64 / (4.0 * PI))
-    } else {
-        let sign = if m % 2 == 0 { 1.0 } else { -1.0 };
-        let ratio = factorial_ratio(l, m);
-        sign * f64::sqrt((2 * l + 1) as f64 / (2.0 * PI) * ratio)
-    }
-}
-
-/// (l-m)! / (l+m)!
-#[inline]
-fn factorial_ratio(l: usize, m: usize) -> f64 {
-    let mut prod = 1.0;
-    for k in (l - m + 1)..=(l + m) {
-        prod *= k as f64;
-    }
-    1.0 / prod
 }
 
 #[cfg(test)]
