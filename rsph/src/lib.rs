@@ -49,7 +49,6 @@
 //!
 //!     (4.0 * PI / 13.0 * sum_sq).sqrt() / n
 //! }
-//!
 //! ```
 
 use num_complex::Complex64;
@@ -213,9 +212,9 @@ impl<const L: usize> HarmonicOutput<L> {
     /// Negative-m values are recovered via [`neg_m`](Self::neg_m):
     ///
     /// ```
+    /// use approxim::assert_abs_diff_eq;
     /// use num_complex::Complex64;
     /// use rsph::SphericalHarmonic;
-    /// use approxim::assert_abs_diff_eq;
     ///
     /// let out = SphericalHarmonic::<4>::new().eval([0.0, 0.0, 1.0]);
     ///
