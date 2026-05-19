@@ -228,6 +228,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "816825ba1726f300e5558f701bf3be2d2d2d2b6bdd0e648f338366c9ce12798a"
 dependencies = [
  "approx-derive",
+ "num-complex",
  "num-traits",
 ]
 

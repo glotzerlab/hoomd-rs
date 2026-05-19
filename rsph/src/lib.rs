@@ -181,10 +181,46 @@ impl<const L: usize> fmt::Display for HarmonicOutput<L> {
 }
 
 impl<const L: usize> HarmonicOutput<L> {
+    /// Get the harmonic degree L of the container.
+    #[inline]
+    #[must_use]
+    pub const fn l(&self) -> usize {
+        L
+    }
     /// Iterate over all `L + 1` values, starting with `Y_L^0`.
+    ///
+    /// Negative-m values are recovered via [`neg_m`](Self::neg_m):
+    ///
+    /// ```
+    /// use num_complex::Complex64;
+    /// use rsph::SphericalHarmonic;
+    /// use approxim::assert_abs_diff_eq;
+    ///
+    /// let out = SphericalHarmonic::<4>::new().eval([0.0, 0.0, 1.0]);
+    ///
+    /// // Build Y_4^m for m = -4..=4
+    /// let full: Vec<Complex64> = (1..=4)
+    ///     .rev()
+    ///     .map(|m| out.neg_m(m))
+    ///     .chain(out.iter())
+    ///     .collect();
+    /// assert_eq!(full.len(), 9);
+    /// assert_abs_diff_eq!(full[0].conj(), full[2 * out.l()])
+    /// ```
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = Complex64> + '_ {
         std::iter::once(self.m0).chain(self.mp.iter().copied())
+    }
+    /// Compute `Y_l^{-m} = (-1)^m · conj(Y_l^m)`.
+    #[inline]
+    #[must_use]
+    pub fn neg_m(&self, m: usize) -> Complex64 {
+        let val = self[m];
+        if m.is_multiple_of(2) {
+            val.conj()
+        } else {
+            -val.conj()
+        }
     }
     /// The length of the container, equal to `L + 1`.
     #[inline]
