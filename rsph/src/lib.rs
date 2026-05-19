@@ -38,7 +38,7 @@
 //!
 //!     for &bond in bonds {
 //!         let projected_onto_sphere = bond / bond.norm();
-//!         let qlmi = y6.eval(projected_onto_sphere);
+//!         let qlmi = y6.eval(projected_onto_sphere.coordinates);
 //!         for m in 0..7 { accum[m] += qlmi[m]; }
 //!     }
 //!
@@ -114,8 +114,13 @@ impl<const L: usize> SphericalHarmonic<L> {
     /// Evaluate `Y_L^m` for m = 0..=L at a point on the unit sphere.
     #[must_use]
     #[inline]
-    pub fn eval(&self, point: impl Into<[f64; 3]>) -> HarmonicOutput<L> {
-        let [x, y, z] = point.into();
+    pub fn eval<P>(&self, point: P) -> HarmonicOutput<L>
+    where
+        P: Index<usize, Output = f64>,
+    {
+        let x = point[0];
+        let y = point[1];
+        let z = point[2];
         let rxy2 = x * x + y * y;
 
         let h_0;
