@@ -68,7 +68,20 @@ use std::{
 
 /// Precomputed coefficients for evaluating complex spherical harmonics of degree L.
 ///
-/// Create once with [`new`](Self::new), call [`eval`](Self::eval) for each point.
+/// Once a [`SphericalHarmonic`] has been created with [`new`](Self::new),
+/// [`eval`](Self::eval) can be called to rapidly evaluate the harmonic at a set of
+/// points in three-dimensional space.
+///
+/// ```
+/// use rsph::SphericalHarmonic;
+///
+/// let sh = SphericalHarmonic::<2>::new();
+/// let out = sh.eval([0.0, 0.0, 1.0]);
+///
+/// // m=0 (zonal harmonic) is always purely real
+/// assert_eq!(out[0].im, 0.0);
+/// assert_eq!(out.len(), 3);
+/// ```
 #[derive(Copy, Clone, Debug)]
 pub struct SphericalHarmonic<const L: usize> {
     /// Initial value for the recurrence.
