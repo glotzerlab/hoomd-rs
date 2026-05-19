@@ -6,29 +6,6 @@ use std::{
     ops::Index,
 };
 
-/// Complex spherical harmonics `Y_L^m` for a single degree L.
-///
-/// Index with `[m]` to access `Y_L^m` for m = 0..=L.
-/// The m = 0 term is always purely real.
-pub struct HarmonicOutput<const L: usize> {
-    /// `Y_L^0` (zonal harmonic, always real).
-    pub m0: Complex64,
-    /// `Y_L^m` for m = 1..=L, stored at index m − 1.
-    pub mp: [Complex64; L],
-}
-
-impl<const L: usize> Index<usize> for HarmonicOutput<L> {
-    type Output = Complex64;
-
-    #[inline]
-    fn index(&self, index: usize) -> &Complex64 {
-        match index {
-            0 => &self.m0,
-            n => &self.mp[n - 1],
-        }
-    }
-}
-
 /// Precomputed coefficients for evaluating complex spherical harmonics of degree L.
 ///
 /// Create once with [`new`](Self::new), call [`eval`](Self::eval) for each point.
@@ -130,6 +107,29 @@ impl<const L: usize> SphericalHarmonic<L> {
 impl<const L: usize> Default for SphericalHarmonic<L> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Complex spherical harmonics `Y_L^m` for a single degree L.
+///
+/// Index with `[m]` to access `Y_L^m` for m = 0..=L.
+/// The m = 0 term is always purely real.
+pub struct HarmonicOutput<const L: usize> {
+    /// `Y_L^0` (zonal harmonic, always real).
+    pub m0: Complex64,
+    /// `Y_L^m` for m = 1..=L, stored at index m − 1.
+    pub mp: [Complex64; L],
+}
+
+impl<const L: usize> Index<usize> for HarmonicOutput<L> {
+    type Output = Complex64;
+
+    #[inline]
+    fn index(&self, index: usize) -> &Complex64 {
+        match index {
+            0 => &self.m0,
+            n => &self.mp[n - 1],
+        }
     }
 }
 
