@@ -8,12 +8,12 @@ use std::{
 
 /// Complex spherical harmonics `Y_L^m` for a single degree L.
 ///
-/// Index with `[m]` to access `Y_L^m` for m = 0..L.
+/// Index with `[m]` to access `Y_L^m` for m = 0..=L.
 /// The m = 0 term is always purely real.
 pub struct HarmonicOutput<const L: usize> {
     /// `Y_L^0` (zonal harmonic, always real).
     pub m0: Complex64,
-    /// `Y_L^m` for m = 1..L, stored at index m − 1.
+    /// `Y_L^m` for m = 1..=L, stored at index m − 1.
     pub mp: [Complex64; L],
 }
 
@@ -81,7 +81,7 @@ impl<const L: usize> SphericalHarmonic<L> {
         }
     }
 
-    /// Evaluate `Y_L^m(x, y, z)` for m = 0..L at a point on the unit sphere.
+    /// Evaluate `Y_L^m(x, y, z)` for m = 0..=L at a point on the unit sphere.
     #[must_use]
     #[inline]
     pub fn eval(&self, x: f64, y: f64, z: f64) -> HarmonicOutput<L> {
