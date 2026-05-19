@@ -108,44 +108,41 @@ mod tests {
 
     #[test]
     fn l0() {
-        let y = spherical_harmonic(0, 0.0, 0.0, 1.0);
-        assert_eq!(y.len(), 1);
-        assert!(approx_eq(y[0], 1.0 / (2.0 * f64::sqrt(PI)), 1e-12));
+        let (y0, y_pos) = spherical_harmonic::<0>(0.0, 0.0, 1.0);
+        assert!(approx_eq(y0, 1.0 / (2.0 * f64::sqrt(PI)), 1e-12));
+        assert_eq!(y_pos.len(), 0);
     }
 
     #[test]
     fn l1_north_pole() {
-        let y = spherical_harmonic(1, 0.0, 0.0, 1.0);
+        let (y0, y_pos) = spherical_harmonic::<1>(0.0, 0.0, 1.0);
         let c = f64::sqrt(3.0 / (4.0 * PI));
-        assert!(approx_eq(y[0], 0.0, 1e-12));
-        assert!(approx_eq(y[1], c, 1e-12));
-        assert!(approx_eq(y[2], 0.0, 1e-12));
+        assert!(approx_eq(y0, c, 1e-12));
+        assert!(approx_eq(y_pos[0], 0.0, 1e-12));
     }
 
     #[test]
     fn l1_x_axis() {
-        let y = spherical_harmonic(1, 1.0, 0.0, 0.0);
+        let (y0, y_pos) = spherical_harmonic::<1>(1.0, 0.0, 0.0);
         let c = f64::sqrt(3.0 / (4.0 * PI));
-        assert!(approx_eq(y[0], 0.0, 1e-12));
-        assert!(approx_eq(y[1], 0.0, 1e-12));
-        assert!(approx_eq(y[2], c, 1e-12));
+        assert!(approx_eq(y0, 0.0, 1e-12));
+        assert!(approx_eq(y_pos[0], c, 1e-12));
     }
 
     #[test]
     fn l1_y_axis() {
-        let y = spherical_harmonic(1, 0.0, 1.0, 0.0);
-        let c = f64::sqrt(3.0 / (4.0 * PI));
-        assert!(approx_eq(y[0], c, 1e-12));
-        assert!(approx_eq(y[1], 0.0, 1e-12));
-        assert!(approx_eq(y[2], 0.0, 1e-12));
+        let (y0, y_pos) = spherical_harmonic::<1>(0.0, 1.0, 0.0);
+        assert!(approx_eq(y0, 0.0, 1e-12));
+        assert!(approx_eq(y_pos[0], 0.0, 1e-12));
     }
 
     #[test]
     fn l2_finite() {
         let inv3 = 1.0 / 3.0_f64.sqrt();
-        let sh = spherical_harmonic(2, inv3, inv3, inv3);
-        assert_eq!(sh.len(), 5);
-        for &v in &sh {
+        let (y0, y_pos) = spherical_harmonic::<2>(inv3, inv3, inv3);
+        assert_eq!(y_pos.len(), 2);
+        assert!(y0.is_finite());
+        for &v in &y_pos {
             assert!(v.is_finite());
         }
     }
