@@ -1,3 +1,5 @@
+//! ...
+
 use std::f64::consts::PI;
 
 /// Compute all real spherical harmonics Y_l^m(x, y, z) for m = -l..=l.
@@ -5,39 +7,62 @@ use std::f64::consts::PI;
 /// The point (x, y, z) must lie on the unit sphere.
 /// Returns a vector of length `2*l + 1` where `result[l + m]` = Y_l^m.
 #[inline]
-pub fn spherical_harmonic(l: usize, x: f64, y: f64, z: f64) -> Vec<f64> {
+#[inline]
+pub fn spherical_harmonic<const L: usize>(x: f64, y: f64, z: f64) -> (f64, [f64; L]) {
     let rxy2 = x * x + y * y;
 
     // Azimuthal factors c_m, s_m
-    let mut cm = vec![0.0; l + 1];
-    let mut sm = vec![0.0; l + 1];
-    cm[0] = 1.0;
-    for m in 1..=l {
-        cm[m] = cm[m - 1] * x - sm[m - 1] * y;
-        sm[m] = cm[m - 1] * y + sm[m - 1] * x;
+    let mut cm = [0.0; L];
+    let mut sm = [0.0; L];
+
+    if L > 0 {
+        cm[0] = x;
+        sm[0] = y;
+        for m in 1..L {
+            cm[m] = cm[m - 1] * x - sm[m - 1] * y;
+            sm[m] = cm[m - 1] * y + sm[m - 1] * x;
+        }
     }
 
     // Cartesian associated Legendre polynomials Q_l^m
-    let mut q = vec![0.0; l + 1];
-    q[l] = seed(l);
-    if l > 0 {
-        q[l - 1] = -z * q[l];
-    }
-    for m in (0..l.saturating_sub(1)).rev() {
-        let c = -1.0 / (((l + m + 1) as f64) * ((l - m) as f64));
-        let twomz = 2.0 * (m + 1) as f64 * z;
-        q[m] = c * (twomz * q[m + 1] + rxy2 * q[m + 2]);
+    let mut q_0 = 0.0;
+    let mut q = [0.0; L];
+
+    if L == 0 {
+        q_0 = seed(0);
+    } else {
+        q[L - 1] = seed(L);
+        if L == 1 {
+            q_0 = -z * q[0];
+        } else {
+            q[L - 2] = -z * q[L - 1];
+        }
+
+        // Loop from L-1 down to 0
+        for m in (0..L.saturating_sub(1)).rev() {
+            let c = -1.0 / (((L + m + 1) as f64) * ((L - m) as f64));
+            let twomz = 2.0 * (m + 1) as f64 * z;
+
+            if m == 0 {
+                q_0 = c * (twomz * q[0] + rxy2 * q[1]);
+            } else {
+                q[m - 1] = c * (twomz * q[m] + rxy2 * q[m + 1]);
+            }
+        }
     }
 
-    // Assemble real spherical harmonics
-    let mut out = vec![0.0; 2 * l + 1];
-    out[l] = prefactor(l, 0) * q[0];
-    for m in 1..=l {
-        let p = prefactor(l, m);
-        out[l + m] = p * q[m] * cm[m];
-        out[l - m] = p * q[m] * sm[m];
+    // Assemble real spherical harmonics (positive m only)
+    let out_0 = prefactor(L, 0) * q_0;
+    let mut out_pos = [0.0; L];
+
+    for m in 1..=L {
+        let p = prefactor(L, m);
+        // out_pos represents the original out[l + m]
+        out_pos[m - 1] = p * q[m - 1] * cm[m - 1];
     }
-    out
+
+    // Returns: (m=0, positive m terms)
+    (out_0, out_pos)
 }
 
 /// Seed: Q_l^l = (-1)^l · (2l-1)!!
