@@ -1,6 +1,11 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+#![allow(
+    clippy::missing_docs_in_private_items,
+    reason = "clippy reports a false positive errors in this file"
+)]
+
 //! An outlined ellipse.
 //!
 //! The [`Ellipse`] representation is a ellipse of pixels with a configurable
@@ -39,27 +44,23 @@ const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/ellipse.wg
 /// Nominally, the z coordinate of the ellipses should be set to 0. Choose a different
 /// value to control the back to front draw order.
 ///
-/// All ellipses of the same type must have the same material. To display disks with
-/// different color pallets or outline widths, call `setup` and `sync` multiple
-/// types of ellipses with different marker types.
-///
 /// To use:
 /// * Add [`setup`](Self::setup) to the `Startup` schedule.
 /// * Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
 #[derive(Component)]
 pub struct Ellipse<T> {
-    /// Mark the type of the disk.
+    /// Mark the type of the ellipse.
     marker: PhantomData<T>,
 }
 
-/// Assets that represent a Disk in the scene.
+/// Assets that represent a ellipse in the scene.
 #[derive(Resource)]
 pub struct Representation<T> {
-    /// The disk mesh.
+    /// The ellipse mesh.
     mesh: Handle<Mesh>,
-    /// The disk material.
+    /// The ellipse material.
     material: Handle<Material>,
-    /// Mark the type of the disk assets.
+    /// Mark the type of the ellipse assets.
     marker: PhantomData<T>,
 }
 
@@ -78,7 +79,7 @@ pub(crate) fn build(app: &mut App) {
 }
 
 impl<T: Send + Sync + 'static> Ellipse<T> {
-    /// Create assets to render disks.
+    /// Create assets to render ellipses.
     pub fn setup(
         material: In<MaterialParameters>,
         mut commands: Commands,
@@ -117,11 +118,11 @@ impl<T: Send + Sync + 'static> Ellipse<T> {
         commands: &mut Commands,
         ellipse_representation: Res<Representation<T>>,
         query: Query<(Entity, &mut Transform), With<Self>>,
-        disks: I,
+        ellipses: I,
     ) where
         I: IntoIterator<Item = (Vec3, f32, f32, f32)>,
     {
-        for (tag, item) in &mut query.into_iter().zip_longest(disks).enumerate() {
+        for (tag, item) in &mut query.into_iter().zip_longest(ellipses).enumerate() {
             match item {
                 Both((_, mut transform), (position, theta, a, b)) => {
                     transform.translation = position;
@@ -149,7 +150,7 @@ impl<T: Send + Sync + 'static> Ellipse<T> {
 
 /// Initialize [`Material`] with these settings.
 pub struct MaterialParameters {
-    /// Color applied to the interior of the disk.
+    /// Color applied to the interior of the ellipses.
     pub background_color: LinearRgba,
 
     /// Color applied to the outline.
@@ -175,13 +176,13 @@ impl Default for MaterialParameters {
 ///
 /// By default [`Material`] is initialized with only one background
 /// color. Color the instances differently by setting more than one color
-/// with [`set_background_colors`]. The color of each disk is given by
+/// with [`set_background_colors`]. The color of each ellipse is given by
 /// `background_colors[tag % len(background_colors)]` so you may set fewer colors
-/// than there are disks. [`sync`] assigns `tag` values in increasing order to each
+/// than there are ellipses. [`sync`] assigns `tag` values in increasing order to each
 /// primitive.
 ///
 /// The `background_color` tints the texture by multiplication. With a `None`
-/// texture (the default), `background_color` sets the exact color of the disk.
+/// texture (the default), `background_color` sets the exact color of the ellipses.
 ///
 /// Set the initial material by piping `MaterialParameters` into [`Ellipse::setup`].
 /// After it is initialized, change the material during execution via the `material`
@@ -204,7 +205,7 @@ pub struct Material {
     #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
     n_background_colors: u32,
 
-    /// Color applied to the interior of the disk (indexed by disk % array size).
+    /// Color applied to the interior of the ellipse (indexed by ellipse % array size).
     #[uniform(1)]
     #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
     background_colors: [LinearRgba; 1024],
@@ -250,7 +251,7 @@ impl Material {
         {
             let color_buffer = buffers
                 .get_mut(&self.background_colors)
-                .expect("Disk::setup should have added the storage buffer");
+                .expect("Ellipse::setup should have added the storage buffer");
 
             color_buffer.set_data(colors);
         }

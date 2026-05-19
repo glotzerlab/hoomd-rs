@@ -383,7 +383,7 @@ mod tests {
         let result = Periodic::new(3.0, rectangle.clone());
         assert!(result.is_ok());
 
-        let result = Periodic::new(3.0f64.next_up(), rectangle);
+        let result = Periodic::new(3.0_f64.next_up(), rectangle);
         assert!(matches!(result, Err(Error::InteractionRangeTooLarge(_, _))));
     }
 }

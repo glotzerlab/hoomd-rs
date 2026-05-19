@@ -21,53 +21,42 @@ env:
   CLICOLOR: 1
 
 jobs:
-  start_action_runners:
-    name: Start
-    uses: glotzerlab/jetstream2-admin/.github/workflows/start.yaml@f6746b0a76c06e45cc1b0c5e32576dfa2c7d2d8c # v1.5.1
-    secrets: inherit
-    with:
-      number: 8
-
   unit_test:
     name: Unit test [rust-${{ matrix.rust }}-${{ matrix.os }}-${{ matrix.target || 'native' }}]
-    runs-on: [self-hosted, jetstream2, CPU]
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
+      # Test the latest Rust on all platforms.
       matrix:
         os:
           - ubuntu-24.04
-          # Disable macOS tests to avoid burning through free GitHub Actions minutes.
-          # TODO: Include Mac and Windows tests after the project made public.
-          # - macos-14
+          - macos-26
+          - windows-2025
         rust:
-          - 1.89.0
-          - 1.92.0
+          - 1.94.0
         target:
          - ''
 
         include:
-        # Add a WASM build.
         - os: ubuntu-24.04
-          rust: 1.92.0
+          rust: 1.94.0
           target: wasm32-unknown-unknown
 
-    steps:
-    # These steps are needed on self-hosted runners and can be removed on GitHub runners
-    - name: Clean workspace
-      run: ( shopt -s dotglob nullglob; rm -rf ./* )
-    - name: Add cargo PATH
-      run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+        # Test MSRV
+        - os: ubuntu-24.04
+          rust: 1.91.0
+          target: ''
 
+    steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
-    # - name: Update rust
-    #   run: rustup install ${{ matrix.rust }} --no-self-update
-    # - name: Install target
-    #   run: rustup target install ${{ matrix.target }} --toolchain ${{ matrix.rust }}
-    #   if: ${{ matrix.target != '' }}
-    - name: Set default target
-      run: rustup default ${{ matrix.rust }}
+    - name: Remove native build configuration
+      run: rm .cargo/config.toml
+    - name: Configure Rust
+      uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+      with:
+        toolchain: ${{ matrix.rust }}
+        targets: ${{ matrix.target }}
     - name: Check rust installation
       run: rustc -vV
     # rust-cache already includes a Cargo.lock hash in the key. However, it
@@ -76,10 +65,11 @@ jobs:
     # dramatically. Add the Cargo.lock hash again in the key portion to
     # prevent this restoration.
     - name: Cache
-      uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2.8.2
+      uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
         key: ${{ matrix.target || 'native' }}-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
+        save-if: ${{ github.ref != 'refs/heads/trunk' }}
 
     - name: Build [default features]
       run: >

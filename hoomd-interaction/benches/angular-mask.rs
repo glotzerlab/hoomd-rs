@@ -9,7 +9,7 @@
 //! Benchmark `AngularMask`
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use rand::{RngExt, SeedableRng, rngs::StdRng};
 use std::f64::consts::PI;
 
 use hoomd_interaction::{

@@ -3,7 +3,7 @@
 use anyhow::{Context, anyhow};
 
 use hoomd_geometry::{
-    Convex, Volume,
+    Volume,
     shape::{Ellipse, Rectangle},
 };
 use hoomd_interaction::{
@@ -12,7 +12,8 @@ use hoomd_interaction::{
     univariate::OverlapPenalty,
 };
 use hoomd_mc::{
-    QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn,
+    QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune,
+    TuneOptions, UniformIn,
 };
 use hoomd_microstate::{
     Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
@@ -32,7 +33,7 @@ type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 #[cfg_attr(feature = "bevy", derive(Resource))]
 // ANCHOR: simulation_struct
 struct HardEllipseSelfAssembly {
-    /// Positions of all the bodies in the simulation.
+    /// Positions and orientations of all the bodies in the simulation.
     microstate: Microstate<
         BodyProperties,
         SiteProperties,
@@ -40,7 +41,7 @@ struct HardEllipseSelfAssembly {
         Periodic<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: PairwiseCutoff<HardShape<Convex<Ellipse>>>,
+    hamiltonian: PairwiseCutoff<HardShape<Ellipse>>,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
@@ -50,10 +51,10 @@ struct HardEllipseSelfAssembly {
     /// Quick compress algorithm.
     quick_compress: QuickCompress<Periodic<Rectangle>>,
     /// Quick insert algorithm.
-    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
+    quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted and compressed.
     overlap_penalty_hamiltonian: PairwiseCutoff<
-        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Convex<Ellipse>>>,
+        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
     >,
     /// The current phase of the simulation.
     phase: Phase,
@@ -69,7 +70,7 @@ enum Phase {
 
 // ANCHOR: simulation_new
 impl HardEllipseSelfAssembly {
-    /// Construct a new hard ellipsoid self-assembly simulation.
+    /// Construct a new hard ellipse self-assembly simulation.
     fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
@@ -89,7 +90,7 @@ impl HardEllipseSelfAssembly {
             (sigma / 2.0).try_into()?,
             (sigma / aspect / 2.0).try_into()?,
         ]);
-        let hamiltonian = PairwiseCutoff(HardShape(Convex(ellipse.clone())));
+        let hamiltonian = PairwiseCutoff(HardShape(ellipse.clone()));
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
@@ -99,12 +100,14 @@ impl HardEllipseSelfAssembly {
         let square =
             Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
         let periodic_square =
-            Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
+            Periodic::new(hamiltonian.maximum_interaction_range(), square)?;
         // ANCHOR_END: periodic
 
         // ANCHOR: microstate
         let vec_cell = VecCell::builder()
-            .nominal_search_radius(sigma.try_into()?)
+            .nominal_search_radius(
+                hamiltonian.maximum_interaction_range().try_into()?,
+            )
             .build();
         let microstate = Microstate::builder()
             .boundary(periodic_square)
@@ -140,7 +143,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: overlap_penalty_hamiltonian
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
-                Convex(ellipse),
+                ellipse,
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
@@ -229,6 +232,19 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: state_transition
         if self.quick_compress.is_complete() {
+            self.translate_sweep.tune_with_options(
+                &self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+                &TuneOptions::default(),
+            );
+            self.rotate_sweep.tune_with_options(
+                &self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+                &TuneOptions::default(),
+            );
+
             self.phase = Phase::Equilibrate;
             println!(
                 "Initialization complete at step {}.",
@@ -273,11 +289,21 @@ impl HardEllipseSelfAssembly {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let mut simulation = HardEllipseSelfAssembly::new()?;
-    // TODO: Write GSD file.
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
 
-    for _ in 0..40_000 {
+    let mut simulation = HardEllipseSelfAssembly::new()?;
+    let mut hoomd_gsd_file =
+        HoomdGsdFile::create("hard-ellipse-self-assembly.gsd")?;
+
+    for _ in 0..100_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(10_000) {
+            hoomd_gsd_file
+                .append_microstate(&simulation.microstate)?
+                .end()?;
+        }
     }
 
     Ok(())

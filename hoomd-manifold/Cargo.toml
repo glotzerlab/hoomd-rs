@@ -1,14 +1,18 @@
 [package]
 name = "hoomd-manifold"
-description = "Manifold and curved geometries library."
+description = "Enable hoomd-rs simulations in curved space."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 repository.workspace = true
 license.workspace = true
 keywords.workspace = true
 categories.workspace = true
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
 
 [dependencies]
 approxim.workspace = true

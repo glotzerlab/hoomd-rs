@@ -3,23 +3,41 @@
 
 //! Benchmark Lennard Jones Monte Carlo simulations.
 
-use std::fmt;
+use std::{
+    fmt,
+    fs::{self, File},
+    io::{self, Write},
+};
 
-use hoomd_geometry::shape::Hypercuboid;
-use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic, univariate};
+use anyhow::Context;
+use hoomd_geometry::{
+    Volume,
+    shape::{Hypercuboid, Hypersphere},
+};
+use hoomd_interaction::{
+    MaximumInteractionRange, PairwiseCutoff,
+    pairwise::Isotropic,
+    univariate::{self, Expanded, OverlapPenalty},
+};
 use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, SiteKey,
+    Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
-    property::{Point, Position},
+    property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
+use hoomd_spatial::{IndexFromPosition, PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::Cartesian;
+use log::{debug, info, trace};
+use serde::{Deserialize, Serialize};
 
-use crate::Effort;
+use crate::{Effort, place::place_single_site_point_bodies};
+
+/// Relax configurations this many steps before tuning move sizes.
+const RELAX_STEPS: usize = 1_000;
 
 /// The Lennard Jones simulation.
+#[derive(Serialize, Deserialize)]
 pub struct LennardJones<const D: usize, X> {
     /// Simulation microstate
     microstate: Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
@@ -62,11 +80,18 @@ impl<const D: usize, X> Effort for LennardJones<D, X> {
 
 impl<const D: usize, X> Simulation for LennardJones<D, X>
 where
-    X: PointsNearBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + Sync,
+    X: PointsNearBall<Cartesian<D>, SiteKey>
+        + PointUpdate<Cartesian<D>, SiteKey>
+        + Sync
+        + IndexFromPosition<Cartesian<D>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
+        if self.microstate.step().is_multiple_of(300) {
+            self.microstate.sort_sites();
+        }
+
         if self.parallel {
             self.count += self.parallel_translate_sweep.apply(
                 &mut self.microstate,
@@ -113,7 +138,12 @@ impl<const D: usize, X> LennardJones<D, X>
 where
     X: PointsNearBall<Cartesian<D>, SiteKey>
         + PointUpdate<Cartesian<D>, SiteKey>
-        + WithSearchRadius,
+        + WithSearchRadius
+        + Clone
+        + for<'a> Deserialize<'a>
+        + Serialize
+        + Sync
+        + IndexFromPosition<Cartesian<D>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     /// Construct a new Lennard Jones simulation
@@ -121,19 +151,37 @@ where
     /// # Errors
     /// Returns an error when the microstate cannot be constructed.
     #[inline]
-    pub fn new<B, S, X2>(
-        microstate: &Microstate<B, S, X2, Periodic<Hypercuboid<D>>>,
-        parallel: bool,
-    ) -> anyhow::Result<Self>
-    where
-        B: Position<Position = Cartesian<D>>,
-    {
+    pub fn new(n: usize, parallel: bool) -> anyhow::Result<Self> {
+        let macrostate = Isothermal { temperature: 1.0 };
         let maximum_interaction_range = 2.5;
 
-        let translate = Translate::with_maximum_distance(0.35.try_into()?);
-        let translate_sweep = Sweep(translate.clone());
-        let parallel_translate_sweep =
-            ParallelSweep::new(maximum_interaction_range.try_into()?, translate);
+        let packing_fraction = 0.50;
+        let sphere = Hypersphere::<D>::with_radius(0.5.try_into()?);
+        let number_density = packing_fraction / sphere.volume();
+        let cache_filename = format!("mc_{D}d_lennard_jones_{packing_fraction}_{n}.postcard");
+
+        match fs::read(&cache_filename) {
+            Ok(bytes) => {
+                debug!("Reading cache '{cache_filename}'.");
+
+                let mut result: Self = postcard::from_bytes(&bytes)
+                    .with_context(|| format!("Could not read {cache_filename}"))?;
+                // The cache may have been generated with a different value of parallel.
+                result.parallel = parallel;
+                result.microstate.sort_sites();
+                return Ok(result);
+            }
+            Err(error) => match error.kind() {
+                io::ErrorKind::NotFound => (),
+                _ => return Err(error).with_context(|| format!("Could not read {cache_filename}")),
+            },
+        }
+
+        let maximum_distance = match D {
+            2 => 0.63,
+            3 => 0.19,
+            _ => 0.1,
+        };
 
         let hamiltonian = PairwiseCutoff(Isotropic {
             interaction: univariate::LennardJones {
@@ -143,28 +191,69 @@ where
             r_cut: maximum_interaction_range,
         });
 
-        let cell_list = X::with_search_radius(maximum_interaction_range.try_into()?);
-        let boundary = Periodic::new(
-            maximum_interaction_range,
-            microstate.boundary().shape().clone(),
-        )?;
-        let microstate = Microstate::builder()
-            .spatial_data(cell_list)
-            .boundary(boundary)
-            .bodies(microstate.bodies().iter().map(|b| Body {
-                properties: Point::<Cartesian<D>>::new(*b.item.properties.position()),
-                sites: vec![Point::<Cartesian<D>>::default()],
-            }))
-            .try_build()?;
+        let translate = Translate::with_maximum_distance(maximum_distance.try_into()?);
+        let translate_sweep = Sweep(translate.clone());
+        let parallel_translate_sweep = ParallelSweep::new(
+            hamiltonian.maximum_interaction_range().try_into()?,
+            translate,
+        );
 
-        Ok(Self {
+        let overlap_penalty = Isotropic {
+            interaction: Expanded {
+                delta: 1.0,
+                f: OverlapPenalty::default(),
+            },
+            r_cut: 1.0,
+        };
+
+        let insert_hamiltonian = PairwiseCutoff(overlap_penalty);
+
+        let microstate = place_single_site_point_bodies(
+            n,
+            number_density,
+            hamiltonian.maximum_interaction_range(),
+            &insert_hamiltonian,
+        )?;
+
+        let mut simulation = Self {
             microstate,
             translate_sweep,
             parallel_translate_sweep,
             hamiltonian,
-            macrostate: Isothermal { temperature: 1.0 },
+            macrostate,
             count: Count::default(),
             parallel,
-        })
+        };
+
+        debug!("Relaxing configuration...");
+
+        for i in 0..RELAX_STEPS {
+            simulation.advance()?;
+            if (i + 1).is_multiple_of(100) {
+                trace!("{:.1}%", ((i + 1) as f64 / RELAX_STEPS as f64) * 100.0);
+            }
+        }
+
+        simulation.microstate.sort_sites();
+
+        // Move sizes are fixed above for comparison with HOOMD-blue. Uncomment this code
+        // when there is a need to retune the move sizes.
+
+        // simulation.translate_sweep.tune_default(&simulation.microstate, &simulation.hamiltonian, &simulation.macrostate);
+        // *simulation.parallel_translate_sweep
+        //     .local_trial_mut()
+        //     .maximum_distance_mut() = *simulation.translate_sweep.0.maximum_distance();
+
+        info!(
+            "Translation move size: {}",
+            simulation.translate_sweep.0.maximum_distance()
+        );
+        simulation.count = Count::default();
+
+        let out_bytes: Vec<u8> = postcard::to_stdvec(&simulation)?;
+        let mut file = File::create(cache_filename)?;
+        file.write_all(&out_bytes)?;
+
+        Ok(simulation)
     }
 }

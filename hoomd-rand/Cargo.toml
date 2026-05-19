@@ -1,14 +1,18 @@
 [package]
 name = "hoomd-rand"
-description = "Performant random number generators, designed and tested for HPC."
+description = "Counter-based random number generation for molecular dynamics and Monte Carlo simulations in hoomd-rs."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 repository.workspace = true
 license.workspace = true
 keywords.workspace = true
 categories.workspace = true
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
 
 [dependencies]
 clap.workspace = true
@@ -29,8 +33,9 @@ extras = []
 [dev-dependencies]
 assert2.workspace = true
 approxim.workspace = true
-chacha20 = { version = "=0.10.0-rc.0", default-features = false, features = ["rng"]}
+chacha20 = { version = "=0.10.0", default-features = false, features = ["rng"]}
 divan.workspace = true
+rand_sfc.workspace = true
 rstest.workspace = true
 
 [[bench]]

@@ -21,8 +21,6 @@ use std::marker::PhantomData;
 
 /// Location of the shader implementation
 const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/hyperbolic_polygon.wgsl";
-/// skirt width of the Hyperbolic
-const RHO: f64 = 1.0;
 
 /// Represent an entity with a 2D regular polygon in hyperbolic space.
 #[derive(Component)]
@@ -93,7 +91,7 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
             match item {
                 Both((_, mut transform), (position, radius, theta)) => {
                     let (poincare_position, max_projected_radius) =
-                        poincare(&position, RHO, radius, theta);
+                        poincare(&position, radius, theta);
                     // let rad_arg = RHO * (radius / RHO).sinh() / (1.0 + (radius / RHO).cosh());
                     // let poincare_radius = (0.5)
                     //    * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
@@ -108,7 +106,7 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
                 Left((entity, _)) => commands.entity(entity).despawn(),
                 Right((position, radius, theta)) => {
                     let (poincare_position, max_projected_radius) =
-                        poincare(&position, RHO, radius, theta);
+                        poincare(&position, radius, theta);
                     // let rad_arg = RHO * (radius / RHO).sinh() / (1.0 + (radius / RHO).cosh());
                     // let poincare_radius = (0.5)
                     //    * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
@@ -132,13 +130,13 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
 }
 
 /// Project coordinates to Poincare disk
-fn poincare(point: &Minkowski<3>, skirt: f64, radius: f64, angle: f32) -> ([f32; 3], f32) {
-    let pt = Hyperbolic::from_minkowski_coordinates(*point, skirt);
+fn poincare(point: &Minkowski<3>, radius: f64, angle: f32) -> ([f32; 3], f32) {
+    let pt = Hyperbolic::from_minkowski_coordinates(*point);
     let proj = pt.to_poincare();
-    let v = radius / skirt;
-    let eta = (point.coordinates[2] / RHO).acosh();
-    let edge_proj = (RHO * (eta - v).sinh()) / (1.0 + (eta - v).cosh());
-    let rad_proj = (RHO * (eta).sinh()) / (1.0 + (eta).cosh()) - edge_proj;
+    let v = radius;
+    let eta = (point.coordinates[2]).acosh();
+    let edge_proj = ((eta - v).sinh()) / (1.0 + (eta - v).cosh());
+    let rad_proj = ((eta).sinh()) / (1.0 + (eta).cosh()) - edge_proj;
     ([proj[0] as f32, proj[1] as f32, angle], rad_proj as f32)
 }
 

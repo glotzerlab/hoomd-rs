@@ -5,11 +5,12 @@
 
 use serde::{Deserialize, Serialize};
 use std::{
+    cmp::Ordering,
     fmt,
     ops::{Div, DivAssign, Mul, MulAssign},
 };
 
-use crate::Error;
+use super::Error;
 
 /// A f64 value that is not +/- inf, nan, or a value <= 0.
 ///
@@ -47,6 +48,22 @@ impl PositiveReal {
     }
 }
 
+impl Eq for PositiveReal {}
+
+impl PartialOrd for PositiveReal {
+    #[inline]
+    fn partial_cmp(&self, other: &PositiveReal) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for PositiveReal {
+    #[inline]
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.get().total_cmp(&other.get())
+    }
+}
+
 impl TryFrom<f64> for PositiveReal {
     type Error = Error;
 
@@ -69,13 +86,16 @@ impl TryFrom<f64> for PositiveReal {
     /// use hoomd_utility::valid::PositiveReal;
     ///
     /// let result = PositiveReal::try_from(-1.0);
-    /// assert!(matches!(result, Err(hoomd_utility::Error::NotPositive(_))));
+    /// assert!(matches!(
+    ///     result,
+    ///     Err(hoomd_utility::valid::Error::NotPositive(_))
+    /// ));
     /// ```
     ///
     /// # Errors
     ///
-    /// `[Error::NotFinite]` when `v` is not finite.
-    /// `[Error::NotPositive]` when `v` is not a positive value
+    /// [`Error::NotFinite`] when `v` is not finite.
+    /// [`Error::NotPositive`] when `v` is not a positive value
     #[inline]
     fn try_from(v: f64) -> Result<PositiveReal, Error> {
         if !v.is_finite() {

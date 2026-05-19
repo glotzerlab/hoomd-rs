@@ -17,3 +17,5 @@ additional-css = ["./theme/catppuccin.css"]
 git-repository-url = "https://github.com/glotzerlab/hoomd-rs"
 mathjax-support = false
 edit-url-template = "https://github.com/glotzerlab/hoomd-rs/edit/trunk/doc/{path}"
+fold.enable = true
+fold.level = 0

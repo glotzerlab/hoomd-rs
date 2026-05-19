@@ -1,0 +1,26 @@
+[package]
+name = "hoomd-derive"
+categories.workspace = true
+description = "Derive macros for hoomd-rs traits."
+edition.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
+
+[lints]
+workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "2.0.117"
+quote = "1.0.44"
+proc-macro2 = "1.0.106"

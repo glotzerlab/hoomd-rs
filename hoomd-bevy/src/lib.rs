@@ -2,10 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_favicon_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+    html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 #![allow(
     clippy::exhaustive_enums,
@@ -52,6 +52,13 @@
 //!
 //! `doc-example` Make examples suitable for display in a web browser.
 //! `webgpu` Compile for the WebGPU platform when building for the wasm32 target.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-bevy` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 use std::{ops::Range, time::Duration};
 
@@ -91,8 +98,14 @@ use hoomd_simulation::Simulation;
 
 pub mod representation;
 
-/// The default color for the primary representation.
+/// The default color for the primary representation (in 2D).
 pub const PRIMARY_COLOR: Color = Color::srgb(249.0 / 255.0, 203.0 / 255.0, 136.0 / 255.0);
+
+/// The default color for highlighted features.
+pub const HIGHLIGHT_COLOR: Color = Color::srgb(174.0 / 255.0, 215.0 / 255.0, 1.0);
+
+/// The default color for the primary representation (darkened for 3D lighting).
+pub const PRIMARY_COLOR_3D: Color = Color::srgb(0.836, 0.533, 0.211);
 
 /// The default color for a muted representation.
 pub const MUTED_COLOR: Color = Color::srgb(0.75, 0.75, 0.75);
@@ -184,6 +197,15 @@ pub enum InitialCamera {
     /// * Left click and drag to pan.
     /// * Scroll to zoom.
     Orthographic2d(f32),
+
+    /// Three dimensional front down camera showing the xy plane.
+    ///
+    /// The single field sets the height of the visible area. The width is set
+    /// automatically based on the window dimensions.
+    ///
+    /// Controls:
+    /// * TODO
+    Orthographic3d(f32),
 }
 
 /// Store parameters that influence how the simulation is executed.
@@ -498,6 +520,29 @@ where
         commands.spawn((Camera2d, projection));
     }
 
+    /// Set up the 3D camera.
+    fn setup_camera_3d(mut commands: Commands, viewport_height: f32) {
+        let projection = Projection::Orthographic(OrthographicProjection {
+            scaling_mode: bevy::camera::ScalingMode::FixedVertical { viewport_height },
+            ..OrthographicProjection::default_3d()
+        });
+
+        commands.spawn((
+            Camera3d::default(),
+            projection,
+            Transform::from_xyz(0.0, 0.0, -viewport_height * 2.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ));
+        commands.spawn((
+            DirectionalLight::default(),
+            Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ));
+    }
+
+    /// Increase the brightness of the default ambient light.
+    fn setup_ambient_light(mut ambient_light: ResMut<GlobalAmbientLight>) {
+        ambient_light.brightness = 150.0;
+    }
+
     /// Keyboard controls for the 2d camera.
     ///
     /// `=` resets the camera to the default.
@@ -710,6 +755,12 @@ where
                     Self::setup_camera_2d(commands, initial_viewport_height);
                 });
             }
+            InitialCamera::Orthographic3d(initial_viewport_height) => {
+                app.add_systems(Startup, move |commands: Commands| {
+                    Self::setup_camera_3d(commands, initial_viewport_height);
+                })
+                .add_systems(Startup, Self::setup_ambient_light);
+            }
         }
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -812,6 +863,10 @@ where
                     InitialCamera::Orthographic2d(_) => {
                         ui.label("Click and drag to move the camera.");
                         ui.label("Scroll to zoom.");
+                    }
+                    InitialCamera::Orthographic3d(_) => {
+                        ui.label("TODO.");
+                        ui.label("TODO.");
                     }
                 }
 
@@ -958,6 +1013,7 @@ pub fn add_default_plugins(app: &mut App) {
             primary_window: Some(Window {
                 canvas: Some("#hoomd-example".into()),
                 fit_canvas_to_parent: true,
+                focused: false,
                 ..default()
             }),
             ..default()

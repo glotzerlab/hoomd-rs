@@ -60,7 +60,7 @@ pub struct Patch<V> {
 /// Implement the [Kern-Frenkel] potential with the [`Boxcar`] isotropic potential
 /// and single patch in both `masks_i` and `masks_j`.
 ///
-/// [Kern-Frenkel]: http://dx.doi.org/10.1063/1.1569473
+/// [Kern-Frenkel]: https://doi.org/10.1063/1.1569473
 /// [`Boxcar`]: crate::univariate::Boxcar
 ///
 /// # Examples

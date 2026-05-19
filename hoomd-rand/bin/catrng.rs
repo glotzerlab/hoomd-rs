@@ -105,7 +105,7 @@ fn main() -> io::Result<()> {
             }
         }
         // Cli::ManualCounter => {
-        //     let mut counter = 0u64;
+        //     let mut counter = 0_u64;
 
         //     loop {
         //         let mut rng = SFC64::from_state_and_counter([0; 3], counter);
@@ -115,7 +115,7 @@ fn main() -> io::Result<()> {
         //     }
         // }
         Cli::SeedIncrement => {
-            let mut seed_counter = 0u64;
+            let mut seed_counter = 0_u64;
             loop {
                 for chunk in buf.chunks_mut(8) {
                     let mut rng = SFC64::seed_from_u64(seed_counter);

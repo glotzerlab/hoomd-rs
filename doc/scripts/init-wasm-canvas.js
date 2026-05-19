@@ -8,7 +8,3 @@ await init().catch((error) => {
     throw error;
   }
 });
-// for unknown reasons, the web builds focus themselves on start.
-// The `await` above waits for `init` to complete, then `blur`
-// removes that focus to avoid disrupting the reader.
-canvas.blur();

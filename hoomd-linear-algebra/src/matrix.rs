@@ -749,7 +749,7 @@ impl Matrix<2, 2> {
     ///
     /// `svd` sets all singular values to be positive.
     ///
-    /// [Blinn 1996]: https://dx.doi/10.1109/38.486688
+    /// [Blinn 1996]: https://doi.org/10.1109/38.486688
     ///
     /// # Examples
     /// ```
@@ -823,7 +823,7 @@ impl Matrix<3, 3> {
     /// As a result, the third singular value may be negative. For a conventional
     /// SVD with non-negative singular values, the sign can be absorbed into U.
     ///
-    /// [McAdams 2011]: http://digital.library.wisc.edu/1793/60736
+    /// [McAdams 2011]: https://digital.library.wisc.edu/1793/60736
     ///
     /// # Examples
     /// ```
@@ -965,7 +965,7 @@ impl Matrix<3, 3> {
 }
 /// Macro to generate impls for a given row size `N` and multiple column sizes `M`.
 macro_rules! impl_copy_for_m {
-    ($N:literal, $($M:literal),+) => { $(#[doc(hidden)]impl Copy for Matrix<$N, $M> {})+ };
+    ($N:literal, $($M:literal),+) => { $(impl Copy for Matrix<$N, $M> {})+ };
 }
 /// Implement Copy for matrices of an input size `N`, `M`
 macro_rules! impl_copy_for_n_m {

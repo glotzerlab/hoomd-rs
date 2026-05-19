@@ -13,4 +13,6 @@ mc_*.json
 .RData
 .Rhistory
 *.Rmd
-*.html
+*.postcard
+*.py
+.lycheecache

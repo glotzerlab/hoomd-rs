@@ -4,29 +4,27 @@
 //! Implement local trial tune
 
 use log::{debug, trace};
-use rand::Rng;
+use rand::RngExt;
 use std::fmt::Display;
 
-use super::{Adjust, Count, LocalTrial, tune};
+use super::{Adjust, Count, LocalTrial, TuneOptions, tune_by_scaling};
 use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Transform,
+    Body, Microstate, SiteKey, Tagged, Transform,
     boundary::{GenerateGhosts, Wrap},
     property::Position,
 };
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_spatial::PointUpdate;
-use hoomd_utility::valid::OpenUnitIntervalNumber;
 
 /// Tune local trial moves.
-pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA>(
+pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA, F>(
     local_trial: &mut L,
     microstate: &Microstate<B, S, X, C>,
     hamiltonian: &H,
     macrostate: &MA,
-    target_acceptance: OpenUnitIntervalNumber,
-    samples: usize,
-    steps: usize,
+    options: &TuneOptions,
+    should_move_body: F,
 ) where
     P: Copy,
     B: Copy + Default + Transform<S> + Position<Position = P>,
@@ -36,6 +34,7 @@ pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA>(
     H: DeltaEnergyOne<B, S, X, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     MA: Temperature,
+    F: Fn(&Tagged<Body<B, S>>) -> bool,
 {
     let kt = macrostate.temperature();
     let mut rng = microstate.counter().make_rng();
@@ -43,11 +42,16 @@ pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA>(
 
     debug!("Tuning trial move size");
 
-    for step in 0..steps {
+    for step in 0..options.steps {
         let mut count = Count::default();
-        for _ in 0..samples {
+        while count.total() < options.samples as u64 {
             let body_index = rng.random_range(0..microstate.bodies().len());
-            trial.clone_from(&microstate.bodies()[body_index].item);
+            let body = &microstate.bodies()[body_index];
+            if !should_move_body(body) {
+                continue;
+            }
+
+            trial.clone_from(&body.item);
 
             match microstate
                 .boundary()
@@ -70,13 +74,14 @@ pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA>(
         }
 
         if let Some(acceptance_ratio) = count.acceptance_ratio() {
+            let steps = options.steps;
             trace!(
                 "-- {step} / {steps}: {local_trial:.4} - {:.1}%",
                 acceptance_ratio * 100.0
             );
         }
 
-        tune(local_trial, target_acceptance, &count);
+        tune_by_scaling(local_trial, options.target_acceptance, &count);
     }
 
     debug!("-- complete: {local_trial}");

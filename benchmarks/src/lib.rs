@@ -5,10 +5,9 @@
 
 mod benchmark;
 pub mod mc;
-mod place;
+pub mod place;
 
 pub use benchmark::Benchmark;
-pub use place::place_hard_hyperspheres;
 
 /// Track the amount of work a benchmark completed.
 ///

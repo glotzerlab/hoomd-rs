@@ -17,10 +17,7 @@ use std::f64::consts::PI;
 /// that each of the angles is $` \frac{2\pi}{8} `$ so that eight equivalent
 /// octagons meet at each vertex.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct EightEight {
-    /// Skirt width of the Hyperbolic.
-    pub skirt: f64,
-}
+pub struct EightEight {}
 
 impl IsPointInside<Hyperbolic<3>> for EightEight {
     /// Checks if a given Hyperbolic point is inside [`EightEight`].
@@ -32,9 +29,9 @@ impl IsPointInside<Hyperbolic<3>> for EightEight {
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let eight_eight = EightEight { skirt: 1.0 };
+    /// let eight_eight = EightEight {};
     ///
-    /// let point = Hyperbolic::<3>::from_polar_coordinates(1.0, PI / 8.0, 1.0);
+    /// let point = Hyperbolic::<3>::from_polar_coordinates(1.0, PI / 8.0);
     /// assert!(eight_eight.is_point_inside(&point));
     /// # Ok(())
     /// # }
@@ -62,16 +59,14 @@ impl EightEight {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let v: f64 = EightEight::CUSP_TO_EDGE - 0.4;
-    /// let rho: f64 = 1.0;
     /// let theta: f64 = PI / 8.0;
     /// let x = Hyperbolic::from_minkowski_coordinates(
     ///     [
-    ///         rho * (v.sinh()) * (theta.cos()),
-    ///         rho * (v.sinh()) * (theta.sin()),
-    ///         rho * (v.cosh()),
+    ///         (v.sinh()) * (theta.cos()),
+    ///         (v.sinh()) * (theta.sin()),
+    ///         (v.cosh()),
     ///     ]
     ///     .into(),
-    ///     1.0,
     /// );
     /// assert_relative_eq!(
     ///     EightEight::distance_to_boundary(&x),
@@ -86,42 +81,36 @@ impl EightEight {
     pub fn distance_to_boundary(point: &Hyperbolic<3>) -> f64 {
         let theta =
             (point.coordinates()[1].atan2(point.coordinates()[0])).rem_euclid(PI / 4.0) - PI / 8.0;
-        let boost = (point.coordinates()[2] / point.skirt()).acosh();
+        let boost = (point.coordinates()[2]).acosh();
         let (b_sinh, b_cosh) = (boost.sinh(), boost.cosh());
-        let rho = point.skirt();
         let xi = Self::CUSP_TO_EDGE;
         let (xi_sinh, xi_cosh) = (xi.sinh(), xi.cosh());
         // boost into frame where edge is the vertical diameter
-        let edge_as_diameter: Hyperbolic<3> = Hyperbolic::<3>::from_minkowski_coordinates(
-            Minkowski::from([
-                rho * xi_cosh * b_sinh * (theta.cos()) - rho * xi_sinh * b_cosh,
-                rho * b_sinh * (theta.sin()),
-                -rho * xi_sinh * b_sinh * (theta.cos()) + rho * xi_cosh * b_cosh,
-            ]),
-            rho,
-        );
-        let flipped = Hyperbolic::<3>::from_minkowski_coordinates(
-            Minkowski::from([
-                -edge_as_diameter.coordinates()[0],
-                edge_as_diameter.coordinates()[1],
-                edge_as_diameter.coordinates()[2],
-            ]),
-            rho,
-        );
+        let edge_as_diameter: Hyperbolic<3> =
+            Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([
+                xi_cosh * b_sinh * (theta.cos()) - xi_sinh * b_cosh,
+                b_sinh * (theta.sin()),
+                -xi_sinh * b_sinh * (theta.cos()) + xi_cosh * b_cosh,
+            ]));
+        let flipped = Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([
+            -edge_as_diameter.coordinates()[0],
+            edge_as_diameter.coordinates()[1],
+            edge_as_diameter.coordinates()[2],
+        ]));
         let sign = -(edge_as_diameter.coordinates()[0]).signum();
         sign * (edge_as_diameter.distance(&flipped)) / 2.0
     }
     /// Points on the boundary of the fundamental domain
     #[inline]
     #[must_use]
-    pub fn boundary_points(number_of_points: usize, skirt: f64) -> Vec<(f64, f64)> {
+    pub fn boundary_points(number_of_points: usize) -> Vec<(f64, f64)> {
         let mut coords = Vec::<(f64, f64)>::new();
         for n in 0..number_of_points {
             let angle = (n as f64) * 2.0 * PI / (number_of_points as f64);
             let tile_size = EightEight::EIGHTEIGHT;
             let eta =
                 (tile_size.tanh() / (angle.cos() - angle.sin() * (1.0 - (2.0_f64).sqrt()))).atanh();
-            let x = (skirt * eta.sinh()) / (1.0 + eta.cosh());
+            let x = eta.sinh() / (1.0 + eta.cosh());
             for k in 0..8 {
                 coords.push((
                     x * (angle + f64::from(k) * PI / 4.0).cos(),
@@ -186,12 +175,12 @@ mod tests {
     #[test]
     fn boundary_distance() {
         // Distance to the edge of the {8,8} fundamental domain
-        let e = Hyperbolic::<3>::from_polar_coordinates(1.0, 0.1, 1.0);
+        let e = Hyperbolic::<3>::from_polar_coordinates(1.0, 0.1);
         let e_edge_distance = EightEight::distance_to_boundary(&e);
         let e_edge_distance_numeric = 0.631_401_734_734_821;
         assert_relative_eq!(e_edge_distance, e_edge_distance_numeric, epsilon = 1e-12);
 
-        let f = Hyperbolic::<3>::from_polar_coordinates(0.6, 0.2 + PI / 4.0, 1.0);
+        let f = Hyperbolic::<3>::from_polar_coordinates(0.6, 0.2 + PI / 4.0);
         let f_edge_distance = EightEight::distance_to_boundary(&f);
         let f_edge_distance_numeric = 0.947_879_122_461_848;
         assert_relative_eq!(f_edge_distance, f_edge_distance_numeric, epsilon = 1e-12);
@@ -199,33 +188,30 @@ mod tests {
 
     #[test]
     fn inside_is_inside() {
-        let eight_eight = EightEight { skirt: 1.0 };
+        let eight_eight = EightEight {};
         let r = 1.528_570_919_480_998;
         let mut rng = StdRng::seed_from_u64(239);
         let disk = HyperbolicDisk {
             disk_radius: r.try_into().expect("hard-coded positive number"),
-            point: Hyperbolic::<3>::from_minkowski_coordinates(
-                Minkowski::from([0.0, 0.0, 1.0]),
-                1.0,
-            ),
+            point: Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([0.0, 0.0, 1.0])),
         };
         let random_point: Hyperbolic<3> = disk.sample(&mut rng);
         assert!(eight_eight.is_point_inside(&random_point));
 
-        let point_1 = Hyperbolic::<3>::from_polar_coordinates(1.52, PI / 8.0, 1.0);
+        let point_1 = Hyperbolic::<3>::from_polar_coordinates(1.52, PI / 8.0);
         assert!(eight_eight.is_point_inside(&point_1));
 
-        let point_2 = Hyperbolic::<3>::from_polar_coordinates(2.44, PI / 4.0, 1.0);
+        let point_2 = Hyperbolic::<3>::from_polar_coordinates(2.44, PI / 4.0);
         assert!(eight_eight.is_point_inside(&point_2));
     }
 
     #[test]
     fn outside_is_outside() {
-        let eight_eight = EightEight { skirt: 1.0 };
-        let point_1 = Hyperbolic::<3>::from_polar_coordinates(1.54, PI / 8.0, 1.0);
+        let eight_eight = EightEight {};
+        let point_1 = Hyperbolic::<3>::from_polar_coordinates(1.54, PI / 8.0);
         assert!((eight_eight.is_point_inside(&point_1)).not());
 
-        let point_2 = Hyperbolic::<3>::from_polar_coordinates(2.45, PI / 4.0, 1.0);
+        let point_2 = Hyperbolic::<3>::from_polar_coordinates(2.45, PI / 4.0);
         assert!((eight_eight.is_point_inside(&point_2)).not());
     }
 }

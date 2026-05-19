@@ -1,14 +1,18 @@
 [package]
 name = "hoomd-vector"
 categories.workspace = true
-description = "Vector and quaternion math library."
+description = "Vector and quaternion math types and operations for use in hoomd-rs simulations."
 edition.workspace = true
 homepage.workspace = true
+documentation.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
 
 [lints]
 workspace = true
@@ -25,6 +29,8 @@ hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
+assert2.workspace = true
 divan.workspace = true
 paste.workspace = true
 rstest.workspace = true
