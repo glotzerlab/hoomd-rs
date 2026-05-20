@@ -210,7 +210,7 @@ impl<B, X, C> AppendMicrostate<B, Point<Spherical<3>>, X, C> for HoomdGsdFile {
         microstate: &Microstate<B, Point<Spherical<3>>, X, C>,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
-            .configuration_box([5.0, 5.0, 5.0, 0.0, 0.0, 0.0])?
+            .configuration_box([2.0, 2.0, 2.0, 0.0, 0.0, 0.0])?
             .configuration_dimensions(Dimensions::Three)?
             .particles_position(microstate.iter_sites_tag_order().map(|s| {
                 let pt = *s.properties.position.point()
@@ -225,7 +225,7 @@ impl<B, X, C> AppendMicrostate<B, Point<Spherical<4>>, X, C> for HoomdGsdFile {
         microstate: &Microstate<B, Point<Spherical<4>>, X, C>,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
-            .configuration_box([5.0, 5.0, 5.0, 0.0, 0.0, 0.0])?
+            .configuration_box([2.0, 2.0, 2.0, 0.0, 0.0, 0.0])?
             .configuration_dimensions(Dimensions::Three)?
             .particles_position(microstate.iter_sites_tag_order().map(|s| {
                 let proj: Vec<f64> = s.properties.position.stereographic_projection();
@@ -241,7 +241,7 @@ impl<B, X, C> AppendMicrostate<B, OrientedHyperbolicPoint<3, Angle>, X, C> for H
         microstate: &Microstate<B, OrientedHyperbolicPoint<3, Angle>, X, C>,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
-            .configuration_box([2.0, 2.0, 2.0, 0.0, 0.0, 0.0])?
+            .configuration_box([2.0, 2.0, 0.0, 0.0, 0.0, 0.0])?
             .configuration_dimensions(Dimensions::Two)?
             .particles_position(
                 microstate
@@ -272,7 +272,7 @@ impl<B, X, C> AppendMicrostate<B, Point<Hyperbolic<3>>, X, C> for HoomdGsdFile {
         microstate: &Microstate<B, Point<Hyperbolic<3>>, X, C>,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
-            .configuration_box([2.0, 2.0, 2.0, 0.0, 0.0, 0.0])?
+            .configuration_box([2.0, 2.0, 0.0, 0.0, 0.0, 0.0])?
             .configuration_dimensions(Dimensions::Two)?
             .particles_position(
                 microstate
