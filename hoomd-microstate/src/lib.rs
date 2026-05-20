@@ -502,9 +502,9 @@ pub enum Error {
 /// | `Hyperbolic<3>` | Poincare disk |
 /// | `OrientedHyperbolicPoint<3,Angle>` | Poincare disk |
 ///
-/// See [`hoomd_manifold::Spherical::stereographic_projection()`] and 
+/// See [`hoomd_manifold::Spherical::stereographic_projection()`] and
 /// [`hoomd_manifold::Hyperbolic::to_poincare()`] for further details.
-/// 
+///
 /// # Custom implementations
 ///
 /// You can implement [`AppendMicrostate`] for your custom site type and/or

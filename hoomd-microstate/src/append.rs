@@ -212,9 +212,11 @@ impl<B, X, C> AppendMicrostate<B, Point<Spherical<3>>, X, C> for HoomdGsdFile {
         self.append_frame(microstate.step())?
             .configuration_box([2.0, 2.0, 2.0, 0.0, 0.0, 0.0])?
             .configuration_dimensions(Dimensions::Three)?
-            .particles_position(microstate.iter_sites_tag_order().map(|s| {
-                let pt = *s.properties.position.point()
-            }))
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| *s.properties.position.point()),
+            )
     }
 }
 
