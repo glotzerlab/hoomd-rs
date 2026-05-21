@@ -47,7 +47,8 @@ struct HardTriclinicSelfAssembly {
     /// Quick insert algorithm.
     quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Triclinic>>>,
     /// How sites interact when inserted and compressed.
-    overlap_penalty_hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolyhedron>>>,
+    overlap_penalty_hamiltonian:
+        PairwiseCutoff<HardShape<Convex<ConvexPolyhedron>>>,
 
     /// The current phase of the simulation.
     phase: Phase,
@@ -103,7 +104,7 @@ impl HardTriclinicSelfAssembly {
             Cartesian::from([-0.750000, -0.433013, 0.288675]),
             Cartesian::from([0.250000, -0.433013, 0.288675]),
             Cartesian::from([-0.250000, 0.433013, 0.288675]),
-            Cartesian::from([0.750000, 0.433013, 0.288675])
+            Cartesian::from([0.750000, 0.433013, 0.288675]),
         ];
 
         let particle = ConvexPolyhedron::with_vertices(vertices)?;
@@ -112,7 +113,7 @@ impl HardTriclinicSelfAssembly {
         // Build the initial simulation box as a scaled triclinic box with the
         // same tilt factors as the particle, so the particles tile perfectly
         // under compression.
-        let scale: f64  = (n_bodies as f64 / initial_packing_fraction).cbrt();
+        let scale: f64 = (n_bodies as f64 / initial_packing_fraction).cbrt();
         println!("initial box scale factor = {scale}");
         let initial_box = Triclinic::from_box_vector([
             particle_box_vector[0] * scale,
@@ -159,7 +160,6 @@ impl HardTriclinicSelfAssembly {
             QuickCompress::with_target_volume(target_box_volume.try_into()?);
 
         println!("{:?}", particle);
-
 
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
@@ -302,14 +302,25 @@ fn main() -> anyhow::Result<()> {
 
         if simulation.step().is_multiple_of(100) {
             let energy = simulation.energy();
-            println!("Step {}: energy = {} Volume = {} QuickInsertComplete = {} QuickCompressComplete = {:?}", simulation.step(), energy, simulation.microstate.boundary().volume(), simulation.quick_insert.is_complete(), simulation.quick_compress);
+            println!(
+                "Step {}: energy = {} Volume = {} QuickInsertComplete = {} QuickCompressComplete = {:?}",
+                simulation.step(),
+                energy,
+                simulation.microstate.boundary().volume(),
+                simulation.quick_insert.is_complete(),
+                simulation.quick_compress
+            );
             hoomd_gsd_file
                 .append_microstate(&simulation.microstate)?
                 .end()?;
         }
         if simulation.step().is_multiple_of(1000) {
-                let closest_distance = simulation.microstate.bodies().len();
-                println!("Step {}: closest distance = {}", simulation.step(), closest_distance);
+            let closest_distance = simulation.microstate.bodies().len();
+            println!(
+                "Step {}: closest distance = {}",
+                simulation.step(),
+                closest_distance
+            );
         }
     }
     println!("Simulation_Finished");

@@ -34,7 +34,7 @@ use crate::{IsPointInside, MapPoint, SupportMapping};
 /// let mut box3d = Hyperparallelepiped::new([
 ///     Cartesian::from([10.0, 0.0, 0.0]),
 ///     Cartesian::from([0.0, 12.0, 0.0]),
-///     Cartesian::from([0.0,  0.0, 14.0]),
+///     Cartesian::from([0.0, 0.0, 14.0]),
 /// ]);
 /// box3d.calc_qr();
 /// ```
@@ -98,7 +98,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// let parallelepiped = Hyperparallelepiped::new([
     ///     Cartesian::from([10.0, 0.0, 0.0]),
     ///     Cartesian::from([0.0, 12.0, 0.0]),
-    ///     Cartesian::from([0.0,  0.0, 14.0]),
+    ///     Cartesian::from([0.0, 0.0, 14.0]),
     /// ]);
     /// # Ok(())
     /// # }

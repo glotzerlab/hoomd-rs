@@ -133,6 +133,7 @@ where
     /// // Should generate ghost on the opposite side
     /// assert!(!ghosts.is_empty());
     /// assert_eq!(ghosts[0].position[0], -2.1); // wrapped around
+    /// //
     /// #
     /// # Ok(())
     /// # }

@@ -137,9 +137,9 @@ impl Rhomboid {
     /// # Example
     ///
     /// ```
-    /// use hoomd_geometry::shape::{Rhomboid, Hyperparallelepiped};
-    /// use hoomd_vector::Cartesian;
     /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::shape::{Hyperparallelepiped, Rhomboid};
+    /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let parallelepiped = Hyperparallelepiped::new([

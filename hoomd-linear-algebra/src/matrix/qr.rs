@@ -86,7 +86,6 @@ use std::cmp::min;
 /// overdetermined ($`N > M`$) systems in the least-squares sense. It applies
 /// $`Q^T`$ to $`b`$ via `qt_times`, then solves the resulting upper triangular
 /// system $`R x = Q^T b`$ by back substitution.
-///
 pub(super) fn qr_decomposition<const N: usize, const M: usize>(
     a: &Matrix<N, M>,
 ) -> (Matrix<N, M>, Vec<f64>) {
