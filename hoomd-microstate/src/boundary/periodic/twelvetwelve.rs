@@ -1533,4 +1533,36 @@ mod tests {
         assert_relative_eq!(ans_0[0], ghost_0_poincare[0], epsilon = 1e-12);
         assert_relative_eq!(ans_0[1], ghost_0_poincare[1], epsilon = 1e-12);
     }
+
+    #[test]
+    fn wraps_orientation() {
+        let angle_offset: f64 = 0.1;
+        let boost = ((TwelveTwelve::TWELVETWELVE).tanh() * ((PI / 6.0).sin())
+            / ((angle_offset).sin() + (PI / 6.0 - angle_offset).sin()))
+        .atanh()
+            + 0.1;
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, angle_offset + PI / 6.0);
+        let tangent = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(TwelveTwelve::TWELVETWELVE, PI / 6.0),
+            &point,
+        );
+        let oriented_point = OrientedHyperbolicPoint {
+            position: point,
+            orientation: Angle::from(13.0 * PI / 12.0 + tangent),
+        };
+        let periodic = Periodic::new(0.5, TwelveTwelve {}).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(oriented_point).expect("hard-coded");
+
+        let answer = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(TwelveTwelve::TWELVETWELVE, 8.0 * PI / 6.0),
+            &wrapped_point.position,
+        );
+
+        // Check that orientation maps correctly
+        assert_relative_eq!(
+            wrapped_point.orientation.theta,
+            5.0 * PI / 12.0 + answer,
+            epsilon = 1e-12
+        );
+    }
 }
