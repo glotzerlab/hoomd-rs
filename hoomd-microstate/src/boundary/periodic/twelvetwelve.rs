@@ -14,10 +14,11 @@ use crate::{
     boundary::{
         Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
     },
-    property::{Point, Position},
+    property::{Orientation, OrientedHyperbolicPoint, Point, Position},
 };
 use hoomd_geometry::shape::TwelveTwelve;
 use hoomd_manifold::{Hyperbolic, Minkowski};
+use hoomd_vector::Angle;
 
 impl MaximumAllowableInteractionRange for TwelveTwelve {
     /// The largest value that the maximum interaction range can take.
@@ -80,20 +81,19 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
             match sector {
                 7.0 => {
                     let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
-                    wrapped =
-                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                    wrapped = TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                 }
                 8.0 => {
                     let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
                     let wrapped_1 =
-                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                     let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
                     wrapped = TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
                 }
                 9.0 => {
                     let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
                     let wrapped_1 =
-                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                     let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
                     let wrapped_2 =
                         TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
@@ -103,7 +103,7 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                 10.0 => {
                     let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
                     let wrapped_1 =
-                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                     let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
                     let wrapped_2 =
                         TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
@@ -116,7 +116,7 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                 11.0 => {
                     let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
                     let wrapped_1 =
-                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                     let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
                     let wrapped_2 =
                         TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
@@ -131,20 +131,19 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                 }
                 5.0 => {
                     let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
-                    wrapped =
-                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                    wrapped = TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                 }
                 4.0 => {
                     let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
                     let wrapped_1 =
-                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                     let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
                     wrapped = TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
                 }
                 3.0 => {
                     let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
                     let wrapped_1 =
-                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                     let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
                     let wrapped_2 =
                         TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
@@ -154,7 +153,7 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                 2.0 => {
                     let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
                     let wrapped_1 =
-                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                     let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
                     let wrapped_2 =
                         TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
@@ -167,7 +166,7 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                 1.0 => {
                     let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
                     let wrapped_1 =
-                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r.coordinates());
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                     let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
                     let wrapped_2 =
                         TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
@@ -183,11 +182,8 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                 0.0 => {
                     if transformed_point.coordinates[1] >= 0.0 {
                         let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
-                        let wrapped_1 = TwelveTwelve::gamma(
-                            eta,
-                            theta_1 * PI / 6.0 + PI / 12.0,
-                            r.coordinates(),
-                        );
+                        let wrapped_1 =
+                            TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                         let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
                         let wrapped_2 =
                             TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
@@ -205,11 +201,8 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
                             TwelveTwelve::gamma(eta, theta_6 * PI / 6.0 + PI / 12.0, &wrapped_5);
                     } else {
                         let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
-                        let wrapped_1 = TwelveTwelve::gamma(
-                            eta,
-                            theta_1 * PI / 6.0 + PI / 12.0,
-                            r.coordinates(),
-                        );
+                        let wrapped_1 =
+                            TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
                         let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
                         let wrapped_2 =
                             TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
@@ -232,6 +225,331 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
             let wrapped_hyperbolic =
                 Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from(wrapped));
             *r = wrapped_hyperbolic;
+            Ok(properties)
+        } else {
+            Err(Error::CannotWrapProperties)
+        }
+    }
+}
+
+impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<TwelveTwelve> {
+    /// Wrap the positions and orientations of oriented bodies in hyperbolic
+    /// space under the {12,12} tiling.
+    #[inline]
+    #[allow(clippy::too_many_lines, reason = "complicated function")]
+    fn wrap(
+        &self,
+        properties: OrientedHyperbolicPoint<3, Angle>,
+    ) -> Result<OrientedHyperbolicPoint<3, Angle>, Error> {
+        let original_orientation = properties.orientation.theta;
+        let mut properties = properties;
+        let r = properties.position_mut();
+        let r_coords = r.coordinates();
+        let angle = r_coords[1].atan2(r_coords[0]).rem_euclid(2.0 * PI);
+
+        let d = TwelveTwelve::distance_to_boundary(r);
+        if d >= 0.0 {
+            Ok(properties)
+        } else if d > -self.maximum_interaction_range {
+            // get the sequence of transformations necessary to wrap point back into the tile
+            let nearest_vertex_number =
+                (((angle + (PI / 12.0)).rem_euclid(PI * 2.0)) / (PI / 6.0)).floor();
+
+            // transform point to frame where relevant vertex is in the center
+            let (vertex_boost, vertex_angle) = (
+                TwelveTwelve::TWELVETWELVE,
+                (nearest_vertex_number * PI / 6.0).rem_euclid(PI * 2.0),
+            );
+            let (v_cosh, v_sinh, v_cos, v_sin) = (
+                (-vertex_boost).cosh(),
+                (-vertex_boost).sinh(),
+                (-vertex_angle).cos(),
+                (-vertex_angle).sin(),
+            );
+            let transformed_point = Minkowski::from([
+                r_coords[0] * v_cosh * v_cos - r_coords[1] * v_cosh * v_sin + r_coords[2] * v_sinh,
+                r_coords[0] * v_sin + r_coords[1] * v_cos,
+                r_coords[0] * v_sinh * v_cos - r_coords[1] * v_sinh * v_sin + r_coords[2] * v_cosh,
+            ]);
+            // get coords of point in transformed frame
+            let trans_angle =
+                transformed_point.coordinates[1].atan2(transformed_point.coordinates[0]);
+            // find which sector the transformed point is in
+            let sector = (((trans_angle + (PI / 12.0)).rem_euclid(2.0 * PI)) / (PI / 6.0)).floor();
+
+            // transform to tile
+            let eta = TwelveTwelve::CUSP_TO_EDGE;
+            let wrapped: [f64; 3];
+            let relative_angle: f64;
+            match sector {
+                7.0 => {
+                    let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
+                    wrapped = TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    relative_angle =
+                        TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                }
+                8.0 => {
+                    let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
+                    let wrapped_1 =
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let relative_angle_1 =
+                        TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
+                    wrapped = TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    relative_angle =
+                        TwelveTwelve::reorient(theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1)
+                            + relative_angle_1;
+                }
+                9.0 => {
+                    let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
+                    let wrapped_1 =
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let relative_angle_1 =
+                        TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
+                    let wrapped_2 =
+                        TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let relative_angle_2 =
+                        TwelveTwelve::reorient(theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let theta_3 = (theta_2 + 5.0).rem_euclid(12.0);
+                    wrapped = TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                    relative_angle =
+                        TwelveTwelve::reorient(theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2)
+                            + relative_angle_1
+                            + relative_angle_2;
+                }
+                10.0 => {
+                    let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
+                    let wrapped_1 =
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let relative_angle_1 =
+                        TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
+                    let wrapped_2 =
+                        TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let relative_angle_2 =
+                        TwelveTwelve::reorient(theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let theta_3 = (theta_2 + 5.0).rem_euclid(12.0);
+                    let wrapped_3 =
+                        TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                    let relative_angle_3 =
+                        TwelveTwelve::reorient(theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                    let theta_4 = (theta_3 + 5.0).rem_euclid(12.0);
+                    wrapped = TwelveTwelve::gamma(eta, theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
+                    relative_angle =
+                        TwelveTwelve::reorient(theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3)
+                            + relative_angle_1
+                            + relative_angle_2
+                            + relative_angle_3;
+                }
+                11.0 => {
+                    let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
+                    let wrapped_1 =
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let relative_angle_1 =
+                        TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
+                    let wrapped_2 =
+                        TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let relative_angle_2 =
+                        TwelveTwelve::reorient(theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let theta_3 = (theta_2 + 5.0).rem_euclid(12.0);
+                    let wrapped_3 =
+                        TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                    let relative_angle_3 =
+                        TwelveTwelve::reorient(theta_3 * PI / 6.0 + PI / 12.0, &wrapped_3);
+                    let theta_4 = (theta_3 + 5.0).rem_euclid(12.0);
+                    let wrapped_4 =
+                        TwelveTwelve::gamma(eta, theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
+                    let relative_angle_4 =
+                        TwelveTwelve::reorient(theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
+                    let theta_5 = (theta_4 + 5.0).rem_euclid(12.0);
+                    wrapped = TwelveTwelve::gamma(eta, theta_5 * PI / 6.0 + PI / 12.0, &wrapped_4);
+                    relative_angle =
+                        TwelveTwelve::reorient(theta_5 * PI / 6.0 + PI / 12.0, &wrapped_4)
+                            + relative_angle_1
+                            + relative_angle_2
+                            + relative_angle_3
+                            + relative_angle_4;
+                }
+                5.0 => {
+                    let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
+                    wrapped = TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    relative_angle =
+                        TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                }
+                4.0 => {
+                    let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
+                    let wrapped_1 =
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let relative_angle_1 =
+                        TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
+                    wrapped = TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    relative_angle =
+                        TwelveTwelve::reorient(theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1)
+                            + relative_angle_1;
+                }
+                3.0 => {
+                    let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
+                    let wrapped_1 =
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let relative_angle_1 =
+                        TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
+                    let wrapped_2 =
+                        TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let relative_angle_2 =
+                        TwelveTwelve::reorient(theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let theta_3 = (theta_2 - 5.0).rem_euclid(12.0);
+                    wrapped = TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                    relative_angle =
+                        TwelveTwelve::reorient(theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2)
+                            + relative_angle_1
+                            + relative_angle_2;
+                }
+                2.0 => {
+                    let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
+                    let wrapped_1 =
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let relative_angle_1 =
+                        TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
+                    let wrapped_2 =
+                        TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let relative_angle_2 =
+                        TwelveTwelve::reorient(theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let theta_3 = (theta_2 - 5.0).rem_euclid(12.0);
+                    let wrapped_3 =
+                        TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                    let relative_angle_3 =
+                        TwelveTwelve::reorient(theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                    let theta_4 = (theta_3 - 5.0).rem_euclid(12.0);
+                    wrapped = TwelveTwelve::gamma(eta, theta_4 * PI / 6.0 - PI / 12.0, &wrapped_3);
+                    relative_angle =
+                        TwelveTwelve::reorient(theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3)
+                            + relative_angle_1
+                            + relative_angle_2
+                            + relative_angle_3;
+                }
+                1.0 => {
+                    let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
+                    let wrapped_1 =
+                        TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let relative_angle_1 =
+                        TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                    let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
+                    let wrapped_2 =
+                        TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let relative_angle_2 =
+                        TwelveTwelve::reorient(theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                    let theta_3 = (theta_2 - 5.0).rem_euclid(12.0);
+                    let wrapped_3 =
+                        TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                    let relative_angle_3 =
+                        TwelveTwelve::reorient(theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                    let theta_4 = (theta_3 - 5.0).rem_euclid(12.0);
+                    let wrapped_4 =
+                        TwelveTwelve::gamma(eta, theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
+                    let relative_angle_4 =
+                        TwelveTwelve::reorient(theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
+                    let theta_5 = (theta_4 - 5.0).rem_euclid(12.0);
+                    wrapped = TwelveTwelve::gamma(eta, theta_5 * PI / 6.0 + PI / 12.0, &wrapped_4);
+                    relative_angle =
+                        TwelveTwelve::reorient(theta_5 * PI / 6.0 + PI / 12.0, &wrapped_4)
+                            + relative_angle_1
+                            + relative_angle_2
+                            + relative_angle_3
+                            + relative_angle_4;
+                }
+                0.0 => {
+                    if transformed_point.coordinates[1] >= 0.0 {
+                        let theta_1 = (nearest_vertex_number + 6.0).rem_euclid(12.0);
+                        let wrapped_1 =
+                            TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                        let relative_angle_1 =
+                            TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                        let theta_2 = (theta_1 - 5.0).rem_euclid(12.0);
+                        let wrapped_2 =
+                            TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                        let relative_angle_2 =
+                            TwelveTwelve::reorient(theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                        let theta_3 = (theta_2 - 5.0).rem_euclid(12.0);
+                        let wrapped_3 =
+                            TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                        let relative_angle_3 =
+                            TwelveTwelve::reorient(theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                        let theta_4 = (theta_3 - 5.0).rem_euclid(12.0);
+                        let wrapped_4 =
+                            TwelveTwelve::gamma(eta, theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
+                        let relative_angle_4 =
+                            TwelveTwelve::reorient(theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
+                        let theta_5 = (theta_4 - 5.0).rem_euclid(12.0);
+                        let wrapped_5 =
+                            TwelveTwelve::gamma(eta, theta_5 * PI / 6.0 + PI / 12.0, &wrapped_4);
+                        let relative_angle_5 =
+                            TwelveTwelve::reorient(theta_5 * PI / 6.0 + PI / 12.0, &wrapped_4);
+                        let theta_6 = (theta_5 - 5.0).rem_euclid(12.0);
+                        wrapped =
+                            TwelveTwelve::gamma(eta, theta_6 * PI / 6.0 + PI / 12.0, &wrapped_5);
+                        relative_angle =
+                            TwelveTwelve::reorient(theta_6 * PI / 6.0 + PI / 12.0, &wrapped_5)
+                                + relative_angle_1
+                                + relative_angle_2
+                                + relative_angle_3
+                                + relative_angle_4
+                                + relative_angle_5;
+                    } else {
+                        let theta_1 = (nearest_vertex_number + 5.0).rem_euclid(12.0);
+                        let wrapped_1 =
+                            TwelveTwelve::gamma(eta, theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                        let relative_angle_1 =
+                            TwelveTwelve::reorient(theta_1 * PI / 6.0 + PI / 12.0, r_coords);
+                        let theta_2 = (theta_1 + 5.0).rem_euclid(12.0);
+                        let wrapped_2 =
+                            TwelveTwelve::gamma(eta, theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                        let relative_angle_2 =
+                            TwelveTwelve::reorient(theta_2 * PI / 6.0 + PI / 12.0, &wrapped_1);
+                        let theta_3 = (theta_2 + 5.0).rem_euclid(12.0);
+                        let wrapped_3 =
+                            TwelveTwelve::gamma(eta, theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                        let relative_angle_3 =
+                            TwelveTwelve::reorient(theta_3 * PI / 6.0 + PI / 12.0, &wrapped_2);
+                        let theta_4 = (theta_3 + 5.0).rem_euclid(12.0);
+                        let wrapped_4 =
+                            TwelveTwelve::gamma(eta, theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
+                        let relative_angle_4 =
+                            TwelveTwelve::reorient(theta_4 * PI / 6.0 + PI / 12.0, &wrapped_3);
+                        let theta_5 = (theta_4 + 5.0).rem_euclid(12.0);
+                        let wrapped_5 =
+                            TwelveTwelve::gamma(eta, theta_5 * PI / 6.0 + PI / 12.0, &wrapped_4);
+                        let relative_angle_5 =
+                            TwelveTwelve::reorient(theta_5 * PI / 6.0 + PI / 12.0, &wrapped_4);
+                        let theta_6 = (theta_5 + 5.0).rem_euclid(12.0);
+                        wrapped =
+                            TwelveTwelve::gamma(eta, theta_6 * PI / 6.0 + PI / 12.0, &wrapped_5);
+                        relative_angle =
+                            TwelveTwelve::reorient(theta_6 * PI / 6.0 + PI / 12.0, &wrapped_5)
+                                + relative_angle_1
+                                + relative_angle_2
+                                + relative_angle_3
+                                + relative_angle_4
+                                + relative_angle_5;
+                    }
+                }
+                _ => return Err(Error::CannotWrapProperties),
+            }
+            let wrapped_hyperbolic =
+                Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from(wrapped));
+            let mut final_orientation = relative_angle + original_orientation;
+            while final_orientation > PI {
+                final_orientation -= 2.0 * PI;
+            }
+            while final_orientation <= -PI {
+                final_orientation += 2.0 * PI;
+            }
+            *r = wrapped_hyperbolic;
+            *properties.orientation_mut() = Angle::from(final_orientation);
             Ok(properties)
         } else {
             Err(Error::CannotWrapProperties)
@@ -338,7 +656,272 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
     }
 }
 
-// TODO!!! Write test code!!
+impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<TwelveTwelve> {
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        self.maximum_interaction_range
+    }
+    /// Place periodic images of sites near the edge of the periodic boundary.
+    #[inline]
+    #[expect(clippy::too_many_lines, reason = "complicated function")]
+    fn generate_ghosts(
+        &self,
+        site_properties: &OrientedHyperbolicPoint<3, Angle>,
+    ) -> ArrayVec<OrientedHyperbolicPoint<3, Angle>, MAX_GHOSTS> {
+        let mut result = ArrayVec::new();
+        let r = site_properties.position();
+
+        // transform to tile
+        let eta = TwelveTwelve::CUSP_TO_EDGE;
+        let gamma_pt = |theta: f64, point: &[f64; 3]| {
+            let ghost = TwelveTwelve::gamma(eta, theta, point);
+            let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(Minkowski::from(ghost));
+            let mut new_site = *site_properties;
+            *new_site.position_mut() = new_hyperbolic;
+            new_site
+        };
+        // identify which octant the point is in
+        let angle = (r.coordinates()[1].atan2(r.coordinates()[0])).rem_euclid(2.0 * PI);
+        let nearest_vertex_number =
+            (((angle + (PI / 12.0)).rem_euclid(PI * 2.0)) / (PI / 6.0)).floor();
+        let coords = *r.coordinates();
+        let orientation = site_properties.orientation.theta;
+
+        let theta_1a = (nearest_vertex_number + 6.0).rem_euclid(12.0);
+        let ghost_1a = gamma_pt(theta_1a * PI / 6.0 + PI / 12.0, &coords);
+        let rel_angle_1a = TwelveTwelve::reorient(theta_1a * PI / 6.0 + PI / 12.0, &coords);
+        let orientation_1a = rel_angle_1a + orientation;
+        let mut final_orientation = orientation_1a;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut new_site_1a = *site_properties;
+        *new_site_1a.position_mut() = ghost_1a.position;
+        *new_site_1a.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_1a);
+
+        let theta_1b = (nearest_vertex_number + 5.0).rem_euclid(12.0);
+        let ghost_1b = gamma_pt(theta_1b * PI / 6.0 + PI / 12.0, &coords);
+        let rel_angle_1b = TwelveTwelve::reorient(theta_1b * PI / 6.0 + PI / 12.0, &coords);
+        let orientation_1b = orientation + rel_angle_1b;
+        let mut final_orientation = orientation_1b;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut new_site_1b = *site_properties;
+        *new_site_1b.position_mut() = ghost_1b.position;
+        *new_site_1b.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_1b);
+
+        let theta_2a = (theta_1a - 5.0).rem_euclid(12.0);
+        let ghost_2a = gamma_pt(
+            theta_2a * PI / 6.0 + PI / 12.0,
+            ghost_1a.position.coordinates(),
+        );
+        let rel_angle_2a = TwelveTwelve::reorient(
+            theta_2a * PI / 6.0 + PI / 12.0,
+            ghost_1a.position.coordinates(),
+        );
+        let orientation_2a = orientation_1a + rel_angle_2a;
+        let mut final_orientation = orientation_2a;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut new_site_2a = *site_properties;
+        *new_site_2a.position_mut() = ghost_2a.position;
+        *new_site_2a.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_2a);
+
+        let theta_2b = (theta_1b + 5.0).rem_euclid(12.0);
+        let ghost_2b = gamma_pt(
+            theta_2b * PI / 6.0 + PI / 12.0,
+            ghost_1b.position.coordinates(),
+        );
+        let rel_angle_2b = TwelveTwelve::reorient(
+            theta_2b * PI / 6.0 + PI / 12.0,
+            ghost_1b.position.coordinates(),
+        );
+        let orientation_2b = orientation_1b + rel_angle_2b;
+        let mut final_orientation = orientation_2b;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut new_site_2b = *site_properties;
+        *new_site_2b.position_mut() = ghost_2b.position;
+        *new_site_2b.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_2b);
+
+        let theta_3a = (theta_2a - 5.0).rem_euclid(12.0);
+        let ghost_3a = gamma_pt(
+            theta_3a * PI / 6.0 + PI / 12.0,
+            ghost_2a.position.coordinates(),
+        );
+        let rel_angle_3a = TwelveTwelve::reorient(
+            theta_3a * PI / 6.0 + PI / 12.0,
+            ghost_2a.position.coordinates(),
+        );
+        let orientation_3a = orientation_2a + rel_angle_3a;
+        let mut final_orientation = orientation_3a;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut new_site_3a = *site_properties;
+        *new_site_3a.position_mut() = ghost_3a.position;
+        *new_site_3a.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_3a);
+
+        let theta_3b = (theta_2b + 5.0).rem_euclid(12.0);
+        let ghost_3b = gamma_pt(
+            theta_3b * PI / 6.0 + PI / 12.0,
+            ghost_2b.position.coordinates(),
+        );
+        let rel_angle_3b = TwelveTwelve::reorient(
+            theta_3b * PI / 6.0 + PI / 12.0,
+            ghost_2b.position.coordinates(),
+        );
+        let orientation_3b = rel_angle_3b + orientation_2b;
+        let mut final_orientation = orientation_3b;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut new_site_3b = *site_properties;
+        *new_site_3b.position_mut() = ghost_3b.position;
+        *new_site_3b.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_3b);
+
+        let theta_4a = (theta_3a - 5.0).rem_euclid(12.0);
+        let ghost_4a = gamma_pt(
+            theta_4a * PI / 6.0 + PI / 12.0,
+            ghost_3a.position.coordinates(),
+        );
+        let rel_angle_4a = TwelveTwelve::reorient(
+            theta_4a * PI / 6.0 + PI / 12.0,
+            ghost_3a.position.coordinates(),
+        );
+        let orientation_4a = orientation_3a + rel_angle_4a;
+        let mut final_orientation = orientation_4a;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut new_site_4a = *site_properties;
+        *new_site_4a.position_mut() = ghost_4a.position;
+        *new_site_4a.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_4a);
+
+        let theta_4b = (theta_3b + 5.0).rem_euclid(12.0);
+        let ghost_4b = gamma_pt(
+            theta_4b * PI / 6.0 + PI / 12.0,
+            ghost_3b.position.coordinates(),
+        );
+        let rel_angle_4b = TwelveTwelve::reorient(
+            theta_4b * PI / 6.0 + PI / 12.0,
+            ghost_3b.position.coordinates(),
+        );
+        let orientation_4b = orientation_3b + rel_angle_4b;
+        let mut final_orientation = orientation_4b;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut new_site_4b = *site_properties;
+        *new_site_4b.position_mut() = ghost_4b.position;
+        *new_site_4b.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_4b);
+
+        let theta_5a = (theta_4a - 5.0).rem_euclid(12.0);
+        let ghost_5a = gamma_pt(
+            theta_5a * PI / 6.0 + PI / 12.0,
+            ghost_4a.position.coordinates(),
+        );
+        let rel_angle_5a = TwelveTwelve::reorient(
+            theta_5a * PI / 6.0 + PI / 12.0,
+            ghost_4a.position.coordinates(),
+        );
+        let orientation_5a = orientation_4a + rel_angle_5a;
+        let mut final_orientation = orientation_5a;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut new_site_5a = *site_properties;
+        *new_site_5a.position_mut() = ghost_5a.position;
+        *new_site_5a.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_5a);
+
+        let theta_5b = (theta_4b + 5.0).rem_euclid(12.0);
+        let ghost_5b = gamma_pt(
+            theta_5b * PI / 6.0 + PI / 12.0,
+            ghost_4b.position.coordinates(),
+        );
+        let rel_angle_5b = TwelveTwelve::reorient(
+            theta_5b * PI / 6.0 + PI / 12.0,
+            ghost_4b.position.coordinates(),
+        );
+        let orientation_5b = orientation_4a + rel_angle_5b;
+        let mut final_orientation = orientation_5b;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut new_site_5b = *site_properties;
+        *new_site_5b.position_mut() = ghost_5b.position;
+        *new_site_5b.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_5b);
+
+        let theta_6 = (theta_5a - 5.0).rem_euclid(12.0);
+        let ghost_6 = gamma_pt(
+            theta_6 * PI / 6.0 + PI / 12.0,
+            ghost_5a.position.coordinates(),
+        );
+        let rel_angle_6 = TwelveTwelve::reorient(
+            theta_6 * PI / 6.0 + PI / 12.0,
+            ghost_5a.position.coordinates(),
+        );
+        let orientation_6 = orientation_5a + rel_angle_6;
+        let mut final_orientation = orientation_6;
+        while final_orientation > PI {
+            final_orientation -= 2.0 * PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0 * PI;
+        }
+        let mut nnew_site_6 = *site_properties;
+        *nnew_site_6.position_mut() = ghost_6.position;
+        *nnew_site_6.orientation_mut() = Angle::from(final_orientation);
+        result.push(nnew_site_6);
+
+        result
+    }
+}
+
+// TODO!!! Write test code for oriented bodies
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -575,7 +1158,7 @@ mod tests {
                     + 2.0 * b9 * c9 * ans_4[0]
                     + a9 * c9 * (1.0 + ans_4[0].powi(2) + ans_4[1].powi(2))),
         ];
-        
+
         assert_relative_eq!(ans_9[0], wrapped_poincare[0], epsilon = 1e-12);
         assert_relative_eq!(ans_9[1], wrapped_poincare[1], epsilon = 1e-12);
     }
