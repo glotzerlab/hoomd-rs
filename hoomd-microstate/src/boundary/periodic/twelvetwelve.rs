@@ -426,4 +426,528 @@ mod tests {
             epsilon = 1e-12
         );
     }
+
+    #[test]
+    fn consistency_edge() {
+        let mut rng = StdRng::seed_from_u64(5212);
+        let side = f64::from(rng.random_range(0..12));
+        let boost = TwelveTwelve::CUSP_TO_EDGE + 0.5;
+        let offset = PI / 12.0 + 0.15 * rng.random::<f64>();
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, side * PI / 6.0 + offset);
+        let point = Point::new(point);
+        let periodic = Periodic::new(1.0, TwelveTwelve {}).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(point).expect("hard-coded");
+        let wrapped_poincare = wrapped_point.position.to_poincare();
+
+        // Check that mapping is consistent with Poincare transformation
+        let (q_u, q_v) = (
+            point.position.to_poincare()[0],
+            point.position.to_poincare()[1],
+        );
+        let phi = (side + 6.0).rem_euclid(12.0) * PI / 6.0 + PI / 12.0;
+        let a = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi.cos());
+        let c = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi.sin());
+        let pref = 1.0 / ((b * q_v - c * q_u).powi(2) + (a + b * q_u + c * q_v).powi(2));
+        let ans = [
+            pref * (q_u * (a.powi(2) + b.powi(2) - c.powi(2))
+                + 2.0 * b * c * q_v
+                + a * b * (1.0 + q_u.powi(2) + q_v.powi(2))),
+            pref * (q_v * (a.powi(2) - b.powi(2) + c.powi(2))
+                + 2.0 * b * c * q_u
+                + a * c * (1.0 + q_u.powi(2) + q_v.powi(2))),
+        ];
+
+        assert_relative_eq!(ans[0], wrapped_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans[1], wrapped_poincare[1], epsilon = 1e-12);
+    }
+
+    #[test]
+    #[allow(clippy::too_many_lines, reason = "complicated function")]
+    fn wraps_vertex() {
+        let boost = TwelveTwelve::TWELVETWELVE + 0.4;
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, PI / 2.0 - 0.0001);
+        let point = Point::new(point);
+        let periodic = Periodic::new(0.5, TwelveTwelve {}).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(point).expect("hard-coded");
+        let wrapped_poincare = wrapped_point.position.to_poincare();
+        let point_poincare = point.position.to_poincare();
+
+        let phi8 = 8.0 * PI / 6.0 + PI / 12.0;
+        let a8 = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b8 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi8.cos());
+        let c8 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi8.sin());
+        let pref_8 = 1.0
+            / ((b8 * point_poincare[1] - c8 * point_poincare[0]).powi(2)
+                + (a8 + b8 * point_poincare[0] + c8 * point_poincare[1]).powi(2));
+        let ans_8 = [
+            pref_8
+                * (point_poincare[0] * (a8.powi(2) + b8.powi(2) - c8.powi(2))
+                    + 2.0 * b8 * c8 * point_poincare[1]
+                    + a8 * b8 * (1.0 + point_poincare[0].powi(2) + point_poincare[1].powi(2))),
+            pref_8
+                * (point_poincare[1] * (a8.powi(2) - b8.powi(2) + c8.powi(2))
+                    + 2.0 * b8 * c8 * point_poincare[0]
+                    + a8 * c8 * (1.0 + point_poincare[0].powi(2) + point_poincare[1].powi(2))),
+        ];
+        let phi1 = PI / 6.0 + PI / 12.0;
+        let a1 = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b1 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi1.cos());
+        let c1 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi1.sin());
+        let pref_1 = 1.0
+            / ((b1 * ans_8[1] - c1 * ans_8[0]).powi(2)
+                + (a1 + b1 * ans_8[0] + c1 * ans_8[1]).powi(2));
+        let ans_1 = [
+            pref_1
+                * (ans_8[0] * (a1.powi(2) + b1.powi(2) - c1.powi(2))
+                    + 2.0 * b1 * c1 * ans_8[1]
+                    + a1 * b1 * (1.0 + ans_8[0].powi(2) + ans_8[1].powi(2))),
+            pref_1
+                * (ans_8[1] * (a1.powi(2) - b1.powi(2) + c1.powi(2))
+                    + 2.0 * b1 * c1 * ans_8[0]
+                    + a1 * c1 * (1.0 + ans_8[0].powi(2) + ans_8[1].powi(2))),
+        ];
+        let phi6 = PI + PI / 12.0;
+        let a6 = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b6 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi6.cos());
+        let c6 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi6.sin());
+        let pref_6 = 1.0
+            / ((b6 * ans_1[1] - c6 * ans_1[0]).powi(2)
+                + (a6 + b6 * ans_1[0] + c6 * ans_1[1]).powi(2));
+        let ans_6 = [
+            pref_6
+                * (ans_1[0] * (a6.powi(2) + b6.powi(2) - c6.powi(2))
+                    + 2.0 * b6 * c6 * ans_1[1]
+                    + a6 * b6 * (1.0 + ans_1[0].powi(2) + ans_1[1].powi(2))),
+            pref_6
+                * (ans_1[1] * (a6.powi(2) - b6.powi(2) + c6.powi(2))
+                    + 2.0 * b6 * c6 * ans_1[0]
+                    + a6 * c6 * (1.0 + ans_1[0].powi(2) + ans_1[1].powi(2))),
+        ];
+        let phi11 = 11.0 * PI / 6.0 + PI / 12.0;
+        let a11 = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b11 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi11.cos());
+        let c11 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi11.sin());
+        let pref_11 = 1.0
+            / ((b11 * ans_6[1] - c11 * ans_6[0]).powi(2)
+                + (a11 + b11 * ans_6[0] + c11 * ans_6[1]).powi(2));
+        let ans_11 = [
+            pref_11
+                * (ans_6[0] * (a11.powi(2) + b11.powi(2) - c11.powi(2))
+                    + 2.0 * b11 * c11 * ans_6[1]
+                    + a11 * b11 * (1.0 + ans_6[0].powi(2) + ans_6[1].powi(2))),
+            pref_11
+                * (ans_6[1] * (a11.powi(2) - b11.powi(2) + c11.powi(2))
+                    + 2.0 * b11 * c11 * ans_6[0]
+                    + a11 * c11 * (1.0 + ans_6[0].powi(2) + ans_6[1].powi(2))),
+        ];
+        let phi4 = 4.0 * PI / 6.0 + PI / 12.0;
+        let a4 = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b4 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi4.cos());
+        let c4 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi4.sin());
+        let pref_4 = 1.0
+            / ((b4 * ans_11[1] - c4 * ans_11[0]).powi(2)
+                + (a4 + b4 * ans_11[0] + c4 * ans_11[1]).powi(2));
+        let ans_4 = [
+            pref_4
+                * (ans_11[0] * (a4.powi(2) + b4.powi(2) - c4.powi(2))
+                    + 2.0 * b4 * c4 * ans_11[1]
+                    + a4 * b4 * (1.0 + ans_11[0].powi(2) + ans_11[1].powi(2))),
+            pref_4
+                * (ans_11[1] * (a4.powi(2) - b4.powi(2) + c4.powi(2))
+                    + 2.0 * b4 * c4 * ans_11[0]
+                    + a4 * c4 * (1.0 + ans_11[0].powi(2) + ans_11[1].powi(2))),
+        ];
+        let phi9 = 9.0 * PI / 6.0 + PI / 12.0;
+        let a9 = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b9 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi9.cos());
+        let c9 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi9.sin());
+        let pref_9 = 1.0
+            / ((b9 * ans_4[1] - c9 * ans_4[0]).powi(2)
+                + (a9 + b9 * ans_4[0] + c9 * ans_4[1]).powi(2));
+        let ans_9 = [
+            pref_9
+                * (ans_4[0] * (a9.powi(2) + b9.powi(2) - c9.powi(2))
+                    + 2.0 * b9 * c9 * ans_4[1]
+                    + a9 * b9 * (1.0 + ans_4[0].powi(2) + ans_4[1].powi(2))),
+            pref_9
+                * (ans_4[1] * (a9.powi(2) - b9.powi(2) + c9.powi(2))
+                    + 2.0 * b9 * c9 * ans_4[0]
+                    + a9 * c9 * (1.0 + ans_4[0].powi(2) + ans_4[1].powi(2))),
+        ];
+        
+        assert_relative_eq!(ans_9[0], wrapped_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_9[1], wrapped_poincare[1], epsilon = 1e-12);
+    }
+
+    #[test]
+    fn wraps_vertex_non_center() {
+        let offset_boost: f64 = 0.4;
+        let v: f64 = TwelveTwelve::TWELVETWELVE;
+        let point = Hyperbolic::from_minkowski_coordinates(
+            [
+                (v.sinh()) * (offset_boost.cosh()),
+                -offset_boost.sinh(),
+                (v.cosh()) * (offset_boost.cosh()),
+            ]
+            .into(),
+        );
+        let point = Point::new(point);
+        let periodic = Periodic::new(0.5, TwelveTwelve {}).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(point).expect("hard-coded");
+
+        let wrapped_poincare = wrapped_point.position.to_poincare();
+        let point_poincare = point.position.to_poincare();
+
+        let phi5 = 5.0 * PI / 6.0 + PI / 12.0;
+        let a5 = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b5 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi5.cos());
+        let c5 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi5.sin());
+        let pref_5 = 1.0
+            / ((b5 * point_poincare[1] - c5 * point_poincare[0]).powi(2)
+                + (a5 + b5 * point_poincare[0] + c5 * point_poincare[1]).powi(2));
+        let ans_5 = [
+            pref_5
+                * (point_poincare[0] * (a5.powi(2) + b5.powi(2) - c5.powi(2))
+                    + 2.0 * b5 * c5 * point_poincare[1]
+                    + a5 * b5 * (1.0 + point_poincare[0].powi(2) + point_poincare[1].powi(2))),
+            pref_5
+                * (point_poincare[1] * (a5.powi(2) - b5.powi(2) + c5.powi(2))
+                    + 2.0 * b5 * c5 * point_poincare[0]
+                    + a5 * c5 * (1.0 + point_poincare[0].powi(2) + point_poincare[1].powi(2))),
+        ];
+        let phi10 = 10.0 * PI / 6.0 + PI / 12.0;
+        let a10 = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b10 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi10.cos());
+        let c10 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi10.sin());
+        let pref_10 = 1.0
+            / ((b10 * ans_5[1] - c10 * ans_5[0]).powi(2)
+                + (a10 + b10 * ans_5[0] + c10 * ans_5[1]).powi(2));
+        let ans_10 = [
+            pref_10
+                * (ans_5[0] * (a10.powi(2) + b10.powi(2) - c10.powi(2))
+                    + 2.0 * b10 * c10 * ans_5[1]
+                    + a10 * b10 * (1.0 + ans_5[0].powi(2) + ans_5[1].powi(2))),
+            pref_10
+                * (ans_5[1] * (a10.powi(2) - b10.powi(2) + c10.powi(2))
+                    + 2.0 * b10 * c10 * ans_5[0]
+                    + a10 * c10 * (1.0 + ans_5[0].powi(2) + ans_5[1].powi(2))),
+        ];
+        let phi3 = 3.0 * PI / 6.0 + PI / 12.0;
+        let a3 = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b3 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi3.cos());
+        let c3 = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi3.sin());
+        let pref_3 = 1.0
+            / ((b3 * ans_10[1] - c3 * ans_10[0]).powi(2)
+                + (a3 + b3 * ans_10[0] + c3 * ans_10[1]).powi(2));
+        let ans_3 = [
+            pref_3
+                * (ans_10[0] * (a3.powi(2) + b3.powi(2) - c3.powi(2))
+                    + 2.0 * b3 * c3 * ans_10[1]
+                    + a3 * b3 * (1.0 + ans_10[0].powi(2) + ans_10[1].powi(2))),
+            pref_3
+                * (ans_10[1] * (a3.powi(2) - b3.powi(2) + c3.powi(2))
+                    + 2.0 * b3 * c3 * ans_10[0]
+                    + a3 * c3 * (1.0 + ans_10[0].powi(2) + ans_10[1].powi(2))),
+        ];
+
+        assert_relative_eq!(ans_3[0], wrapped_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_3[1], wrapped_poincare[1], epsilon = 1e-12);
+    }
+
+    #[test]
+    fn ghost_near_side() {
+        let mut rng = StdRng::seed_from_u64(4593);
+        let side = f64::from(rng.random_range(0..12));
+        let offset = 0.4;
+        let boost = TwelveTwelve::CUSP_TO_EDGE - offset;
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, PI / 12.0 + side * PI / 6.0);
+        let point = Point::new(point);
+
+        let periodic = Periodic::new(1.0, TwelveTwelve {}).expect("hard-coded positive number");
+
+        let ghost_array = periodic.generate_ghosts(&point);
+        let ghost = match side {
+            8.0 => ghost_array[0],
+            _ => ghost_array[1],
+        };
+
+        let ans = Hyperbolic::<3>::from_polar_coordinates(
+            TwelveTwelve::CUSP_TO_EDGE + offset,
+            (side + 6.0).rem_euclid(12.0) * PI / 6.0 + PI / 12.0,
+        );
+
+        assert_relative_eq!(ans, ghost.position, epsilon = 1e-12);
+        assert_relative_eq!(
+            TwelveTwelve::distance_to_boundary(&ghost.position),
+            -TwelveTwelve::distance_to_boundary(&point.position),
+            epsilon = 1e-12
+        );
+    }
+
+    #[test]
+    fn ghost_near_vertex() {
+        let offset_boost = 0.3;
+        let v: f64 = TwelveTwelve::TWELVETWELVE;
+        let point = Hyperbolic::<3>::from_polar_coordinates(v - offset_boost, 0.0);
+        let point = Point::new(point);
+        let periodic = Periodic::new(0.5, TwelveTwelve {}).expect("hard-coded positive number");
+
+        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 12> = periodic.generate_ghosts(&point);
+        let ghost_10 = ghost_array[10];
+
+        let ans_10 = Hyperbolic::<3>::from_polar_coordinates(v + offset_boost, PI);
+        assert_relative_eq!(ans_10, ghost_10.position, epsilon = 1e-10);
+
+        let ghost_4 = ghost_array[4];
+        let ans_4 = Hyperbolic::from_minkowski_coordinates(
+            [
+                -offset_boost.sinh(),
+                -(v.sinh()) * (offset_boost.cosh()),
+                (v.cosh()) * (offset_boost.cosh()),
+            ]
+            .into(),
+        );
+        assert_relative_eq!(ans_4, ghost_4.position, epsilon = 1e-10);
+
+        let ghost_5 = ghost_array[5];
+        let ans_5 = Hyperbolic::from_minkowski_coordinates(
+            [
+                -offset_boost.sinh(),
+                (v.sinh()) * (offset_boost.cosh()),
+                (v.cosh()) * (offset_boost.cosh()),
+            ]
+            .into(),
+        );
+        assert_relative_eq!(ans_5, ghost_5.position, epsilon = 1e-10);
+    }
+
+    #[test]
+    #[allow(clippy::too_many_lines, reason = "complicated function")]
+    fn consistency_vertex() {
+        let offset_boost = 0.3;
+        let offset_angle = 0.1;
+        let edge_boost: f64 = TwelveTwelve::TWELVETWELVE;
+        let point =
+            Hyperbolic::<3>::from_polar_coordinates(edge_boost - offset_boost, offset_angle);
+        let point = Point::new(point);
+        let periodic = Periodic::new(0.5, TwelveTwelve {}).expect("hard-coded positive number");
+
+        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 12> = periodic.generate_ghosts(&point);
+
+        // check double transformations
+        let ghost_2_poincare = ghost_array[2].position.to_poincare();
+        let (q_u, q_v) = (
+            point.position.to_poincare()[0],
+            point.position.to_poincare()[1],
+        );
+        let phi1 = PI / 6.0 + PI / 12.0;
+        let phi6 = PI + PI / 12.0;
+        let a = (1.0 + (PI / 6.0).cos() + 2.0 * ((PI / 6.0).cos()) * ((phi1 - phi6).cos()))
+            / (1.0 - (PI / 6.0).cos());
+        let d = (2.0 * ((PI / 6.0).cos()) * (phi1 - phi6).sin()) / (1.0 - (PI / 6.0).cos());
+        let b = ((2.0 * ((PI / 6.0).cos()) * (1.0 + (PI / 6.0).cos())).sqrt())
+            * (phi6.cos() + phi1.cos())
+            / (1.0 - (PI / 6.0).cos());
+        let c = ((2.0 * ((PI / 6.0).cos()) * (1.0 + (PI / 6.0).cos())).sqrt())
+            * (phi6.sin() + phi1.sin())
+            / (1.0 - (PI / 6.0).cos());
+        let pref = 1.0 / ((b * q_v - c * q_u - d).powi(2) + (a + b * q_u + c * q_v).powi(2));
+        let ans_2 = [
+            pref * ((a * b - c * d) * (1.0 + q_u.powi(2) + q_v.powi(2))
+                + q_u * (a.powi(2) + b.powi(2) - c.powi(2) - d.powi(2))
+                + 2.0 * b * c * q_v
+                - 2.0 * a * d * q_v),
+            pref * ((a * c + b * d) * (1.0 + q_u.powi(2) + q_v.powi(2))
+                + q_v * (a.powi(2) - b.powi(2) + c.powi(2) - d.powi(2))
+                + 2.0 * b * c * q_u
+                + 2.0 * a * d * q_u),
+        ];
+        assert_relative_eq!(ans_2[0], ghost_2_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_2[1], ghost_2_poincare[1], epsilon = 1e-12);
+
+        let ghost_3_poincare = ghost_array[3].position.to_poincare();
+        let phi5 = 5.0 * PI / 6.0 + PI / 12.0;
+        let phi10 = 10.0 * PI / 6.0 + PI / 12.0;
+        let a = (1.0 + (PI / 6.0).cos() + 2.0 * ((PI / 6.0).cos()) * ((phi5 - phi10).cos()))
+            / (1.0 - (PI / 6.0).cos());
+        let d = (2.0 * ((PI / 6.0).cos()) * (phi10 - phi5).sin()) / (1.0 - (PI / 6.0).cos());
+        let b = ((2.0 * ((PI / 6.0).cos()) * (1.0 + (PI / 6.0).cos())).sqrt())
+            * (phi10.cos() + phi5.cos())
+            / (1.0 - (PI / 6.0).cos());
+        let c = ((2.0 * ((PI / 6.0).cos()) * (1.0 + (PI / 6.0).cos())).sqrt())
+            * (phi10.sin() + phi5.sin())
+            / (1.0 - (PI / 6.0).cos());
+        let pref = 1.0 / ((b * q_v - c * q_u - d).powi(2) + (a + b * q_u + c * q_v).powi(2));
+        let ans_3 = [
+            pref * ((a * b - c * d) * (1.0 + q_u.powi(2) + q_v.powi(2))
+                + q_u * (a.powi(2) + b.powi(2) - c.powi(2) - d.powi(2))
+                + 2.0 * b * c * q_v
+                - 2.0 * a * d * q_v),
+            pref * ((a * c + b * d) * (1.0 + q_u.powi(2) + q_v.powi(2))
+                + q_v * (a.powi(2) - b.powi(2) + c.powi(2) - d.powi(2))
+                + 2.0 * b * c * q_u
+                + 2.0 * a * d * q_u),
+        ];
+        assert_relative_eq!(ans_3[0], ghost_3_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_3[1], ghost_3_poincare[1], epsilon = 1e-12);
+
+        // check triple transformations
+        let ghost_4_poincare = ghost_array[4].position.to_poincare();
+        let phi8 = 8.0 * PI / 6.0 + PI / 12.0;
+        let a = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi8.cos());
+        let c = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi8.sin());
+        let pref = 1.0
+            / ((b * ans_2[1] - c * ans_2[0]).powi(2) + (a + b * ans_2[0] + c * ans_2[1]).powi(2));
+        let ans_4 = [
+            pref * (ans_2[0] * (a.powi(2) + b.powi(2) - c.powi(2))
+                + 2.0 * b * c * ans_2[1]
+                + a * b * (1.0 + ans_2[0].powi(2) + ans_2[1].powi(2))),
+            pref * (ans_2[1] * (a.powi(2) - b.powi(2) + c.powi(2))
+                + 2.0 * b * c * ans_2[0]
+                + a * c * (1.0 + ans_2[0].powi(2) + ans_2[1].powi(2))),
+        ];
+        assert_relative_eq!(ans_4[0], ghost_4_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_4[1], ghost_4_poincare[1], epsilon = 1e-12);
+
+        let ghost_5_poincare = ghost_array[5].position.to_poincare();
+        let phi3 = 3.0 * PI / 6.0 + PI / 12.0;
+        let a = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi3.cos());
+        let c = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi3.sin());
+        let pref = 1.0
+            / ((b * ans_3[1] - c * ans_3[0]).powi(2) + (a + b * ans_3[0] + c * ans_3[1]).powi(2));
+        let ans_5 = [
+            pref * (ans_3[0] * (a.powi(2) + b.powi(2) - c.powi(2))
+                + 2.0 * b * c * ans_3[1]
+                + a * b * (1.0 + ans_3[0].powi(2) + ans_3[1].powi(2))),
+            pref * (ans_3[1] * (a.powi(2) - b.powi(2) + c.powi(2))
+                + 2.0 * b * c * ans_3[0]
+                + a * c * (1.0 + ans_3[0].powi(2) + ans_3[1].powi(2))),
+        ];
+        assert_relative_eq!(ans_5[0], ghost_5_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_5[1], ghost_5_poincare[1], epsilon = 1e-12);
+
+        // check quadruple transformations
+        let ghost_6_poincare = ghost_array[6].position.to_poincare();
+        let a = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi3.cos());
+        let c = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi3.sin());
+        let pref = 1.0
+            / ((b * ans_4[1] - c * ans_4[0]).powi(2) + (a + b * ans_4[0] + c * ans_4[1]).powi(2));
+        let ans_6 = [
+            pref * (ans_4[0] * (a.powi(2) + b.powi(2) - c.powi(2))
+                + 2.0 * b * c * ans_4[1]
+                + a * b * (1.0 + ans_4[0].powi(2) + ans_4[1].powi(2))),
+            pref * (ans_4[1] * (a.powi(2) - b.powi(2) + c.powi(2))
+                + 2.0 * b * c * ans_4[0]
+                + a * c * (1.0 + ans_4[0].powi(2) + ans_4[1].powi(2))),
+        ];
+        assert_relative_eq!(ans_6[0], ghost_6_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_6[1], ghost_6_poincare[1], epsilon = 1e-12);
+
+        let ghost_7_poincare = ghost_array[7].position.to_poincare();
+        let a = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi8.cos());
+        let c = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi8.sin());
+        let pref = 1.0
+            / ((b * ans_5[1] - c * ans_5[0]).powi(2) + (a + b * ans_5[0] + c * ans_5[1]).powi(2));
+        let ans_7 = [
+            pref * (ans_5[0] * (a.powi(2) + b.powi(2) - c.powi(2))
+                + 2.0 * b * c * ans_5[1]
+                + a * b * (1.0 + ans_5[0].powi(2) + ans_5[1].powi(2))),
+            pref * (ans_5[1] * (a.powi(2) - b.powi(2) + c.powi(2))
+                + 2.0 * b * c * ans_5[0]
+                + a * c * (1.0 + ans_5[0].powi(2) + ans_5[1].powi(2))),
+        ];
+        assert_relative_eq!(ans_7[0], ghost_7_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_7[1], ghost_7_poincare[1], epsilon = 1e-12);
+
+        // check quintruple transformations
+        let ghost_8_poincare = ghost_array[8].position.to_poincare();
+        let a = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi10.cos());
+        let c = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi10.sin());
+        let pref = 1.0
+            / ((b * ans_6[1] - c * ans_6[0]).powi(2) + (a + b * ans_6[0] + c * ans_6[1]).powi(2));
+        let ans_8 = [
+            pref * (ans_6[0] * (a.powi(2) + b.powi(2) - c.powi(2))
+                + 2.0 * b * c * ans_6[1]
+                + a * b * (1.0 + ans_6[0].powi(2) + ans_6[1].powi(2))),
+            pref * (ans_6[1] * (a.powi(2) - b.powi(2) + c.powi(2))
+                + 2.0 * b * c * ans_6[0]
+                + a * c * (1.0 + ans_6[0].powi(2) + ans_6[1].powi(2))),
+        ];
+        assert_relative_eq!(ans_8[0], ghost_8_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_8[1], ghost_8_poincare[1], epsilon = 1e-12);
+
+        let ghost_9_poincare = ghost_array[9].position.to_poincare();
+        let a = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi1.cos());
+        let c = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi1.sin());
+        let pref = 1.0
+            / ((b * ans_7[1] - c * ans_7[0]).powi(2) + (a + b * ans_7[0] + c * ans_7[1]).powi(2));
+        let ans_9 = [
+            pref * (ans_7[0] * (a.powi(2) + b.powi(2) - c.powi(2))
+                + 2.0 * b * c * ans_7[1]
+                + a * b * (1.0 + ans_7[0].powi(2) + ans_7[1].powi(2))),
+            pref * (ans_7[1] * (a.powi(2) - b.powi(2) + c.powi(2))
+                + 2.0 * b * c * ans_7[0]
+                + a * c * (1.0 + ans_7[0].powi(2) + ans_7[1].powi(2))),
+        ];
+        assert_relative_eq!(ans_9[0], ghost_9_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_9[1], ghost_9_poincare[1], epsilon = 1e-12);
+
+        // check 6-tuple transformation
+        let ghost_10_poincare = ghost_array[10].position.to_poincare();
+        let a = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi5.cos());
+        let c = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi5.sin());
+        let pref = 1.0
+            / ((b * ans_8[1] - c * ans_8[0]).powi(2) + (a + b * ans_8[0] + c * ans_8[1]).powi(2));
+        let ans_10 = [
+            pref * (ans_8[0] * (a.powi(2) + b.powi(2) - c.powi(2))
+                + 2.0 * b * c * ans_8[1]
+                + a * b * (1.0 + ans_8[0].powi(2) + ans_8[1].powi(2))),
+            pref * (ans_8[1] * (a.powi(2) - b.powi(2) + c.powi(2))
+                + 2.0 * b * c * ans_8[0]
+                + a * c * (1.0 + ans_8[0].powi(2) + ans_8[1].powi(2))),
+        ];
+        assert_relative_eq!(ans_10[0], ghost_10_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_10[1], ghost_10_poincare[1], epsilon = 1e-12);
+
+        // check single transformations
+        let ghost_1_poincare = ghost_array[1].position.to_poincare();
+        let a = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi5.cos());
+        let c = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi5.sin());
+        let pref = 1.0 / ((b * q_v - c * q_u).powi(2) + (a + b * q_u + c * q_v).powi(2));
+        let ans_1 = [
+            pref * (q_u * (a.powi(2) + b.powi(2) - c.powi(2))
+                + 2.0 * b * c * q_v
+                + a * b * (1.0 + q_u.powi(2) + q_v.powi(2))),
+            pref * (q_v * (a.powi(2) - b.powi(2) + c.powi(2))
+                + 2.0 * b * c * q_u
+                + a * c * (1.0 + q_u.powi(2) + q_v.powi(2))),
+        ];
+        assert_relative_eq!(ans_1[0], ghost_1_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_1[1], ghost_1_poincare[1], epsilon = 1e-12);
+
+        let ghost_0_poincare = ghost_array[0].position.to_poincare();
+        let a = ((1.0 + (PI / 6.0).cos()) / (1.0 - (PI / 6.0).cos())).sqrt();
+        let b = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi6.cos());
+        let c = ((2.0 * ((PI / 6.0).cos())) / (1.0 - (PI / 6.0).cos())).sqrt() * (phi6.sin());
+        let pref = 1.0 / ((b * q_v - c * q_u).powi(2) + (a + b * q_u + c * q_v).powi(2));
+        let ans_0 = [
+            pref * (q_u * (a.powi(2) + b.powi(2) - c.powi(2))
+                + 2.0 * b * c * q_v
+                + a * b * (1.0 + q_u.powi(2) + q_v.powi(2))),
+            pref * (q_v * (a.powi(2) - b.powi(2) + c.powi(2))
+                + 2.0 * b * c * q_u
+                + a * c * (1.0 + q_u.powi(2) + q_v.powi(2))),
+        ];
+        assert_relative_eq!(ans_0[0], ghost_0_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_0[1], ghost_0_poincare[1], epsilon = 1e-12);
+    }
 }
