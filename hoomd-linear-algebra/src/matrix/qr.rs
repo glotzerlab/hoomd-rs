@@ -149,9 +149,14 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
     (qr, taus)
 }
 
-/// Apply a single Householder reflector on the left:
-/// result[iter..N, 0..K] = (I - tau * v * v^T) * result[iter..N, 0..K]
-/// where v has a leading 1 at position `iter` and stored values below.
+/// Apply a single Householder reflector from the left.
+///
+/// This updates `result[iter..N, 0..K]` with
+/// `(I - tau * v * v^T) * result[iter..N, 0..K]`, where the Householder
+/// vector `v` is encoded in `qr` at column `iter` with an implicit leading 1.
+///
+/// The helper is used to multiply by `Q` or `Q^T` without explicitly forming
+/// the orthogonal matrix.
 #[inline]
 fn apply_householder_left<const N: usize, const M: usize, const K: usize>(
     result: &mut Matrix<N, K>,
@@ -196,9 +201,14 @@ fn apply_householder_left<const N: usize, const M: usize, const K: usize>(
     }
 }
 
-/// Apply a single Householder reflector on the right:
-/// result[0..K, iter..N] = result[0..K, iter..N] * (I - tau * v * v^T)
-/// where v has a leading 1 at position `iter` and stored values below.
+/// Apply a single Householder reflector from the right.
+///
+/// This updates `result[0..K, iter..N]` with
+/// `result[0..K, iter..N] * (I - tau * v * v^T)`, where the Householder
+/// vector `v` is encoded in `qr` at column `iter` with an implicit leading 1.
+///
+/// It is used to compute products with `Q` or `Q^T` when the orthogonal factor
+/// appears on the right side of the multiplication.
 #[inline]
 fn apply_householder_right<const N: usize, const M: usize, const K: usize>(
     result: &mut Matrix<K, N>,
@@ -246,7 +256,12 @@ fn apply_householder_right<const N: usize, const M: usize, const K: usize>(
     }
 }
 
-fn get_r<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> {
+/// Extract the upper triangular factor `R` from a packed QR factorization.
+///
+/// The input `qr` matrix stores the upper triangular factor in its upper
+/// triangle and Householder vectors in its strict lower triangle. This helper
+/// zeros the strict lower triangle and preserves the upper triangular entries.
+pub fn get_r<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> {
     let mut r = qr.clone();
     for row in 1..N {
         for col in 0..min(row, M) {
@@ -256,7 +271,11 @@ fn get_r<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> {
     r
 }
 
-fn get_q<const N: usize, const M: usize>(qr: &Matrix<N, M>, taus: &[f64]) -> Matrix<N, N> {
+/// Construct the explicit orthogonal matrix `Q` from a packed QR factorization.
+///
+/// This applies the stored Householder reflectors in reverse order to the
+/// identity matrix, producing an `N × N` orthogonal matrix.
+pub fn get_q<const N: usize, const M: usize>(qr: &Matrix<N, M>, taus: &[f64]) -> Matrix<N, N> {
     let mut q = Matrix::<N, N>::identity();
     for (iter, &tau) in taus.iter().enumerate().rev() {
         if tau != 0.0 {
@@ -266,6 +285,11 @@ fn get_q<const N: usize, const M: usize>(qr: &Matrix<N, M>, taus: &[f64]) -> Mat
     q
 }
 
+/// Compute the product `Q^T * A` using a packed QR factorization.
+///
+/// The input matrix `a` has shape `N × K`. The orthogonal factor `Q` is
+/// represented implicitly in `qr` and `taus`, so this helper applies the stored
+/// reflectors without forming `Q` explicitly.
 fn qt_times<const N: usize, const M: usize, const K: usize>(
     a: &Matrix<N, K>,
     qr: &Matrix<N, M>,
@@ -280,7 +304,12 @@ fn qt_times<const N: usize, const M: usize, const K: usize>(
     result
 }
 
-fn q_times<const N: usize, const M: usize, const K: usize>(
+/// Compute the product `Q * A` using a packed QR factorization.
+///
+/// The input matrix `a` has shape `N × K`. The orthogonal factor `Q` is encoded
+/// implicitly in `qr` and `taus`, so this helper applies the stored reflectors
+/// in reverse order without explicitly forming `Q`.
+pub fn q_times<const N: usize, const M: usize, const K: usize>(
     a: &Matrix<N, K>,
     qr: &Matrix<N, M>,
     taus: &[f64],
@@ -294,7 +323,12 @@ fn q_times<const N: usize, const M: usize, const K: usize>(
     result
 }
 
-fn times_q<const N: usize, const M: usize, const K: usize>(
+/// Compute the product `A * Q` using a packed QR factorization.
+///
+/// The input matrix `a` has shape `K × N`. The orthogonal factor `Q` is encoded
+/// implicitly in `qr` and `taus`. This helper applies the stored reflectors on
+/// the right in forward order, producing `A Q` without forming `Q`.
+pub fn times_q<const N: usize, const M: usize, const K: usize>(
     a: &Matrix<K, N>,
     qr: &Matrix<N, M>,
     taus: &[f64],
@@ -309,7 +343,12 @@ fn times_q<const N: usize, const M: usize, const K: usize>(
     result
 }
 
-fn times_qt<const N: usize, const M: usize, const K: usize>(
+/// Compute the product `A * Q^T` using a packed QR factorization.
+///
+/// The input matrix `a` has shape `K × N`. The orthogonal factor `Q` is encoded
+/// implicitly in `qr` and `taus`. This helper applies the stored reflectors on
+/// the right in reverse order, producing `A Q^T` without forming `Q` explicitly.
+pub fn times_qt<const N: usize, const M: usize, const K: usize>(
     a: &Matrix<K, N>,
     qr: &Matrix<N, M>,
     taus: &[f64],
@@ -324,6 +363,11 @@ fn times_qt<const N: usize, const M: usize, const K: usize>(
     result
 }
 
+/// Solve `A x = b` in the least-squares sense using QR decomposition.
+///
+/// The function computes a packed QR decomposition of `A`, applies `Q^T` to the
+/// right-hand side `b`, and then solves the upper triangular system `R x = Q^T b`
+/// by back substitution. The output has shape `M × 1`.
 #[inline]
 pub fn qr_solve<const N: usize, const M: usize>(a: &Matrix<N, M>, b: Matrix<N, 1>) -> Matrix<M, 1> {
     let (qr, taus) = super::qr_decomposition(a);

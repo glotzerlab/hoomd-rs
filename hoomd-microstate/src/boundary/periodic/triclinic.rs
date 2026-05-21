@@ -51,99 +51,6 @@ impl MaximumAllowableInteractionRange for Triclinic {
     }
 }
 
-impl Periodic<Triclinic> {
-    /// Convert a real space (absolute) position to fractional coordinates. We can express a
-    /// general point in space $`\vec{r}`$ in terms of the basis vectors $`a_i`$,
-    /// ```math
-    ///     \vec{r} = s_1 \vec{a}_1 + s_2 \vec{a}_2 + s_3 \vec{a}_3.
-    /// ```
-    /// The vector, $`\vec{s}=(s_1, s_2, s_3)`$ then gives the fractional coordinates
-    /// of this point. This can be expressed as $`\vec{r} = \mathbf{A} \vec{s}`$, where
-    /// $`\mathbf{A}`$ is the matrix with columns equal to the box vectors. That is,
-    /// $`\vec{s} = \mathbf{A}^{-1} \vec{r}`$, where $`\mathbf{A}^{-1}`$ can be viewed
-    /// as linearly shearing the box into a unit cube centered at the origin.
-    /// For a triclinic box, the transformation can be written as
-    /// ```math
-    /// \begin{align*}
-    ///     s_1 &= \frac{r_1-(xy)r_2-(xz-yz\cdot xy) r_3}{L_x}\\
-    ///     s_2 &= \frac{r_2-yz r_3}{L_y}\\
-    ///     s_3 &= \frac{r_3}{L_z}.\\
-    /// \end{align*}
-    /// ```
-    ///
-    /// Each fractional coordinate is in the range $`[-0.5, 0.5)`$.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_geometry::shape::Triclinic;
-    /// use hoomd_microstate::boundary::Periodic;
-    /// use hoomd_vector::Cartesian;
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
-    /// let periodic = Periodic::new(1.0, triclinic)?;
-    ///
-    /// let pos = Cartesian::from([1.0, 0.0, 0.0]);
-    /// let frac = periodic.to_fractional(&pos);
-    /// assert_eq!(frac, Cartesian::from([0.5, 0.0, 0.0]));
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn to_fractional(&self, pos: &Cartesian<3>) -> Cartesian<3> {
-        let l: Cartesian<3> = self.shape.extents.map(|x| x.get()).into();
-        let mut frac = *pos;
-        frac[0] -= (self.shape.xz() - self.shape.yz() * self.shape.xy()) * pos[2]
-            + self.shape.xy() * pos[1];
-        frac[1] -= self.shape.yz() * pos[2];
-        for i in 0..3 {
-            frac[i] /= l[i];
-        }
-        frac
-    }
-
-    /// Convert fractional coordinates to absolute position.
-    ///
-    /// This is the inverse operation of `to_fractional`, $`\vec{r} = \mathbf{A} s`$.
-    /// Namely,
-    /// ```math
-    /// \begin{align*}
-    ///     r_1 &= L_x s_1 + xyL_y s_2 + xzL_z s_3\\
-    ///     r_2 &= L_y s_2 + yz L_z s_3\\
-    ///     r_3 &= L_z s_3.\\
-    /// \end{align*}
-    /// ```
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_geometry::shape::Triclinic;
-    /// use hoomd_microstate::boundary::Periodic;
-    /// use hoomd_vector::Cartesian;
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
-    /// let periodic = Periodic::new(1.0, triclinic)?;
-    ///
-    /// let frac = Cartesian::from([0.5, 0.0, 0.0]);
-    /// let pos = periodic.to_absolute(&frac);
-    /// assert_eq!(pos, Cartesian::from([1.0, 0.0, 0.0]));
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn to_absolute(&self, frac: &Cartesian<3>) -> Cartesian<3> {
-        let mut pos: Cartesian<3> = Cartesian::from([1.0, 1.0, 1.0]);
-        for i in 0..3 {
-            pos[i] = self.shape.extents[i].get() * frac[i];
-        }
-        pos[0] += self.shape.xy() * pos[1] + self.shape.xz() * pos[2];
-        pos[1] += self.shape.yz() * pos[2];
-        pos
-    }
-}
-
 impl<P> Wrap<P> for Periodic<Triclinic>
 where
     P: Position<Position = Cartesian<3>>,
@@ -184,7 +91,7 @@ where
     #[inline]
     fn wrap(&self, mut properties: P) -> Result<P, Error> {
         let r = properties.position_mut();
-        let mut fractional = self.to_fractional(r);
+        let mut fractional = self.shape.to_fractional(r);
         for i in 0..3 {
             fractional[i] -= fractional[i].round();
             fractional[i] = if fractional[i] == 0.5 {
@@ -193,7 +100,7 @@ where
                 fractional[i]
             };
         }
-        *r = self.to_absolute(&fractional);
+        *r = self.shape.to_absolute(&fractional);
         Ok(properties)
     }
 }
@@ -273,7 +180,7 @@ where
         };
 
         let plane_distances = self.shape.get_nearest_plane_distance();
-        let frac = self.to_fractional(r);
+        let frac = self.shape.to_fractional(r);
 
         let near_right = frac[0] > 0.5 - self.maximum_interaction_range / plane_distances[0].get();
         let near_left = frac[0] < -0.5 + self.maximum_interaction_range / plane_distances[0].get();
@@ -402,8 +309,8 @@ mod tests {
 
         for frac_array in test_frac_positions {
             let frac = Cartesian::<3>::from(frac_array);
-            let pos = periodic.to_absolute(&frac);
-            let frac_back = periodic.to_fractional(&pos);
+            let pos = periodic.shape.to_absolute(&frac);
+            let frac_back = periodic.shape.to_fractional(&pos);
             assert_relative_eq!(frac, frac_back, epsilon = 1e-8);
         }
     }
@@ -472,7 +379,7 @@ mod tests {
 
         // Point at center should wrap
         let frac_point = [1.0, 1.0, 1.0].into();
-        let abs_point = Point::new(periodic.to_absolute(&frac_point));
+        let abs_point = Point::new(periodic.shape.to_absolute(&frac_point));
         let wrapped = periodic.wrap(abs_point).expect("wrap should succeed");
         // Verify it's back inside the box
         assert_relative_eq!(wrapped.position, [0.0, 0.0, 0.0].into(), epsilon = 1e-8);
@@ -488,7 +395,7 @@ mod tests {
 
         // Test interior point (not at origin)
         let mut interior_pos = Cartesian::from([0.2, 0.2, 0.2]);
-        interior_pos = periodic.to_absolute(&interior_pos);
+        interior_pos = periodic.shape.to_absolute(&interior_pos);
 
         let ghosts = periodic.generate_ghosts(&Point::new(interior_pos));
         assert!(
@@ -508,7 +415,7 @@ mod tests {
 
         // Point near the x-face (at maximum x)
         let frac_pos = Cartesian::<3>::from([0.49, 0.0, 0.0]);
-        let abs_point = Point::new(periodic.to_absolute(&frac_pos));
+        let abs_point = Point::new(periodic.shape.to_absolute(&frac_pos));
 
         let ghosts = periodic.generate_ghosts(&abs_point);
         // Should generate at least 1 ghost (one for the face)
@@ -568,7 +475,7 @@ mod tests {
 
         // Point at boundary vertex
         let frac_pos = Cartesian::<3>::from([0.499, 0.499, 0.499]);
-        let abs_point = Point::new(periodic.to_absolute(&frac_pos));
+        let abs_point = Point::new(periodic.shape.to_absolute(&frac_pos));
 
         let ghosts = periodic.generate_ghosts(&abs_point);
         // Should generate 7 ghosts, all of which should wrap back to same point

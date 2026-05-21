@@ -515,6 +515,11 @@ impl<const N: usize> Neg for Cartesian<N> {
 }
 
 impl<const N: usize> Cartesian<N> {
+    /// Apply a scalar function to all coordinates of the vector.
+    ///
+    /// The provided closure is called once for each component, and the returned
+    /// vector has the same dimensionality as the original.
+    #[inline]
     pub fn map<F>(self, f: F) -> Cartesian<N>
     where
         F: FnMut(f64) -> f64,

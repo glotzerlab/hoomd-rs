@@ -126,25 +126,94 @@ impl Triclinic {
         self.tilt_factors[2]
     }
 
-    #[inline]
-    fn matmul(&self, v: [f64; 3]) -> [f64; 3] {
-        [
-            self.lx().get() * v[0]
-                + self.ly().get() * self.xy() * v[1]
-                + self.lz().get() * self.xz() * v[2],
-            self.ly().get() * v[1] + self.lz().get() * self.yz() * v[2],
-            self.lz().get() * v[2],
-        ]
+    /// Convert a real space (absolute) position to fractional coordinates. We can express a
+    /// general point in space $`\vec{r}`$ in terms of the basis vectors $`a_i`$,
+    /// ```math
+    ///     \vec{r} = s_1 \vec{a}_1 + s_2 \vec{a}_2 + s_3 \vec{a}_3.
+    /// ```
+    /// The vector, $`\vec{s}=(s_1, s_2, s_3)`$ then gives the fractional coordinates
+    /// of this point. This can be expressed as $`\vec{r} = \mathbf{A} \vec{s}`$, where
+    /// $`\mathbf{A}`$ is the matrix with columns equal to the box vectors. That is,
+    /// $`\vec{s} = \mathbf{A}^{-1} \vec{r}`$, where $`\mathbf{A}^{-1}`$ can be viewed
+    /// as linearly shearing the box into a unit cube centered at the origin.
+    /// For a triclinic box, the transformation can be written as
+    /// ```math
+    /// \begin{align*}
+    ///     s_1 &= \frac{r_1-(xy)r_2-(xz-yz\cdot xy) r_3}{L_x}\\
+    ///     s_2 &= \frac{r_2-yz r_3}{L_y}\\
+    ///     s_3 &= \frac{r_3}{L_z}.\\
+    /// \end{align*}
+    /// ```
+    ///
+    /// Each fractional coordinate is in the range $`[-0.5, 0.5)`$.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    /// use hoomd_microstate::boundary::Periodic;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic =
+    ///     Triclinic::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
+    /// let periodic = Periodic::new(1.0, triclinic)?;
+    ///
+    /// let pos = Cartesian::from([1.0, 0.0, 0.0]);
+    /// let frac = periodic.to_fractional(&pos);
+    /// assert_eq!(frac, Cartesian::from([0.5, 0.0, 0.0]));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn to_fractional(&self, pos: &Cartesian<3>) -> Cartesian<3> {
+        let l: Cartesian<3> = self.extents.map(|x| x.get()).into();
+        let mut frac = *pos;
+        frac[0] -= (self.xz() - self.yz() * self.xy()) * pos[2] + self.xy() * pos[1];
+        frac[1] -= self.yz() * pos[2];
+        for i in 0..3 {
+            frac[i] /= l[i];
+        }
+        frac
     }
 
-    #[inline]
-    fn matmul_inv(&self, v: [f64; 3]) -> [f64; 3] {
-        [
-            1.0 / self.lx().get()
-                * (v[0] - self.xy() * v[1] - (self.xz() + self.xy() * self.yz()) * v[2]),
-            1.0 / self.ly().get() * (v[1] - self.yz() * v[2]),
-            1.0 / self.lz().get() * v[2],
-        ]
+    /// Convert fractional coordinates to absolute position.
+    ///
+    /// This is the inverse operation of `to_fractional`, $`\vec{r} = \mathbf{A} s`$.
+    /// Namely,
+    /// ```math
+    /// \begin{align*}
+    ///     r_1 &= L_x s_1 + xyL_y s_2 + xzL_z s_3\\
+    ///     r_2 &= L_y s_2 + yz L_z s_3\\
+    ///     r_3 &= L_z s_3.\\
+    /// \end{align*}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    /// use hoomd_microstate::boundary::Periodic;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic =
+    ///     Triclinic::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
+    /// let periodic = Periodic::new(1.0, triclinic)?;
+    ///
+    /// let frac = Cartesian::from([0.5, 0.0, 0.0]);
+    /// let pos = periodic.to_absolute(&frac);
+    /// assert_eq!(pos, Cartesian::from([1.0, 0.0, 0.0]));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn to_absolute(&self, frac: &Cartesian<3>) -> Cartesian<3> {
+        let mut pos: Cartesian<3> = Cartesian::from([1.0, 1.0, 1.0]);
+        for i in 0..3 {
+            pos[i] = self.extents[i].get() * frac[i];
+        }
+        pos[0] += self.xy() * pos[1] + self.xz() * pos[2];
+        pos[1] += self.yz() * pos[2];
+        pos
     }
 
     /// Construct a triclinic box from box dimensions.
@@ -560,8 +629,8 @@ impl Distribution<Cartesian<3>> for Triclinic {
 
 impl MapPoint<Cartesian<3>> for Triclinic {
     fn map_point(&self, point: Cartesian<3>, other: &Self) -> Result<Cartesian<3>, crate::Error> {
-        let fractional = self.matmul_inv(point.coordinates);
-        let mapped_coords = other.matmul(fractional);
-        Ok(Cartesian::from(mapped_coords))
+        let fractional = self.to_fractional(&point);
+        let mapped_coords = other.to_absolute(&fractional);
+        Ok(mapped_coords)
     }
 }

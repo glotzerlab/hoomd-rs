@@ -2,18 +2,24 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::shape::{
-    Capsule, Cylinder, Hypercuboid, Hyperellipsoid, Hyperparallelepiped,
-    Hypersphere, Simplex3,
+    Capsule, Cylinder, Hypercuboid, Hyperellipsoid, Hyperparallelepiped, Hypersphere, Simplex3,
 };
 use hoomd_linear_algebra::{MatMul, SquareMatrix, matrix::Matrix};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
+/// A shape that supports uniform scaling.
 pub trait Scale {
+    /// Uniformly scale the shape by the given positive factor.
     fn scale(&mut self, scale_factor: PositiveReal);
 }
 
+/// A shape that supports a shear transformation in `N` dimensions.
 pub trait Shear<const N: usize> {
+    /// Shear the shape by `angle` about the specified axes.
+    ///
+    /// `parallel_axis` defines the direction to shear along, and
+    /// `perpendicular_axis` defines the direction in which the shear is applied.
     fn shear(
         &mut self,
         angle: f64,
@@ -27,6 +33,7 @@ pub trait Shear<const N: usize> {
 // }
 
 impl<const N: usize> Scale for Capsule<N> {
+    /// Scale the capsule by scaling both its height and radius.
     #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.height *= scale_factor;
@@ -35,6 +42,7 @@ impl<const N: usize> Scale for Capsule<N> {
 }
 
 impl Scale for Cylinder {
+    /// Scale the cylinder by scaling both its height and radius.
     #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.height *= scale_factor;
@@ -43,6 +51,7 @@ impl Scale for Cylinder {
 }
 
 impl<const N: usize> Scale for Hypercuboid<N> {
+    /// Scale the hypercuboid by scaling every edge length uniformly.
     #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.edge_lengths = self.edge_lengths.map(|v| v * scale_factor);
@@ -50,6 +59,7 @@ impl<const N: usize> Scale for Hypercuboid<N> {
 }
 
 impl<const N: usize> Scale for Hyperparallelepiped<N> {
+    /// Scale the hyperparallelepiped by scaling each edge vector.
     #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.edge_vectors = self.edge_vectors.map(|v| v * scale_factor);
@@ -57,6 +67,7 @@ impl<const N: usize> Scale for Hyperparallelepiped<N> {
 }
 
 impl<const N: usize> Scale for Hypersphere<N> {
+    /// Scale the hypersphere by scaling its radius.
     #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.radius *= scale_factor;
@@ -64,6 +75,7 @@ impl<const N: usize> Scale for Hypersphere<N> {
 }
 
 impl<const N: usize> Scale for Hyperellipsoid<N> {
+    /// Scale the hyperellipsoid by scaling each semi-axis.
     #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         *self = Hyperellipsoid::with_semi_axes(self.semi_axes().map(|v| v * scale_factor));
@@ -71,6 +83,7 @@ impl<const N: usize> Scale for Hyperellipsoid<N> {
 }
 
 impl Scale for Simplex3 {
+    /// Scale the simplex by scaling every vertex coordinate.
     #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         for vertex in &mut self.vertices {
@@ -80,6 +93,10 @@ impl Scale for Simplex3 {
 }
 
 impl<const N: usize> Shear<N> for Hyperparallelepiped<N> {
+    /// Apply a shear transformation to the hyperparallelepiped.
+    ///
+    /// The `parallel_axis` defines the direction along which the shear is
+    /// performed, and `perpendicular_axis` defines the direction of displacement.
     #[inline]
     fn shear(
         &mut self,

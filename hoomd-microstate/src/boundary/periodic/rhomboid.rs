@@ -47,57 +47,6 @@ impl MaximumAllowableInteractionRange for Rhomboid {
     }
 }
 
-impl Periodic<Rhomboid> {
-    pub fn to_fractional(&self, pos: &Cartesian<2>) -> Cartesian<2> {
-        let lx = self.shape.lx().get();
-        let ly = self.shape.ly().get();
-        let xy = self.shape.xy();
-
-        let s1 = (pos[0] - xy * pos[1]) / lx;
-        let s2 = pos[1] / ly;
-
-        Cartesian::from([s1, s2])
-    }
-
-    /// Convert fractional coordinates to absolute position.
-    ///
-    /// This is the inverse operation of `to_fractional`:
-    /// ```math
-    /// \begin{align*}
-    ///     r_1 &= L_x s_1 + xy \cdot L_y s_2\\
-    ///     r_2 &= L_y s_2
-    /// \end{align*}
-    /// ```
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_geometry::shape::Rhomboid;
-    /// use hoomd_microstate::boundary::Periodic;
-    /// use hoomd_vector::Cartesian;
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid::from((2.0.try_into()?, 2.0.try_into()?, 0.0));
-    /// let periodic = Periodic::new(1.0, rhomboid)?;
-    ///
-    /// let frac = Cartesian::from([0.5, 0.0]);
-    /// let pos = periodic.to_absolute(&frac);
-    /// assert_eq!(pos, Cartesian::from([1.0, 0.0]));
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn to_absolute(&self, frac: &Cartesian<2>) -> Cartesian<2> {
-        let lx = self.shape.lx().get();
-        let ly = self.shape.ly().get();
-        let xy = self.shape.xy();
-
-        let r1 = lx * frac[0] + xy * ly * frac[1];
-        let r2 = ly * frac[1];
-
-        Cartesian::from([r1, r2])
-    }
-}
-
 impl<P> Wrap<P> for Periodic<Rhomboid>
 where
     P: Position<Position = Cartesian<2>>,
@@ -131,7 +80,7 @@ where
     #[inline]
     fn wrap(&self, mut properties: P) -> Result<P, Error> {
         let r = properties.position_mut();
-        let mut fractional = self.to_fractional(r);
+        let mut fractional = self.shape.to_fractional(r);
         for i in 0..2 {
             fractional[i] -= fractional[i].round();
             fractional[i] = if fractional[i] == 0.5 {
@@ -140,7 +89,7 @@ where
                 fractional[i]
             };
         }
-        *r = self.to_absolute(&fractional);
+        *r = self.shape.to_absolute(&fractional);
         Ok(properties)
     }
 }
@@ -149,6 +98,10 @@ impl<S> GenerateGhosts<S> for Periodic<Rhomboid>
 where
     S: Position<Position = Cartesian<2>> + Copy + Default,
 {
+    /// Return the current maximum interaction range for ghost generation.
+    ///
+    /// This value controls how far from the boundary site positions must be
+    /// before periodic ghost images are generated.
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
         self.maximum_interaction_range
@@ -203,7 +156,7 @@ where
         };
 
         let plane_distances = self.shape.get_nearest_plane_distance();
-        let frac = self.to_fractional(r);
+        let frac = self.shape.to_fractional(r);
 
         let near_right = frac[0] > 0.5 - self.maximum_interaction_range / plane_distances[0].get();
         let near_left = frac[0] < -0.5 + self.maximum_interaction_range / plane_distances[0].get();
@@ -275,7 +228,7 @@ mod tests {
         for frac_array in test_frac_positions {
             let frac = Cartesian::<2>::from(frac_array);
             let pos = periodic.to_absolute(&frac);
-            let frac_back = periodic.to_fractional(&pos);
+            let frac_back = periodic.shape.to_fractional(&pos);
             assert_relative_eq!(frac, frac_back, epsilon = 1e-8);
         }
     }

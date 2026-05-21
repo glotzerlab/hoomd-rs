@@ -2,6 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use hoomd_linear_algebra::matrix::{Matrix, qr};
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 
 use crate::{IsPointInside, MapPoint, SupportMapping};
@@ -255,16 +256,23 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// box2d.calc_qr();
     ///
     /// // Fractional (0.25, 0.25) should map back to Cartesian (1.0, 1.5)
-    /// let cart = box2d.from_fractional(Cartesian::from([0.25, 0.25]));
+    /// let cart = box2d.to_absolute(Cartesian::from([0.25, 0.25]));
     /// assert!((cart[0] - 1.0).abs() < 1e-10);
     /// assert!((cart[1] - 1.5).abs() < 1e-10);
     /// ```
-    pub fn from_fractional(&self, f: Cartesian<N>) -> Cartesian<N> {
+    pub fn to_absolute(&self, f: Cartesian<N>) -> Cartesian<N> {
         let mut absolute = Cartesian::<N>::default();
         for (i, edge_vector) in self.edge_vectors.iter().enumerate() {
             absolute += f[i] * *edge_vector;
         }
         absolute
+    }
+
+    pub fn get_nearest_plane_distance(&self) -> [PositiveReal; N] {
+        // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
+        // Take product of diagonals of _qr = Volume.
+        //
+        todo!();
     }
 }
 
@@ -405,7 +413,7 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hyperparallelepiped<N> {
     /// ```
     fn map_point(&self, point: Cartesian<N>, other: &Self) -> Result<Cartesian<N>, crate::Error> {
         let fractional = self.to_fractional(point);
-        let mapped_coords = other.from_fractional(fractional);
+        let mapped_coords = other.to_absolute(fractional);
         Ok(mapped_coords)
     }
 }
@@ -514,7 +522,7 @@ mod tests {
         let b = ortho_box_2d(4.0, 6.0);
         let original = Cartesian::from([1.0, 1.5]);
         let frac = b.to_fractional(original);
-        let back = b.from_fractional(frac);
+        let back = b.to_absolute(frac);
         assert_approx_eq_cartesian(back, original, 1e-10);
     }
 
@@ -523,7 +531,7 @@ mod tests {
         let b = ortho_box_3d(10.0, 12.0, 14.0);
         let original = Cartesian::from([3.0, -4.0, 6.5]);
         let frac = b.to_fractional(original);
-        let back = b.from_fractional(frac);
+        let back = b.to_absolute(frac);
         assert_approx_eq_cartesian(back, original, 1e-10);
     }
 
@@ -535,7 +543,7 @@ mod tests {
         b.calc_qr();
         let original = Cartesian::from([0.5, 1.0]);
         let frac = b.to_fractional(original);
-        let back = b.from_fractional(frac);
+        let back = b.to_absolute(frac);
         assert_approx_eq_cartesian(back, original, 1e-10);
     }
 
@@ -549,7 +557,7 @@ mod tests {
     }
 
     #[test]
-    fn from_fractional_origin_maps_to_origin() {
+    fn to_absolute_origin_maps_to_origin() {
         let b = ortho_box_3d(5.0, 7.0, 9.0);
         let origin = Cartesian::from([0.0, 0.0, 0.0]);
         let result = b.from_fractional(origin);

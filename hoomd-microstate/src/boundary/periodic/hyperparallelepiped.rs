@@ -112,14 +112,9 @@ where
         //     return result;
         // }
 
-        // let new_site = |x, y, z| {
-        //     let mut new_site = *site_properties;
-        //     new_site.position_mut()[0] += x * self.shape.edge_vectors[0];
-        //     new_site.position_mut()[1] += y * self.shape.edge_vectors[1];
-        //     new_site.position_mut()[2] += z * self.shape.edge_vectors[2];
-        //     new_site
-        // };
         // Find which boundaries particle is near.
+        // for lattice_vector in directions:
+        // inside range = [-0.5 + r_cut / |a_i|,  0.5 - r_cut / |a_i|]
         todo!();
     }
 }

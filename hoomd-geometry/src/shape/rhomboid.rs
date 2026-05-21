@@ -76,6 +76,9 @@ pub struct Rhomboid {
 }
 
 impl From<(PositiveReal, PositiveReal, f64)> for Rhomboid {
+    /// Construct a rhomboid from its extents and shear factor.
+    ///
+    /// The tuple is interpreted as `(lx, ly, xy)`.
     #[inline]
     fn from(value: (PositiveReal, PositiveReal, f64)) -> Self {
         Rhomboid {
@@ -190,31 +193,58 @@ impl Rhomboid {
         self.xy
     }
 
-    /// A @ [x, y] = [lx·x + ly·xy·y, ly·y]
+    /// Convert an absolute Cartesian position into fractional coordinates.
+    ///
+    /// Fractional coordinates are defined relative to the rhomboid box axes
+    /// and account for the box shear factor.
     #[inline]
-    fn matmul(&self, v: [f64; 2]) -> [f64; 2] {
-        [
-            self.lx().get() * v[0] + self.ly().get() * self.xy() * v[1],
-            self.ly().get() * v[1],
-        ]
+    pub fn to_fractional(&self, pos: &Cartesian<2>) -> Cartesian<2> {
+        let lx = self.lx().get();
+        let ly = self.ly().get();
+        let xy = self.xy();
+
+        let s1 = (pos[0] - xy * pos[1]) / lx;
+        let s2 = pos[1] / ly;
+
+        Cartesian::from([s1, s2])
     }
 
-    /// A^-1 @ [x, y] = [1/lx (x - xy·y), 1/ly·y]
-    #[inline]
-    fn matmul_inv(&self, v: [f64; 2]) -> [f64; 2] {
-        [
-            1.0 / self.lx().get() * (v[0] - self.xy() * v[1]),
-            1.0 / self.ly().get() * v[1],
-        ]
-    }
+    /// Convert fractional coordinates to absolute position.
+    ///
+    /// This is the inverse operation of `to_fractional`:
+    /// ```math
+    /// \begin{align*}
+    ///     r_1 &= L_x s_1 + xy \cdot L_y s_2\\
+    ///     r_2 &= L_y s_2
+    /// \end{align*}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rhomboid;
+    /// use hoomd_microstate::boundary::Periodic;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid::from((2.0.try_into()?, 2.0.try_into()?, 0.0));
+    /// let periodic = Periodic::new(1.0, rhomboid)?;
+    ///
+    /// let frac = Cartesian::from([0.5, 0.0]);
+    /// let pos = periodic.to_absolute(&frac);
+    /// assert_eq!(pos, Cartesian::from([1.0, 0.0]));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn to_absolute(&self, frac: &Cartesian<2>) -> Cartesian<2> {
+        let lx = self.lx().get();
+        let ly = self.ly().get();
+        let xy = self.xy();
 
-    /// A^T @ [x, y] = [lx·x, ly·xy·x + ly·y]
-    #[inline]
-    fn matmul_t(&self, v: [f64; 2]) -> [f64; 2] {
-        [
-            self.lx().get() * v[0],
-            self.ly().get() * self.xy() * v[0] + self.ly().get() * v[1],
-        ]
+        let r1 = lx * frac[0] + xy * ly * frac[1];
+        let r2 = ly * frac[1];
+
+        Cartesian::from([r1, r2])
     }
 
     /// Compute the vertices of the Rhomboid assuming it is centered at the origin.
@@ -242,9 +272,14 @@ impl Rhomboid {
     #[inline]
     #[must_use]
     pub fn vertices(&self) -> [Cartesian<2>; 4] {
-        [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]].map(|c| self.matmul(c).into())
+        [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]
+            .map(|c| self.to_absolute(&Cartesian::from(c)))
     }
 
+    /// Return the rhomboid edge vectors in Cartesian coordinates.
+    ///
+    /// The first edge vector is aligned with the x-axis and the second is
+    /// sheared by the `xy` factor in the x direction.
     pub fn get_edge_vectors(&self) -> [Cartesian<2>; 2] {
         let mut edge_vectors = [Cartesian::<2>::default(); 2];
         edge_vectors[0] = [self.lx().get(), 0.].into();
@@ -418,9 +453,9 @@ impl SupportMapping<Cartesian<2>> for Rhomboid {
     /// Calculate the point furthest from the center in a given direction.
     #[inline]
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
-        let d = self.matmul_t([n[0], n[1]]);
-        let s = [d[0].signum() * 0.5, d[1].signum() * 0.5];
-        self.matmul(s).into()
+        let d = self.to_fractional(n);
+        let s = Cartesian::from([d[0].signum() * 0.5, d[1].signum() * 0.5]);
+        self.to_absolute(&s)
     }
 }
 
@@ -543,6 +578,11 @@ where
     R: Rotate<Cartesian<2>> + Rotation + Copy,
     RotationMatrix<2>: From<R>,
 {
+    /// Test whether two rhomboids intersect in global coordinates.
+    ///
+    /// This first culls by bounding-sphere distance and then transforms the
+    /// second rhomboid into the local frame of the first before calling the
+    /// local intersection test.
     #[inline]
     fn intersects_at_global(
         &self,
@@ -565,10 +605,14 @@ where
 }
 
 impl MapPoint<Cartesian<2>> for Rhomboid {
+    /// Map a point from this rhomboid's coordinate system to another rhomboid.
+    ///
+    /// The point is first expressed in fractional coordinates relative to `self`
+    /// and then transformed into the Cartesian coordinates of `other`.
     fn map_point(&self, point: Cartesian<2>, other: &Self) -> Result<Cartesian<2>, crate::Error> {
-        let fractional = self.matmul_inv(point.coordinates);
-        let mapped_coords = other.matmul(fractional);
-        Ok(Cartesian::from(mapped_coords))
+        let fractional = self.to_fractional(&point);
+        let mapped_coords = other.to_absolute(&fractional);
+        Ok(mapped_coords)
     }
 }
 
