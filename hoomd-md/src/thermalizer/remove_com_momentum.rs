@@ -15,8 +15,8 @@ pub struct ComMomentumRemover;
 impl<const N: usize, B, S, X, C> TranslationalMomentumModifier<N, B, S, X, C> for ComMomentumRemover
 where
     B: Position<Position = Cartesian<N>>
-        + Momentum<Vector = Cartesian<N>>
-        + NetForce<Vector = Cartesian<N>>
+        + Momentum<Momentum = Cartesian<N>>
+        + NetForce<NetForce = Cartesian<N>>
         + Mass
         + Transform<S>
         + Clone,
@@ -55,7 +55,7 @@ where
             let mass = body_properties.mass();
             let mut momentum = body_properties.momentum().clone();
 
-            momentum -= center_of_mass_velocity * *mass;
+            momentum -= center_of_mass_velocity * mass;
 
             *body_properties.momentum_mut() = momentum;
 

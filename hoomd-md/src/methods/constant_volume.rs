@@ -119,8 +119,8 @@ impl<V, B, S, X, C, T, M> TranslationalMotion<B, S, X, C, T, M> for ConstantVolu
 where
     V: Default + Vector + InnerProduct,
     B: Position<Position = V>
-        + Momentum<Vector = V>
-        + NetForce<Vector = V>
+        + Momentum<Momentum = V>
+        + NetForce<NetForce = V>
         + Mass
         + Transform<S>
         + Clone,
@@ -1022,7 +1022,7 @@ where
 impl<V, B, S, X, C, E> ForceUpdate<B, S, X, C, E> for ConstantVolume
 where
     V: Default + Vector + InnerProduct,
-    B: Position<Position = V> + NetForce<Vector = V> + Transform<S> + Clone,
+    B: Position<Position = V> + NetForce<NetForce = V> + Transform<S> + Clone,
     S: Position<Position = V> + Default,
     X: PointUpdate<V, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
@@ -1060,7 +1060,7 @@ where
 impl<B, S, X, C, E> ForceAndTorqueUpdate<2, B, S, X, C, E> for ConstantVolume
 where
     B: Orientation<Rotation = Angle>
-        + NetForce<Vector = Cartesian<2>>
+        + NetForce<NetForce = Cartesian<2>>
         + NetTorque<NetTorque = f64>
         + Transform<S>
         + Position<Position = Cartesian<2>> // TODO: should this be required?
@@ -1104,7 +1104,7 @@ where
 impl<B, S, X, C, E> ForceAndTorqueUpdate<3, B, S, X, C, E> for ConstantVolume
 where
     B: Orientation<Rotation = Versor>
-        + NetForce<Vector = Cartesian<3>>
+        + NetForce<NetForce = Cartesian<3>>
         + NetTorque<NetTorque = Cartesian<3>>
         + Transform<S>
         + Position<Position = Cartesian<3>> // TODO: should this be required?

@@ -13,8 +13,8 @@ use rand_distr::{Distribution, Normal};
 impl<const N: usize, B, S, X, C> TranslationalThermalizer<N, B, S, X, C> for Thermalizer
 where
     B: Position<Position = Cartesian<N>>
-        + Momentum<Vector = Cartesian<N>>
-        + NetForce<Vector = Cartesian<N>>
+        + Momentum<Momentum = Cartesian<N>>
+        + NetForce<NetForce = Cartesian<N>>
         + Mass
         + Transform<S>
         + Clone,

@@ -16,8 +16,8 @@ pub struct ComAngularMomentumRemover;
 impl<B, S, X, C> TranslationalMomentumModifier<3, B, S, X, C> for ComAngularMomentumRemover
 where
     B: Position<Position = Cartesian<3>>
-        + Momentum<Vector = Cartesian<3>>
-        + NetForce<Vector = Cartesian<3>>
+        + Momentum<Momentum = Cartesian<3>>
+        + NetForce<NetForce = Cartesian<3>>
         + Mass
         + Transform<S>
         + Clone,
@@ -60,8 +60,8 @@ where
 
             let position = body_properties.position();
             let mass = body_properties.mass();
-            com += *position * *mass;
-            total_mass += *mass;
+            com += *position * mass;
+            total_mass += mass;
         }
         com /= total_mass;
 
@@ -82,7 +82,7 @@ where
             let p_to_com_lengthsq = p_to_com.norm_squared();
             com_moment_of_inertia += (Matrix::with_diagonal([(); 3].map(|_| p_to_com_lengthsq))
                 - p_to_com.outer(&p_to_com))
-                * *mass; // m * [||r||^2 x delta_ij - r_i (tensor prodcut) r_j]
+                * mass; // m * [||r||^2 x delta_ij - r_i (tensor prodcut) r_j]
         }
 
         let com_angular_momentum_matrix = com_angular_momentum.to_row_matrix();
@@ -118,7 +118,7 @@ where
             let p_to_com = *position - com;
 
             // p_new = p_old - omega x r
-            momentum -= com_angular_velocity.wedge(&p_to_com) * *mass;
+            momentum -= com_angular_velocity.wedge(&p_to_com) * mass;
 
             *body_properties.momentum_mut() = momentum;
 
@@ -133,8 +133,8 @@ where
 impl<B, S, X, C> TranslationalMomentumModifier<2, B, S, X, C> for ComAngularMomentumRemover
 where
     B: Position<Position = Cartesian<2>>
-        + Momentum<Vector = Cartesian<2>>
-        + NetForce<Vector = Cartesian<2>>
+        + Momentum<Momentum = Cartesian<2>>
+        + NetForce<NetForce = Cartesian<2>>
         + Mass
         + Transform<S>
         + Clone,
@@ -165,8 +165,8 @@ where
 
             let position = body_properties.position();
             let mass = body_properties.mass();
-            com += *position * *mass;
-            total_mass += *mass;
+            com += *position * mass;
+            total_mass += mass;
         }
         com /= total_mass;
 
@@ -186,7 +186,7 @@ where
             com_angular_momentum += p_to_com.wedge(&momentum);
 
             let p_to_com_lengthsq = p_to_com.norm_squared();
-            com_moment_of_inertia += p_to_com_lengthsq * *mass;
+            com_moment_of_inertia += p_to_com_lengthsq * mass;
         }
 
         if com_moment_of_inertia > 0.0 {
@@ -202,7 +202,7 @@ where
 
                 let p_to_com = *position - com;
 
-                momentum -= p_to_com.perpendicular() * com_angular_velocity * *mass;
+                momentum -= p_to_com.perpendicular() * com_angular_velocity * mass;
 
                 *body_properties.momentum_mut() = momentum;
 

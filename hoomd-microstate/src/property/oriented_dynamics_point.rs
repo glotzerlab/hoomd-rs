@@ -145,7 +145,7 @@ impl<V, R> Momentum for OrientedDynamicPoint<V, R>
 where
     V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy + Wedge,
 {
-    type Vector = V;
+    type Momentum = V;
 
     #[inline]
     fn momentum(&self) -> &V {
@@ -158,13 +158,13 @@ where
     }
 
     #[inline]
-    fn velocity(&self) -> Self::Vector {
-        self.momentum / *self.mass()
+    fn velocity(&self) -> Self::Momentum {
+        self.momentum / self.mass()
     }
 
     #[inline]
-    fn set_velocity(&mut self, velocity: Self::Vector) {
-        *self.momentum_mut() = velocity * *self.mass();
+    fn set_velocity(&mut self, velocity: Self::Momentum) {
+        *self.momentum_mut() = velocity * self.mass();
     }
 }
 
@@ -173,8 +173,8 @@ where
     V: Wedge,
 {
     #[inline]
-    fn mass(&self) -> &f64 {
-        &self.mass
+    fn mass(&self) -> f64 {
+        self.mass
     }
 }
 
@@ -182,15 +182,15 @@ impl<V, R> NetForce for OrientedDynamicPoint<V, R>
 where
     V: Wedge,
 {
-    type Vector = V;
+    type NetForce = V;
 
     #[inline]
-    fn net_force(&self) -> &Self::Vector {
+    fn net_force(&self) -> &Self::NetForce {
         &self.net_force
     }
 
     #[inline]
-    fn net_force_mut(&mut self) -> &mut Self::Vector {
+    fn net_force_mut(&mut self) -> &mut Self::NetForce {
         &mut self.net_force
     }
 }
