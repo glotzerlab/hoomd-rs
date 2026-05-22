@@ -149,8 +149,8 @@ pub use point::Point;
 mod oriented_point;
 pub use oriented_point::OrientedPoint;
 
-mod dynamics_point;
-pub use dynamics_point::DynamicPoint;
+mod dynamic_point;
+pub use dynamic_point::DynamicPoint;
 
 mod oriented_dynamics_point;
 pub use oriented_dynamics_point::OrientedDynamicPoint;
