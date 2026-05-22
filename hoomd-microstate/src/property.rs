@@ -30,7 +30,7 @@
 //! };
 //! ```
 //!
-//! TODO: `DynamicPoint` and `OrientedDynamicPoint`.
+//! TODO: `DynamicPoint` and `DynamicOrientedPoint`.
 //!
 //! # Custom property types
 //!
@@ -152,8 +152,8 @@ pub use oriented_point::OrientedPoint;
 mod dynamic_point;
 pub use dynamic_point::DynamicPoint;
 
-mod oriented_dynamics_point;
-pub use oriented_dynamics_point::OrientedDynamicPoint;
+mod dynamic_oriented_point;
+pub use dynamic_oriented_point::DynamicOrientedPoint;
 
 mod oriented_hyperbolic_point;
 pub use oriented_hyperbolic_point::OrientedHyperbolicPoint;

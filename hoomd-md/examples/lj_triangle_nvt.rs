@@ -23,7 +23,7 @@ use hoomd_md::{
     thermostat::BussiThermostat,
 };
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, boundary::Periodic, property::{OrientedDynamicPoint, Point}
+    Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicOrientedPoint, Point}
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::AllPairs;
@@ -47,7 +47,7 @@ struct A;
 #[derive(Resource)]
 struct System {
     microstate: Microstate<
-        OrientedDynamicPoint<Cartesian<2>, Angle>,
+        DynamicOrientedPoint<Cartesian<2>, Angle>,
         Point<Cartesian<2>>,
         AllPairs<SiteKey>,
         Periodic<Rectangle>,
@@ -80,7 +80,7 @@ impl System {
                 let x = space * f64::from(i + 1) - (f64::from(1 + nx) * space / 2.0);
                 let y = space * f64::from(j + 1) - (f64::from(1 + ny) * space / 2.0);
                 builder = builder.bodies([Body {
-                    properties: OrientedDynamicPoint {
+                    properties: DynamicOrientedPoint {
                         position: Cartesian::from([x, y]),
                         momentum: Cartesian::from([0.0, 0.0]),
                         net_force: Cartesian::from([0.0, 0.0]),

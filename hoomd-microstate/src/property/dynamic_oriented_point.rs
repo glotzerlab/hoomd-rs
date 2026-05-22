@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement OrientedDynamicPoint
+//! Implement DynamicOrientedPoint
 
 use super::oriented_point::OrientedPoint;
 use super::point::Point;
@@ -14,15 +14,15 @@ use hoomd_vector::{Rotate, Rotation, Vector, Wedge};
 /// and angular velocity of an extended body, such as  is useful for Molecular
 /// Dynamics simulations.
 ///
-/// Use [`OrientedDynamicPoint`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
+/// Use [`DynamicOrientedPoint`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
 ///
 /// # Example
 ///
 /// ```
-/// use hoomd_microstate::property::OrientedDynamicPoint;
+/// use hoomd_microstate::property::DynamicOrientedPoint;
 /// use hoomd_vector::{Cartesian, Angle};
 ///
-/// let oriented_dynamic_point = OrientedDynamicPoint {
+/// let oriented_dynamic_point = DynamicOrientedPoint {
 ///     position: Cartesian::from([1.0, -3.0]),
 ///     orientation: Angle::default(),
 ///     mass: 1.0,
@@ -34,7 +34,7 @@ use hoomd_vector::{Rotate, Rotation, Vector, Wedge};
 /// };
 /// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct OrientedDynamicPoint<V: Wedge, R> {
+pub struct DynamicOrientedPoint<V: Wedge, R> {
     /// The location of the extended body in space.
     pub position: V,
 
@@ -61,7 +61,7 @@ pub struct OrientedDynamicPoint<V: Wedge, R> {
 }
 
 /// Treat [`Point`] sites as constituents of oriented rigid bodies.
-impl<V, R> Transform<Point<V>> for OrientedDynamicPoint<V, R>
+impl<V, R> Transform<Point<V>> for DynamicOrientedPoint<V, R>
 where
     V: Vector + Wedge,
     R: Rotate<V>,
@@ -82,7 +82,7 @@ where
 }
 
 /// Treat [`OrientedPoint`] sites as constituents of oriented rigid bodies.
-impl<V, R> Transform<OrientedPoint<V, R>> for OrientedDynamicPoint<V, R>
+impl<V, R> Transform<OrientedPoint<V, R>> for DynamicOrientedPoint<V, R>
 where
     V: Vector + Wedge,
     R: Rotate<V> + Rotation,
@@ -106,7 +106,7 @@ where
     }
 }
 
-impl<V, R> Position for OrientedDynamicPoint<V, R>
+impl<V, R> Position for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
 {
@@ -124,7 +124,7 @@ where
     }
 }
 
-impl<V, R> Orientation for OrientedDynamicPoint<V, R>
+impl<V, R> Orientation for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
 {
@@ -141,7 +141,7 @@ where
     }
 }
 
-impl<V, R> Momentum for OrientedDynamicPoint<V, R>
+impl<V, R> Momentum for DynamicOrientedPoint<V, R>
 where
     V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy + Wedge,
 {
@@ -168,7 +168,7 @@ where
     }
 }
 
-impl<V, R> Mass for OrientedDynamicPoint<V, R>
+impl<V, R> Mass for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
 {
@@ -178,7 +178,7 @@ where
     }
 }
 
-impl<V, R> NetForce for OrientedDynamicPoint<V, R>
+impl<V, R> NetForce for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
 {
@@ -195,7 +195,7 @@ where
     }
 }
 
-impl<V, R> MomentOfInertia for OrientedDynamicPoint<V, R>
+impl<V, R> MomentOfInertia for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
 {
@@ -212,7 +212,7 @@ where
     }
 }
 
-impl<V, R> AngularMomentum for OrientedDynamicPoint<V, R>
+impl<V, R> AngularMomentum for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
 {
@@ -229,7 +229,7 @@ where
     }
 }
 
-impl<V, R> NetTorque for OrientedDynamicPoint<V, R>
+impl<V, R> NetTorque for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
 {
@@ -246,7 +246,7 @@ where
     }
 }
 
-// impl OrientedDynamicPoint<Cartesian<3>, Quaternion>
+// impl DynamicOrientedPoint<Cartesian<3>, Quaternion>
 // {
 //     /// Transform the three-dimensional
 //     /// angular momentum as a quaternion of body to
@@ -262,7 +262,7 @@ where
 //     }
 // }
 
-// impl OrientedDynamicPoint<f64, f64>
+// impl DynamicOrientedPoint<f64, f64>
 // {
 //     /// Transform the two-dimensional
 //     /// angular momentum to angular velocity.

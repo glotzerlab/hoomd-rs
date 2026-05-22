@@ -17,7 +17,7 @@ use hoomd_md::{
     thermostat::NoThermostat,
 };
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, boundary::Periodic, property::{OrientedDynamicPoint, Point}
+    Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicOrientedPoint, Point}
 };
 use hoomd_simulation::Simulation;
 use hoomd_spatial::AllPairs;
@@ -42,7 +42,7 @@ struct Isoenergy {}
 #[derive(Resource)]
 struct Dumbbell {
     microstate: Microstate<
-        OrientedDynamicPoint<Cartesian<2>, Angle>,
+        DynamicOrientedPoint<Cartesian<2>, Angle>,
         Point<Cartesian<2>>,
         AllPairs<SiteKey>,
         Periodic<Rectangle>,
@@ -68,7 +68,7 @@ impl Dumbbell {
         let mut microstate = Microstate::builder().boundary(boundary).try_build()?;
 
         let dumbbell_body = Body {
-            properties: OrientedDynamicPoint {
+            properties: DynamicOrientedPoint {
                 position: Cartesian::from([0.0, 0.0]),
                 momentum: Cartesian::from([0.0, 0.0]),
                 net_force: Cartesian::from([0.0, 0.0]),
