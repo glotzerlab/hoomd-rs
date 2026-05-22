@@ -1,7 +1,10 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use hoomd_linear_algebra::matrix::{Matrix, qr};
+use hoomd_linear_algebra::matrix::{
+    Matrix,
+    qr::{self, get_r_inv},
+};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 
@@ -232,7 +235,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
         ))
     }
 
-    /// Convert fractional (lattice) coordinates back to Cartesian coordinates.
+    /// Convert fractional (lattice) coordinates to Cartesian coordinates.
     ///
     /// This is the inverse of [`to_fractional`](Self::to_fractional). Given a
     /// vector of fractional coefficients **f**, the Cartesian point is:
@@ -268,11 +271,54 @@ impl<const N: usize> Hyperparallelepiped<N> {
         absolute
     }
 
+    /// Computes the perpendicular distances from the origin to each of the `N` bounding
+    /// hyperplanes of the parallelotope.
+    ///
+    /// # Mathematical Background
+    ///
+    /// The perpendicular distance (height) $h_k$ to the $k$-th face is derived from the
+    /// generalization of the fact that the volume of a prism is equal to the area of the base time the height,
+    /// $`V = A \cdot h`$, rearranged as:
+    ///
+    /// ```math
+    /// h_k = \frac{V}{A_k}
+    /// ```
+    ///
+    /// where $V$ is the volume of the parallelotope and $A_k$ is the area of its $k$-th face.
+    /// Expressing both via their Gramians yields:
+    ///
+    /// ```math
+    /// h_k = \frac{\det(A)}{\det\!\left(\sqrt{A_k^T A_k}\right)}
+    ///      = \frac{1}{\lVert A_k^{-1} \rVert}
+    ///      = \frac{1}{\lVert (R^{-1})_k \rVert}
+    /// ```
+    ///
+    /// where $A = QR$ is the QR decomposition of the matrix whose columns are the edge vectors
+    /// of the parallelotope, and $(R^{-1})_k$ denotes the $k$-th row of $R^{-1}$.
+    ///
+    /// That is, each nearest-plane distance is the reciprocal of the norm of the
+    /// corresponding row of $R^{-1}$.
+    ///
+    ///
+    /// # Returns
+    ///
+    /// An array of `N` [`PositiveReal`] values $[h_0, h_1, \dots, h_{N-1}]$, where $h_k$ is
+    /// the perpendicular distance from the origin to the $k$-th bounding hyperplane.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the QR decomposition has not been computed (i.e. the internal `_qr` field is
+    /// `None`)
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; N] {
-        // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
-        // Take product of diagonals of _qr = Volume.
-        //
-        todo!();
+        // Since V = A_ih_i, h_i = V/A_i.
+        let r_inv = get_r_inv(self._qr.as_ref().unwrap());
+        println!("{:?}", self._qr);
+        let distances: [PositiveReal; N] = std::array::from_fn(|i| {
+            let row = r_inv.get_row(i);
+            let inv_norm = 1.0 / row.as_slice().iter().map(|&x| x * x).sum::<f64>().sqrt();
+            inv_norm.try_into().expect("row norm must be positive")
+        });
+        distances
     }
 }
 
@@ -478,7 +524,7 @@ mod tests {
 
     #[test]
     fn calc_qr_populates_cache() {
-        let mut b = ortho_box_2d(4.0, 6.0);
+        let b = ortho_box_2d(4.0, 6.0);
         assert!(b._qr.is_some());
     }
 
@@ -560,7 +606,7 @@ mod tests {
     fn to_absolute_origin_maps_to_origin() {
         let b = ortho_box_3d(5.0, 7.0, 9.0);
         let origin = Cartesian::from([0.0, 0.0, 0.0]);
-        let result = b.from_fractional(origin);
+        let result = b.to_absolute(origin);
         assert_approx_eq_cartesian(result, origin, 1e-12);
     }
 
@@ -688,5 +734,50 @@ mod tests {
         let p = Cartesian::from([3.0, -4.0, 6.0]);
         let mapped = src.map_point(p, &dst).unwrap();
         assert_approx_eq_cartesian(mapped, Cartesian::from([6.0, -8.0, 12.0]), 1e-10);
+    }
+
+    #[test]
+    fn nearest_plane_distance_triclinic_box() {
+        let mut b = Hyperparallelepiped::new([
+            Cartesian::from([4.0, 0.0, 0.0]),
+            Cartesian::from([0.5, 4.0, 0.0]),
+            Cartesian::from([0.5, 0.25, 4.0]),
+        ]);
+        b.calc_qr();
+
+        let distances = b.get_nearest_plane_distance();
+        println!("{:?}", distances);
+        let expected = [3.39199, 3.88057, 4.];
+
+        for i in 0..3 {
+            assert!(
+                (distances[i].get() - expected[i]).abs() < 1e-6,
+                "distance[{i}] expected {} got {}",
+                expected[i],
+                distances[i]
+            );
+        }
+    }
+
+    #[test]
+    fn nearest_plane_distance_rotated_box_matrix() {
+        let mut b = Hyperparallelepiped::new([
+            Cartesian::from([1.33333, -0.309401, 4.06538]),
+            Cartesian::from([3.64273, 3.1547, 1.17863]),
+            Cartesian::from([-0.976068, 3.1547, 1.75598]),
+        ]);
+        b.calc_qr();
+
+        let distances = b.get_nearest_plane_distance();
+        let expected = [3.39199, 3.88057, 4.];
+
+        for i in 0..3 {
+            assert!(
+                (distances[i].get() - expected[i]).abs() < 1e-6,
+                "distance[{i}] expected {} got {}",
+                expected[i],
+                distances[i]
+            );
+        }
     }
 }

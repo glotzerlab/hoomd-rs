@@ -270,6 +270,27 @@ pub fn get_r<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> 
     r
 }
 
+/// Compute the inverse of the upper triangular `R` factor stored in a packed QR decomposition.
+///
+/// The input `qr` is assumed to contain the `R` factor in its upper triangle,
+/// and the leading `M × M` block must be non-singular. This routine performs
+/// back substitution on each column of the identity matrix to obtain `R^{-1}`.
+pub fn get_r_inv<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<M, M> {
+    let mut inv_r = Matrix::<M, M>::zeros();
+
+    for j in 0..M {
+        for i in (0..M).rev() {
+            let mut value = if i == j { 1.0 } else { 0.0 };
+            for k in (i + 1)..M {
+                value -= qr[(i, k)] * inv_r[(k, j)];
+            }
+            inv_r[(i, j)] = value / qr[(i, i)];
+        }
+    }
+
+    inv_r
+}
+
 /// Construct the explicit orthogonal matrix `Q` from a packed QR factorization.
 ///
 /// This applies the stored Householder reflectors in reverse order to the
@@ -461,6 +482,18 @@ mod tests {
         let q = super::get_q(&qr, &taus);
         let r = super::get_r(&qr);
         assert_matrixes_ulps_eq::<4, 3, _, _>(&a, &q.matmul(&r));
+    }
+
+    #[test]
+    fn test_get_r_inv() {
+        let (qr, _) = super::qr_decomposition(&Matrix::<3, 3> {
+            rows: [[2., 9., 24.], [1., 10., 10.], [2., 10., 10.]],
+        });
+        let r = super::get_r(&qr);
+        let r_inv = super::get_r_inv(&qr);
+        let identity = Matrix::<3, 3>::identity();
+        assert_matrixes_ulps_eq::<3, 3, _, _>(&identity, &r.matmul(&r_inv));
+        assert_matrixes_ulps_eq::<3, 3, _, _>(&identity, &r_inv.matmul(&r));
     }
 
     #[test]
