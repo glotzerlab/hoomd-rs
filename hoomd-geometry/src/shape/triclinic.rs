@@ -524,11 +524,11 @@ impl IsPointInside<Cartesian<3>> for Triclinic {
     /// coordinates $`\vec{s} = (s_1, s_2, s_3)`$ with all components in the range $`[-0.5, 0.5)`$.
     /// The test is performed by checking the inequalities:
     /// ```math
-    /// \begin{align}
+    /// \begin{align*}
     /// |z| &< L_z / 2 \\
     /// |y - yz \cdot z| &< L_y / 2 \\
     /// |x - (xz - xy \cdot yz) \cdot z - xy \cdot y| &< L_x / 2
-    /// \end{align}
+    /// \end{align*}
     /// ```
     fn is_point_inside(&self, point: &Cartesian<3>) -> bool {
         let [x, y, z] = point.coordinates;
