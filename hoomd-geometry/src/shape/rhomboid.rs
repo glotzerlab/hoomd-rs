@@ -125,13 +125,13 @@ impl Rhomboid {
         }
     }
 
-    /// Construct a rhomboid from a 2D parallelepiped.
+    /// Construct a rhomboid from a 2D hyperparallelepiped.
     ///
-    /// Computes the rhomboid parameters from a parallelepiped by computing
+    /// Computes the rhomboid box parameters from a parallelogram with edge vectors $`\vec{u}_i`$by computing
     /// the edge vectors and applying the transformation formulas:
     /// ```math
-    ///     L_x = |\vec{v}_1|, \quad L_y = \sqrt{|\vec{v}_2|^2 - \frac{(\vec{v}_1 \cdot \vec{v}_2)^2}{|\vec{v}_1|^2}} \quad
-    ///     xy = \frac{\vec{v}_1 \cdot \vec{v}_2}{|\vec{v}_1| L_y}
+    ///     L_x = |\vec{u}_1|, \quad L_y = \sqrt{|\vec{u}_2|^2 - \frac{(\vec{u}_1 \cdot \vec{u}_2)^2}{|\vec{u}_1|^2}} \quad
+    ///     xy = \frac{\vec{u}_1 \cdot \vec{u}_2}{|\vec{u}_1| L_y}
     /// ```
     ///
     /// # Example
@@ -193,10 +193,28 @@ impl Rhomboid {
         self.xy
     }
 
-    /// Convert an absolute Cartesian position into fractional coordinates.
+    /// Convert a Cartesian vector to fractional (lattice) coordinates.
     ///
-    /// Fractional coordinates are defined relative to the rhomboid box axes
-    /// and account for the box shear factor.
+    /// Fractional coordinates express a point as coefficients of the edge
+    /// vectors. If the edge vectors form the columns of matrix $`\mathbf{A}`$, then
+    /// the fractional coordinate vector $`\vec{s}`$ satisfies $`\mathbf{A}\vec{s}=\vec{r}`$.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rhomboid;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid::from_box_vector([4.0, 6.0, 0.0]);
+    ///
+    /// // A point at (1.0, 1.5) should have fractional coords (0.25, 0.25)
+    /// let frac = rhomboid.to_fractional(&Cartesian::from([1.0, 1.5]));
+    /// assert!((frac[0] - 0.25).abs() < 1e-10);
+    /// assert!((frac[1] - 0.25).abs() < 1e-10);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     pub fn to_fractional(&self, pos: &Cartesian<2>) -> Cartesian<2> {
         let lx = self.lx().get();

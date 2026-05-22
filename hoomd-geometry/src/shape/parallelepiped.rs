@@ -10,15 +10,15 @@ use hoomd_vector::{Cartesian, InnerProduct};
 
 use crate::{IsPointInside, MapPoint, SupportMapping};
 
-/// An N-dimensional hyperparallelepiped (parallelotope) defined by N edge vectors.
+/// An N-dimensional hyperparallelepiped defined by N edge vectors.
 ///
-/// A hyperparallelepiped is the N-dimensional generalization of a parallelogram (2D)
+/// A hyperparallelepiped (also known as a parallelotope) is the N-dimensional generalization of a parallelogram (2D)
 /// and parallelepiped (3D). It is the set of all points that can be expressed as a
 /// linear combination of the edge vectors with coefficients in `[-0.5, 0.5)`, i.e.
 /// the shape is centered at the origin.
 ///
-/// The shape can be used as the box geometry for simulations, but users should prefer [Rhomboid]
-/// and [`Triclinic`] for 2 and 3-dimensional simulations, respectively. The QR
+/// The shape can be used as the box geometry for simulations, but users should prefer [Rhomboid](crate::shape::Rhomboid)
+/// and [Triclinic](crate::shape::Triclinic) for 2 and 3-dimensional simulations, respectively. The QR
 /// factorization of the edge vector matrix is cached in `_qr` to accelerate repeated coordinate
 /// conversions between Cartesian and fractional frames.
 ///
@@ -43,8 +43,8 @@ use crate::{IsPointInside, MapPoint, SupportMapping};
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hyperparallelepiped<const N: usize> {
-    /// The N edge vectors that define the shape. Each vector points along one
-    /// edge of the parallelotope emanating from the origin.
+    /// The N edge vectors that define the shape. Each vector spans one
+    /// edge of the parallelotope.
     pub edge_vectors: [Cartesian<N>; N],
 
     /// Cached (condensed) QR factorization of the column matrix formed by the
@@ -56,12 +56,10 @@ pub struct Hyperparallelepiped<const N: usize> {
     pub _qr: Option<Matrix<N, N>>,
 }
 
-/// A 2D hyperparallelepiped (parallelogram). Prefer rhomboid for 2D sheared
-/// boundary conditions.
+/// A 2D sheared box
 pub type Parallelogram = Hyperparallelepiped<2>;
 
-/// A 3D hyperparallelepiped (parallelepiped). Prefer rhomboid for 3D sheared
-/// boundary conditions.
+/// A 3D sheared box
 pub type Parallelepiped = Hyperparallelepiped<3>;
 
 impl<const N: usize> Default for Hyperparallelepiped<N> {
@@ -88,7 +86,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// # Arguments
     ///
     /// * `edge_vectors` — An array of N [`Cartesian`] vectors. The i-th vector
-    ///   is the edge of the parallelotope that starts at the origin along the
+    ///   is the edge of the parallelotope that spans the
     ///   i-th lattice direction.
     ///
     /// # Example
@@ -120,16 +118,12 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// factorization is later used by [`to_fractional`](Self::to_fractional),
     /// [`is_point_inside`](IsPointInside::is_point_inside), and
     /// [`map_point`](MapPoint::map_point) to solve the linear system
-    /// **A** **f** = **v** efficiently.
+    /// $`\mathbf{A} \vec{s} = \vec{r}`$.
     ///
     /// This method must be called once after construction (or after modifying
     /// `edge_vectors`) before any coordinate conversion is attempted. Calling
     /// it multiple times is safe — it simply recomputes the cache.
-    ///
-    /// # Note
-    ///
-    /// The method takes `&mut self` so that the computed factorization is
-    /// stored back into the struct.
+
     pub fn calc_qr(&mut self) {
         let box_matrix = Matrix {
             rows: std::array::from_fn(|r| {
@@ -142,7 +136,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     }
 
     /// Determine the maximal extents of the hyperparallelepiped along each
-    /// Cartesian axis.
+    /// Cartesian axis. That is, the furthest the box spans in each coordinate direction.
     ///
     /// For each axis `k`, the maximal extent is half the sum of the absolute
     /// values of the k-th component across all edge vectors. This gives the
@@ -200,16 +194,13 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// Convert a Cartesian vector to fractional (lattice) coordinates.
     ///
     /// Fractional coordinates express a point as coefficients of the edge
-    /// vectors. If the edge vectors form the columns of matrix **A**, then
-    /// the fractional coordinate vector **f** satisfies **A** **f** = **v**,
-    /// solved here via the cached QR factorization.
-    ///
-    /// A point is inside the hyperparallelepiped when all fractional
-    /// coordinates lie in `[-0.5, 0.5)`.
+    /// vectors. If the edge vectors form the columns of matrix $`\mathbf{A}`$`, then
+    /// the fractional coordinate vector $`\vec{s}`$ satisfies $` \mathbf{A}\vec{s}=\vec{r}`$,
+    /// solved here via the cached QR factorization for numerical stability.
     ///
     /// # Panics
     ///
-    /// Panics if [`calc_qr`](Self::calc_qr) has not been called yet.
+    /// Panics if the QR decomposition has not been computed using [`calc_qr`](Self::calc_qr).
     ///
     /// # Example
     ///
@@ -273,12 +264,12 @@ impl<const N: usize> Hyperparallelepiped<N> {
         absolute
     }
 
-    /// Computes the perpendicular distances from the origin to each of the `N` bounding
+    /// Computes the perpendicular distances from the origin to each of the N bounding
     /// hyperplanes of the parallelotope.
     ///
     /// # Mathematical Background
     ///
-    /// The perpendicular distance (height) $h_k$ to the $k$-th face is derived from the
+    /// The perpendicular distance (height) $`h_k`$ to the $`k`$-th face is derived from the
     /// generalization of the fact that the volume of a prism is equal to the area of the base time the height,
     /// $`V = A \cdot h`$, rearranged as:
     ///
@@ -286,8 +277,8 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// h_k = \frac{V}{A_k}
     /// ```
     ///
-    /// where $V$ is the volume of the parallelotope and $A_k$ is the area of its $k$-th face.
-    /// Expressing both via their Gramians yields:
+    /// where $`V`$ is the volume of the parallelotope and $`A_k`$ is the area of its $`k`$-th face.
+    /// Expressing both in terms of their Gramians yields:
     ///
     /// ```math
     /// h_k = \frac{\det(A)}{\det\!\left(\sqrt{A_k^T A_k}\right)}
@@ -295,22 +286,21 @@ impl<const N: usize> Hyperparallelepiped<N> {
     ///      = \frac{1}{\lVert (R^{-1})_k \rVert}
     /// ```
     ///
-    /// where $A = QR$ is the QR decomposition of the matrix whose columns are the edge vectors
-    /// of the parallelotope, and $(R^{-1})_k$ denotes the $k$-th row of $R^{-1}$.
+    /// where $`A = QR`$ is the QR decomposition of the matrix whose columns are the edge vectors
+    /// of the parallelotope, and $`(R^{-1})_k`$ denotes the $`k`$-th row of $R^{-1}$.
     ///
     /// That is, each nearest-plane distance is the reciprocal of the norm of the
-    /// corresponding row of $R^{-1}$.
+    /// corresponding row of $`R^{-1}`$.
     ///
     ///
     /// # Returns
     ///
-    /// An array of `N` [`PositiveReal`] values $[h_0, h_1, \dots, h_{N-1}]$, where $h_k$ is
-    /// the perpendicular distance from the origin to the $k$-th bounding hyperplane.
+    /// An array of N [`PositiveReal`] values $`[h_0, h_1, \dots, h_{N-1}]`$, where $`h_k`$ is
+    /// the perpendicular distance from the origin to the $`k`$-th bounding hyperplane.
     ///
     /// # Panics
     ///
-    /// Panics if the QR decomposition has not been computed (i.e. the internal `_qr` field is
-    /// `None`)
+    /// Panics if the QR decomposition has not been computed using [`calc_qr`](Self::calc_qr).
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; N] {
         // Since V = A_ih_i, h_i = V/A_i.
         let r_inv = get_r_inv(self._qr.as_ref().unwrap());
@@ -327,10 +317,10 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperparallelepiped<N> {
     /// Compute the support point of the hyperparallelepiped in a given direction.
     ///
     /// The support mapping returns the point on (or inside) the shape that has
-    /// the greatest dot product with the query direction. For a
+    /// the greatest dot product with the query direction $`d`$. For a
     /// hyperparallelepiped this is computed by choosing, for each edge vector
-    /// **a**_i, the vertex ±½ **a**_i whose sign matches the sign of
-    /// **a**_i · **d** and summing the contributions:
+    /// $`\vec{a}_i`$, the vertex $`\pm 1/2  \vec{a}_i`$ whose sign matches the sign of
+    /// $`\vec{a}_i cdot \vec{d} `$ and summing the contributions:
     ///
     /// ```math
     /// h(\mathbf{d}) = \frac{1}{2} \sum_{i=0}^{N-1}
@@ -370,15 +360,10 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
     ///
     /// The test converts the point to fractional coordinates and checks
     /// that every coordinate lies in the half-open interval `[-0.5, 0.5)`.
-    /// This convention — closed on the lower bound, open on the upper bound
-    /// — is standard in periodic boundary condition implementations and
-    /// ensures that each point belongs to exactly one image of the box
-    /// when the lattice is tiled.
     ///
     /// # Panics
     ///
-    /// Panics if [`calc_qr`](Hyperparallelepiped::calc_qr) has not been
-    /// called yet.
+    /// Panics if the QR decomposition has not been computed using [`calc_qr`](Self::calc_qr).
     ///
     /// # Example
     ///
@@ -414,7 +399,7 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
 }
 
 impl<const N: usize> MapPoint<Cartesian<N>> for Hyperparallelepiped<N> {
-    /// Map a point from one hyperparallelepiped's frame to another's.
+    /// Map a point from one hyperparallelepiped to another. The same linear transformation to convert one box to another is used to transform the point within the box.
     ///
     /// Converts `point` (expressed in `self`'s Cartesian frame) to fractional
     /// coordinates relative to `self`, then evaluates those same fractional
@@ -428,13 +413,11 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hyperparallelepiped<N> {
     ///
     /// # Returns
     ///
-    /// The corresponding Cartesian coordinate in `other`'s frame, or a
-    /// [`crate::Error`] if the conversion fails.
+    /// The corresponding Cartesian coordinate in `other`'s frame.
     ///
     /// # Panics
     ///
-    /// Panics if [`calc_qr`](Hyperparallelepiped::calc_qr) has not been called
-    /// on `self` (needed for [`to_fractional`](Hyperparallelepiped::to_fractional)).
+    /// Panics if the QR decomposition has not been computed using [`calc_qr`](Self::calc_qr). (needed for [`to_fractional`](Hyperparallelepiped::to_fractional)).
     ///
     /// # Example
     ///
@@ -561,8 +544,8 @@ mod tests {
         let b =
             Hyperparallelepiped::new([Cartesian::from([2.0, 0.0]), Cartesian::from([1.0, 3.0])]);
         let ext = b.maximal_extents();
-        assert!((ext[0] - 1.5).abs() < 1e-12);
-        assert!((ext[1] - 1.5).abs() < 1e-12);
+        assert_ulps_eq!(ext[0], 1.5, epsilon = 1.0e-12);
+        assert_ulps_eq!(ext[1], 1.5, epsilon = 1.0e-12);
     }
 
     #[test]
@@ -674,7 +657,8 @@ mod tests {
         let b = Hyperparallelepiped::<2>::default();
         // Direction (1, 1) → top-right corner (0.5, 0.5)
         let s = b.support_mapping(&Cartesian::from([1.0, 1.0]));
-        assert_approx_eq_cartesian(s, Cartesian::from([0.5, 0.5]), 1e-12);
+        assert_ulps_eq!(s[0], 0.5, epsilon = 1.0e-12);
+        assert_ulps_eq!(s[1], 0.5, epsilon = 1.0e-12);
     }
 
     #[test]
@@ -682,7 +666,8 @@ mod tests {
         let b = Hyperparallelepiped::<2>::default();
         // Direction (−1, −1) → bottom-left corner (−0.5, −0.5)
         let s = b.support_mapping(&Cartesian::from([-1.0, -1.0]));
-        assert_approx_eq_cartesian(s, Cartesian::from([-0.5, -0.5]), 1e-12);
+        assert_ulps_eq!(s[0], -0.5, epsilon = 1.0e-12);
+        assert_ulps_eq!(s[1], -0.5, epsilon = 1.0e-12);
     }
 
     #[test]
@@ -690,7 +675,8 @@ mod tests {
         let b = ortho_box_2d(4.0, 6.0);
         // Direction (1, −1) → (2.0, −3.0)
         let s = b.support_mapping(&Cartesian::from([1.0, -1.0]));
-        assert_approx_eq_cartesian(s, Cartesian::from([2.0, -3.0]), 1e-12);
+        assert_ulps_eq!(s[0], 2.0, epsilon = 1.0e-12);
+        assert_ulps_eq!(s[1], -3.0, epsilon = 1.0e-12);
     }
 
     #[test]
@@ -698,7 +684,9 @@ mod tests {
         let b = ortho_box_3d(2.0, 4.0, 6.0);
         // All-positive direction → corner (1.0, 2.0, 3.0)
         let s = b.support_mapping(&Cartesian::from([1.0, 1.0, 1.0]));
-        assert_approx_eq_cartesian(s, Cartesian::from([1.0, 2.0, 3.0]), 1e-12);
+        assert_ulps_eq!(s[0], 1.0, epsilon = 1.0e-12);
+        assert_ulps_eq!(s[1], 2.0, epsilon = 1.0e-12);
+        assert_ulps_eq!(s[2], 3.0, epsilon = 1.0e-12);
     }
 
     #[test]

@@ -16,19 +16,19 @@ use rand::{
 
 use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume, shape::Hyperparallelepiped};
 
-/// A triclinic box shape with arbitrary tilt factors.
+/// A non-orthogonal box shape
 ///
 /// A triclinic box is a parallelepiped defined by three edge vectors that may be
 /// non-orthogonal. It is characterized by three extents $`(L_x, L_y, L_z)`$ and three
 /// tilt factors $`(xy, xz, yz)`$ that describe the shearing of the box.
 ///
-/// The box is centered at the origin, with the centroid at $`(0,0,0)`$.
+/// The box is centered at the origin, $`(0,0,0)`$.
 ///
 /// # Construction
 ///
 /// Triclinic boxes can most easily be constructed using the `from_box_vector` method,
 /// which takes an array of 6 values: `[lx, ly, lz, xy, xz, yz]`. It can also be generated
-/// from a 3D parallelepiped using the `from_parallelepiped` method.
+/// from its edge vectors by converting it from a 3D parallelepiped using the [`from_parallelepiped`](Self::from_parallelepiped) method.
 ///
 /// # Examples
 ///
@@ -136,13 +136,13 @@ impl Triclinic {
     /// The vector, $`\vec{s}=(s_1, s_2, s_3)`$ then gives the fractional coordinates
     /// of this point. This can be expressed as $`\vec{r} = \mathbf{A} \vec{s}`$, where
     /// $`\mathbf{A}`$ is the matrix with columns equal to the box vectors. That is,
-    /// $`\vec{s} = \mathbf{A}^{-1} \vec{r}`$, where $`\mathbf{A}^{-1}`$ can be viewed
-    /// as linearly shearing the box into a unit cube centered at the origin.
+    /// $`\vec{s} = \mathbf{A}^{-1} \vec{r}`$. Geometrically, we can view $`\mathbf{A}^{-1}`$
+    /// as linearly shearing the triclinic box to a unit cube centered at the origin.
     /// For a triclinic box, the transformation can be written as
     /// ```math
     /// \begin{align*}
     ///     s_1 &= \frac{r_1-(xy)r_2-(xz-yz\cdot xy) r_3}{L_x}\\
-    ///     s_2 &= \frac{r_2-yz r_3}{L_y}\\
+    ///     s_2 &= \frac{r_2-(yz) r_3}{L_y}\\
     ///     s_3 &= \frac{r_3}{L_z}.\\
     /// \end{align*}
     /// ```
@@ -180,7 +180,7 @@ impl Triclinic {
 
     /// Convert fractional coordinates to absolute position.
     ///
-    /// This is the inverse operation of `to_fractional`, $`\vec{r} = \mathbf{A} s`$.
+    /// This is the inverse operation of `to_fractional`, $`\vec{r} = \mathbf{A} \vec{s}`$.
     /// Namely,
     /// ```math
     /// \begin{align*}
@@ -259,12 +259,12 @@ impl Triclinic {
     }
     /// Construct a triclinic box from a general parallelepiped.
     ///
-    /// Computes the triclinic parameters from a parallelepiped by computing
-    /// the edge vectors and applying the transformation formulas:
+    /// Computes the triclinic parameters from a parallelepiped with edge vectors $`\vec{u}_i`$ by computing
+    /// applying the transformation formulas:
     /// ```math
-    ///     a_{2x} = \frac{\vec{v}_1\cdot \vec{v}_2}{v_1}, \qquad a_{3x} = \frac{\vec{v}_1\cdot \vec{v}_3}{v_1} \\[3pt]
-    ///     L_x = v_1, \qquad L_y = \sqrt{v_2^2 - a_{2x}^2}, \qquad L_z = \vec{v}_3 \cdot \frac{\vec{v}_1 \times \vec{v}_2}{\left|\vec{v}_1 \times \vec{v}_2 \right|}\\[2pt]
-    ///     xy = \frac{a_{2x}}{L_y}, \qquad xz = \frac{a_{3x}}{L_z}, \qquad yz = \frac{\vec{v}_2\cdot \vec{v}_3 - a_{2x} a_{3x}}{L_yL_z}
+    ///     a_{2x} = \frac{\vec{u}_1\cdot \vec{u}_2}{v_1}, \qquad a_{3x} = \frac{\vec{u}_1\cdot \vec{u}_3}{u_1} \\[3pt]
+    ///     L_x = u_1, \qquad L_y = \sqrt{u_2^2 - a_{2x}^2}, \qquad L_z = \vec{u}_3 \cdot \frac{\vec{u}_1 \times \vec{u}_2}{\left|\vec{u}_1 \times \vec{u}_2 \right|}\\[2pt]
+    ///     xy = \frac{a_{2x}}{L_y}, \qquad xz = \frac{a_{3x}}{L_z}, \qquad yz = \frac{\vec{u}_2\cdot \vec{u}_3 - a_{2x} a_{3x}}{L_yL_z}
     /// ```
     ///
     /// # Example
@@ -369,7 +369,7 @@ impl Triclinic {
     /// - $`\beta`$: angle between vectors  $`\vec{a}_1`$ and  $`\vec{a}_3`$
     /// - $`\gamma`$: angle between vectors $`\vec{a}_1`$ and $`\vec{a}_2`$
     ///
-    /// The angles are computed using the tilt factors according to:
+    /// The angles are computed using the tilt factors via:
     /// ```math
     /// \begin{align*}
     ///     \cos\gamma &= \cos(\angle\vec a_1, \vec a_2) =
@@ -451,6 +451,12 @@ impl Triclinic {
 }
 
 impl Volume for Triclinic {
+    /// Compute the volume of the triclinic box.
+    ///
+    /// The volume is computed as the product of the three extents:
+    /// ```math
+    /// V = L_x \cdot L_y \cdot L_z
+    /// ```
     #[inline]
     fn volume(&self) -> f64 {
         self.extents
@@ -462,7 +468,14 @@ impl Volume for Triclinic {
 }
 
 impl SupportMapping<Cartesian<3>> for Triclinic {
-    /// Calculate the point furthest from the center in a given direction
+    /// Compute the support point of the triclinic box in a given direction.
+    ///
+    /// The support mapping returns the point on the box surface furthest along the
+    /// direction $`\vec{n}`$. For each extent, we choose the vertex $`\pm L_i / 2`$
+    /// whose sign matches the sign of the direction component:
+    /// ```math
+    /// h(\mathbf{n}) = \left( \frac{L_x}{2} \operatorname{sgn}(n_x), \frac{L_y}{2} \operatorname{sgn}(n_y), \frac{L_z}{2} \operatorname{sgn}(n_z) \right)
+    /// ```
     #[inline]
     fn support_mapping(&self, n: &Cartesian<3>) -> Cartesian<3> {
         let mut iter = n
@@ -504,6 +517,18 @@ impl Triclinic {
 }
 
 impl IsPointInside<Cartesian<3>> for Triclinic {
+    /// Check whether a Cartesian point lies inside the triclinic box.
+    ///
+    /// A point $`\vec{r} = (x, y, z)`$ is inside if it can be expressed in fractional
+    /// coordinates $`\vec{s} = (s_1, s_2, s_3)`$ with all components in the range $`[-0.5, 0.5)`$.
+    /// The test is performed by checking the inequalities:
+    /// ```math
+    /// \begin{align}
+    /// |z| &< L_z / 2 \\
+    /// |y - yz \cdot z| &< L_y / 2 \\
+    /// |x - (xz - xy \cdot yz) \cdot z - xy \cdot y| &< L_x / 2
+    /// \end{align}
+    /// ```
     fn is_point_inside(&self, point: &Cartesian<3>) -> bool {
         let [x, y, z] = point.coordinates;
         if z.abs() >= self.lz().get() / 2.0 {
@@ -524,7 +549,7 @@ impl IsPointInside<Cartesian<3>> for Triclinic {
 }
 
 impl Scale for Triclinic {
-    /// Construct a scaled triclinic box.
+    /// Construct a scaled triclinic box by scaling edge lengths.
     ///
     /// The resulting triclinic's extents $` L_\mathrm{new} `$ are
     /// the original's $` L `$ scaled by $` v `$:
@@ -532,7 +557,7 @@ impl Scale for Triclinic {
     /// L_\mathrm{new} = v L
     /// ```
     ///
-    /// The centroid remains at the origin.
+    /// The shear factors (tilt factors) remain unchanged. The centroid remains at the origin.
     ///
     /// # Example
     ///
@@ -556,17 +581,16 @@ impl Scale for Triclinic {
         }
     }
 
-    /// Construct a scaled triclinic box.
+    /// Construct a scaled triclinic box by scaling volume.
     ///
-    /// The resulting triclinic's extents $` L_\mathrm{new} `$ are
-    /// the original's $` L `$ scaled by $` v^\frac{1}{3} `$:
+    /// The resulting triclinic's extents $` L_\mathrm{new} `$ are scaled by $` v^\frac{1}{3} `$:
     /// ```math
     /// L_\mathrm{new} = v^\frac{1}{3} L
     /// ```
     ///
-    /// The centroid remains at the origin.
+    /// The shear factors (tilt factors) remain unchanged. The centroid remains at the origin.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
     /// use hoomd_geometry::{Scale, shape::Triclinic};
