@@ -131,12 +131,14 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// The method takes `&mut self` so that the computed factorization is
     /// stored back into the struct.
     pub fn calc_qr(&mut self) {
-        self._qr = Some(
-            Matrix::<N, N> {
-                rows: self.edge_vectors.map(|v| v.coordinates),
-            }
-            .transpose(),
-        );
+        let box_matrix = Matrix {
+            rows: std::array::from_fn(|r| {
+                std::array::from_fn(|c| self.edge_vectors[c].coordinates[r])
+            }),
+        };
+
+        let (qr_mat, _taus) = box_matrix.qr();
+        self._qr = Some(qr_mat);
     }
 
     /// Determine the maximal extents of the hyperparallelepiped along each
@@ -312,7 +314,6 @@ impl<const N: usize> Hyperparallelepiped<N> {
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; N] {
         // Since V = A_ih_i, h_i = V/A_i.
         let r_inv = get_r_inv(self._qr.as_ref().unwrap());
-        println!("{:?}", self._qr);
         let distances: [PositiveReal; N] = std::array::from_fn(|i| {
             let row = r_inv.get_row(i);
             let inv_norm = 1.0 / row.as_slice().iter().map(|&x| x * x).sum::<f64>().sqrt();
@@ -467,6 +468,7 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hyperparallelepiped<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approxim::{assert_ulps_eq, ulps_eq};
 
     fn assert_approx_eq_cartesian<const N: usize>(a: Cartesian<N>, b: Cartesian<N>, tol: f64) {
         for i in 0..N {
@@ -740,44 +742,35 @@ mod tests {
     fn nearest_plane_distance_triclinic_box() {
         let mut b = Hyperparallelepiped::new([
             Cartesian::from([4.0, 0.0, 0.0]),
-            Cartesian::from([0.5, 4.0, 0.0]),
-            Cartesian::from([0.5, 0.25, 4.0]),
+            Cartesian::from([2.0, 4.0, 0.0]),
+            Cartesian::from([2.0, 1.0, 4.0]),
         ]);
         b.calc_qr();
 
         let distances = b.get_nearest_plane_distance();
-        println!("{:?}", distances);
+        println!("distances: {:?}", distances);
         let expected = [3.39199, 3.88057, 4.];
 
         for i in 0..3 {
-            assert!(
-                (distances[i].get() - expected[i]).abs() < 1e-6,
-                "distance[{i}] expected {} got {}",
-                expected[i],
-                distances[i]
-            );
+            assert_ulps_eq!(expected[i], distances[i].get(), epsilon = 1.0e-4);
         }
     }
 
     #[test]
     fn nearest_plane_distance_rotated_box_matrix() {
+        // Take the previous box and rotate it. The distances shouldn't change.
         let mut b = Hyperparallelepiped::new([
-            Cartesian::from([1.33333, -0.309401, 4.06538]),
-            Cartesian::from([3.64273, 3.1547, 1.17863]),
-            Cartesian::from([-0.976068, 3.1547, 1.75598]),
+            Cartesian::from([1.33333, 3.64273, -0.976068]),
+            Cartesian::from([-0.309401, 3.1547, 3.1547]),
+            Cartesian::from([4.06538, 1.17863, 1.75598]),
         ]);
         b.calc_qr();
-
+        println!("QR: {:?}", b._qr);
         let distances = b.get_nearest_plane_distance();
         let expected = [3.39199, 3.88057, 4.];
 
         for i in 0..3 {
-            assert!(
-                (distances[i].get() - expected[i]).abs() < 1e-6,
-                "distance[{i}] expected {} got {}",
-                expected[i],
-                distances[i]
-            );
+            assert_ulps_eq!(expected[i], distances[i].get(), epsilon = 1.0e-4);
         }
     }
 }

@@ -88,9 +88,9 @@ use std::cmp::min;
 /// system $`R x = Q^T b`$ by back substitution.
 pub(super) fn qr_decomposition<const N: usize, const M: usize>(
     a: &Matrix<N, M>,
-) -> (Matrix<N, M>, Vec<f64>) {
+) -> (Matrix<N, M>, [f64; M]) {
     let mut qr = a.clone();
-    let mut taus = Vec::new();
+    let mut taus = [0.0_f64; M];
 
     for i in 0..M {
         let mut tau = 0.0;
@@ -115,7 +115,7 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
 
         if tau == 0.0 {
             // Either in the last column or the remainder of the column is zero.
-            taus.push(tau);
+            taus[i] = tau;
             continue;
         }
 
@@ -142,7 +142,7 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
         }
 
         qr[(i, i)] = beta;
-        taus.push(tau);
+        taus[i] = tau;
     }
 
     (qr, taus)

@@ -433,7 +433,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// Compute the QR decomposition of a matrix $`A`$ such that $`A = QR`$ where Q is orthogonal and R is upper triangular.
     #[must_use]
     #[inline]
-    pub fn qr(&self) -> (Matrix<N, M>, Vec<f64>) {
+    pub fn qr(&self) -> (Matrix<N, M>, [f64; M]) {
         qr_decomposition(self)
     }
 }
