@@ -12,10 +12,9 @@ use crate::{IsPointInside, MapPoint, SupportMapping};
 
 /// An N-dimensional hyperparallelepiped defined by N edge vectors.
 ///
-/// A hyperparallelepiped (also known as a parallelotope) is the N-dimensional generalization of a parallelogram (2D)
-/// and parallelepiped (3D). It is the set of all points that can be expressed as a
-/// linear combination of the edge vectors with coefficients in `[-0.5, 0.5)`, i.e.
-/// the shape is centered at the origin.
+/// A hyperparallelepiped (also known as a parallelotope) is the N-dimensional generalization of a parallelogram in 2D
+/// and parallelepiped in 3D. It is the set of all points that can be expressed as a
+/// linear combination of its edge vectors with coefficients in `[-0.5, 0.5)`.
 ///
 /// The shape can be used as the box geometry for simulations, but users should prefer [Rhomboid](crate::shape::Rhomboid)
 /// and [Triclinic](crate::shape::Triclinic) for 2 and 3-dimensional simulations, respectively. The QR
@@ -50,7 +49,7 @@ pub struct Hyperparallelepiped<const N: usize> {
     /// Cached (condensed) QR factorization of the column matrix formed by the
     /// edge vectors. This is `None` until [`calc_qr`](Self::calc_qr) is called,
     /// and must be computed before any method that converts coordinates between
-    /// Cartesian and fractional frames (e.g. [`to_fractional`](Self::to_fractional),
+    /// absolute and fractional positions (e.g. [`to_fractional`](Self::to_fractional),
     /// [`is_point_inside`](IsPointInside::is_point_inside), and
     /// [`map_point`](MapPoint::map_point)).
     pub _qr: Option<Matrix<N, N>>,
@@ -86,8 +85,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// # Arguments
     ///
     /// * `edge_vectors` — An array of N [`Cartesian`] vectors. The i-th vector
-    ///   is the edge of the parallelotope that spans the
-    ///   i-th lattice direction.
+    ///   spans the edge of the parallelotope.
     ///
     /// # Example
     ///
@@ -113,7 +111,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
 
     /// Compute and cache the QR factorization of the edge-vector matrix.
     ///
-    /// The edge vectors are assembled into an N×N matrix **A** whose *columns*
+    /// The edge vectors are assembled into an N×N matrix $`\mathbf{A}`$ whose *columns*
     /// are the edge vectors, and the result is stored in `self._qr`. This
     /// factorization is later used by [`to_fractional`](Self::to_fractional),
     /// [`is_point_inside`](IsPointInside::is_point_inside), and
@@ -194,9 +192,9 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// Convert a Cartesian vector to fractional (lattice) coordinates.
     ///
     /// Fractional coordinates express a point as coefficients of the edge
-    /// vectors. If the edge vectors form the columns of matrix $`\mathbf{A}`$`, then
-    /// the fractional coordinate vector $`\vec{s}`$ satisfies $` \mathbf{A}\vec{s}=\vec{r}`$,
-    /// solved here via the cached QR factorization for numerical stability.
+    /// vectors. If the edge vectors form the columns of matrix $`\mathbf{A}`$, then
+    /// the fractional coordinate vector $`\vec{s}`$ satisfies $`\mathbf{A}\vec{s}=\vec{r}`$,
+    /// solved here using the cached QR factorization for numerical stability.
     ///
     /// # Panics
     ///
@@ -231,13 +229,13 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// Convert fractional (lattice) coordinates to Cartesian coordinates.
     ///
     /// This is the inverse of [`to_fractional`](Self::to_fractional). Given a
-    /// vector of fractional coefficients **f**, the Cartesian point is:
+    /// vector of fractional coefficients $`\vec{s}`$, the Cartesian point is:
     ///
     /// ```math
-    /// \mathbf{v} = \sum_{i=0}^{N-1} f_i \, \mathbf{a}_i
+    /// \vec{r} = \sum_{i=0}^{N-1} s_i \, \vec{a}_i
     /// ```
     ///
-    /// where **a**_i are the edge vectors.
+    /// where $`\vec{a}_i`$ are the edge vectors.
     ///
     /// # Example
     ///
@@ -281,16 +279,16 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// Expressing both in terms of their Gramians yields:
     ///
     /// ```math
-    /// h_k = \frac{\det(A)}{\det\!\left(\sqrt{A_k^T A_k}\right)}
-    ///      = \frac{1}{\lVert A_k^{-1} \rVert}
-    ///      = \frac{1}{\lVert (R^{-1})_k \rVert}
+    /// h_k = \frac{\det(\mathbf{A})}{\det\!\left(\sqrt{\mathbf{A}_k^T \mathbf{A}_k}\right)}
+    ///      = \frac{1}{\lVert \mathbf{A}_k^{-1} \rVert}
+    ///      = \frac{1}{\lVert (\mathbf{R}^{-1})_k \rVert}
     /// ```
     ///
-    /// where $`A = QR`$ is the QR decomposition of the matrix whose columns are the edge vectors
-    /// of the parallelotope, and $`(R^{-1})_k`$ denotes the $`k`$-th row of $R^{-1}$.
+    /// where $`\mathbf{A} = \mathbf{Q}\mathbf{R}`$ is the QR decomposition of the matrix whose columns are the edge vectors
+    /// of the parallelotope, and $`(\mathbf{R}^{-1})_k`$ denotes the $`k`$-th row of $`\mathbf{R}^{-1}`$.
     ///
     /// That is, each nearest-plane distance is the reciprocal of the norm of the
-    /// corresponding row of $`R^{-1}`$.
+    /// corresponding row of $`\mathbf{R}^{-1}`$.
     ///
     ///
     /// # Returns

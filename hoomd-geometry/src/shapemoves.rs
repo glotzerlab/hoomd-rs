@@ -1,6 +1,13 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+//! Implementations of transformations for shapes
+//!
+//! This module provides trait implementations and helper utilities that
+//! transform concrete shape types (scaling, shear, etc.).
+//!
+//! See [`crate::shape`] for the available shapes these impls target.
+
 use crate::shape::{
     Capsule, Cylinder, Hypercuboid, Hyperellipsoid, Hyperparallelepiped, Hypersphere, Simplex3,
 };
@@ -59,7 +66,8 @@ impl<const N: usize> Scale for Hypercuboid<N> {
 }
 
 impl<const N: usize> Scale for Hyperparallelepiped<N> {
-    /// Scale the hyperparallelepiped by scaling each edge vector.
+    /// Scale the hyperparallelepiped by scaling each edge vector. The volume of the
+    /// parallelepiped will scale by a factor of $`\alpha^N`$, where $`\alpha`$ is the scale factor.
     #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.edge_vectors = self.edge_vectors.map(|v| v * scale_factor);
