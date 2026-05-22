@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement DynamicPoint
+//! Implement `DynamicPoint`
 
 use super::oriented_point::OrientedPoint;
 use super::point::Point;
@@ -10,10 +10,12 @@ use crate::Transform;
 use crate::property::NetForce;
 use hoomd_vector::Vector;
 
-/// The position, mass, momentum, and net force of an extended body, such as is
-/// useful for Molecular Dynamics simulations.
+/// A position in space with mass and momentum.
 ///
 /// Use [`DynamicPoint`] as a [`Body`](crate::Body) property type.
+///
+/// A default [`DynamicPoint`] has a mass of 1.0. Position, momentum, and net force default to
+/// the 0 vector.
 ///
 /// # Example
 ///
@@ -21,14 +23,13 @@ use hoomd_vector::Vector;
 /// use hoomd_microstate::property::DynamicPoint;
 /// use hoomd_vector::Cartesian;
 ///
-/// let dynamics_point = DynamicPoint {
+/// let dynamic_point = DynamicPoint {
 ///     position: Cartesian::from([1.0, -3.0]),
 ///     mass: 1.0,
-///     momentum: Cartesian::from([0.0, 1.0]),
-///     net_force: Cartesian::from([0.0, 0.0]),
+///     ..Default::default()
 /// };
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DynamicPoint<V> {
     /// The location of the extended body in space.
     pub position: V,
@@ -36,11 +37,35 @@ pub struct DynamicPoint<V> {
     /// The mass of the extended body.
     pub mass: f64,
 
-    /// The momentum of the extended body in space.
+    /// The momentum of the extended body.
     pub momentum: V,
 
-    /// The net force of the extended body in space.
+    /// The net force applied to the body by others in a [`Microstate`](crate::Microstate).
     pub net_force: V,
+}
+
+impl<V> Default for DynamicPoint<V> where
+V: Default
+{
+    /// Construct a [`DynamicPoint`] with mass 1.0. Position, momentum, and net force are set
+    /// to the 0 vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::property::DynamicPoint;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let dynamic_point = DynamicPoint::<Cartesian<3>>::default();
+    /// assert_eq!(dynamic_point.mass, 1.0);
+    /// assert_eq!(dynamic_point.position, [0.0, 0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.momentum, [0.0, 0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.net_force, [0.0, 0.0, 0.0].into());
+    /// ```
+    #[inline]
+    fn default() -> Self {
+        Self { position: Default::default(), mass: 1.0, momentum: Default::default(), net_force: Default::default() }
+    }
 }
 
 /// Move [`DynamicPoint`] properties from the local body frame to the system frame.

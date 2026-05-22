@@ -22,7 +22,7 @@ use hoomd_vector::{Rotate, Rotation, Vector, Wedge};
 /// use hoomd_microstate::property::OrientedDynamicPoint;
 /// use hoomd_vector::{Cartesian, Angle};
 ///
-/// let oriented_dynamics_point = OrientedDynamicPoint {
+/// let oriented_dynamic_point = OrientedDynamicPoint {
 ///     position: Cartesian::from([1.0, -3.0]),
 ///     orientation: Angle::default(),
 ///     mass: 1.0,

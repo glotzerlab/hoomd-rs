@@ -30,6 +30,8 @@
 //! };
 //! ```
 //!
+//! TODO: `DynamicPoint` and `OrientedDynamicPoint`.
+//!
 //! # Custom property types
 //!
 //! When none of the provided types meets your needs, you can define a custom type.
