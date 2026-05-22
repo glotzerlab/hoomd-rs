@@ -199,7 +199,7 @@ impl<V, R> MomentOfInertia for OrientedDynamicPoint<V, R>
 where
     V: Wedge,
 {
-    type Vector = V::Bivector;
+    type MomentOfInertia = V::Bivector;
 
     #[inline]
     fn moment_of_inertia(&self) -> &V::Bivector {

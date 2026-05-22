@@ -18,7 +18,7 @@ where
     B: Orientation<Rotation = Angle>
         + AngularMomentum<AngularMomentum = f64>
         + NetTorque<NetTorque = f64>
-        + MomentOfInertia<Vector = f64>
+        + MomentOfInertia<MomentOfInertia = f64>
         + Position<Position = Cartesian<2>>
         + Transform<S>
         + Clone,
@@ -66,7 +66,7 @@ where
     B: Orientation<Rotation = Versor>
         + AngularMomentum<AngularMomentum = Cartesian<3>>
         + NetTorque<NetTorque = Cartesian<3>>
-        + MomentOfInertia<Vector = Cartesian<3>>
+        + MomentOfInertia<MomentOfInertia = Cartesian<3>>
         + Position<Position = Cartesian<3>>
         + Transform<S>
         + Clone,

@@ -43,7 +43,7 @@ use super::super::SiteEnergy;
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConstantForce<V> {
-    /// Force vector $`[\mathrm{energy}] [\mathrm{length}]^{-1}`$.
+    /// Force vector $`[\mathrm{energy}] \cdot [\mathrm{length}]^{-1}`$.
     pub force: V,
 
     ///  $` \vec{r}_0 `$ $`[\mathrm{length}]`$: A point on the plane where $` U = 0 `$.

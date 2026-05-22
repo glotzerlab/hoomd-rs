@@ -1173,7 +1173,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
 
     /// Iterate over all the sites (in the system reference frame) associated with a body.
     ///
-    /// Use [`iter_body_sites`](Microstate::iter_body_sites) to perform computations
+    /// Use `iter_body_sites` to perform computations
     /// in the system reference frame on all sites that are associated with a given
     /// body *index*. The borrowed sites are immutable. Call
     /// [`Microstate::update_body_properties()`] to mutate a body.
@@ -1220,6 +1220,8 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     ///
     /// `iter_body_site_indices` is like [`iter_body_sites`], but iterates over
     /// the *site indices* instead of the sites themselves.
+    ///
+    /// [`iter_body_sites`]: Microstate::iter_body_sites
     #[inline]
     #[expect(
         clippy::missing_panics_doc,
