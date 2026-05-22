@@ -16,11 +16,14 @@ use rand::{
 
 use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume, shape::Hyperparallelepiped};
 
-/// A non-orthogonal box shape
+/// A non-orthogonal 3D box
 ///
 /// A triclinic box is a parallelepiped defined by three edge vectors that may be
 /// non-orthogonal. It is characterized by three extents $`(L_x, L_y, L_z)`$ and three
-/// tilt factors $`(xy, xz, yz)`$ that describe the shearing of the box.
+/// tilt factors $`(xy, xz, yz)`$ that describe the shearing of the box. The tilt factors describe the ratio of the length of the components of the basis vector to the extent in the corresponding direction. That is, the edges of the box are spanned by the vectors:
+/// ```math
+///  \vec{a}_1 = \left(L_x,0,0\right) \qquad \vec{a}_2 = \left(xyL_y,L_y,0\right) \qquad \vec{a}_3 = \left(xzL_z,yzL_z,L_z\right)
+/// ```
 ///
 /// The box is centered at the origin, $`(0,0,0)`$.
 ///
@@ -89,6 +92,110 @@ pub struct Triclinic {
 }
 
 impl Triclinic {
+    /// Construct a triclinic box from box dimensions.
+    ///
+    /// The dimensions array should contain [lx, ly, lz, xy, xz, yz] where:
+    /// - lx, ly, lz are the box extents (must be positive)
+    /// - xy, xz, yz are the tilt factors
+    ///
+    /// # Panics
+    ///
+    /// Panics if any of lx, ly, lz are not positive.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic =
+    ///     Triclinic::from_box_vector([10.0, 12.0, 14.0, 1.0, 0.5, -0.2]);
+    /// assert_eq!(triclinic.lx().get(), 10.0);
+    /// assert_eq!(triclinic.xy(), 1.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn from_box_vector(box_dimensions: [f64; 6]) -> Self {
+        Self {
+            extents: [
+                box_dimensions[0]
+                    .try_into()
+                    .expect("Extent lx must be positive"),
+                box_dimensions[1]
+                    .try_into()
+                    .expect("Extent ly must be positive"),
+                box_dimensions[2]
+                    .try_into()
+                    .expect("Extent lz must be positive"),
+            ],
+            tilt_factors: [box_dimensions[3], box_dimensions[4], box_dimensions[5]],
+        }
+    }
+    /// Construct a triclinic box from a general parallelepiped.
+    ///
+    /// Computes the triclinic parameters from a parallelepiped with edge vectors $`\vec{u}_i`$ by computing
+    /// applying the transformation formulas:
+    /// ```math
+    ///     a_{2x} = \frac{\vec{u}_1\cdot \vec{u}_2}{v_1}, \qquad a_{3x} = \frac{\vec{u}_1\cdot \vec{u}_3}{u_1} \\[3pt]
+    ///     L_x = u_1, \qquad L_y = \sqrt{u_2^2 - a_{2x}^2}, \qquad L_z = \vec{u}_3 \cdot \frac{\vec{u}_1 \times \vec{u}_2}{\left|\vec{u}_1 \times \vec{u}_2 \right|}\\[2pt]
+    ///     xy = \frac{a_{2x}}{L_y}, \qquad xz = \frac{a_{3x}}{L_z}, \qquad yz = \frac{\vec{u}_2\cdot \vec{u}_3 - a_{2x} a_{3x}}{L_yL_z}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::shape::{Hyperparallelepiped, Triclinic};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let parallelepiped = Hyperparallelepiped::new([
+    ///     Cartesian::from([-1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0]),
+    ///     Cartesian::from([2.0 / 3.0, -1.0 / 3.0, 2.0 / 3.0]),
+    ///     Cartesian::from([2.0 / 3.0, 2.0 / 3.0, -1.0 / 3.0]),
+    /// ]); // Rotated unit cube
+    /// let triclinic = Triclinic::from_parallelepiped(parallelepiped);
+    /// assert_relative_eq!(triclinic.lx().get(), 1.0, epsilon = 1e-8);
+    /// assert_relative_eq!(triclinic.xy(), 0.0, epsilon = 1e-8);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn from_parallelepiped(parallelepiped: Hyperparallelepiped<3>) -> Self {
+        let v1 = parallelepiped.edge_vectors[0];
+        let v2 = parallelepiped.edge_vectors[1];
+        let v3 = parallelepiped.edge_vectors[2];
+
+        let v1_mag = v1.norm();
+        let v2_mag = v2.norm();
+        let v2_dot_v1 = v2.dot(&v1);
+        let v3_dot_v1 = v3.dot(&v1);
+        let v3_dot_v2 = v3.dot(&v2);
+
+        let lx = v1_mag;
+        let a2x = v2_dot_v1 / v1_mag;
+        let ly = (v2_mag * v2_mag - a2x * a2x).sqrt();
+        let cross_v1_v2 = Cartesian::from([
+            v1[1] * v2[2] - v1[2] * v2[1],
+            v1[2] * v2[0] - v1[0] * v2[2],
+            v1[0] * v2[1] - v1[1] * v2[0],
+        ]);
+        let cross_mag = cross_v1_v2.norm();
+        let lz = v3.dot(&cross_v1_v2) / cross_mag;
+        let a3x = v3_dot_v1 / v1_mag;
+        let xy = a2x / ly;
+        let xz = a3x / lz;
+        let yz = (v3_dot_v2 - a2x * a3x) / (ly * lz);
+
+        Self {
+            extents: [
+                lx.try_into().expect("lx must be positive"),
+                ly.try_into().expect("ly must be positive"),
+                lz.try_into().expect("lz must be positive"),
+            ],
+            tilt_factors: [xy, xz, yz],
+        }
+    }
+
     /// Returns the box extent in the x-direction (lx)
     #[inline]
     #[allow(non_snake_case)]
@@ -218,110 +325,6 @@ impl Triclinic {
         pos
     }
 
-    /// Construct a triclinic box from box dimensions.
-    ///
-    /// The dimensions array should contain [lx, ly, lz, xy, xz, yz] where:
-    /// - lx, ly, lz are the box extents (must be positive)
-    /// - xy, xz, yz are the tilt factors
-    ///
-    /// # Panics
-    ///
-    /// Panics if any of lx, ly, lz are not positive.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_geometry::shape::Triclinic;
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic::from_box_vector([10.0, 12.0, 14.0, 1.0, 0.5, -0.2]);
-    /// assert_eq!(triclinic.lx().get(), 10.0);
-    /// assert_eq!(triclinic.xy(), 1.0);
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn from_box_vector(box_dimensions: [f64; 6]) -> Self {
-        Self {
-            extents: [
-                box_dimensions[0]
-                    .try_into()
-                    .expect("Extent lx must be positive"),
-                box_dimensions[1]
-                    .try_into()
-                    .expect("Extent ly must be positive"),
-                box_dimensions[2]
-                    .try_into()
-                    .expect("Extent lz must be positive"),
-            ],
-            tilt_factors: [box_dimensions[3], box_dimensions[4], box_dimensions[5]],
-        }
-    }
-    /// Construct a triclinic box from a general parallelepiped.
-    ///
-    /// Computes the triclinic parameters from a parallelepiped with edge vectors $`\vec{u}_i`$ by computing
-    /// applying the transformation formulas:
-    /// ```math
-    ///     a_{2x} = \frac{\vec{u}_1\cdot \vec{u}_2}{v_1}, \qquad a_{3x} = \frac{\vec{u}_1\cdot \vec{u}_3}{u_1} \\[3pt]
-    ///     L_x = u_1, \qquad L_y = \sqrt{u_2^2 - a_{2x}^2}, \qquad L_z = \vec{u}_3 \cdot \frac{\vec{u}_1 \times \vec{u}_2}{\left|\vec{u}_1 \times \vec{u}_2 \right|}\\[2pt]
-    ///     xy = \frac{a_{2x}}{L_y}, \qquad xz = \frac{a_{3x}}{L_z}, \qquad yz = \frac{\vec{u}_2\cdot \vec{u}_3 - a_{2x} a_{3x}}{L_yL_z}
-    /// ```
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use approxim::assert_relative_eq;
-    /// use hoomd_geometry::shape::{Hyperparallelepiped, Triclinic};
-    /// use hoomd_vector::Cartesian;
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let parallelepiped = Hyperparallelepiped::new([
-    ///     Cartesian::from([-1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0]),
-    ///     Cartesian::from([2.0 / 3.0, -1.0 / 3.0, 2.0 / 3.0]),
-    ///     Cartesian::from([2.0 / 3.0, 2.0 / 3.0, -1.0 / 3.0]),
-    /// ]); // Rotated unit cube
-    /// let triclinic = Triclinic::from_parallelepiped(parallelepiped);
-    /// assert_relative_eq!(triclinic.lx().get(), 1.0, epsilon = 1e-8);
-    /// assert_relative_eq!(triclinic.xy(), 0.0, epsilon = 1e-8);
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn from_parallelepiped(parallelepiped: Hyperparallelepiped<3>) -> Self {
-        let v1 = parallelepiped.edge_vectors[0];
-        let v2 = parallelepiped.edge_vectors[1];
-        let v3 = parallelepiped.edge_vectors[2];
-
-        let v1_mag = v1.norm();
-        let v2_mag = v2.norm();
-        let v2_dot_v1 = v2.dot(&v1);
-        let v3_dot_v1 = v3.dot(&v1);
-        let v3_dot_v2 = v3.dot(&v2);
-
-        let lx = v1_mag;
-        let a2x = v2_dot_v1 / v1_mag;
-        let ly = (v2_mag * v2_mag - a2x * a2x).sqrt();
-        let cross_v1_v2 = Cartesian::from([
-            v1[1] * v2[2] - v1[2] * v2[1],
-            v1[2] * v2[0] - v1[0] * v2[2],
-            v1[0] * v2[1] - v1[1] * v2[0],
-        ]);
-        let cross_mag = cross_v1_v2.norm();
-        let lz = v3.dot(&cross_v1_v2) / cross_mag;
-        let a3x = v3_dot_v1 / v1_mag;
-        let xy = a2x / ly;
-        let xz = a3x / lz;
-        let yz = (v3_dot_v2 - a2x * a3x) / (ly * lz);
-
-        Self {
-            extents: [
-                lx.try_into().expect("lx must be positive"),
-                ly.try_into().expect("ly must be positive"),
-                lz.try_into().expect("lz must be positive"),
-            ],
-            tilt_factors: [xy, xz, yz],
-        }
-    }
-
     /// Get the edge vectors of the triclinic box.
     ///
     /// Returns the three basis vectors [a_1, a_2, a_3] that span the box edges.
@@ -448,6 +451,34 @@ impl Triclinic {
         dist[2] = self.lz();
         dist
     }
+
+    /// Represent the triclinic box in the GSD box format.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic = Triclinic::from_box_vector([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
+    ///
+    /// let gsd_box = triclinic.to_gsd_box();
+    /// assert_eq!(gsd_box, [5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn to_gsd_box(&self) -> [f64; 6] {
+        [
+            self.extents[0].get(),
+            self.extents[1].get(),
+            self.extents[2].get(),
+            self.tilt_factors[0],
+            self.tilt_factors[1],
+            self.tilt_factors[2],
+        ]
+    }
 }
 
 impl Volume for Triclinic {
@@ -483,36 +514,6 @@ impl SupportMapping<Cartesian<3>> for Triclinic {
             .zip(self.extents)
             .map(|(n_i, l_i)| l_i.get() / 2.0 * n_i.signum());
         array::from_fn(|_| iter.next().unwrap_or_default()).into()
-    }
-}
-
-impl Triclinic {
-    /// Represent the triclinic box in the GSD box format.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_geometry::shape::Triclinic;
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic::from_box_vector([5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
-    ///
-    /// let gsd_box = triclinic.to_gsd_box();
-    /// assert_eq!(gsd_box, [5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn to_gsd_box(&self) -> [f64; 6] {
-        [
-            self.extents[0].get(),
-            self.extents[1].get(),
-            self.extents[2].get(),
-            self.tilt_factors[0],
-            self.tilt_factors[1],
-            self.tilt_factors[2],
-        ]
     }
 }
 
@@ -641,14 +642,7 @@ impl Distribution<Cartesian<3>> for Triclinic {
         let y = uniform.sample(rng);
         let z = uniform.sample(rng);
 
-        let scaled_x =
-            self.lx().get() * x + self.xy() * self.ly().get() * y + self.xz() * self.lz().get() * z;
-        let scaled_y = self.ly().get() * y + self.yz() * self.lz().get() * z;
-        let scaled_z = self.lz().get() * z;
-
-        Cartesian {
-            coordinates: [scaled_x, scaled_y, scaled_z],
-        }
+        self.to_absolute(&Cartesian::from([x, y, z]))
     }
 }
 

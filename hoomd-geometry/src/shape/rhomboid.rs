@@ -10,7 +10,7 @@ use crate::{
     SupportMapping, Volume, shape::Hyperparallelepiped,
 };
 
-/// An axis-aligned parallelogram defined by a 2 x 2 upper triangular matrix.
+/// A non-orthogonal 2D box
 ///
 /// A rhomboid is a 2D parallelogram shape defined by two edge lengths $`(L_x, L_y)`$
 /// and a shear factor $`xy`$ that describes the shearing in the x-direction relative
@@ -305,34 +305,6 @@ impl Rhomboid {
         edge_vectors
     }
 
-    /// Represent a 2D triclinic box in the GSD box format.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_geometry::shape::Rhomboid;
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomb = Rhomboid::from((1.0.try_into()?, 2.0.try_into()?, 1.5));
-    ///
-    /// let gsd_box = rhomb.to_gsd_box();
-    /// assert_eq!(gsd_box, [1.0, 2.0, 0.0, 1.5, 0.0, 0.0]);
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn to_gsd_box(&self) -> [f64; 6] {
-        [
-            self.extents[0].get(),
-            self.extents[1].get(),
-            0.0,
-            self.xy,
-            0.0,
-            0.0,
-        ]
-    }
-
     /// Get the perpendicular distances between parallel edges of the rhomboid.
     ///
     /// For a rhomboid, the distance between parallel edges is not simply
@@ -361,6 +333,34 @@ impl Rhomboid {
         dist[0] = self.lx() / (f64::sqrt(1.0 + self.xy() * self.xy())).try_into().unwrap();
         dist[1] = self.ly();
         dist
+    }
+
+    /// Represent a 2D triclinic box in the GSD box format.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rhomboid;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomb = Rhomboid::from((1.0.try_into()?, 2.0.try_into()?, 1.5));
+    ///
+    /// let gsd_box = rhomb.to_gsd_box();
+    /// assert_eq!(gsd_box, [1.0, 2.0, 0.0, 1.5, 0.0, 0.0]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn to_gsd_box(&self) -> [f64; 6] {
+        [
+            self.extents[0].get(),
+            self.extents[1].get(),
+            0.0,
+            self.xy,
+            0.0,
+            0.0,
+        ]
     }
 }
 

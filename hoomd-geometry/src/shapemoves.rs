@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implementations of transformations for shapes
+//! Implementations of transformations of shapes
 //!
 //! This module provides trait implementations and helper utilities that
 //! transform concrete shape types (scaling, shear, etc.).

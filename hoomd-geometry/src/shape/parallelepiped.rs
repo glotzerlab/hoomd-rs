@@ -1,12 +1,18 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use std::array;
+
 use hoomd_linear_algebra::matrix::{
     Matrix,
     qr::{self, get_r_inv},
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
+use rand::{
+    Rng,
+    distr::{Distribution, Uniform},
+};
 
 use crate::{IsPointInside, MapPoint, SupportMapping};
 
@@ -443,6 +449,37 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hyperparallelepiped<N> {
         let fractional = self.to_fractional(point);
         let mapped_coords = other.to_absolute(fractional);
         Ok(mapped_coords)
+    }
+}
+
+impl<const N: usize> Distribution<Cartesian<N>> for Hyperparallelepiped<N> {
+    /// Generate points uniformly distributed in the hyperparallelepiped.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
+    /// use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut box2d = Hyperparallelepiped::new([
+    ///     Cartesian::from([6.0, 0.0]),
+    ///     Cartesian::from([0.0, 8.0]),
+    /// ]);
+    /// box2d.calc_qr();
+    /// let mut rng = StdRng::seed_from_u64(1);
+    ///
+    /// let point = box2d.sample(&mut rng);
+    /// assert!(box2d.is_point_inside(&point));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
+        let uniform = Uniform::new(-0.5, 0.5).expect("");
+        let fractional: [f64; N] = array::from_fn(|_| uniform.sample(rng));
+        self.to_absolute(Cartesian::from(fractional))
     }
 }
 
