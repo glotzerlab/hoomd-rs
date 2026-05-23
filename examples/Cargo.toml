@@ -52,11 +52,6 @@ name = "hello"
 path = "hello.rs"
 
 [[example]]
-name = "hyperbolic-lennard-jones"
-path = "hyperbolic-lennard-jones.rs"
-required-features = ["bevy"]
-
-[[example]]
 name = "random-walk"
 path = "mc-tutorial/random-walk.rs"
 
