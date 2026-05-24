@@ -19,7 +19,7 @@ const PI: f32 = 3.141592653589793238462643;
 
 @group(2) @binding(4) var image_color_texture: texture_2d<f32>;
 @group(2) @binding(5) var image_color_sampler: sampler;
-@group(2) @binding(6) var<storage, read> n_sides: f32;
+@group(2) @binding(6) var<uniform> n_sides: f32;
 
 struct VertexOutput {
     // this is `clip position` when the struct is used as a vertex stage output
