@@ -115,6 +115,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
     #[must_use]
     pub fn from_box_vector(box_dimensions: [f64; 6]) -> Self {
         Self {
@@ -161,6 +162,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
     #[must_use]
     pub fn from_parallelepiped(parallelepiped: Hyperparallelepiped<3>) -> Self {
         let v1 = parallelepiped.edge_vectors[0];
@@ -279,6 +281,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
     #[must_use]
     pub fn to_fractional(&self, pos: &Cartesian<3>) -> Cartesian<3> {
         let l: Cartesian<3> = self.extents.map(|x| x.get()).into();
@@ -321,6 +324,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
     #[must_use]
     pub fn to_absolute(&self, frac: &Cartesian<3>) -> Cartesian<3> {
         let mut pos: Cartesian<3> = Cartesian::from([1.0, 1.0, 1.0]);
@@ -359,6 +363,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
     #[must_use]
     pub fn get_edge_vectors(&self) -> [Cartesian<3>; 3] {
         let mut edge_vectors = [Cartesian::<3>::default(); 3];
@@ -410,6 +415,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
     #[must_use]
     pub fn get_box_angles(&self) -> [f64; 3] {
         let xy = self.xy();
@@ -447,6 +453,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
     #[must_use]
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
@@ -540,6 +547,7 @@ impl IsPointInside<Cartesian<3>> for Triclinic {
     /// |x - (xz - xy \cdot yz) \cdot z - xy \cdot y| &< L_x / 2
     /// \end{align*}
     /// ```
+    #[inline]
     fn is_point_inside(&self, point: &Cartesian<3>) -> bool {
         let [x, y, z] = point.coordinates;
         if z.abs() >= self.lz().get() / 2.0 {
@@ -657,6 +665,7 @@ impl Distribution<Cartesian<3>> for Triclinic {
 }
 
 impl MapPoint<Cartesian<3>> for Triclinic {
+    #[inline]
     fn map_point(&self, point: Cartesian<3>, other: &Self) -> Result<Cartesian<3>, crate::Error> {
         let fractional = self.to_fractional(&point);
         let mapped_coords = other.to_absolute(&fractional);

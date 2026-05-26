@@ -58,7 +58,7 @@ pub struct Hyperparallelepiped<const N: usize> {
     /// absolute and fractional positions (e.g. [`to_fractional`](Self::to_fractional),
     /// [`is_point_inside`](IsPointInside::is_point_inside), and
     /// [`map_point`](MapPoint::map_point)).
-    pub _qr: Option<Matrix<N, N>>,
+    pub qr: Option<Matrix<N, N>>,
 }
 
 /// A 2D sheared box
@@ -76,7 +76,7 @@ impl<const N: usize> Default for Hyperparallelepiped<N> {
             edge_vectors: std::array::from_fn(|i| {
                 std::array::from_fn(|j| if i == j { 1. } else { 0. }).into()
             }),
-            _qr: None,
+            qr: None,
         }
     }
 }
@@ -112,14 +112,14 @@ impl<const N: usize> Hyperparallelepiped<N> {
     pub fn new(edge_vectors: [Cartesian<N>; N]) -> Self {
         Self {
             edge_vectors,
-            _qr: None,
+            qr: None,
         }
     }
 
     /// Compute and cache the QR factorization of the edge-vector matrix.
     ///
     /// The edge vectors are assembled into an N×N matrix $`\mathbf{A}`$ whose *columns*
-    /// are the edge vectors, and the result is stored in `self._qr`. This
+    /// are the edge vectors, and the result is stored in `self.qr`. This
     /// factorization is later used by [`to_fractional`](Self::to_fractional),
     /// [`is_point_inside`](IsPointInside::is_point_inside), and
     /// [`map_point`](MapPoint::map_point) to solve the linear system
@@ -136,7 +136,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
         };
 
         let (qr_mat, _taus) = box_matrix.qr();
-        self._qr = Some(qr_mat);
+        self.qr = Some(qr_mat);
     }
 
     /// Determine the maximal extents of the hyperparallelepiped along each
@@ -223,12 +223,13 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// assert!((frac[0] - 0.25).abs() < 1e-10);
     /// assert!((frac[1] - 0.25).abs() < 1e-10);
     /// ```
+    #[inline]
     #[must_use]
     pub fn to_fractional(&self, v: Cartesian<N>) -> Cartesian<N> {
         Cartesian::from_col_matrix(qr::qr_solve(
-            self._qr
+            self.qr
                 .as_ref()
-                .expect("_qr attribute is not computed; call calc_qr() first"),
+                .expect("qr attribute is not computed; call calc_qr() first"),
             v.to_column_matrix(),
         ))
     }
@@ -261,6 +262,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// assert!((cart[0] - 1.0).abs() < 1e-10);
     /// assert!((cart[1] - 1.5).abs() < 1e-10);
     /// ```
+    #[inline]
     #[must_use]
     pub fn to_absolute(&self, f: Cartesian<N>) -> Cartesian<N> {
         let mut absolute = Cartesian::<N>::default();
@@ -300,10 +302,11 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// # Panics
     ///
     /// Panics if the QR decomposition has not been computed using [`calc_qr`](Self::calc_qr).
+    #[inline]
     #[must_use]
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; N] {
         // Since V = A_ih_i, h_i = V/A_i.
-        let r_inv = get_r_inv(self._qr.as_ref().unwrap());
+        let r_inv = get_r_inv(self.qr.as_ref().unwrap());
         let distances: [PositiveReal; N] = std::array::from_fn(|i| {
             let row = r_inv.get_row(i);
             let inv_norm = 1.0 / row.as_slice().iter().map(|&x| x * x).sum::<f64>().sqrt();
@@ -385,9 +388,9 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
         let fractional = qr::qr_solve(
-            self._qr
+            self.qr
                 .as_ref()
-                .expect("_qr attribute is not computed; call calc_qr() first"),
+                .expect("qr attribute is not computed; call calc_qr() first"),
             point.to_column_matrix(),
         );
 
@@ -441,6 +444,7 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hyperparallelepiped<N> {
     /// assert!((mapped[0] - 2.0).abs() < 1e-10);
     /// assert!((mapped[1] - 2.0).abs() < 1e-10);
     /// ```
+    #[inline]
     fn map_point(&self, point: Cartesian<N>, other: &Self) -> Result<Cartesian<N>, crate::Error> {
         let fractional = self.to_fractional(point);
         let mapped_coords = other.to_absolute(fractional);
@@ -518,7 +522,7 @@ mod tests {
         let b = Hyperparallelepiped::<2>::default();
         assert_eq!(b.edge_vectors[0], Cartesian::from([1.0, 0.0]));
         assert_eq!(b.edge_vectors[1], Cartesian::from([0.0, 1.0]));
-        assert!(b._qr.is_none());
+        assert!(b.qr.is_none());
     }
 
     #[test]
@@ -535,13 +539,13 @@ mod tests {
         let b = Hyperparallelepiped::new(vecs);
         assert_eq!(b.edge_vectors[0], Cartesian::from([2.0, 1.0]));
         assert_eq!(b.edge_vectors[1], Cartesian::from([-1.0, 3.0]));
-        assert!(b._qr.is_none());
+        assert!(b.qr.is_none());
     }
 
     #[test]
     fn calc_qr_populates_cache() {
         let b = ortho_box_2d(4.0, 6.0);
-        assert!(b._qr.is_some());
+        assert!(b.qr.is_some());
     }
 
     #[test]
@@ -767,7 +771,6 @@ mod tests {
         b.calc_qr();
 
         let distances = b.get_nearest_plane_distance();
-        println!("distances: {distances:?}");
         let expected = [3.39199, 3.88057, 4.];
 
         for i in 0..3 {
@@ -784,7 +787,6 @@ mod tests {
             Cartesian::from([4.06538, 1.17863, 1.75598]),
         ]);
         b.calc_qr();
-        println!("QR: {:?}", b._qr);
         let distances = b.get_nearest_plane_distance();
         let expected = [3.39199, 3.88057, 4.];
 

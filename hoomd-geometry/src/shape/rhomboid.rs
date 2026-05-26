@@ -111,7 +111,8 @@ impl Rhomboid {
     /// # Ok(())
     /// # }
     /// ```
-    #[must_use] 
+    #[inline]
+    #[must_use]
     pub fn from_box_vector(box_dimensions: [f64; 3]) -> Self {
         Self {
             extents: [
@@ -153,7 +154,8 @@ impl Rhomboid {
     /// # Ok(())
     /// # }
     /// ```
-    #[must_use] 
+    #[inline]
+    #[must_use]
     pub fn from_parallelogram(parallelepiped: Hyperparallelepiped<2>) -> Self {
         let v1 = parallelepiped.edge_vectors[0];
         let v2 = parallelepiped.edge_vectors[1];
@@ -177,23 +179,21 @@ impl Rhomboid {
 
     /// Returns the edge length in the x-direction (lx)
     #[inline]
-    #[allow(non_snake_case)]
-    #[must_use] 
+    #[must_use]
     pub fn lx(&self) -> PositiveReal {
         self.extents[0]
     }
 
     /// Returns the edge length in the y-direction (ly)
     #[inline]
-    #[allow(non_snake_case)]
-    #[must_use] 
+    #[must_use]
     pub fn ly(&self) -> PositiveReal {
         self.extents[1]
     }
 
     /// Returns the xy shear factor
     #[inline]
-    #[must_use] 
+    #[must_use]
     pub fn xy(&self) -> f64 {
         self.xy
     }
@@ -221,7 +221,7 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    #[must_use] 
+    #[must_use]
     pub fn to_fractional(&self, pos: &Cartesian<2>) -> Cartesian<2> {
         let lx = self.lx().get();
         let ly = self.ly().get();
@@ -260,7 +260,8 @@ impl Rhomboid {
     /// # Ok(())
     /// # }
     /// ```
-    #[must_use] 
+    #[inline]
+    #[must_use]
     pub fn to_absolute(&self, frac: &Cartesian<2>) -> Cartesian<2> {
         let lx = self.lx().get();
         let ly = self.ly().get();
@@ -305,7 +306,8 @@ impl Rhomboid {
     ///
     /// The first edge vector is aligned with the x-axis and the second is
     /// sheared by the `xy` factor in the x direction.
-    #[must_use] 
+    #[inline]
+    #[must_use]
     pub fn get_edge_vectors(&self) -> [Cartesian<2>; 2] {
         let mut edge_vectors = [Cartesian::<2>::default(); 2];
         edge_vectors[0] = [self.lx().get(), 0.].into();
@@ -335,7 +337,8 @@ impl Rhomboid {
     /// # Ok(())
     /// # }
     /// ```
-    #[must_use] 
+    #[inline]
+    #[must_use]
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 2] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 2];
@@ -636,6 +639,7 @@ impl MapPoint<Cartesian<2>> for Rhomboid {
     ///
     /// The point is first expressed in fractional coordinates relative to `self`
     /// and then transformed into the Cartesian coordinates of `other`.
+    #[inline]
     fn map_point(&self, point: Cartesian<2>, other: &Self) -> Result<Cartesian<2>, crate::Error> {
         let fractional = self.to_fractional(&point);
         let mapped_coords = other.to_absolute(&fractional);
