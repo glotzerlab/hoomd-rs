@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+//! Implement [`Rhomboid`]
+
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
 use serde::{Deserialize, Serialize};

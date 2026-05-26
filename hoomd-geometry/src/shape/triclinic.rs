@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+//! Implement [`Triclinic`]
+
 use std::array;
 
 use hoomd_utility::valid::PositiveReal;
@@ -156,7 +158,7 @@ impl Triclinic {
     ///     Cartesian::from([2.0 / 3.0, -1.0 / 3.0, 2.0 / 3.0]),
     ///     Cartesian::from([2.0 / 3.0, 2.0 / 3.0, -1.0 / 3.0]),
     /// ]); // Rotated unit cube
-    /// let triclinic = Triclinic::from_parallelepiped(parallelepiped);
+    /// let triclinic = Triclinic::from_parallelepiped(&parallelepiped);
     /// assert_relative_eq!(triclinic.lx().get(), 1.0, epsilon = 1e-8);
     /// assert_relative_eq!(triclinic.xy(), 0.0, epsilon = 1e-8);
     /// # Ok(())
