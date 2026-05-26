@@ -519,20 +519,15 @@ impl Volume for Triclinic {
 
 impl SupportMapping<Cartesian<3>> for Triclinic {
     /// Compute the support point of the triclinic box in a given direction.
-    ///
-    /// The support mapping returns the point on the box surface furthest along the
-    /// direction $`\vec{n}`$. For each extent, we choose the vertex $`\pm L_i / 2`$
-    /// whose sign matches the sign of the direction component:
-    /// ```math
-    /// h(\mathbf{n}) = \left( \frac{L_x}{2} \operatorname{sgn}(n_x), \frac{L_y}{2} \operatorname{sgn}(n_y), \frac{L_z}{2} \operatorname{sgn}(n_z) \right)
-    /// ```
     #[inline]
     fn support_mapping(&self, n: &Cartesian<3>) -> Cartesian<3> {
-        let mut iter = n
-            .into_iter()
-            .zip(self.extents)
-            .map(|(n_i, l_i)| l_i.get() / 2.0 * n_i.signum());
-        array::from_fn(|_| iter.next().unwrap_or_default()).into()
+        let d = self.to_fractional(n);
+        let s = Cartesian::from([
+            d[0].signum() * 0.5,
+            d[1].signum() * 0.5,
+            d[2].signum() * 0.5,
+        ]);
+        self.to_absolute(&s)
     }
 }
 

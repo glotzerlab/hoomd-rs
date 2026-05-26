@@ -561,7 +561,7 @@ impl<const N: usize> Cartesian<N> {
     pub fn from_col_matrix(col: Matrix<N, 1>) -> Self {
         let mut x = Cartesian::<N>::default();
         for i in 0..N {
-            x[i] = col[(i, 1)];
+            x[i] = col[(i, 0)];
         }
         x
     }

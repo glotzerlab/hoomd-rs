@@ -209,7 +209,11 @@ mod tests {
 
     #[fixture]
     fn get_sheared_rhomboid() -> Rhomboid {
-        Rhomboid::from((2.0.try_into()?, 2.0.try_into()?, f64::sqrt(2.)))
+        Rhomboid::from((
+            2.0.try_into().unwrap(),
+            2.0.try_into().unwrap(),
+            f64::sqrt(2.0),
+        ))
     }
 
     #[rstest]
@@ -228,7 +232,7 @@ mod tests {
 
         for frac_array in test_frac_positions {
             let frac = Cartesian::<2>::from(frac_array);
-            let pos = periodic.to_absolute(&frac);
+            let pos = periodic.shape.to_absolute(&frac);
             let frac_back = periodic.shape.to_fractional(&pos);
             assert_relative_eq!(frac, frac_back, epsilon = 1e-8);
         }
@@ -237,7 +241,7 @@ mod tests {
     #[test]
     fn maximum_allowable_orthogonal() {
         // Test with orthogonal rhomboid (no tilt)
-        let rhomboid = Rhomboid::from((20.0.try_into()?, 10.0.try_into()?, 0.0));
+        let rhomboid = Rhomboid::from((20.0.try_into().unwrap(), 10.0.try_into().unwrap(), 0.0));
         assert_eq!(rhomboid.maximum_allowable_interaction_range(), 5.0);
     }
 
@@ -255,7 +259,7 @@ mod tests {
     #[test]
     fn wrap_orthogonal() {
         // Test wrapping with orthogonal rhomboid (no tilt)
-        let rhomboid = Rhomboid::from((20.0.try_into()?, 20.0.try_into()?, 0.0));
+        let rhomboid = Rhomboid::from((20.0.try_into().unwrap(), 20.0.try_into().unwrap(), 0.0));
         let periodic = Periodic::new(0.0, rhomboid).expect("hard-coded range should be valid");
 
         let point = Point::new([5.0, 3.0].into());
@@ -292,8 +296,8 @@ mod tests {
         );
 
         // Point at center should wrap
-        let frac_point = [1.0, 1.0].into();
-        let abs_point = Point::new(periodic.to_absolute(&frac_point));
+        let frac_point = Cartesian::<2>::from([1.0, 1.0]);
+        let abs_point = Point::new(periodic.shape.to_absolute(&frac_point));
         let wrapped = periodic.wrap(abs_point).expect("wrap should succeed");
         // Verify it's back inside the rhomboid
         assert_relative_eq!(wrapped.position, [0.0, 0.0].into(), epsilon = 1e-8);
@@ -307,7 +311,7 @@ mod tests {
 
         // Test interior point (not at origin)
         let mut interior_pos = Cartesian::from([0.2, 0.2]);
-        interior_pos = periodic.to_absolute(&interior_pos);
+        interior_pos = periodic.shape.to_absolute(&interior_pos);
 
         let ghosts = periodic.generate_ghosts(&Point::new(interior_pos));
         assert!(
@@ -325,7 +329,7 @@ mod tests {
 
         // Point near the x-face (at maximum x)
         let frac_pos = Cartesian::<2>::from([0.49, 0.0]);
-        let abs_point = Point::new(periodic.to_absolute(&frac_pos));
+        let abs_point = Point::new(periodic.shape.to_absolute(&frac_pos));
 
         let ghosts = periodic.generate_ghosts(&abs_point);
         // Should generate at least 1 ghost (one for the face)
@@ -335,7 +339,7 @@ mod tests {
     #[test]
     fn ghosts_orthogonal_faces() {
         // Comprehensive test with orthogonal rhomboid to validate ghost generation
-        let rhomboid = Rhomboid::from((20.0.try_into()?, 10.0.try_into()?, 0.0));
+        let rhomboid = Rhomboid::from((20.0.try_into().unwrap(), 10.0.try_into().unwrap(), 0.0));
         let periodic = Periodic::new(1.0, rhomboid).expect("hard-coded range should be valid");
 
         // no ghosts for points outside the boundary
@@ -379,7 +383,7 @@ mod tests {
 
         // Point at boundary vertex
         let frac_pos = Cartesian::<2>::from([0.499, 0.499]);
-        let abs_point = Point::new(periodic.to_absolute(&frac_pos));
+        let abs_point = Point::new(periodic.shape.to_absolute(&frac_pos));
 
         let ghosts = periodic.generate_ghosts(&abs_point);
         // Should generate 3 ghosts (at vertex: 2 faces + 1 edge), all of which should wrap back to same point

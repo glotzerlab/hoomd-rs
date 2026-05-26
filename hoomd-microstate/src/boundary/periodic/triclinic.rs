@@ -290,7 +290,7 @@ mod tests {
 
     #[fixture]
     fn get_sheared_triclinic() -> Triclinic {
-        Triclinic::with_box_dimensions([2., 2., 2., f64::sqrt(2.), f64::sqrt(2.), f64::sqrt(2.)])
+        Triclinic::from_box_vector([2., 2., 2., f64::sqrt(2.), f64::sqrt(2.), f64::sqrt(2.)])
     }
 
     #[rstest]
@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn maximum_allowable_orthogonal() {
         // Test with orthogonal box (no tilt)
-        let triclinic = Triclinic::with_box_dimensions([20.0, 10.0, 40.0, 0.0, 0.0, 0.0]);
+        let triclinic = Triclinic::from_box_vector([20.0, 10.0, 40.0, 0.0, 0.0, 0.0]);
         assert_eq!(triclinic.maximum_allowable_interaction_range(), 5.0);
     }
 
@@ -332,7 +332,7 @@ mod tests {
     #[test]
     fn wrap_orthogonal() {
         // Test wrapping with orthogonal box (no tilt)
-        let triclinic = Triclinic::with_box_dimensions([20.0, 20.0, 20.0, 0.0, 0.0, 0.0]);
+        let triclinic = Triclinic::from_box_vector([20.0, 20.0, 20.0, 0.0, 0.0, 0.0]);
         let periodic = Periodic::new(0.0, triclinic).expect("hard-coded range should be valid");
 
         let point = Point::new([5.0, 3.0, 8.0].into());
@@ -425,7 +425,7 @@ mod tests {
     #[test]
     fn ghosts_orthogonal_faces() {
         // Comprehensive test with orthogonal box to validate ghost generation
-        let triclinic = Triclinic::with_box_dimensions([20.0, 10.0, 40.0, 0.0, 0.0, 0.0]);
+        let triclinic = Triclinic::from_box_vector([20.0, 10.0, 40.0, 0.0, 0.0, 0.0]);
         let periodic = Periodic::new(1.0, triclinic).expect("hard-coded range should be valid");
 
         // no ghosts for points outside the boundary

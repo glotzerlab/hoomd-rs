@@ -110,18 +110,172 @@ where
             array::from_fn(|i| self.maximum_interaction_range() / plane_distances[i].get());
         let fractional_coordinate = self.shape.to_fractional(*r);
 
+        // For each axis, determine if the particle is near the negative or positive face.
+        let mut near_neg = [false; N];
+        let mut near_pos = [false; N];
         for (i, fractional_cutoff) in fractional_cutoffs.iter().enumerate() {
-            if fractional_coordinate[i] <= -0.5 + fractional_cutoff {
-                let mut new_site = *site_properties;
-                *new_site.position_mut() += self.shape.edge_vectors[i];
-                result.push(new_site)
-            } else if fractional_coordinate[i] > 0.5 - fractional_cutoff {
-                let mut new_site = *site_properties;
-                *new_site.position_mut() -= self.shape.edge_vectors[0];
-                result.push(new_site)
+            near_neg[i] = fractional_coordinate[i] <= -0.5 + fractional_cutoff;
+            near_pos[i] = fractional_coordinate[i] > 0.5 - fractional_cutoff;
+        }
+
+        // Generate ghosts for all non-empty combinations of axes where the
+        // particle is near the corresponding faces. For each selected axis
+        // we displace by +edge_vector if near the negative face, or -edge_vector
+        // if near the positive face. This mirrors the triclinic implementation.
+        let max_mask = 1usize << N;
+        for mask in 1usize..max_mask {
+            // skip masks that include an axis where the particle is not near either face
+            let mut ok = true;
+            for i in 0..N {
+                if ((mask >> i) & 1) == 1 {
+                    if !(near_neg[i] || near_pos[i]) {
+                        ok = false;
+                        break;
+                    }
+                }
             }
+            if !ok {
+                continue;
+            }
+
+            let mut new_site = *site_properties;
+            for i in 0..N {
+                if ((mask >> i) & 1) == 1 {
+                    let sign = if near_pos[i] { -1.0 } else { 1.0 };
+                    *new_site.position_mut() += sign * self.shape.edge_vectors[i];
+                }
+            }
+            result.push(new_site);
         }
 
         result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::property::Point;
+    use approxim::assert_relative_eq;
+    use hoomd_geometry::shape::{Hyperparallelepiped, Triclinic};
+    use hoomd_vector::Cartesian;
+    use rstest::{fixture, rstest};
+
+    fn hyper_from_triclinic(tric: &Triclinic) -> Hyperparallelepiped<3> {
+        let mut hyper = Hyperparallelepiped::new(tric.get_edge_vectors());
+        hyper.calc_qr();
+        hyper
+    }
+
+    #[fixture]
+    fn get_sheared_triclinic() -> Triclinic {
+        Triclinic::from_box_vector([
+            2.0,
+            2.0,
+            2.0,
+            f64::sqrt(2.0),
+            f64::sqrt(2.0),
+            f64::sqrt(2.0),
+        ])
+    }
+
+    #[fixture]
+    fn get_sheared_hyperparallelepiped(get_sheared_triclinic: Triclinic) -> Hyperparallelepiped<3> {
+        hyper_from_triclinic(&get_sheared_triclinic)
+    }
+
+    #[rstest]
+    fn coordinate_conversion_roundtrip(get_sheared_hyperparallelepiped: Hyperparallelepiped<3>) {
+        let periodic = Periodic::new(0.0, get_sheared_hyperparallelepiped)
+            .expect("valid periodic hyperparallelepiped");
+
+        let test_frac_positions = vec![
+            [0.0, 0.0, 0.0],
+            [0.5, 0.5, 0.5],
+            [-0.5, -0.5, -0.5],
+            [0.9, 0.8, 0.9],
+            [-0.9, -0.8, -0.9],
+        ];
+
+        for frac_array in test_frac_positions {
+            let frac = Cartesian::<3>::from(frac_array);
+            let pos = periodic.shape.to_absolute(frac);
+            let frac_back = periodic.shape.to_fractional(pos);
+            assert_relative_eq!(frac, frac_back, epsilon = 1e-8);
+        }
+    }
+
+    #[rstest]
+    fn no_ghosts_interior(get_sheared_hyperparallelepiped: Hyperparallelepiped<3>) {
+        let periodic = Periodic::new(0.01, get_sheared_hyperparallelepiped)
+            .expect("valid periodic hyperparallelepiped");
+
+        let frac_pos = Cartesian::<3>::from([0.2, 0.2, 0.2]);
+        let abs_pos = periodic.shape.to_absolute(frac_pos);
+
+        let ghosts = periodic.generate_ghosts(&Point::new(abs_pos));
+        assert!(
+            ghosts.is_empty(),
+            "Interior point should not generate ghosts"
+        );
+    }
+
+    #[rstest]
+    fn ghosts_face_centers(get_sheared_hyperparallelepiped: Hyperparallelepiped<3>) {
+        let periodic = Periodic::new(0.3, get_sheared_hyperparallelepiped)
+            .expect("valid periodic hyperparallelepiped");
+
+        let frac_pos = Cartesian::<3>::from([0.49, 0.0, 0.0]);
+        let abs_point = Point::new(periodic.shape.to_absolute(frac_pos));
+
+        let ghosts = periodic.generate_ghosts(&abs_point);
+        assert!(ghosts.len() >= 1, "Should generate ghosts near face");
+    }
+
+    #[test]
+    fn same_behavior_as_triclinic() {
+        let tric = Triclinic::from_box_vector([20.0, 10.0, 40.0, 0.2, -0.3, 0.4]);
+        let hyper = hyper_from_triclinic(&tric);
+
+        let periodic_tric = Periodic::new(1.0, tric.clone()).expect("valid periodic triclinic");
+        let periodic_hyper = Periodic::new(1.0, hyper).expect("valid periodic hyperparallelepiped");
+
+        let test_points = vec![
+            Cartesian::<3>::from([0.0, 0.0, 0.0]),
+            Cartesian::<3>::from([0.49, 0.49, 0.49]),
+            Cartesian::<3>::from([-0.49, -0.49, -0.49]),
+            Cartesian::<3>::from([1.1, -0.9, 0.2]),
+        ];
+
+        for frac_pos in test_points {
+            let abs_point = Point::new(periodic_tric.shape.to_absolute(&frac_pos));
+
+            let wrapped_tric = periodic_tric.wrap(abs_point).unwrap();
+            let wrapped_hyper = periodic_hyper.wrap(abs_point).unwrap();
+            assert_relative_eq!(
+                wrapped_tric.position,
+                wrapped_hyper.position,
+                epsilon = 1e-8
+            );
+
+            let ghosts_tric = periodic_tric.generate_ghosts(&abs_point);
+            let ghosts_hyper = periodic_hyper.generate_ghosts(&abs_point);
+            assert_eq!(ghosts_tric.len(), ghosts_hyper.len());
+
+            for ghost in ghosts_tric.iter() {
+                let found = ghosts_hyper.iter().any(|other| {
+                    ghost
+                        .position
+                        .coordinates
+                        .iter()
+                        .zip(other.position.coordinates.iter())
+                        .all(|(a, b)| (a - b).abs() < 1e-8)
+                });
+                assert!(
+                    found,
+                    "Expected ghost position to exist in hyperparallelepiped result"
+                );
+            }
+        }
     }
 }

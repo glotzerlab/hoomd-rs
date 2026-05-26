@@ -317,6 +317,30 @@ impl Rhomboid {
         edge_vectors
     }
 
+    /// Get the interior box angle of the rhomboid.
+    ///
+    /// The rhomboid has a single shear angle between its two edge vectors.
+    /// This method returns the angle between the first edge vector aligned with
+    /// the x-axis and the sheared second edge vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rhomboid;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid::from_box_vector([2.0, 3.0, 1.0]);
+    /// let angle = rhomboid.get_box_angle();
+    /// assert!((angle - (1.0 / (1.0 + 1.0_f64).sqrt()).acos()).abs() < 1e-12);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn get_box_angle(&self) -> f64 {
+        (self.xy() / (1.0 + self.xy() * self.xy()).sqrt()).acos()
+    }
+
     /// Get the perpendicular distances between parallel edges of the rhomboid.
     ///
     /// For a rhomboid, the distance between parallel edges is not simply
