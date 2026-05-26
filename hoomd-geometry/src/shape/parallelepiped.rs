@@ -108,7 +108,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// # Ok(())
     /// # }
     /// ```
-    #[must_use] 
+    #[must_use]
     pub fn new(edge_vectors: [Cartesian<N>; N]) -> Self {
         Self {
             edge_vectors,
@@ -128,7 +128,6 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// This method must be called once after construction (or after modifying
     /// `edge_vectors`) before any coordinate conversion is attempted. Calling
     /// it multiple times is safe — it simply recomputes the cache.
-
     pub fn calc_qr(&mut self) {
         let box_matrix = Matrix {
             rows: std::array::from_fn(|r| {
@@ -224,7 +223,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// assert!((frac[0] - 0.25).abs() < 1e-10);
     /// assert!((frac[1] - 0.25).abs() < 1e-10);
     /// ```
-    #[must_use] 
+    #[must_use]
     pub fn to_fractional(&self, v: Cartesian<N>) -> Cartesian<N> {
         Cartesian::from_col_matrix(qr::qr_solve(
             self._qr
@@ -262,7 +261,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// assert!((cart[0] - 1.0).abs() < 1e-10);
     /// assert!((cart[1] - 1.5).abs() < 1e-10);
     /// ```
-    #[must_use] 
+    #[must_use]
     pub fn to_absolute(&self, f: Cartesian<N>) -> Cartesian<N> {
         let mut absolute = Cartesian::<N>::default();
         for (i, edge_vector) in self.edge_vectors.iter().enumerate() {
@@ -301,7 +300,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// # Panics
     ///
     /// Panics if the QR decomposition has not been computed using [`calc_qr`](Self::calc_qr).
-    #[must_use] 
+    #[must_use]
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; N] {
         // Since V = A_ih_i, h_i = V/A_i.
         let r_inv = get_r_inv(self._qr.as_ref().unwrap());
@@ -780,8 +779,8 @@ mod tests {
     fn nearest_plane_distance_rotated_box_matrix() {
         // Take the previous box and rotate it. The distances shouldn't change.
         let mut b = Hyperparallelepiped::new([
-            Cartesian::from([1.33333, 3.64273, -0.976068]),
-            Cartesian::from([-0.309401, 3.1547, 3.1547]),
+            Cartesian::from([1.33333, 3.64273, -0.976_068]),
+            Cartesian::from([-0.309_401, 3.1547, 3.1547]),
             Cartesian::from([4.06538, 1.17863, 1.75598]),
         ]);
         b.calc_qr();
