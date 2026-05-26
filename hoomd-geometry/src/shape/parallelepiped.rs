@@ -108,6 +108,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
     #[must_use]
     pub fn new(edge_vectors: [Cartesian<N>; N]) -> Self {
         Self {
@@ -128,6 +129,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// This method must be called once after construction (or after modifying
     /// `edge_vectors`) before any coordinate conversion is attempted. Calling
     /// it multiple times is safe — it simply recomputes the cache.
+    #[inline]
     pub fn calc_qr(&mut self) {
         let box_matrix = Matrix {
             rows: std::array::from_fn(|r| {
