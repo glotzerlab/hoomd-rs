@@ -3,6 +3,8 @@
 
 //! Implement [`Zetterling`]
 
+use serde::{Deserialize, Serialize};
+
 use super::{UnivariateEnergy, UnivariateForce};
 
 /// `Zetterling` computes the oscillating pair potential between every pair of
@@ -10,7 +12,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// ```math
 /// U(r) = \epsilon \frac{\exp(\alpha r/\ell)\cos(2k_Fr/\ell)}{(r/\ell)^3} + \beta\left(\frac{\sigma \ell}{r}\right)^n + v_0
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Zetterling {
     /// Energy scale of the first term *(\[energy\])*.
     pub epsilon: f64,
