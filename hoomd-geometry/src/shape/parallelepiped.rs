@@ -451,9 +451,9 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hyperparallelepiped<N> {
     /// # Example
     ///
     /// ```
-    /// use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     /// use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
     /// use hoomd_vector::Cartesian;
+    /// use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut box2d = Hyperparallelepiped::new([
