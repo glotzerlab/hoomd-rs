@@ -164,7 +164,7 @@ impl Triclinic {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_parallelepiped(parallelepiped: Hyperparallelepiped<3>) -> Self {
+    pub fn from_parallelepiped(parallelepiped: &Hyperparallelepiped<3>) -> Self {
         let v1 = parallelepiped.edge_vectors[0];
         let v2 = parallelepiped.edge_vectors[1];
         let v3 = parallelepiped.edge_vectors[2];

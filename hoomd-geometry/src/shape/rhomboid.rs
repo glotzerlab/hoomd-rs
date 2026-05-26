@@ -148,7 +148,7 @@ impl Rhomboid {
     ///     Cartesian::from([1.0, 0.0]),
     ///     Cartesian::from([0.5, 1.0]),
     /// ]);
-    /// let rhomboid = Rhomboid::from_parallelogram(parallelepiped);
+    /// let rhomboid = Rhomboid::from_parallelogram(&parallelepiped);
     /// assert_relative_eq!(rhomboid.lx().get(), 1.0, epsilon = 1e-8);
     /// assert_relative_eq!(rhomboid.xy(), 0.5, epsilon = 1e-8);
     /// # Ok(())
@@ -156,7 +156,7 @@ impl Rhomboid {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_parallelogram(parallelepiped: Hyperparallelepiped<2>) -> Self {
+    pub fn from_parallelogram(parallelepiped: &Hyperparallelepiped<2>) -> Self {
         let v1 = parallelepiped.edge_vectors[0];
         let v2 = parallelepiped.edge_vectors[1];
 

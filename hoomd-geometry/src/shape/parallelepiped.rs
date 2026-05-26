@@ -350,12 +350,12 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperparallelepiped<N> {
     /// assert_eq!(s, Cartesian::from([0.5, 0.5]));
     /// ```
     #[inline]
-    fn support_mapping(&self, direction: &Cartesian<N>) -> Cartesian<N> {
+    fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
         0.5 * self
             .edge_vectors
             .iter()
             .fold(Cartesian::<N>::default(), |acc, v| {
-                v.dot(direction).signum() * *v + acc
+                v.dot(n).signum() * *v + acc
             })
     }
 }
