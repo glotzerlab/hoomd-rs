@@ -34,6 +34,9 @@ mod triclinic;
 /// * [`EightEight`]
 /// * [`Hypercuboid<2>`] (also known as [`Rectangle`])
 /// * [`Hypercuboid<3>`] (also known as [`Cuboid`])
+/// * [`Rhomboid`]
+/// * [`Triclinic`]
+/// * [`Hyperparallelepiped`]
 ///
 /// [`EightEight`]: hoomd_geometry::shape::EightEight
 /// [`Hypercuboid<2>`]: hoomd_geometry::shape::Hypercuboid
@@ -41,6 +44,9 @@ mod triclinic;
 /// [`Cuboid`]: hoomd_geometry::shape::Cuboid
 /// [`Rectangle`]: hoomd_geometry::shape::Rectangle
 /// [`Microstate`]: crate::Microstate
+/// [`Rhomboid`]: hoomd_geometry::shape::Rhomboid
+/// [`Triclinic`]: hoomd_geometry::shape::Triclinic
+/// [`Hyperparallelepiped`]: hoomd_geometry::shape::Hyperparallelepiped
 ///
 /// # Example
 ///

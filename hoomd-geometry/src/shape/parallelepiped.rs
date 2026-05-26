@@ -273,29 +273,22 @@ impl<const N: usize> Hyperparallelepiped<N> {
     ///
     /// # Mathematical Background
     ///
-    /// The perpendicular distance (height) $`h_k`$ to the $`k`$-th face is derived from the
-    /// generalization of the fact that the volume of a prism is equal to the area of the base time the height,
-    /// $`V = A \cdot h`$, rearranged as:
+    /// The perpendicular distance between faces can be found using the standard reciprocal lattice construction. Let $`\vec{b}_i`$ be a normal vector to the face spanned by all of the edge vectors except $`\vec{a}_i`$. Then the perpendicular distance between faces is given by $`h_k=\lVert \text{proj}_{b_k}(a_k) \rVert`$.
+    /// We can find the normal vectors using $`\mathbf{A^{-1}}`$. Since
     ///
     /// ```math
-    /// h_k = \frac{V}{A_k}
+    /// \newcommand{\horzbar}{\rule[.5ex]{2.5ex}{0.5pt}}
+    /// AA^{-1} =\begin{bmatrix} | & | & | \\ \mathbf{a}_1 & \mathbf{a}_2 & \mathbf{a}_3 \\ | & | & | \end{bmatrix} \begin{bmatrix} \horzbar & \mathbf{b}_1 & \horzbar \\ \horzbar & \mathbf{b}_2 & \horzbar \\ \horzbar & \mathbf{b}_3 & \horzbar \end{bmatrix} =I,
     /// ```
-    ///
-    /// where $`V`$ is the volume of the parallelotope and $`A_k`$ is the area of its $`k`$-th face.
-    /// Expressing both in terms of their Gramians yields:
-    ///
+    /// the rows of $`A^{-1}`$ satisfy $`a_i \cdot b_j = \delta_{ij}`$. Therefore, the $`b_j`$ are perpendicular to the desired faces (since $`a_i\cdot b_j = 0`$ for $`j\neq i`$) and we have $`a_i\cdot b_i = 1`$. Therefore, we calculate
     /// ```math
-    /// h_k = \frac{\det(\mathbf{A})}{\det\!\left(\sqrt{\mathbf{A}_k^T \mathbf{A}_k}\right)}
-    ///      = \frac{1}{\lVert \mathbf{A}_k^{-1} \rVert}
-    ///      = \frac{1}{\lVert (\mathbf{R}^{-1})_k \rVert}
+    /// h_k = \lVert\text{proj}_{b_k}(a_k)\rVert=\left\lVert \frac{a_k\cdot b_k}{\lVert b_k \rVert} \right\rVert = \frac{1}{\lVert b_k \rVert}
     /// ```
-    ///
-    /// where $`\mathbf{A} = \mathbf{Q}\mathbf{R}`$ is the QR decomposition of the matrix whose columns are the edge vectors
-    /// of the parallelotope, and $`(\mathbf{R}^{-1})_k`$ denotes the $`k`$-th row of $`\mathbf{R}^{-1}`$.
-    ///
-    /// That is, each nearest-plane distance is the reciprocal of the norm of the
-    /// corresponding row of $`\mathbf{R}^{-1}`$.
-    ///
+    /// Since in the QR decomposition, $`\mathbf{A}=\mathbf{QR}`$, $`\mathbf{A}^{-1} \mathbf{Q} = \mathbf{R}^{-1}`$, and so the lengths of the rows of $`\mathbf{R}^{-1}`$ are the same as those of $`\mathbf{A^{-1}}`$. (Geometrically, $`\mathbf{Q}`$ is just represents a rotation of the box and so doesn't affect lenghts.) Therefore, we calculate
+    /// ```math
+    ///     h_k = \frac{1}{\left\lVert \left(\mathbf{R}^{-1} \right)_k \right\rVert}
+    /// ```
+    /// where $`\left\lVert \left(\mathbf{R}^{-1} \right)_k \right\rVert`$ denodes the 2-norm of the $`k`$-th row of $`\mathbf{R}^{-1}`$.
     ///
     /// # Returns
     ///

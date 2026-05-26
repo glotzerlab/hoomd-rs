@@ -1,7 +1,9 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement periodic boundary conditions for cuboids in cartesian space.
+//! Implement periodic boundary conditions for hyperparallelepipeds in cartesian space.
+
+use std::array;
 
 use crate::{
     boundary::{
@@ -10,32 +12,24 @@ use crate::{
     property::Position,
 };
 use arrayvec::ArrayVec;
-use hoomd_geometry::shape::Hyperparallelepiped;
+use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
 use hoomd_linear_algebra::{
     MatMul,
     matrix::{Matrix, qr},
 };
-use hoomd_vector::{Cartesian, InnerProduct};
+use hoomd_vector::Cartesian;
 
 impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N> {
-    /// The largest value that the maximum interaction range can take.
-    ///
-    /// For a parallelepiped, the maximum is
-    /// ```math
-    /// \frac{L_\mathrm{min}}{2}
-    /// ```
-    /// where $`L_\mathrm{min}`$ is the smallest edge length.
+    /// The largest value that the maximum interaction range can take. While theoretically to avoid self-interaction the interaction distance may be as large as 1/2 the smallest box vector, we choose to take the maximum interaction range to be 1/2 the smallest perpendicular distance between pairs of parallel faces in order to avoid having to generating more than one ghost per particle.
     ///
     /// # Example
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-        let minimum_l = self
-            .edge_vectors
+        let plane_distances = self.get_nearest_plane_distance();
+        plane_distances
             .iter()
-            .map(Cartesian::<N>::norm)
-            .reduce(f64::min)
-            .expect("parallelipiped should have dimension 1 or greater");
-        minimum_l / 2.0
+            .map(|x| x.get() * 0.5)
+            .fold(f64::INFINITY, f64::min)
     }
 }
 
@@ -90,9 +84,9 @@ where
     }
 }
 
-impl<S> GenerateGhosts<S> for Periodic<Hyperparallelepiped<3>>
+impl<S, const N: usize> GenerateGhosts<S> for Periodic<Hyperparallelepiped<N>>
 where
-    S: Position<Position = Cartesian<3>> + Copy + Default,
+    S: Position<Position = Cartesian<N>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
@@ -101,20 +95,33 @@ where
 
     // /// Place periodic images of sites near the edge of the periodic boundary.
     #[inline]
-    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
-        // let mut result = ArrayVec::new();
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        let mut result = ArrayVec::new();
 
-        // let r = site_properties.position();
-        // let max = self.shape.maximal_extents();
-        // let min = self.shape.minimal_extents();
+        let r = site_properties.position();
 
-        // if !self.shape.is_point_inside(r) {
-        //     return result;
-        // }
+        if !self.shape.is_point_inside(r) {
+            return result;
+        }
 
-        // Find which boundaries particle is near.
-        // for lattice_vector in directions:
-        // inside range = [-0.5 + r_cut / |a_i|,  0.5 - r_cut / |a_i|]
-        todo!();
+        // Determine fractional coordinates of "twighlight zones," where ghosts must be generated
+        let plane_distances = self.shape.get_nearest_plane_distance();
+        let fractional_cutoffs: [f64; N] =
+            array::from_fn(|i| self.maximum_interaction_range() / plane_distances[i].get());
+        let fractional_coordinate = self.shape.to_fractional(*r);
+
+        for (i, fractional_cutoff) in fractional_cutoffs.iter().enumerate() {
+            if fractional_coordinate[i] <= -0.5 + fractional_cutoff {
+                let mut new_site = *site_properties;
+                *new_site.position_mut() += self.shape.edge_vectors[i];
+                result.push(new_site)
+            } else if fractional_coordinate[i] > 0.5 - fractional_cutoff {
+                let mut new_site = *site_properties;
+                *new_site.position_mut() -= self.shape.edge_vectors[0];
+                result.push(new_site)
+            }
+        }
+
+        result
     }
 }
