@@ -115,6 +115,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use] 
     pub fn from_box_vector(box_dimensions: [f64; 6]) -> Self {
         Self {
             extents: [
@@ -160,6 +161,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use] 
     pub fn from_parallelepiped(parallelepiped: Hyperparallelepiped<3>) -> Self {
         let v1 = parallelepiped.edge_vectors[0];
         let v2 = parallelepiped.edge_vectors[1];
@@ -199,6 +201,7 @@ impl Triclinic {
     /// Returns the box extent in the x-direction (lx)
     #[inline]
     #[allow(non_snake_case)]
+    #[must_use] 
     pub fn lx(&self) -> PositiveReal {
         self.extents[0]
     }
@@ -206,6 +209,7 @@ impl Triclinic {
     /// Returns the box extent in the y-direction (ly)
     #[inline]
     #[allow(non_snake_case)]
+    #[must_use] 
     pub fn ly(&self) -> PositiveReal {
         self.extents[1]
     }
@@ -213,24 +217,28 @@ impl Triclinic {
     /// Returns the box extent in the z-direction (lz)
     #[inline]
     #[allow(non_snake_case)]
+    #[must_use] 
     pub fn lz(&self) -> PositiveReal {
         self.extents[2]
     }
 
     /// Returns the xy tilt factor
     #[inline]
+    #[must_use] 
     pub fn xy(&self) -> f64 {
         self.tilt_factors[0]
     }
 
     /// Returns the xz tilt factor
     #[inline]
+    #[must_use] 
     pub fn xz(&self) -> f64 {
         self.tilt_factors[1]
     }
 
     /// Returns the yz tilt factor
     #[inline]
+    #[must_use] 
     pub fn yz(&self) -> f64 {
         self.tilt_factors[2]
     }
@@ -274,6 +282,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use] 
     pub fn to_fractional(&self, pos: &Cartesian<3>) -> Cartesian<3> {
         let l: Cartesian<3> = self.extents.map(|x| x.get()).into();
         let mut frac = *pos;
@@ -315,6 +324,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use] 
     pub fn to_absolute(&self, frac: &Cartesian<3>) -> Cartesian<3> {
         let mut pos: Cartesian<3> = Cartesian::from([1.0, 1.0, 1.0]);
         for i in 0..3 {
@@ -327,7 +337,7 @@ impl Triclinic {
 
     /// Get the edge vectors of the triclinic box.
     ///
-    /// Returns the three basis vectors [a_1, a_2, a_3] that span the box edges.
+    /// Returns the three basis vectors [`a_1`, `a_2`, `a_3`] that span the box edges.
     /// These vectors are computed from the extents and tilt factors.
     /// ```math
     /// \begin{align*}
@@ -352,6 +362,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use] 
     pub fn get_edge_vectors(&self) -> [Cartesian<3>; 3] {
         let mut edge_vectors = [Cartesian::<3>::default(); 3];
         edge_vectors[0] = [self.lx().get(), 0., 0.].into();
@@ -402,6 +413,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use] 
     pub fn get_box_angles(&self) -> [f64; 3] {
         let xy = self.xy();
         let xz = self.xz();
@@ -420,7 +432,7 @@ impl Triclinic {
     /// For a triclinic box, the distance between parallel faces is not simply
     /// the extent since the box is sheared.
     ///
-    /// Returns [d_x, d_y, d_z] where d_i is the width in direction i.
+    /// Returns [`d_x`, `d_y`, `d_z`] where `d_i` is the width in direction i.
     ///
     /// # Example
     ///
@@ -438,6 +450,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use] 
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 3];
@@ -534,11 +547,11 @@ impl IsPointInside<Cartesian<3>> for Triclinic {
         let [x, y, z] = point.coordinates;
         if z.abs() >= self.lz().get() / 2.0 {
             return false;
-        };
+        }
 
         if (y - self.yz() * z).abs() >= self.ly().get() / 2.0 {
             return false;
-        };
+        }
 
         if (x - (self.xz() - self.xy() * self.yz()) * z - self.xy() * y).abs()
             >= self.lx().get() / 2.0

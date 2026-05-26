@@ -108,6 +108,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// # Ok(())
     /// # }
     /// ```
+    #[must_use] 
     pub fn new(edge_vectors: [Cartesian<N>; N]) -> Self {
         Self {
             edge_vectors,
@@ -223,6 +224,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// assert!((frac[0] - 0.25).abs() < 1e-10);
     /// assert!((frac[1] - 0.25).abs() < 1e-10);
     /// ```
+    #[must_use] 
     pub fn to_fractional(&self, v: Cartesian<N>) -> Cartesian<N> {
         Cartesian::from_col_matrix(qr::qr_solve(
             self._qr
@@ -260,6 +262,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// assert!((cart[0] - 1.0).abs() < 1e-10);
     /// assert!((cart[1] - 1.5).abs() < 1e-10);
     /// ```
+    #[must_use] 
     pub fn to_absolute(&self, f: Cartesian<N>) -> Cartesian<N> {
         let mut absolute = Cartesian::<N>::default();
         for (i, edge_vector) in self.edge_vectors.iter().enumerate() {
@@ -298,6 +301,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// # Panics
     ///
     /// Panics if the QR decomposition has not been computed using [`calc_qr`](Self::calc_qr).
+    #[must_use] 
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; N] {
         // Since V = A_ih_i, h_i = V/A_i.
         let r_inv = get_r_inv(self._qr.as_ref().unwrap());
@@ -479,7 +483,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hyperparallelepiped<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approxim::{assert_ulps_eq, ulps_eq};
+    use approxim::assert_ulps_eq;
 
     fn assert_approx_eq_cartesian<const N: usize>(a: Cartesian<N>, b: Cartesian<N>, tol: f64) {
         for i in 0..N {
@@ -764,7 +768,7 @@ mod tests {
         b.calc_qr();
 
         let distances = b.get_nearest_plane_distance();
-        println!("distances: {:?}", distances);
+        println!("distances: {distances:?}");
         let expected = [3.39199, 3.88057, 4.];
 
         for i in 0..3 {
