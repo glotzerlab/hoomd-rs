@@ -260,6 +260,8 @@ fn apply_householder_right<const N: usize, const M: usize, const K: usize>(
 /// The input `qr` matrix stores the upper triangular factor in its upper
 /// triangle and Householder vectors in its strict lower triangle. This helper
 /// zeros the strict lower triangle and preserves the upper triangular entries.
+#[inline]
+#[must_use]
 pub fn get_r<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> {
     let mut r = qr.clone();
     for row in 1..N {
@@ -275,6 +277,8 @@ pub fn get_r<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> 
 /// The input `qr` is assumed to contain the `R` factor in its upper triangle,
 /// and the leading `M × M` block must be non-singular. This routine performs
 /// back substitution on each column of the identity matrix to obtain `R^{-1}`.
+#[inline]
+#[must_use]
 pub fn get_r_inv<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<M, M> {
     let mut inv_r = Matrix::<M, M>::zeros();
 
@@ -295,6 +299,8 @@ pub fn get_r_inv<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<M,
 ///
 /// This applies the stored Householder reflectors in reverse order to the
 /// identity matrix, producing an `N × N` orthogonal matrix.
+#[must_use]
+#[inline]
 pub fn get_q<const N: usize, const M: usize>(qr: &Matrix<N, M>, taus: &[f64]) -> Matrix<N, N> {
     let mut q = Matrix::<N, N>::identity();
     for (iter, &tau) in taus.iter().enumerate().rev() {
@@ -310,6 +316,8 @@ pub fn get_q<const N: usize, const M: usize>(qr: &Matrix<N, M>, taus: &[f64]) ->
 /// The input matrix `a` has shape `N × K`. The orthogonal factor `Q` is
 /// represented implicitly in `qr` and `taus`, so this helper applies the stored
 /// reflectors without forming `Q` explicitly.
+#[inline]
+#[must_use]
 fn qt_times<const N: usize, const M: usize, const K: usize>(
     a: &Matrix<N, K>,
     qr: &Matrix<N, M>,
@@ -329,6 +337,8 @@ fn qt_times<const N: usize, const M: usize, const K: usize>(
 /// The input matrix `a` has shape `N × K`. The orthogonal factor `Q` is encoded
 /// implicitly in `qr` and `taus`, so this helper applies the stored reflectors
 /// in reverse order without explicitly forming `Q`.
+#[inline]
+#[must_use]
 pub fn q_times<const N: usize, const M: usize, const K: usize>(
     a: &Matrix<N, K>,
     qr: &Matrix<N, M>,
@@ -348,6 +358,8 @@ pub fn q_times<const N: usize, const M: usize, const K: usize>(
 /// The input matrix `a` has shape `K × N`. The orthogonal factor `Q` is encoded
 /// implicitly in `qr` and `taus`. This helper applies the stored reflectors on
 /// the right in forward order, producing `A Q` without forming `Q`.
+#[inline]
+#[must_use]
 pub fn times_q<const N: usize, const M: usize, const K: usize>(
     a: &Matrix<K, N>,
     qr: &Matrix<N, M>,
@@ -368,6 +380,8 @@ pub fn times_q<const N: usize, const M: usize, const K: usize>(
 /// The input matrix `a` has shape `K × N`. The orthogonal factor `Q` is encoded
 /// implicitly in `qr` and `taus`. This helper applies the stored reflectors on
 /// the right in reverse order, producing `A Q^T` without forming `Q` explicitly.
+#[inline]
+#[must_use]
 pub fn times_qt<const N: usize, const M: usize, const K: usize>(
     a: &Matrix<K, N>,
     qr: &Matrix<N, M>,
@@ -389,6 +403,7 @@ pub fn times_qt<const N: usize, const M: usize, const K: usize>(
 /// right-hand side `b`, and then solves the upper triangular system `R x = Q^T b`
 /// by back substitution. The output has shape `M × 1`.
 #[inline]
+#[must_use]
 pub fn qr_solve<const N: usize, const M: usize>(a: &Matrix<N, M>, b: Matrix<N, 1>) -> Matrix<M, 1> {
     let (qr, taus) = super::qr_decomposition(a);
     let n = N.min(M);
