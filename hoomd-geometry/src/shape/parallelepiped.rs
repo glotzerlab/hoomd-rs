@@ -278,7 +278,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     ///
     /// ```math
     /// \newcommand{\horzbar}{\rule[.5ex]{2.5ex}{0.5pt}}
-    /// AA^{-1} =\begin{bmatrix} | & | & | \\ \mathbf{a}_1 & \mathbf{a}_2 & \mathbf{a}_3 \\ | & | & | \end{bmatrix} \begin{bmatrix} \horzbar & \mathbf{b}_1 & \horzbar \\ \horzbar & \mathbf{b}_2 & \horzbar \\ \horzbar & \mathbf{b}_3 & \horzbar \end{bmatrix} =I,
+    /// \mathbf{AA}^{-1} =\begin{bmatrix} | & | & | \\ \mathbf{a}_1 & \mathbf{a}_2 & \mathbf{a}_3 \\ | & | & | \end{bmatrix} \begin{bmatrix} \horzbar & \mathbf{b}_1 & \horzbar \\ \horzbar & \mathbf{b}_2 & \horzbar \\ \horzbar & \mathbf{b}_3 & \horzbar \end{bmatrix} =I,
     /// ```
     /// the rows of $`A^{-1}`$ satisfy $`a_i \cdot b_j = \delta_{ij}`$. Therefore, the $`b_j`$ are perpendicular to the desired faces (since $`a_i\cdot b_j = 0`$ for $`j\neq i`$) and we have $`a_i\cdot b_i = 1`$. Therefore, we calculate
     /// ```math
@@ -317,7 +317,7 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperparallelepiped<N> {
     /// the greatest dot product with the query direction $`d`$. For a
     /// hyperparallelepiped this is computed by choosing, for each edge vector
     /// $`\vec{a}_i`$, the vertex $`\pm 1/2  \vec{a}_i`$ whose sign matches the sign of
-    /// $`\vec{a}_i cdot \vec{d} `$ and summing the contributions:
+    /// $`\vec{a}_i \cdot \vec{d} `$ and summing the contributions:
     ///
     /// ```math
     /// h(\mathbf{d}) = \frac{1}{2} \sum_{i=0}^{N-1}
