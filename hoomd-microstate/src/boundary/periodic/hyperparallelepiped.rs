@@ -125,12 +125,11 @@ where
         }
 
         // Generate ghosts for every non-empty subset of the relevant directions.
+        // Note: a bit mask may be a faster alternative here since powerset allocates a vec under the hood.
         for subset in ghost_directions.iter().powerset().filter(|s| !s.is_empty()) {
             let mut offset = Cartesian::<N>::default();
             for &&direction in &subset {
                 let axis = (direction.unsigned_abs() - 1) as usize;
-                // Negative direction (near negative face) means ADD the edge vector (image on positive side).
-                // Positive direction (near positive face) means SUBTRACT the edge vector (image on negative side).
                 let sign = if direction.is_negative() { 1.0 } else { -1.0 };
                 offset += self.shape.edge_vectors[axis] * sign;
             }
