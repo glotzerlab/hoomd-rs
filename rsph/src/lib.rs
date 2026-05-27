@@ -368,7 +368,7 @@ mod tests {
         println!("{out}");
     }
 
-    /// Validate against sphrs via Y_l^m = (S_l^{+m} + i·S_l^{-m}) / √2.
+    /// Validate against sphrs via `Y_l^m` = (`S_l^{+m`} + i·S_l^{-m}) / √2.
     fn check_against_sphrs<const L: usize>(point: [f64; 3]) {
         use sphrs::{Coordinates, RealSH, SHEval};
         let l = i64::try_from(L).expect("L would overflow i64");
@@ -418,7 +418,7 @@ mod tests {
         check_against_sphrs::<L>(point);
     }
 
-    /// Completeness: |Y_l^0|² + 2·Σ_{m=1}^l |Y_l^m|² = (2l+1) / (4π).
+    /// Completeness: |`Y_l^0|²` + 2·Σ_{m=1}^l |`Y_l^m|²` = (2l+1) / (4π).
     fn check_completeness<const L: usize>(point: [f64; 3]) {
         let sh = SphericalHarmonic::<L>::new();
         let out = sh.eval(point);
