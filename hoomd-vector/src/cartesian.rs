@@ -539,6 +539,7 @@ impl<const N: usize> Cartesian<N> {
     /// assert_eq!(v, [1.0, 2.0, 3.0].into());
     /// ```
     #[inline]
+    #[must_use] 
     pub fn from_row_matrix(row: Matrix<1, N>) -> Self {
         Self {
             coordinates: row.rows[0],
@@ -558,6 +559,7 @@ impl<const N: usize> Cartesian<N> {
     /// assert_eq!(v, [1.0, 2.0, 3.0].into());
     /// ```
     #[inline]
+    #[must_use] 
     pub fn from_col_matrix(col: Matrix<N, 1>) -> Self {
         let mut x = Cartesian::<N>::default();
         for i in 0..N {

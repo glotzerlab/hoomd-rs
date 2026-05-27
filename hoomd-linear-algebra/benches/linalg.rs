@@ -112,7 +112,7 @@ fn svd_mat2(bencher: Bencher) {
 }
 #[divan::bench_group]
 mod gemv {
-    use super::*;
+    use super::{divan, Bencher, StdRng, SeedableRng, create_random_matrix, black_box};
     use hoomd_linear_algebra::matrix::gemv::{
         gemv_submatrix_column_into_column, gemv_submatrix_column_into_column_unsafe,
     };

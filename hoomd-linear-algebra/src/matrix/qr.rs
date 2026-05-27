@@ -436,7 +436,7 @@ mod tests {
 
     #[test]
     fn test_qr_square() {
-        let (qr, taus) = super::qr_decomposition(&Matrix::<3, 3> {
+        let (qr, _taus) = super::qr_decomposition(&Matrix::<3, 3> {
             rows: [[2., 9., 24.], [1., 10., 10.], [2., 10., 10.]],
         });
 

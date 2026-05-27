@@ -202,7 +202,7 @@ mod tests {
     use crate::property::Point;
 
     use approxim::assert_relative_eq;
-    use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
+    
     use rstest::{fixture, rstest};
 
     const N_SAMPLES: usize = 1024;
@@ -306,7 +306,7 @@ mod tests {
     #[rstest]
     fn no_ghosts_interior(get_sheared_rhomboid: Rhomboid) {
         // Test that interior points generate no ghosts and boundary points do
-        let periodic = Periodic::new(0.01, get_sheared_rhomboid.clone())
+        let periodic = Periodic::new(0.01, get_sheared_rhomboid)
             .expect("hard-coded range should be valid");
 
         // Test interior point (not at origin)
@@ -316,15 +316,14 @@ mod tests {
         let ghosts = periodic.generate_ghosts(&Point::new(interior_pos));
         assert!(
             ghosts.is_empty(),
-            "Interior point should not generate ghosts: {:?}",
-            interior_pos
+            "Interior point should not generate ghosts: {interior_pos:?}"
         );
     }
 
     #[rstest]
     fn ghosts_face_centers(get_sheared_rhomboid: Rhomboid) {
         // Test that points near face centers generate appropriate ghosts
-        let periodic = Periodic::new(0.3, get_sheared_rhomboid.clone())
+        let periodic = Periodic::new(0.3, get_sheared_rhomboid)
             .expect("hard-coded range should be valid");
 
         // Point near the x-face (at maximum x)
@@ -333,7 +332,7 @@ mod tests {
 
         let ghosts = periodic.generate_ghosts(&abs_point);
         // Should generate at least 1 ghost (one for the face)
-        assert!(ghosts.len() >= 1, "Should generate ghosts near face");
+        assert!(!ghosts.is_empty(), "Should generate ghosts near face");
     }
 
     #[test]
@@ -371,7 +370,7 @@ mod tests {
     #[rstest]
     fn ghosts_tilted_box(get_sheared_rhomboid: Rhomboid) {
         // Test ghost generation with a tilted rhomboid
-        let periodic = Periodic::new(0.1, get_sheared_rhomboid.clone())
+        let periodic = Periodic::new(0.1, get_sheared_rhomboid)
             .expect("hard-coded range should be valid");
 
         // Point inside the rhomboid should not generate ghosts unless near a boundary

@@ -127,12 +127,11 @@ where
             // skip masks that include an axis where the particle is not near either face
             let mut ok = true;
             for i in 0..N {
-                if ((mask >> i) & 1) == 1 {
-                    if !(near_neg[i] || near_pos[i]) {
+                if ((mask >> i) & 1) == 1
+                    && !(near_neg[i] || near_pos[i]) {
                         ok = false;
                         break;
                     }
-                }
             }
             if !ok {
                 continue;
@@ -229,7 +228,7 @@ mod tests {
         let abs_point = Point::new(periodic.shape.to_absolute(frac_pos));
 
         let ghosts = periodic.generate_ghosts(&abs_point);
-        assert!(ghosts.len() >= 1, "Should generate ghosts near face");
+        assert!(!ghosts.is_empty(), "Should generate ghosts near face");
     }
 
     #[test]
@@ -262,7 +261,7 @@ mod tests {
             let ghosts_hyper = periodic_hyper.generate_ghosts(&abs_point);
             assert_eq!(ghosts_tric.len(), ghosts_hyper.len());
 
-            for ghost in ghosts_tric.iter() {
+            for ghost in &ghosts_tric {
                 let found = ghosts_hyper.iter().any(|other| {
                     ghost
                         .position
