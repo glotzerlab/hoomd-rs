@@ -527,10 +527,19 @@ impl Volume for Triclinic {
 }
 
 impl SupportMapping<Cartesian<3>> for Triclinic {
-    /// Compute the support point of the triclinic box in a given direction.
+    /// Compute the support point of the triclinic box in a given direction. Mathematically,
+    /// we use that
+    /// ```math
+    ///  \mathbf{A}^{-1} \vec{v_i} \cdot \mathbf{A}^T \vec{n} = \vec{v_i}^T (\mathbf{A}^{-T} \mathbf{A}^{T}) \vec{n} = \vec{v_i} \cdot \vec{n}.
+    /// ```
+    /// The vertices of the scaled box ($`\mathbf{A}^{-1} \vec{v_i}`$) have components $`\pm 0.5`$, so we can determine the correct vertex using the sign of $`\mathbf{A}^{T}n`$.
     #[inline]
     fn support_mapping(&self, n: &Cartesian<3>) -> Cartesian<3> {
-        let d = self.to_fractional(n);
+        let d = Cartesian::from([
+            self.lx().get() * n[0],
+            self.ly().get() * (self.xy() * n[0] + n[1]),
+            self.lz().get() * (self.xz() * n[0] + self.yz() * n[1] + n[2]),
+        ]);
         let s = Cartesian::from([
             d[0].signum() * 0.5,
             d[1].signum() * 0.5,

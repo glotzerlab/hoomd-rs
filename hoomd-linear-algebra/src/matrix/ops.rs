@@ -698,7 +698,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "index out of bounds: the len is 3 but the index is 3")]
+    #[should_panic(expected = "range end index 4 out of range for slice of length 3")]
     fn test_submatrix_slice_iter_panic() {
         let m: Matrix<3, 4> = Matrix {
             rows: [

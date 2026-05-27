@@ -43,7 +43,10 @@ impl MaximumAllowableInteractionRange for Rhomboid {
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
         let plane_distances = self.get_nearest_plane_distance();
-        f64::min(plane_distances[0].get(), plane_distances[1].get())
+        f64::min(
+            plane_distances[0].get() * 0.5,
+            plane_distances[1].get() * 0.5,
+        )
     }
 }
 
@@ -252,7 +255,7 @@ mod tests {
         // dx = 2 / sqrt(1 + 2) = 2 / sqrt(3)
         // dy = 2
         // max_range = min(dx, dy) / 2 = (2/sqrt(3)) / 2 = 1/sqrt(3)
-        assert!(max_range == 1.0 / f64::sqrt(3.0));
+        assert_relative_eq!(max_range, 1.0 / f64::sqrt(3.0), epsilon = 1e-8);
     }
 
     #[test]

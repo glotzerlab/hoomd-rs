@@ -112,13 +112,15 @@ where
         let fractional_coordinate = self.shape.to_fractional(*r);
 
         // For each axis, determine if the particle is near the negative or positive face.
+        // Use -(i+1) for negative face and +(i+1) for positive face to avoid -0 encoding issues.
         let mut ghost_directions: ArrayVec<i32, N> = ArrayVec::new();
         for (i, fractional_cutoff) in fractional_cutoffs.iter().enumerate() {
             if fractional_coordinate[i] <= -0.5 + fractional_cutoff {
                 ghost_directions
-                    .push(-i32::try_from(i).expect("Could not convert face dim to i32"));
+                    .push(-i32::try_from(i + 1).expect("Could not convert face dim to i32"));
             } else if fractional_coordinate[i] >= 0.5 - fractional_cutoff {
-                ghost_directions.push(i32::try_from(i).expect("Could not convert face dim to i32"));
+                ghost_directions
+                    .push(i32::try_from(i + 1).expect("Could not convert face dim to i32"));
             }
         }
 
@@ -126,8 +128,10 @@ where
         for subset in ghost_directions.iter().powerset().filter(|s| !s.is_empty()) {
             let mut offset = Cartesian::<N>::default();
             for &&direction in &subset {
-                let axis = direction.unsigned_abs() as usize;
-                let sign = if direction.is_negative() { -1.0 } else { 1.0 };
+                let axis = (direction.unsigned_abs() - 1) as usize;
+                // Negative direction (near negative face) means ADD the edge vector (image on positive side).
+                // Positive direction (near positive face) means SUBTRACT the edge vector (image on negative side).
+                let sign = if direction.is_negative() { 1.0 } else { -1.0 };
                 offset += self.shape.edge_vectors[axis] * sign;
             }
             let mut ghost_site = *site_properties;
