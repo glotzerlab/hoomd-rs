@@ -9,7 +9,7 @@ use std::cmp::min;
 ///
 /// # QR Decomposition
 ///
-/// Factors a matrix `A` ($`N \times M`$), $`N \ge M`$ into an orthogonal matrix $`Q`$ ($`N \times N`$) and an
+/// Factors a matrix `A` ($`N \times M`$), $`N \ge M`$, into an orthogonal matrix $`Q`$ ($`N \times N`$) and an
 /// upper triangular matrix $`R`$ ($`N \times M`$) such that $`A = Q R`$. The columns of
 /// $`Q`$ form an orthonormal basis for the column space of $`A`$, and $`R`$ encodes
 /// the change of basis from $`A`$'s columns into that orthonormal basis.
