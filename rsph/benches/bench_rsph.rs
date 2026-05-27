@@ -31,7 +31,7 @@ fn recurrence<const L: usize>(bencher: divan::Bencher<'_, '_>) {
         .bench_local_values(|xyz| sh.eval(xyz));
 }
 
-/// Spherical-harmonic core for l = 6. Returns [p_6^m * Q_6^m] for m = 0..6.
+/// Spherical-harmonic core for l = 6. Returns [`p_6^m` * `Q_6^m`] for m = 0..6.
 #[inline(always)]
 #[must_use]
 pub fn sph_core_l6(x: f64, y: f64, z: f64) -> [f64; 7] {
