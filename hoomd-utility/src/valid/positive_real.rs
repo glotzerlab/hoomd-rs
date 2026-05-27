@@ -5,6 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::{
+    cmp::Ordering,
     fmt,
     ops::{Div, DivAssign, Mul, MulAssign},
 };
@@ -44,6 +45,22 @@ impl PositiveReal {
     #[inline]
     pub fn get(&self) -> f64 {
         self.0
+    }
+}
+
+impl Eq for PositiveReal {}
+
+impl PartialOrd for PositiveReal {
+    #[inline]
+    fn partial_cmp(&self, other: &PositiveReal) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for PositiveReal {
+    #[inline]
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.get().total_cmp(&other.get())
     }
 }
 

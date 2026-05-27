@@ -6,13 +6,22 @@
 Adds new shapes, `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` for use in simulations with sheared boxes. All shapes can be used as boundary conditions for simulations, although `Triclinic`, and `Rhomboid` should be preferred for simulations in 2D/3D.
 
 As a helper method for inverting matrices in a numerically stable way, `qr` has also been added as a method to the `matrix` crate to calculate the QR factorization of a tall matrix.
+* `[hoomd-manifold]`: Add `Spherical<4>::from_versor` and the corresponding `::to_versor` (#285).
+* `[hoomd-mc]`: Implement translation moves for `Point<Spherical<4>>` (#287).
+* `[hoomd-utility]`: Implement `Eq`, `PartialOrd`, and `Ord` for `PositiveReal` (#287).
+
 *Changed:*
+
+* `[hoomd-mc]`: Improve the numerical stability of translation moves for `Point<Spherical<3>>` (#287).
+* Build the documentation with mdBook 0.5.3 (#295).
 
 *Deprecated:*
 
 *Removed:*
 
 *Fixed:*
+
+* `[hoomd-manifold]`: Fixed numerical stability issue in `Spherical<3>::distance` where the dot product could result in an out of bounds value.
 
 ## 1.1.0 (2026-04-17)
 
