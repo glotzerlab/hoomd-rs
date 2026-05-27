@@ -361,13 +361,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn display() {
-        let sh = SphericalHarmonic::<4>::new();
-        let out = sh.eval([0.6, 0.3, 0.4]);
-        println!("{out}");
-    }
-
     /// Validate against sphrs via `Y_l^m` = (`S_l^{+m`} + i·S_l^{-m}) / √2.
     fn check_against_sphrs<const L: usize>(point: [f64; 3]) {
         use sphrs::{Coordinates, RealSH, SHEval};
@@ -385,7 +378,11 @@ mod tests {
             let m_i64 = i64::try_from(m).expect("m would overflow i64");
             let s_pos: f64 = RealSH::Spherical.eval(l, m_i64, &coords);
             let s_neg: f64 = RealSH::Spherical.eval(l, -m_i64, &coords);
-            assert_abs_diff_eq!(out[m], Complex64::new(s_pos * FRAC_1_SQRT_2, s_neg * FRAC_1_SQRT_2), epsilon = 1e-8);
+            assert_abs_diff_eq!(
+                out[m],
+                Complex64::new(s_pos * FRAC_1_SQRT_2, s_neg * FRAC_1_SQRT_2),
+                epsilon = 1e-8
+            );
         }
     }
 
