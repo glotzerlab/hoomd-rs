@@ -75,10 +75,10 @@ where
         }
         .transpose();
 
-        let fractional = qr::qr_solve(&a, &r.to_column_matrix());
+        let fractional = qr::qr_solve(&a, r.to_column_matrix());
 
         let position_offset = a.matmul(&fractional.map_elements(f64::round));
-        *r -= Cartesian::from_col_matrix(&position_offset);
+        *r -= Cartesian::from_col_matrix(position_offset);
 
         Ok(properties)
     }
@@ -127,11 +127,10 @@ where
             // skip masks that include an axis where the particle is not near either face
             let mut ok = true;
             for i in 0..N {
-                if ((mask >> i) & 1) == 1
-                    && !(near_neg[i] || near_pos[i]) {
-                        ok = false;
-                        break;
-                    }
+                if ((mask >> i) & 1) == 1 && !(near_neg[i] || near_pos[i]) {
+                    ok = false;
+                    break;
+                }
             }
             if !ok {
                 continue;

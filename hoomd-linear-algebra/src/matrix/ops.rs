@@ -574,7 +574,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "index out of bounds: the len is 2 but the index is 2")]
     fn test_get_row_panic() {
         let m: Matrix<2, 3> = Matrix {
             rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
@@ -583,7 +583,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "index out of bounds: the len is 3 but the index is 3")]
     fn test_get_col_panic() {
         let m: Matrix<2, 3> = Matrix {
             rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
@@ -592,7 +592,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "index out of bounds: the len is 3 but the index is 3")]
     fn test_get_submatrix_panic_row() {
         let m: Matrix<3, 4> = Matrix {
             rows: [
@@ -606,7 +606,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = /* */)]
     fn test_get_submatrix_panic_col() {
         let m: Matrix<3, 4> = Matrix {
             rows: [
