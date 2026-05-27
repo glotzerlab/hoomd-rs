@@ -374,8 +374,7 @@ impl Rhomboid {
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 2] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 2];
-        dist[0] = self
-            .lx()
+        dist[0] = self.lx()
             / (f64::sqrt(1.0 + self.xy() * self.xy()))
                 .try_into()
                 .expect("nearest-plane distance must be positive");
@@ -516,10 +515,18 @@ impl IsPointInside<Cartesian<2>> for Rhomboid {
 }
 
 impl SupportMapping<Cartesian<2>> for Rhomboid {
-    /// Calculate the point furthest from the center in a given direction.
+    /// Calculate the point furthest from the center in a given direction. Mathematically,
+    /// we use that
+    /// ```math
+    ///  \mathbf{A}^{-1} \vec{v_i} \cdot \mathbf{A}^T \vec{n} = \vec{v_i}^T (\mathbf{A}^{-T} \mathbf{A}^{T}) \vec{n} = \vec{v_i} \cdot \vec{n}.
+    /// ```
+    /// The vertices of the scaled box ($`\mathbf{A}^{-1} \vec{v_i}`$) have components $`\pm 0.5`$, so we can determine the correct vertex using the sign of $`\mathbf{A}^{T}n`$.
     #[inline]
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
-        let d = self.to_fractional(n);
+        let d = Cartesian::from([
+            self.lx().get() * n[0],
+            self.ly().get() * (self.xy() * n[0] + n[1]),
+        ]);
         let s = Cartesian::from([d[0].signum() * 0.5, d[1].signum() * 0.5]);
         self.to_absolute(&s)
     }
@@ -787,13 +794,7 @@ mod tests {
 
     /// Compare the Rhomboid SAT against the `ConvexSurfaceMesh2d` separating-planes
     /// implementation (an independently tested ground truth).
-    fn check_sat_against_mesh(
-        a: Rhomboid,
-        b: Rhomboid,
-        tx: f64,
-        ty: f64,
-        theta: f64,
-    ) {
+    fn check_sat_against_mesh(a: Rhomboid, b: Rhomboid, tx: f64, ty: f64, theta: f64) {
         let v_ij = Cartesian::from([tx, ty]);
         let o_ij = Angle::from(theta);
 

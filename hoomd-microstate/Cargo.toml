@@ -23,6 +23,7 @@ rand.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 robust.workspace = true
+itertools.workspace = true
 
 hoomd-derive.workspace = true
 hoomd-geometry.workspace = true

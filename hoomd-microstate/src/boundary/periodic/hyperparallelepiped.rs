@@ -18,6 +18,7 @@ use hoomd_linear_algebra::{
     matrix::{Matrix, qr},
 };
 use hoomd_vector::Cartesian;
+use itertools::Itertools;
 
 impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N> {
     /// The largest value that the maximum interaction range can take. While theoretically to avoid self-interaction the interaction distance may be as large as 1/2 the smallest box vector, we choose to take the maximum interaction range to be 1/2 the smallest perpendicular distance between pairs of parallel faces in order to avoid having to generating more than one ghost per particle.
@@ -122,21 +123,13 @@ where
         }
 
         // Generate ghosts for every non-empty subset of the relevant directions.
-        let num_directions = ghost_directions.len();
-        for mask in 1..(1 << num_directions) {
+        for subset in ghost_directions.iter().powerset().filter(|s| !s.is_empty()) {
             let mut offset = Cartesian::<N>::default();
-            for direction_index in 0..num_directions {
-                if (mask >> direction_index) & 1 == 0 {
-                    continue;
-                }
-
-                let direction = ghost_directions[direction_index];
-                let axis = direction.abs() as usize;
+            for &&direction in &subset {
+                let axis = direction.unsigned_abs() as usize;
                 let sign = if direction.is_negative() { -1.0 } else { 1.0 };
-
                 offset += self.shape.edge_vectors[axis] * sign;
             }
-
             let mut ghost_site = *site_properties;
             *ghost_site.position_mut() += offset;
             result.push(ghost_site);

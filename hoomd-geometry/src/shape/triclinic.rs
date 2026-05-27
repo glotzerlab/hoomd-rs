@@ -466,15 +466,13 @@ impl Triclinic {
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 3];
-        dist[0] = self
-            .lx()
+        dist[0] = self.lx()
             / (f64::sqrt(
                 1.0 + self.xy() * self.xy() + (self.xy() * self.yz() - self.xz()).powi(2),
             ))
-                .try_into()
-                .expect("nearest-plane distance must be positive");
-        dist[1] = self
-            .ly()
+            .try_into()
+            .expect("nearest-plane distance must be positive");
+        dist[1] = self.ly()
             / (f64::sqrt(1.0 + self.yz() * self.yz()))
                 .try_into()
                 .expect("nearest-plane distance must be positive");
