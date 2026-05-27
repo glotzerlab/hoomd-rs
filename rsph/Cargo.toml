@@ -12,12 +12,12 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+hoomd-vector = "1.1.0"
 num-complex.workspace = true
 
 [dev-dependencies]
 approxim.workspace = true
 divan.workspace = true
-hoomd-vector = "1.1.0"
 rand.workspace = true
 rstest.workspace = true
 sphrs.workspace = true

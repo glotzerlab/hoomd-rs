@@ -18,13 +18,15 @@
 //! use approxim::assert_abs_diff_eq;
 //! use std::f64::consts::PI;
 //!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! // Initialize the SphericalHarmonic container, which can be reused
 //! // to compute Y_6^m at a large number of points.
 //! let y_6 = SphericalHarmonic::<6>::new();
 //!
 //! // Values of m in 0..=L are returned as a HarmonicOutput<L> container, which behaves
 //! // like a [f64; L+1] array.
-//! let sh = y_6.eval([1.0 / f64::sqrt(3.0), 1.0 / f64::sqrt(3.0), 1.0 / f64::sqrt(3.0)]);
+//! let (point, _) = Cartesian::<3>::from([1.0; 3]).to_unit()?;
+//! let sh = y_6.eval(point);
 //! assert_eq!(sh.len(), 6+1);
 //!
 //! // Zonal harmonic (m=0) is always purely real
@@ -40,8 +42,8 @@
 //!     let y6 = SphericalHarmonic::<6>::new();
 //!
 //!     for &bond in bonds {
-//!         let projected_onto_sphere = bond / bond.norm();
-//!         let qlmi = y6.eval(projected_onto_sphere.coordinates);
+//!         let (unit_bond, _) = bond.to_unit().expect("Bond has zero distance!");
+//!         let qlmi = y6.eval(unit_bond);
 //!         for m in 0..7 { accum[m] += qlmi[m]; }
 //!     }
 //!
@@ -60,8 +62,11 @@
 //!     [ 0.0, -1.0, -1.0], [ 0.0, -1.0,  1.0], [0.0,  1.0, -1.0], [0.0,  1.0,  1.0],
 //! ].map(Cartesian::<3>::from).to_vec();
 //! assert_abs_diff_eq!(q6(&fcc_bonds), 0.57452416, epsilon = 1e-6);
+//! # Ok(())
+//! # }
 //! ```
 
+use hoomd_vector::{Cartesian, Unit};
 use num_complex::Complex64;
 use std::{
     f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2},
@@ -76,14 +81,19 @@ use std::{
 /// points in three-dimensional space.
 ///
 /// ```
+/// use hoomd_vector::{Cartesian, InnerProduct};
 /// use rsph::SphericalHarmonic;
 ///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let sh = SphericalHarmonic::<2>::new();
-/// let out = sh.eval([0.0, 0.0, 1.0]);
+/// let (point, _) = Cartesian::<3>::from([0.0, 0.0, 1.0]).to_unit()?;
+/// let out = sh.eval(point);
 ///
 /// // m=0 (zonal harmonic) is always purely real
 /// assert_eq!(out[0].im, 0.0);
 /// assert_eq!(out.len(), 3);
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Copy, Clone, Debug)]
 pub struct SphericalHarmonic<const L: usize> {
@@ -141,32 +151,43 @@ impl<const L: usize> SphericalHarmonic<L> {
     ///
     /// ```
     /// use approxim::assert_abs_diff_eq;
+    /// use hoomd_vector::{Cartesian, InnerProduct, Unit};
     /// use rsph::SphericalHarmonic;
-    /// use std::f64::consts::FRAC_PI_4;
     ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let sh = SphericalHarmonic::<2>::new();
     ///
     /// let (x, y, z) = (0.6, 0.8, 0.0);
-    /// let cartesian_result = sh.eval([x, y, z]);
+    /// let (cart_point, _) = Cartesian::<3>::from([x, y, z]).to_unit()?;
+    /// let cartesian_result = sh.eval(cart_point);
     ///
     /// let (theta, phi) = (f64::acos(z), f64::atan2(y, x));
     /// let spherical_result = sh.eval_spherical(theta, phi);
     ///
     /// assert_abs_diff_eq!(cartesian_result[0], spherical_result[0], epsilon = 1e-15);
     /// assert_abs_diff_eq!(cartesian_result[1], spherical_result[1], epsilon = 1e-15);
+    /// # Ok(())
+    /// # }
     /// ```
     #[must_use]
     #[inline]
     pub fn eval_spherical(&self, theta: f64, phi: f64) -> HarmonicOutput<L> {
         let (sin_theta, cos_theta) = theta.sin_cos();
         let (sin_phi, cos_phi) = phi.sin_cos();
-        self.eval([sin_theta * cos_phi, sin_theta * sin_phi, cos_theta])
+        self.eval_inner([sin_theta * cos_phi, sin_theta * sin_phi, cos_theta])
     }
 
     /// Evaluate `Y_L^m` for m = 0..=L at a point on the unit sphere.
     #[must_use]
     #[inline]
-    pub fn eval(&self, point: [f64; 3]) -> HarmonicOutput<L> {
+    pub fn eval(&self, point: Unit<Cartesian<3>>) -> HarmonicOutput<L> {
+        self.eval_inner(point.get().coordinates)
+    }
+
+    /// Evaluate `Y_l^m` for a point *assumed* to be on the unit sphere.
+    #[must_use]
+    #[inline]
+    fn eval_inner(&self, point: [f64; 3]) -> HarmonicOutput<L> {
         let [x, y, z] = point;
         let rxy2 = x * x + y * y;
 
@@ -274,10 +295,13 @@ impl<const L: usize> HarmonicOutput<L> {
     ///
     /// ```
     /// use approxim::assert_abs_diff_eq;
+    /// use hoomd_vector::{Cartesian, InnerProduct};
     /// use num_complex::Complex64;
     /// use rsph::SphericalHarmonic;
     ///
-    /// let out = SphericalHarmonic::<4>::new().eval([0.0, 0.0, 1.0]);
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let (point, _) = Cartesian::<3>::from([0.0, 0.0, 1.0]).to_unit()?;
+    /// let out = SphericalHarmonic::<4>::new().eval(point);
     ///
     /// // Build Y_4^m for m = -4..=4: `Y_l^{-m} = (-1)^m · conj(Y_l^m)`.
     /// let full: Vec<Complex64> = (1..=4)
@@ -286,7 +310,9 @@ impl<const L: usize> HarmonicOutput<L> {
     ///     .chain(out.iter())
     ///     .collect();
     /// assert_eq!(full.len(), 9);
-    /// assert_abs_diff_eq!(full[0].conj(), full[2 * out.l()])
+    /// assert_abs_diff_eq!(full[0].conj(), full[2 * out.l()]);
+    /// # Ok(())
+    /// # }
     /// ```
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = Complex64> + '_ {
@@ -310,6 +336,7 @@ impl<const L: usize> HarmonicOutput<L> {
 mod tests {
     use super::*;
     use approxim::assert_abs_diff_eq;
+    use hoomd_vector::InnerProduct;
     use rstest::rstest;
     use std::marker::PhantomData;
 
@@ -318,47 +345,55 @@ mod tests {
         Degree::default()
     }
 
+    fn unit(arr: [f64; 3]) -> Result<Unit<Cartesian<3>>, hoomd_vector::Error> {
+        Ok(Cartesian::from(arr).to_unit()?.0)
+    }
+
     #[test]
-    fn l0() {
+    fn l0() -> Result<(), hoomd_vector::Error> {
         let sh = SphericalHarmonic::<0>::new();
-        let out = sh.eval([0.0, 0.0, 1.0]);
+        let out = sh.eval(unit([0.0, 0.0, 1.0])?);
         let expected = 1.0 / (2.0 * f64::sqrt(PI));
         assert_abs_diff_eq!(out[0], Complex64::new(expected, 0.0f64), epsilon = 1e-12);
         assert_eq!(out.mp.len(), 0);
+        Ok(())
     }
 
     #[test]
-    fn l1_north_pole() {
+    fn l1_north_pole() -> Result<(), hoomd_vector::Error> {
         let sh = SphericalHarmonic::<1>::new();
-        let out = sh.eval([0.0, 0.0, 1.0]);
+        let out = sh.eval(unit([0.0, 0.0, 1.0])?);
         let c = f64::sqrt(3.0 / (4.0 * PI));
         assert_abs_diff_eq!(out[0], Complex64::new(c, 0.0), epsilon = 1e-12);
         assert_abs_diff_eq!(out[1], Complex64::ZERO, epsilon = 1e-12);
+        Ok(())
     }
 
     #[test]
-    fn l1_x_axis() {
+    fn l1_x_axis() -> Result<(), hoomd_vector::Error> {
         let sh = SphericalHarmonic::<1>::new();
-        let out = sh.eval([1.0, 0.0, 0.0]);
+        let out = sh.eval(unit([1.0, 0.0, 0.0])?);
         let c = f64::sqrt(3.0 / (8.0 * PI));
         assert_abs_diff_eq!(out[0], Complex64::ZERO, epsilon = 1e-12);
         assert_abs_diff_eq!(out[1], Complex64::new(c, 0.0), epsilon = 1e-12);
+        Ok(())
     }
 
     #[test]
-    fn l1_y_axis() {
+    fn l1_y_axis() -> Result<(), hoomd_vector::Error> {
         let sh = SphericalHarmonic::<1>::new();
-        let out = sh.eval([0.0, 1.0, 0.0]);
+        let out = sh.eval(unit([0.0, 1.0, 0.0])?);
         let c = f64::sqrt(3.0 / (8.0 * PI));
         assert_abs_diff_eq!(out[0], Complex64::ZERO, epsilon = 1e-12);
         assert_abs_diff_eq!(out[1], Complex64::new(0.0, c), epsilon = 1e-12);
+        Ok(())
     }
 
     #[test]
-    fn l2_finite() {
+    fn l2_finite() -> Result<(), hoomd_vector::Error> {
         let inv3 = 3.0_f64.sqrt().recip();
         let sh = SphericalHarmonic::<2>::new();
-        let out = sh.eval([inv3, inv3, inv3]);
+        let out = sh.eval(unit([inv3, inv3, inv3])?);
         assert_eq!(out.mp.len(), 2);
         assert!(out.m0.re.is_finite());
         assert!(out.m0.im.is_finite());
@@ -366,36 +401,39 @@ mod tests {
             assert!(v.re.is_finite());
             assert!(v.im.is_finite());
         }
+        Ok(())
     }
 
     #[test]
-    fn into_iter_matches_index() {
+    fn into_iter_matches_index() -> Result<(), hoomd_vector::Error> {
         let sh = SphericalHarmonic::<4>::new();
-        let reference = sh.eval([0.6, 0.3, 0.4]);
-        let out = sh.eval([0.6, 0.3, 0.4]);
+        let reference = sh.eval(unit([0.6, 0.3, 0.4])?);
+        let out = sh.eval(unit([0.6, 0.3, 0.4])?);
         for (m, val) in out.into_iter().enumerate() {
             assert_abs_diff_eq!(val, reference[m], epsilon = 1e-15);
         }
+        Ok(())
     }
 
     #[test]
-    fn iter_matches_index() {
+    fn iter_matches_index() -> Result<(), hoomd_vector::Error> {
         let sh = SphericalHarmonic::<4>::new();
-        let out = sh.eval([0.6, 0.3, 0.4]);
+        let out = sh.eval(unit([0.6, 0.3, 0.4])?);
         let values: Vec<_> = out.iter().collect();
         assert_eq!(values.len(), 5);
         for m in 0..=4 {
             assert_abs_diff_eq!(values[m], out[m], epsilon = 1e-15);
         }
+        Ok(())
     }
 
     /// Validate against sphrs via `Y_l^m` = (`S_l^{+m`} + i·S_l^{-m}) / √2.
-    fn check_against_sphrs<const L: usize>(point: [f64; 3]) {
+    fn check_against_sphrs<const L: usize>(point: [f64; 3]) -> Result<(), hoomd_vector::Error> {
         use sphrs::{Coordinates, RealSH, SHEval};
         let l = i64::try_from(L).expect("L would overflow i64");
 
         let sh = SphericalHarmonic::<L>::new();
-        let out = sh.eval(point);
+        let out = sh.eval(unit(point)?);
         let [x, y, z] = point;
         let coords = Coordinates::cartesian(x, y, z);
 
@@ -412,6 +450,7 @@ mod tests {
                 epsilon = 1e-8
             );
         }
+        Ok(())
     }
 
     #[rstest]
@@ -444,19 +483,20 @@ mod tests {
         )]
         point: [f64; 3],
     ) {
-        check_against_sphrs::<L>(point);
+        check_against_sphrs::<L>(point).unwrap();
     }
 
     /// Completeness: |`Y_l^0|²` + 2·Σ_{m=1}^l |`Y_l^m|²` = (2l+1) / (4π).
-    fn check_completeness<const L: usize>(point: [f64; 3]) {
+    fn check_completeness<const L: usize>(point: [f64; 3]) -> Result<(), hoomd_vector::Error> {
         let sh = SphericalHarmonic::<L>::new();
-        let out = sh.eval(point);
+        let out = sh.eval(unit(point)?);
         let mut sum = out[0].norm_sqr();
         for m in 1..=L {
             sum += 2.0 * out[m].norm_sqr();
         }
         let expected = (2 * L + 1) as f64 / (4.0 * PI);
         assert_abs_diff_eq!(sum, expected, epsilon = 1e-10);
+        Ok(())
     }
 
     #[rstest]
@@ -487,6 +527,6 @@ mod tests {
             0.7_f64.sin() * 0.3_f64.sin(),
             0.7_f64.cos(),
         ];
-        check_completeness::<L>(point);
+        check_completeness::<L>(point).unwrap();
     }
 }
