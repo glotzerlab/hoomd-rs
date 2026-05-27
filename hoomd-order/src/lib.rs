@@ -81,8 +81,8 @@ use std::{
 /// points in three-dimensional space.
 ///
 /// ```
-/// use hoomd_vector::{Cartesian, InnerProduct};
 /// use hoomd_order::SphericalHarmonic;
+/// use hoomd_vector::{Cartesian, InnerProduct};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let sh = SphericalHarmonic::<2>::new();
@@ -151,8 +151,8 @@ impl<const L: usize> SphericalHarmonic<L> {
     ///
     /// ```
     /// use approxim::assert_abs_diff_eq;
-    /// use hoomd_vector::{Cartesian, InnerProduct, Unit};
     /// use hoomd_order::SphericalHarmonic;
+    /// use hoomd_vector::{Cartesian, InnerProduct, Unit};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let sh = SphericalHarmonic::<2>::new();
@@ -164,8 +164,16 @@ impl<const L: usize> SphericalHarmonic<L> {
     /// let (theta, phi) = (f64::acos(z), f64::atan2(y, x));
     /// let spherical_result = sh.eval_spherical(theta, phi);
     ///
-    /// assert_abs_diff_eq!(cartesian_result[0], spherical_result[0], epsilon = 1e-15);
-    /// assert_abs_diff_eq!(cartesian_result[1], spherical_result[1], epsilon = 1e-15);
+    /// assert_abs_diff_eq!(
+    ///     cartesian_result[0],
+    ///     spherical_result[0],
+    ///     epsilon = 1e-15
+    /// );
+    /// assert_abs_diff_eq!(
+    ///     cartesian_result[1],
+    ///     spherical_result[1],
+    ///     epsilon = 1e-15
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -295,9 +303,9 @@ impl<const L: usize> HarmonicOutput<L> {
     ///
     /// ```
     /// use approxim::assert_abs_diff_eq;
+    /// use hoomd_order::SphericalHarmonic;
     /// use hoomd_vector::{Cartesian, InnerProduct};
     /// use num_complex::Complex64;
-    /// use hoomd_order::SphericalHarmonic;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let (point, _) = Cartesian::<3>::from([0.0, 0.0, 1.0]).to_unit()?;
