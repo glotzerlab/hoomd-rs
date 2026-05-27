@@ -174,20 +174,20 @@ impl<const L: usize> SphericalHarmonic<L> {
     pub fn eval_spherical(&self, theta: f64, phi: f64) -> HarmonicOutput<L> {
         let (sin_theta, cos_theta) = theta.sin_cos();
         let (sin_phi, cos_phi) = phi.sin_cos();
-        self.eval_inner([sin_theta * cos_phi, sin_theta * sin_phi, cos_theta])
+        self.eval_unchecked([sin_theta * cos_phi, sin_theta * sin_phi, cos_theta])
     }
 
     /// Evaluate `Y_L^m` for m = 0..=L at a point on the unit sphere.
     #[must_use]
     #[inline]
     pub fn eval(&self, point: Unit<Cartesian<3>>) -> HarmonicOutput<L> {
-        self.eval_inner(point.get().coordinates)
+        self.eval_unchecked(point.get().coordinates)
     }
 
     /// Evaluate `Y_l^m` for a point *assumed* to be on the unit sphere.
     #[must_use]
     #[inline]
-    fn eval_inner(&self, point: [f64; 3]) -> HarmonicOutput<L> {
+    fn eval_unchecked(&self, point: [f64; 3]) -> HarmonicOutput<L> {
         let [x, y, z] = point;
         let rxy2 = x * x + y * y;
 
