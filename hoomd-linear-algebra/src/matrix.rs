@@ -993,7 +993,6 @@ impl_copy_for_n_m!(1, 2, 3, 4);
 pub mod test_utils {
     use std::{fmt::Debug, ops::Index};
 
-    use super::*;
     use approxim::{assert_ulps_eq, ulps_eq};
 
     const EPS: f64 = 1e-13;
@@ -1029,8 +1028,6 @@ pub mod test_utils {
 
 #[cfg(test)]
 mod tests {
-    use std::{fmt::Debug, ops::Index};
-
     use super::{
         test_utils::{assert_diags_ulps_eq, assert_matrixes_ulps_eq},
         *,
