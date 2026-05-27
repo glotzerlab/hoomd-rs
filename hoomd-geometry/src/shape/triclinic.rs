@@ -164,6 +164,9 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    /// # Panics
+    ///
+    /// Panics if the computed box dimensions are not positive.
     #[inline]
     #[must_use]
     pub fn from_parallelepiped(parallelepiped: &Hyperparallelepiped<3>) -> Self {
@@ -455,18 +458,26 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
+    /// # Panics
+    ///
+    /// Panics if any intermediate `try_into` conversion fails.
     #[inline]
     #[must_use]
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 3];
-        dist[0] = self.lx()
+        dist[0] = self
+            .lx()
             / (f64::sqrt(
                 1.0 + self.xy() * self.xy() + (self.xy() * self.yz() - self.xz()).powi(2),
             ))
-            .try_into()
-            .unwrap();
-        dist[1] = self.ly() / (f64::sqrt(1.0 + self.yz() * self.yz())).try_into().unwrap();
+                .try_into()
+                .expect("nearest-plane distance must be positive");
+        dist[1] = self
+            .ly()
+            / (f64::sqrt(1.0 + self.yz() * self.yz()))
+                .try_into()
+                .expect("nearest-plane distance must be positive");
         dist[2] = self.lz();
         dist
     }

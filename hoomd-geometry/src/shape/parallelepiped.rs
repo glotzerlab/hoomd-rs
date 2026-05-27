@@ -229,11 +229,11 @@ impl<const N: usize> Hyperparallelepiped<N> {
     #[inline]
     #[must_use]
     pub fn to_fractional(&self, v: Cartesian<N>) -> Cartesian<N> {
-        Cartesian::from_col_matrix(qr::qr_solve(
+        Cartesian::from_col_matrix(&qr::qr_solve(
             self.qr
                 .as_ref()
                 .expect("qr attribute is not computed; call calc_qr() first"),
-            v.to_column_matrix(),
+            &v.to_column_matrix(),
         ))
     }
 
@@ -309,7 +309,11 @@ impl<const N: usize> Hyperparallelepiped<N> {
     #[must_use]
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; N] {
         // Since V = A_ih_i, h_i = V/A_i.
-        let r_inv = get_r_inv(self.qr.as_ref().unwrap());
+        let r_inv = get_r_inv(
+            self.qr
+                .as_ref()
+                .expect("qr attribute is not computed; call calc_qr() first"),
+        );
         let distances: [PositiveReal; N] = std::array::from_fn(|i| {
             let row = r_inv.get_row(i);
             let inv_norm = 1.0 / row.as_slice().iter().map(|&x| x * x).sum::<f64>().sqrt();
@@ -394,7 +398,7 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
             self.qr
                 .as_ref()
                 .expect("qr attribute is not computed; call calc_qr() first"),
-            point.to_column_matrix(),
+            &point.to_column_matrix(),
         );
 
         fractional

@@ -184,7 +184,7 @@ fn apply_householder_left<const N: usize, const M: usize, const K: usize>(
     for (col, val) in result
         .submatrix_slice_iter_mut(iter..iter + 1, 0..K)
         .next()
-        .unwrap()
+        .expect("submatrix must contain at least one row")
         .iter_mut()
         .enumerate()
     {
@@ -404,21 +404,24 @@ pub fn times_qt<const N: usize, const M: usize, const K: usize>(
 /// by back substitution. The output has shape `M × 1`.
 #[inline]
 #[must_use]
-pub fn qr_solve<const N: usize, const M: usize>(a: &Matrix<N, M>, b: Matrix<N, 1>) -> Matrix<M, 1> {
+pub fn qr_solve<const N: usize, const M: usize>(
+    a: &Matrix<N, M>,
+    b: &Matrix<N, 1>,
+) -> Matrix<M, 1> {
     let (qr, taus) = super::qr_decomposition(a);
-    let n = N.min(M);
+    let rank = N.min(M);
 
-    // Compute c = Q^T * b
-    let c = qt_times(&b, &qr, &taus);
+    // Compute Q^T * b.
+    let qt_b = qt_times(b, &qr, &taus);
 
-    // Solve R * x = c by back substitution.
+    // Solve R * x = Q^T b by back substitution.
     let mut x = Matrix::<M, 1>::zeros();
-    for row_id in (0..n).rev() {
+    for row_id in (0..rank).rev() {
         let mut sum = 0.0;
-        for k in (row_id + 1)..n {
-            sum += qr[(row_id, k)] * x[(k, 0)];
+        for col_idx in (row_id + 1)..rank {
+            sum += qr[(row_id, col_idx)] * x[(col_idx, 0)];
         }
-        x[(row_id, 0)] = (c[(row_id, 0)] - sum) / qr[(row_id, row_id)];
+        x[(row_id, 0)] = (qt_b[(row_id, 0)] - sum) / qr[(row_id, row_id)];
     }
     x
 }
@@ -490,7 +493,7 @@ mod tests {
         let x_actual = Matrix::<3, 1> {
             rows: [[1.0], [2.0], [3.0]],
         };
-        let test_x = qr_solve(&test_a, test_b);
+        let test_x = qr_solve(&test_a, &test_b);
         assert_matrixes_ulps_eq::<3, 1, _, _>(&x_actual, &test_x);
     }
 

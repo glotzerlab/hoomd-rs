@@ -520,6 +520,7 @@ impl<const N: usize> Cartesian<N> {
     /// The provided closure is called once for each component, and the returned
     /// vector has the same dimensionality as the original.
     #[inline]
+    #[must_use]
     pub fn map<F>(self, f: F) -> Cartesian<N>
     where
         F: FnMut(f64) -> f64,
@@ -535,12 +536,12 @@ impl<const N: usize> Cartesian<N> {
     /// let m: Matrix<1, 3> = Matrix {
     ///     rows: [[1.0, 2.0, 3.0]],
     /// };
-    /// let v = Cartesian::<3>::from_row_matrix(m);
+    /// let v = Cartesian::<3>::from_row_matrix(&m);
     /// assert_eq!(v, [1.0, 2.0, 3.0].into());
     /// ```
     #[inline]
-    #[must_use] 
-    pub fn from_row_matrix(row: Matrix<1, N>) -> Self {
+    #[must_use]
+    pub fn from_row_matrix(row: &Matrix<1, N>) -> Self {
         Self {
             coordinates: row.rows[0],
         }
@@ -555,12 +556,12 @@ impl<const N: usize> Cartesian<N> {
     /// let m: Matrix<3, 1> = Matrix {
     ///     rows: [[1.0], [2.0], [3.0]],
     /// };
-    /// let v = Cartesian::<3>::from_col_matrix(m);
+    /// let v = Cartesian::<3>::from_col_matrix(&m);
     /// assert_eq!(v, [1.0, 2.0, 3.0].into());
     /// ```
     #[inline]
-    #[must_use] 
-    pub fn from_col_matrix(col: Matrix<N, 1>) -> Self {
+    #[must_use]
+    pub fn from_col_matrix(col: &Matrix<N, 1>) -> Self {
         let mut x = Cartesian::<N>::default();
         for i in 0..N {
             x[i] = col[(i, 0)];

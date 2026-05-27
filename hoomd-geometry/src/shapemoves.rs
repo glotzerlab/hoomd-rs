@@ -124,7 +124,6 @@ impl<const N: usize> Shear<N> for Hyperparallelepiped<N> {
 }
 
 #[cfg(test)]
-#[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 mod tests {
     use super::*;
     use approxim::assert_relative_eq;

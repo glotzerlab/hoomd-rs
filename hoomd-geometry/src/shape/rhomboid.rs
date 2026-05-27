@@ -156,6 +156,9 @@ impl Rhomboid {
     /// # Ok(())
     /// # }
     /// ```
+    /// # Panics
+    ///
+    /// Panics if the computed box dimensions are not positive.
     #[inline]
     #[must_use]
     pub fn from_parallelogram(parallelepiped: &Hyperparallelepiped<2>) -> Self {
@@ -363,12 +366,19 @@ impl Rhomboid {
     /// # Ok(())
     /// # }
     /// ```
+    /// # Panics
+    ///
+    /// Panics if the computed nearest-plane width cannot be converted to a positive real.
     #[inline]
     #[must_use]
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 2] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 2];
-        dist[0] = self.lx() / (f64::sqrt(1.0 + self.xy() * self.xy())).try_into().unwrap();
+        dist[0] = self
+            .lx()
+            / (f64::sqrt(1.0 + self.xy() * self.xy()))
+                .try_into()
+                .expect("nearest-plane distance must be positive");
         dist[1] = self.ly();
         dist
     }
@@ -778,19 +788,12 @@ mod tests {
     /// Compare the Rhomboid SAT against the `ConvexSurfaceMesh2d` separating-planes
     /// implementation (an independently tested ground truth).
     fn check_sat_against_mesh(
-        lx1: f64,
-        ly1: f64,
-        xy1: f64,
-        lx2: f64,
-        ly2: f64,
-        xy2: f64,
+        a: Rhomboid,
+        b: Rhomboid,
         tx: f64,
         ty: f64,
         theta: f64,
     ) {
-        let a: Rhomboid = (lx1.try_into().unwrap(), ly1.try_into().unwrap(), xy1).into();
-        let b: Rhomboid = (lx2.try_into().unwrap(), ly2.try_into().unwrap(), xy2).into();
-
         let v_ij = Cartesian::from([tx, ty]);
         let o_ij = Angle::from(theta);
 
@@ -801,12 +804,19 @@ mod tests {
         let mesh = mesh_a.intersects_at(&mesh_b, &v_ij, &o_ij);
 
         assert_eq!(
-            sat, mesh,
+            sat,
+            mesh,
             "SAT={sat}, mesh={mesh}\n\
-             a=({lx1}, {ly1}, {xy1})\n\
-             b=({lx2}, {ly2}, {xy2})\n\
+             a=({}, {}, {})\n\
+             b=({}, {}, {})\n\
              t=({tx}, {ty})\n\
-             theta={theta}"
+             theta={theta}",
+            a.lx().get(),
+            a.ly().get(),
+            a.xy(),
+            b.lx().get(),
+            b.ly().get(),
+            b.xy(),
         );
     }
 
@@ -826,7 +836,9 @@ mod tests {
 
     #[apply(square_displacements)]
     fn intersects_at_identical_squares(#[case] tx: f64, #[case] ty: f64, #[case] theta: f64) {
-        check_sat_against_mesh(2.0, 2.0, 0.0, 2.0, 2.0, 0.0, tx, ty, theta);
+        let a: Rhomboid = (2.0.try_into().unwrap(), 2.0.try_into().unwrap(), 0.0).into();
+        let b: Rhomboid = (2.0.try_into().unwrap(), 2.0.try_into().unwrap(), 0.0).into();
+        check_sat_against_mesh(a, b, tx, ty, theta);
     }
 
     /// Displacements for mirror-sheared pairs (xy2 = -xy1).
@@ -843,18 +855,56 @@ mod tests {
 
     #[apply(mirror_shear_displacements)]
     fn intersects_at_mirror_sheared(#[case] tx: f64, #[case] ty: f64, #[case] theta: f64) {
-        check_sat_against_mesh(2.0, 2.0, 1.0, 2.0, 2.0, -1.0, tx, ty, theta);
+        let a: Rhomboid = (2.0.try_into().unwrap(), 2.0.try_into().unwrap(), 1.0).into();
+        let b: Rhomboid = (2.0.try_into().unwrap(), 2.0.try_into().unwrap(), -1.0).into();
+        check_sat_against_mesh(a, b, tx, ty, theta);
     }
 
     #[test]
     fn intersects_at_mixed_shapes() {
         // Different shapes, various displacements and rotations.
-        check_sat_against_mesh(1.0, 3.0, 1.5, 2.0, 1.0, -0.5, 1.0, 0.5, 0.0);
-        check_sat_against_mesh(1.0, 5.0, 2.0, 1.0, 5.0, 2.0, 1.0, 0.0, 0.0);
-        check_sat_against_mesh(1.0, 3.0, 1.5, 2.0, 1.0, -0.5, 0.5, 0.5, PI / 6.0);
-        check_sat_against_mesh(1.0, 5.0, 2.0, 1.0, 5.0, -2.0, 0.5, 0.0, PI / 2.0);
-        check_sat_against_mesh(3.0, 1.0, -1.0, 1.0, 2.0, 0.5, 1.5, 0.3, PI / 5.0);
-        check_sat_against_mesh(2.0, 1.0, 0.8, 1.5, 2.5, -0.3, 0.0, 1.0, PI / 8.0);
+        check_sat_against_mesh(
+            (1.0.try_into().unwrap(), 3.0.try_into().unwrap(), 1.5).into(),
+            (2.0.try_into().unwrap(), 1.0.try_into().unwrap(), -0.5).into(),
+            1.0,
+            0.5,
+            0.0,
+        );
+        check_sat_against_mesh(
+            (1.0.try_into().unwrap(), 5.0.try_into().unwrap(), 2.0).into(),
+            (1.0.try_into().unwrap(), 5.0.try_into().unwrap(), 2.0).into(),
+            1.0,
+            0.0,
+            0.0,
+        );
+        check_sat_against_mesh(
+            (1.0.try_into().unwrap(), 3.0.try_into().unwrap(), 1.5).into(),
+            (2.0.try_into().unwrap(), 1.0.try_into().unwrap(), -0.5).into(),
+            0.5,
+            0.5,
+            PI / 6.0,
+        );
+        check_sat_against_mesh(
+            (1.0.try_into().unwrap(), 5.0.try_into().unwrap(), 2.0).into(),
+            (1.0.try_into().unwrap(), 5.0.try_into().unwrap(), -2.0).into(),
+            0.5,
+            0.0,
+            PI / 2.0,
+        );
+        check_sat_against_mesh(
+            (3.0.try_into().unwrap(), 1.0.try_into().unwrap(), -1.0).into(),
+            (1.0.try_into().unwrap(), 2.0.try_into().unwrap(), 0.5).into(),
+            1.5,
+            0.3,
+            PI / 5.0,
+        );
+        check_sat_against_mesh(
+            (2.0.try_into().unwrap(), 1.0.try_into().unwrap(), 0.8).into(),
+            (1.5.try_into().unwrap(), 2.5.try_into().unwrap(), -0.3).into(),
+            0.0,
+            1.0,
+            PI / 8.0,
+        );
     }
 
     #[test]
