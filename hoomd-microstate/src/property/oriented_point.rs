@@ -32,7 +32,6 @@ pub struct OrientedPoint<V, R> {
     pub orientation: R,
 }
 
-/// Treat [`Point`] sites as constituents of oriented rigid bodies.
 impl<V, R> Transform<Point<V>> for OrientedPoint<V, R>
 where
     V: Vector,
@@ -70,13 +69,12 @@ where
     }
 }
 
-/// Treat [`OrientedPoint`] sites as constituents of oriented rigid bodies.
 impl<V, R> Transform<OrientedPoint<V, R>> for OrientedPoint<V, R>
 where
     V: Vector,
     R: Rotate<V> + Rotation,
 {
-    /// Move [`Point`] properties from the local body frame to the system frame.
+    /// Move [`OrientedPoint`] properties from the local body frame to the system frame.
     ///
     /// ```math
     /// \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})

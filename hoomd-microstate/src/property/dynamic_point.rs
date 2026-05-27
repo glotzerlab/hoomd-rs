@@ -31,16 +31,16 @@ use hoomd_vector::Vector;
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DynamicPoint<V> {
-    /// The location of the extended body in space.
+    /// The location of the extended body in space $`[\mathrm{length}]`$.
     pub position: V,
 
-    /// The mass of the extended body.
+    /// The mass of the extended body $` [\mathrm{mass}] `$.
     pub mass: f64,
 
-    /// The momentum of the extended body.
+    /// The translational momentum of the extended body $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
     pub momentum: V,
 
-    /// The net force applied to the body by others in a [`Microstate`](crate::Microstate).
+    /// The net force applied to the body by others in a [`Microstate`](crate::Microstate) $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
     pub net_force: V,
 }
 
@@ -68,7 +68,6 @@ V: Default
     }
 }
 
-/// Move [`DynamicPoint`] properties from the local body frame to the system frame.
 impl<V> Transform<Point<V>> for DynamicPoint<V>
 where
     V: Vector,

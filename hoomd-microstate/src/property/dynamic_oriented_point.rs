@@ -1,70 +1,138 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement DynamicOrientedPoint
+//! Implement `DynamicOrientedPoint`
 
 use super::oriented_point::OrientedPoint;
 use super::point::Point;
-use super::{AngularMomentum, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Position};
+use super::{RotationalMotionTypes, AngularMomentum, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Position};
 use crate::Transform;
 use crate::property::Orientation;
-use hoomd_vector::{Rotate, Rotation, Vector, Wedge};
+use hoomd_vector::{Cartesian, Rotate, Rotation, Angle, Vector, Versor, Wedge};
 
-/// The position, orientation, mass, velocity, acceleration, moment of inertia,
-/// and angular velocity of an extended body, such as  is useful for Molecular
-/// Dynamics simulations.
+impl RotationalMotionTypes for Angle {
+    type MomentOfInertia = f64;
+    type AngularMomentum = f64;
+}
+
+impl RotationalMotionTypes for Versor {
+    type MomentOfInertia = [f64; 3];
+    type AngularMomentum = Cartesian<3>;
+}
+
+/// The position and orientation of an extended body with mass, moment of inertia, and momentum.
 ///
-/// Use [`DynamicOrientedPoint`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
+/// Use [`DynamicOrientedPoint`] as a [`Body`](crate::Body) property type.
+///
+/// A default [`DynamicOrientedPoint`] has a mass of 1.0. Position, momentum,
+/// and net force default to the 0 vector. Orientation defaults to the identity.
+/// `DynamicOrientedPoint<_, Angle>` has a default moment of inertia of 1.0.
+/// `DynamicOrientedPoint<_, Versor>` has a default moment of inertia of
+/// `[1.0, 1.0, 1.0]`.
 ///
 /// # Example
 ///
 /// ```
 /// use hoomd_microstate::property::DynamicOrientedPoint;
 /// use hoomd_vector::{Cartesian, Angle};
+/// use std::f64::consts::PI;
 ///
 /// let oriented_dynamic_point = DynamicOrientedPoint {
 ///     position: Cartesian::from([1.0, -3.0]),
-///     orientation: Angle::default(),
-///     mass: 1.0,
-///     momentum: Cartesian::<2>::default(),
-///     net_force: Cartesian::<2>::default(),
-///     moment_of_inertia: 1.0,
-///     angular_momentum: 0.0,
-///     net_torque: 0.0
+///     orientation: Angle::from(PI/4.0),
+///     ..Default::default()
 /// };
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct DynamicOrientedPoint<V: Wedge, R> {
-    /// The location of the extended body in space.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DynamicOrientedPoint<V: Wedge, R: RotationalMotionTypes> {
+    /// The location of the extended body in space $`[\mathrm{length}]`$.
     pub position: V,
 
-    ///Rotate from the body's reference frame into another frame.
+    /// Rotate from the body's reference frame to the system frame.
     pub orientation: R,
 
-    /// The mass of the extended body.
+    /// The mass of the extended body $` [\mathrm{mass}] `$.
     pub mass: f64,
 
-    /// The momentum of the extended body in space.
+    /// The translational momentum of the extended body $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
     pub momentum: V,
 
-    /// The net force of the extended body in space.
+    /// The net force applied to the body by others in a [`Microstate`](crate::Microstate) $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
     pub net_force: V,
 
-    /// The moment of inertia of the extended body.
-    pub moment_of_inertia: V::Bivector, // TODO: this is strictly speaking wrong
+    /// The moment of inertia of the extended body $` [\mathrm{mass} \cdot \mathrm{length}^2] `$.
+    pub moment_of_inertia: R::MomentOfInertia,
 
-    /// The angular velocity of the extended body.
-    pub angular_momentum: V::Bivector, // TODO: convert to Quat in integrator
+    /// The angular momentum of the extended body $` [\mathrm{mass} \cdot \mathrm{length}^2] `$.
+    pub angular_momentum: R::AngularMomentum,
 
-    /// The torque velocity of the extended body.
+    /// The net torque applied to the body by others in a [`Microstate`](crate::Microstate) $` [\mathrm{energy}] `$.
     pub net_torque: V::Bivector,
 }
 
-/// Treat [`Point`] sites as constituents of oriented rigid bodies.
+impl<V> Default for DynamicOrientedPoint<V, Angle> where
+V: Default + Wedge,
+V::Bivector: Default,
+{
+    /// Construct a [`DynamicOrientedPoint`] with mass 1.0 and moment of inertia 1.0.
+    /// Position, orientation, momentum, angular momentum, net force, and net torque are set to 0.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::property::DynamicOrientedPoint;
+    /// use hoomd_vector::{Angle, Cartesian};
+    ///
+    /// let dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
+    /// assert_eq!(dynamic_point.mass, 1.0);
+    /// assert_eq!(dynamic_point.moment_of_inertia, 1.0);
+    /// assert_eq!(dynamic_point.position, [0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.orientation, 0.0.into());
+    /// assert_eq!(dynamic_point.momentum, [0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.angular_momentum, 0.0.into());
+    /// assert_eq!(dynamic_point.net_force, [0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.net_torque, 0.0);
+    /// ```
+    #[inline]
+    fn default() -> Self {
+        Self { position: Default::default(), orientation: Angle::default(), mass: 1.0, moment_of_inertia: 1.0, momentum: Default::default(), angular_momentum: Default::default(), net_force: Default::default(), net_torque: Default::default() }
+    }
+}
+
+impl<V> Default for DynamicOrientedPoint<V, Versor> where
+V: Default + Wedge,
+V::Bivector: Default,
+{
+    /// Construct a [`DynamicOrientedPoint`] with mass 1.0 and moment of inertia 1.0 on all axes.
+    /// Position, momentum, angular momentum, net force, and net torque are set to 0.
+    /// Orientation is set to the identity versor.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::property::DynamicOrientedPoint;
+    /// use hoomd_vector::{Versor, Cartesian};
+    ///
+    /// let dynamic_point = DynamicOrientedPoint::<Cartesian<3>, Versor>::default();
+    /// assert_eq!(dynamic_point.mass, 1.0);
+    /// assert_eq!(dynamic_point.moment_of_inertia, [1.0, 1.0, 1.0]);
+    /// assert_eq!(dynamic_point.position, [0.0, 0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.orientation, Versor::default());
+    /// assert_eq!(dynamic_point.momentum, [0.0, 0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.angular_momentum, [0.0, 0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.net_force, [0.0, 0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.net_torque, [0.0, 0.0, 0.0].into());
+    /// ```
+    #[inline]
+    fn default() -> Self {
+        Self { position: Default::default(), orientation: Versor::default(), mass: 1.0, moment_of_inertia: [1.0, 1.0, 1.0], momentum: Default::default(), angular_momentum: Cartesian::default(), net_force: Default::default(), net_torque: Default::default() }
+    }
+}
+
 impl<V, R> Transform<Point<V>> for DynamicOrientedPoint<V, R>
 where
     V: Vector + Wedge,
-    R: Rotate<V>,
+    R: Rotate<V> + RotationalMotionTypes,
 {
     /// Move [`Point`] properties from the local body frame to the system frame.
     ///
@@ -72,7 +140,25 @@ where
     /// \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})
     /// ```
     ///
-    /// TODO: Add example.
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_microstate::{
+    ///     Transform,
+    ///     property::{DynamicOrientedPoint, Point},
+    /// };
+    /// use hoomd_vector::{Angle, Cartesian};
+    /// use std::f64::consts::PI;
+    ///
+    /// let body_properties = DynamicOrientedPoint {
+    ///     position: Cartesian::from([1.0, -2.0]),
+    ///     orientation: Angle::from(PI / 2.0),
+    ///     ..Default::default()
+    /// };
+    /// let site_properties = Point::new(Cartesian::from([-1.0, 0.0]));
+    ///
+    /// let system_site = body_properties.transform(&site_properties);
+    /// assert_relative_eq!(system_site.position, [1.0, -3.0].into());
+    /// ```
     #[inline]
     fn transform(&self, site_properties: &Point<V>) -> Point<V> {
         Point {
@@ -81,13 +167,12 @@ where
     }
 }
 
-/// Treat [`OrientedPoint`] sites as constituents of oriented rigid bodies.
 impl<V, R> Transform<OrientedPoint<V, R>> for DynamicOrientedPoint<V, R>
 where
     V: Vector + Wedge,
-    R: Rotate<V> + Rotation,
+    R: Rotate<V> + Rotation + RotationalMotionTypes,
 {
-    /// Move [`Point`] properties from the local body frame to the system frame.
+    /// Move [`OrientedPoint`] site properties from the local body frame to the system frame.
     ///
     /// ```math
     /// \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})
@@ -96,7 +181,26 @@ where
     /// R = R_\mathrm{body}(R_\mathrm{site})
     /// ```
     ///
-    /// TODO: add example.
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_microstate::{Transform, property::{OrientedPoint, DynamicOrientedPoint}};
+    /// use hoomd_vector::{Angle, Cartesian};
+    /// use std::f64::consts::PI;
+    ///
+    /// let body_properties = DynamicOrientedPoint {
+    ///     position: Cartesian::from([1.0, -2.0]),
+    ///     orientation: Angle::from(PI / 2.0),
+    ///     ..Default::default()
+    /// };
+    /// let site_properties = OrientedPoint {
+    ///     position: Cartesian::from([-1.0, 0.0]),
+    ///     orientation: Angle::from(PI / 4.0),
+    /// };
+    ///
+    /// let system_site = body_properties.transform(&site_properties);
+    /// assert_relative_eq!(system_site.position, [1.0, -3.0].into());
+    /// assert_relative_eq!(system_site.orientation.theta, 3.0 * PI / 4.0);
+    /// ```
     #[inline]
     fn transform(&self, site_properties: &OrientedPoint<V, R>) -> OrientedPoint<V, R> {
         OrientedPoint {
@@ -109,8 +213,8 @@ where
 impl<V, R> Position for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
+    R: RotationalMotionTypes,
 {
-    // TODO: bring the associated type name into alignment with convention used elsewhere
     type Position = V;
 
     #[inline]
@@ -127,6 +231,7 @@ where
 impl<V, R> Orientation for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
+    R: RotationalMotionTypes,
 {
     type Rotation = R;
 
@@ -144,6 +249,7 @@ where
 impl<V, R> Momentum for DynamicOrientedPoint<V, R>
 where
     V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy + Wedge,
+    R: RotationalMotionTypes,
 {
     type Momentum = V;
 
@@ -171,6 +277,7 @@ where
 impl<V, R> Mass for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
+    R: RotationalMotionTypes,
 {
     #[inline]
     fn mass(&self) -> f64 {
@@ -181,6 +288,7 @@ where
 impl<V, R> NetForce for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
+    R: RotationalMotionTypes,
 {
     type NetForce = V;
 
@@ -198,16 +306,17 @@ where
 impl<V, R> MomentOfInertia for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
+    R: RotationalMotionTypes,
 {
-    type MomentOfInertia = V::Bivector;
+    type MomentOfInertia = R::MomentOfInertia;
 
     #[inline]
-    fn moment_of_inertia(&self) -> &V::Bivector {
+    fn moment_of_inertia(&self) -> &R::MomentOfInertia {
         &self.moment_of_inertia
     }
 
     #[inline]
-    fn moment_of_inertia_mut(&mut self) -> &mut V::Bivector {
+    fn moment_of_inertia_mut(&mut self) -> &mut R::MomentOfInertia {
         &mut self.moment_of_inertia
     }
 }
@@ -215,16 +324,17 @@ where
 impl<V, R> AngularMomentum for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
+    R: RotationalMotionTypes,
 {
-    type AngularMomentum = V::Bivector;
+    type AngularMomentum = R::AngularMomentum;
 
     #[inline]
-    fn angular_momentum(&self) -> &V::Bivector {
+    fn angular_momentum(&self) -> &R::AngularMomentum {
         &self.angular_momentum
     }
 
     #[inline]
-    fn angular_momentum_mut(&mut self) -> &mut V::Bivector {
+    fn angular_momentum_mut(&mut self) -> &mut R::AngularMomentum {
         &mut self.angular_momentum
     }
 }
@@ -232,6 +342,7 @@ where
 impl<V, R> NetTorque for DynamicOrientedPoint<V, R>
 where
     V: Wedge,
+    R: RotationalMotionTypes,
 {
     type NetTorque = V::Bivector;
 
