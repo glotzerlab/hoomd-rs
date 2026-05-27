@@ -295,8 +295,7 @@ mod tests {
         let sh = SphericalHarmonic::<0>::new();
         let out = sh.eval([0.0, 0.0, 1.0]);
         let expected = 1.0 / (2.0 * f64::sqrt(PI));
-        assert_abs_diff_eq!(out[0].re, expected, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0], Complex64::new(expected, 0.0f64), epsilon = 1e-12);
         assert_eq!(out.mp.len(), 0);
     }
 
@@ -305,10 +304,8 @@ mod tests {
         let sh = SphericalHarmonic::<1>::new();
         let out = sh.eval([0.0, 0.0, 1.0]);
         let c = f64::sqrt(3.0 / (4.0 * PI));
-        assert_abs_diff_eq!(out[0].re, c, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[1].re, 0.0, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[1].im, 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0], Complex64::new(c, 0.0), epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1], Complex64::ZERO, epsilon = 1e-12);
     }
 
     #[test]
@@ -316,10 +313,8 @@ mod tests {
         let sh = SphericalHarmonic::<1>::new();
         let out = sh.eval([1.0, 0.0, 0.0]);
         let c = f64::sqrt(3.0 / (8.0 * PI));
-        assert_abs_diff_eq!(out[0].re, 0.0, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[1].re, c, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[1].im, 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0], Complex64::ZERO, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1], Complex64::new(c, 0.0), epsilon = 1e-12);
     }
 
     #[test]
@@ -327,10 +322,8 @@ mod tests {
         let sh = SphericalHarmonic::<1>::new();
         let out = sh.eval([0.0, 1.0, 0.0]);
         let c = f64::sqrt(3.0 / (8.0 * PI));
-        assert_abs_diff_eq!(out[0].re, 0.0, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[1].re, 0.0, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[1].im, c, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0], Complex64::ZERO, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1], Complex64::new(0.0, c), epsilon = 1e-12);
     }
 
     #[test]
@@ -353,8 +346,7 @@ mod tests {
         let reference = sh.eval([0.6, 0.3, 0.4]);
         let out = sh.eval([0.6, 0.3, 0.4]);
         for (m, val) in out.into_iter().enumerate() {
-            assert_abs_diff_eq!(val.re, reference[m].re, epsilon = 1e-15);
-            assert_abs_diff_eq!(val.im, reference[m].im, epsilon = 1e-15);
+            assert_abs_diff_eq!(val, reference[m], epsilon = 1e-15);
         }
     }
 
@@ -365,8 +357,7 @@ mod tests {
         let values: Vec<_> = out.iter().collect();
         assert_eq!(values.len(), 5);
         for m in 0..=4 {
-            assert_abs_diff_eq!(values[m].re, out[m].re, epsilon = 1e-15);
-            assert_abs_diff_eq!(values[m].im, out[m].im, epsilon = 1e-15);
+            assert_abs_diff_eq!(values[m], out[m], epsilon = 1e-15);
         }
     }
 
@@ -388,15 +379,13 @@ mod tests {
         let coords = Coordinates::cartesian(x, y, z);
 
         let expected_m0: f64 = RealSH::Spherical.eval(l, 0, &coords);
-        assert_abs_diff_eq!(out[0].re, expected_m0, epsilon = 1e-8);
-        assert_abs_diff_eq!(out[0].im, 0.0, epsilon = 1e-8);
+        assert_abs_diff_eq!(out[0], Complex64::new(expected_m0, 0.0), epsilon = 1e-8);
 
         for m in 1..=L {
             let m_i64 = i64::try_from(m).expect("m would overflow i64");
             let s_pos: f64 = RealSH::Spherical.eval(l, m_i64, &coords);
             let s_neg: f64 = RealSH::Spherical.eval(l, -m_i64, &coords);
-            assert_abs_diff_eq!(out[m].re, s_pos * FRAC_1_SQRT_2, epsilon = 1e-8);
-            assert_abs_diff_eq!(out[m].im, s_neg * FRAC_1_SQRT_2, epsilon = 1e-8);
+            assert_abs_diff_eq!(out[m], Complex64::new(s_pos * FRAC_1_SQRT_2, s_neg * FRAC_1_SQRT_2), epsilon = 1e-8);
         }
     }
 
