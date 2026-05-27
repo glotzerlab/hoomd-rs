@@ -40,7 +40,7 @@ pub struct DynamicPoint<V> {
     /// The translational momentum of the extended body $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
     pub momentum: V,
 
-    /// The net force applied to the body by others in a [`Microstate`](crate::Microstate) $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
+    /// The net force applied to the body in a [`Microstate`](crate::Microstate) $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
     pub net_force: V,
 }
 

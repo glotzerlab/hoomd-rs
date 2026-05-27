@@ -30,7 +30,36 @@
 //! };
 //! ```
 //!
-//! TODO: `DynamicPoint` and `DynamicOrientedPoint`.
+//! [`DynamicPoint`] is a point in space with mass and momentum:
+//! ```
+//! use hoomd_microstate::property::DynamicPoint;
+//! use hoomd_vector::Cartesian;
+//!
+//! let dynamic_point = DynamicPoint {
+//!    position: Cartesian::from([1.0, -3.0]),
+//!    momentum: Cartesian::from([-1.0, 2.0]),
+//!    mass: 0.5,
+//!    ..Default::default()
+//!   };
+//! ```
+//! 
+//! [`DynamicOrientedPoint`] is an extended body with position, orientation, mass, momentum,
+//! a moment of inertia, and angular momentum:
+//! ```
+//! use hoomd_microstate::property::DynamicOrientedPoint;
+//! use hoomd_vector::{Angle, Cartesian};
+//! use std::f64::consts::PI;
+//!
+//! let dynamic_point = DynamicOrientedPoint {
+//!    position: Cartesian::from([1.0, -3.0]),
+//!    orientation: Angle::from(PI/4.0),
+//!    momentum: Cartesian::from([-1.0, 2.0]),
+//!    mass: 0.5,
+//!    moment_of_inertia: 2.0,
+//!    angular_momentum: 1.5,
+//!    ..Default::default()
+//!   };
+//! ```
 //!
 //! # Custom property types
 //!
