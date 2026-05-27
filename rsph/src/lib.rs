@@ -387,6 +387,10 @@ mod tests {
     }
 
     #[rstest]
+    #[expect(
+        clippy::used_underscore_binding,
+        reason = "Required for const generic parameterization."
+    )]
     fn sphrs_test<const L: usize>(
         #[values(
             degree::<0>(),
@@ -428,6 +432,10 @@ mod tests {
     }
 
     #[rstest]
+    #[expect(
+        clippy::used_underscore_binding,
+        reason = "Required for const generic parameterization."
+    )]
     fn completeness_test<const L: usize>(
         #[values(
             degree::<0>(),  degree::<1>(),  degree::<2>(),  degree::<3>(),
