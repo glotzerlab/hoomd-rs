@@ -242,7 +242,6 @@ where
         if near_bottom && near_back {
             result.push(new_site(0.0, 1.0, 1.0));
         }
-
         if near_right && near_top && near_front {
             result.push(new_site(-1.0, -1.0, -1.0));
         }

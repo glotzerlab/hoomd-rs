@@ -75,10 +75,10 @@ where
         }
         .transpose();
 
-        let fractional = qr::qr_solve(&a, r.to_column_matrix());
+        let fractional = qr::qr_solve(&a, &r.to_column_matrix());
 
         let position_offset = a.matmul(&fractional.map_elements(f64::round));
-        *r -= Cartesian::from_col_matrix(position_offset);
+        *r -= Cartesian::from_col_matrix(&position_offset);
 
         Ok(properties)
     }
@@ -111,39 +111,35 @@ where
         let fractional_coordinate = self.shape.to_fractional(*r);
 
         // For each axis, determine if the particle is near the negative or positive face.
-        let mut near_neg = [false; N];
-        let mut near_pos = [false; N];
+        let mut ghost_directions: ArrayVec<i32, N> = ArrayVec::new();
         for (i, fractional_cutoff) in fractional_cutoffs.iter().enumerate() {
-            near_neg[i] = fractional_coordinate[i] <= -0.5 + fractional_cutoff;
-            near_pos[i] = fractional_coordinate[i] > 0.5 - fractional_cutoff;
+            if fractional_coordinate[i] <= -0.5 + fractional_cutoff {
+                ghost_directions
+                    .push(-i32::try_from(i).expect("Could not convert face dim to i32"));
+            } else if fractional_coordinate[i] >= 0.5 - fractional_cutoff {
+                ghost_directions.push(i32::try_from(i).expect("Could not convert face dim to i32"));
+            }
         }
 
-        // Generate ghosts for all non-empty combinations of axes where the
-        // particle is near the corresponding faces. For each selected axis
-        // we displace by +edge_vector if near the negative face, or -edge_vector
-        // if near the positive face. This mirrors the triclinic implementation.
-        let max_mask = 1usize << N;
-        for mask in 1usize..max_mask {
-            // skip masks that include an axis where the particle is not near either face
-            let mut ok = true;
-            for i in 0..N {
-                if ((mask >> i) & 1) == 1 && !(near_neg[i] || near_pos[i]) {
-                    ok = false;
-                    break;
+        // Generate ghosts for every non-empty subset of the relevant directions.
+        let num_directions = ghost_directions.len();
+        for mask in 1..(1 << num_directions) {
+            let mut offset = Cartesian::<N>::default();
+            for direction_index in 0..num_directions {
+                if (mask >> direction_index) & 1 == 0 {
+                    continue;
                 }
-            }
-            if !ok {
-                continue;
+
+                let direction = ghost_directions[direction_index];
+                let axis = direction.abs() as usize;
+                let sign = if direction.is_negative() { -1.0 } else { 1.0 };
+
+                offset += self.shape.edge_vectors[axis] * sign;
             }
 
-            let mut new_site = *site_properties;
-            for i in 0..N {
-                if ((mask >> i) & 1) == 1 {
-                    let sign = if near_pos[i] { -1.0 } else { 1.0 };
-                    *new_site.position_mut() += sign * self.shape.edge_vectors[i];
-                }
-            }
-            result.push(new_site);
+            let mut ghost_site = *site_properties;
+            *ghost_site.position_mut() += offset;
+            result.push(ghost_site);
         }
 
         result

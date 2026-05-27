@@ -990,13 +990,13 @@ macro_rules! impl_copy_for_n_m {
 impl_copy_for_n_m!(1, 2, 3, 4);
 
 #[cfg(test)]
+/// Helpers for matrix tests
 pub mod test_utils {
     use std::{fmt::Debug, ops::Index};
 
     use approxim::{assert_ulps_eq, ulps_eq};
 
     const EPS: f64 = 1e-13;
-
     pub(crate) fn assert_matrixes_ulps_eq<
         const N: usize,
         const M: usize,
