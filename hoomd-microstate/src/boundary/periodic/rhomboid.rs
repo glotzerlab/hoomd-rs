@@ -138,6 +138,7 @@ where
     /// # Ok(())
     /// # }
     /// ```
+    #[inline]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
 
@@ -202,10 +203,8 @@ mod tests {
     use crate::property::Point;
 
     use approxim::assert_relative_eq;
-    
-    use rstest::{fixture, rstest};
 
-    const N_SAMPLES: usize = 1024;
+    use rstest::{fixture, rstest};
 
     #[fixture]
     fn get_sheared_rhomboid() -> Rhomboid {
@@ -306,8 +305,8 @@ mod tests {
     #[rstest]
     fn no_ghosts_interior(get_sheared_rhomboid: Rhomboid) {
         // Test that interior points generate no ghosts and boundary points do
-        let periodic = Periodic::new(0.01, get_sheared_rhomboid)
-            .expect("hard-coded range should be valid");
+        let periodic =
+            Periodic::new(0.01, get_sheared_rhomboid).expect("hard-coded range should be valid");
 
         // Test interior point (not at origin)
         let mut interior_pos = Cartesian::from([0.2, 0.2]);
@@ -323,8 +322,8 @@ mod tests {
     #[rstest]
     fn ghosts_face_centers(get_sheared_rhomboid: Rhomboid) {
         // Test that points near face centers generate appropriate ghosts
-        let periodic = Periodic::new(0.3, get_sheared_rhomboid)
-            .expect("hard-coded range should be valid");
+        let periodic =
+            Periodic::new(0.3, get_sheared_rhomboid).expect("hard-coded range should be valid");
 
         // Point near the x-face (at maximum x)
         let frac_pos = Cartesian::<2>::from([0.49, 0.0]);
@@ -370,8 +369,8 @@ mod tests {
     #[rstest]
     fn ghosts_tilted_box(get_sheared_rhomboid: Rhomboid) {
         // Test ghost generation with a tilted rhomboid
-        let periodic = Periodic::new(0.1, get_sheared_rhomboid)
-            .expect("hard-coded range should be valid");
+        let periodic =
+            Periodic::new(0.1, get_sheared_rhomboid).expect("hard-coded range should be valid");
 
         // Point inside the rhomboid should not generate ghosts unless near a boundary
         let interior_pos = Cartesian::<2>::default();

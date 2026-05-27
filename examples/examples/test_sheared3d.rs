@@ -91,9 +91,6 @@ impl HardTriclinicSelfAssembly {
         // convex polyhedron for overlap detection.
         let edges = particle_shape.get_edge_vectors();
         let [a1, a2, a3] = edges;
-        let half_a1: Cartesian<3> = (a1 * 0.5).into();
-        let half_a2: Cartesian<3> = (a2 * 0.5).into();
-        let half_a3: Cartesian<3> = (a3 * 0.5).into();
 
         // All 8 corners: ±½a₁ ± ½a₂ ± ½a₃
         let vertices: Vec<Cartesian<3>> = vec![
@@ -176,7 +173,7 @@ impl HardTriclinicSelfAssembly {
         Ok(HardTriclinicSelfAssembly {
             microstate,
             hamiltonian: hamiltonian.clone(),
-            overlap_penalty_hamiltonian: hamiltonian,
+            overlap_penalty_hamiltonian: overlap_penalty_hamiltonian,
             translate_sweep,
             rotate_sweep,
             quick_compress,

@@ -162,15 +162,11 @@ where
     /// ```
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
-
         let r = site_properties.position();
-
         if !self.shape.is_point_inside(r) {
             return result;
         }
-
         let edge_vectors = self.shape.get_edge_vectors();
-
         let new_site = |x, y, z| {
             let mut new_site = *site_properties;
             *new_site.position_mut() += x * edge_vectors[0];
@@ -271,7 +267,6 @@ where
         if near_left && near_bottom && near_back {
             result.push(new_site(1.0, 1.0, 1.0));
         }
-
         result
     }
 }
@@ -283,10 +278,8 @@ mod tests {
     use crate::property::Point;
 
     use approxim::assert_relative_eq;
-    
-    use rstest::{fixture, rstest};
 
-    const N_SAMPLES: usize = 1024;
+    use rstest::{fixture, rstest};
 
     #[fixture]
     fn get_sheared_triclinic() -> Triclinic {
