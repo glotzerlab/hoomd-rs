@@ -490,7 +490,7 @@ mod tests {
         let x_actual = Matrix::<3, 1> {
             rows: [[1.0], [2.0], [3.0]],
         };
-        let test_x = qr_solve(&a, b);
+        let test_x = qr_solve(&test_a, test_b);
         assert_matrixes_ulps_eq::<3, 1, _, _>(&x_actual, &test_x);
     }
 
