@@ -135,6 +135,34 @@ impl<const L: usize> SphericalHarmonic<L> {
         }
     }
 
+    /// Evaluate `Y_L^m` for m = 0..=L at spherical coordinates `(theta, phi)`.
+    ///
+    /// `theta` is the polar angle (from the z-axis), `phi` is the azimuthal angle.
+    ///
+    /// ```
+    /// use approxim::assert_abs_diff_eq;
+    /// use rsph::SphericalHarmonic;
+    /// use std::f64::consts::FRAC_PI_4;
+    ///
+    /// let sh = SphericalHarmonic::<2>::new();
+    ///
+    /// let (x, y, z) = (0.6, 0.8, 0.0);
+    /// let cartesian_result = sh.eval([x, y, z]);
+    ///
+    /// let (theta, phi) = (f64::acos(z), f64::atan2(y, x));
+    /// let spherical_result = sh.eval_spherical(theta, phi);
+    ///
+    /// assert_abs_diff_eq!(cartesian_result[0], spherical_result[0], epsilon = 1e-15);
+    /// assert_abs_diff_eq!(cartesian_result[1], spherical_result[1], epsilon = 1e-15);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn eval_spherical(&self, theta: f64, phi: f64) -> HarmonicOutput<L> {
+        let (sin_theta, cos_theta) = theta.sin_cos();
+        let (sin_phi, cos_phi) = phi.sin_cos();
+        self.eval([sin_theta * cos_phi, sin_theta * sin_phi, cos_theta])
+    }
+
     /// Evaluate `Y_L^m` for m = 0..=L at a point on the unit sphere.
     #[must_use]
     #[inline]
