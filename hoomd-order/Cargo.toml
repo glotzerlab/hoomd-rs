@@ -1,5 +1,5 @@
 [package]
-name = "rsph"
+name = "hoomd-order"
 description = "Evaluate Spherical Harmonics at a given Cartesian point."
 version.workspace = true
 edition.workspace = true
@@ -26,5 +26,5 @@ sphrs.workspace = true
 workspace = true
 
 [[bench]]
-name = "bench_rsph"
+name = "harmonics"
 harness = false

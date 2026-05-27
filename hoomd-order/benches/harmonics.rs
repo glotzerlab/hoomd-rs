@@ -3,7 +3,7 @@
 
 //! ...
 use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
-use rsph::SphericalHarmonic;
+use hoomd_order::SphericalHarmonic;
 
 /// Generate a tuple of uniform random values in [0, 1].
 #[inline]

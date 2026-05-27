@@ -12,7 +12,7 @@
 //!
 //! # Example
 //! ```
-//! use rsph::SphericalHarmonic;
+//! use hoomd_order::SphericalHarmonic;
 //! use num_complex::Complex64;
 //! use hoomd_vector::{Cartesian, InnerProduct};
 //! use approxim::assert_abs_diff_eq;
@@ -82,7 +82,7 @@ use std::{
 ///
 /// ```
 /// use hoomd_vector::{Cartesian, InnerProduct};
-/// use rsph::SphericalHarmonic;
+/// use hoomd_order::SphericalHarmonic;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let sh = SphericalHarmonic::<2>::new();
@@ -152,7 +152,7 @@ impl<const L: usize> SphericalHarmonic<L> {
     /// ```
     /// use approxim::assert_abs_diff_eq;
     /// use hoomd_vector::{Cartesian, InnerProduct, Unit};
-    /// use rsph::SphericalHarmonic;
+    /// use hoomd_order::SphericalHarmonic;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let sh = SphericalHarmonic::<2>::new();
@@ -297,7 +297,7 @@ impl<const L: usize> HarmonicOutput<L> {
     /// use approxim::assert_abs_diff_eq;
     /// use hoomd_vector::{Cartesian, InnerProduct};
     /// use num_complex::Complex64;
-    /// use rsph::SphericalHarmonic;
+    /// use hoomd_order::SphericalHarmonic;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let (point, _) = Cartesian::<3>::from([0.0, 0.0, 1.0]).to_unit()?;
