@@ -275,8 +275,7 @@ impl Triclinic {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic::from_box_vector([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
+    /// let triclinic = Triclinic::from_box_vector([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
     ///
     /// let pos = Cartesian::from([1.0, 0.0, 0.0]);
     /// let frac = triclinic.to_fractional(&pos);
@@ -316,8 +315,7 @@ impl Triclinic {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic::from_box_vector([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
+    /// let triclinic = Triclinic::from_box_vector([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
     ///
     /// let frac = Cartesian::from([0.5, 0.0, 0.0]);
     /// let pos = triclinic.to_absolute(&frac);

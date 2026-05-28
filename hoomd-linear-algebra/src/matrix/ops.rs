@@ -57,7 +57,7 @@ impl<const N: usize, const M: usize> IndexMut<(usize, std::ops::Range<usize>)> f
 ///
 /// # Examples
 /// ```
-/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+/// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
 /// let matrix = Matrix22::full(2.0);
 /// let scalar = 2.0;
 /// assert_eq!(matrix * scalar, matrix + matrix);

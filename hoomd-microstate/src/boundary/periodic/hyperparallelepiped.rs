@@ -51,7 +51,7 @@ where
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let box_ = Parallelepiped {
+    /// let mut box_ = Parallelepiped {
     ///     edge_vectors: [
     ///         [1.0, 0.0, 0.0].into(),
     ///         [0.5, f64::sqrt(3.0) / 2.0, 0.0].into(),
@@ -59,6 +59,7 @@ where
     ///     ],
     ///     qr: None,
     /// };
+    /// box_.calc_qr();
     /// let periodic = Periodic::new(0.25, box_)?;
     /// let point = Point::new(Cartesian::from([1.0, f64::sqrt(3.0), 2.5]));
     /// let wrapped_point = periodic.wrap(point)?;

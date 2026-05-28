@@ -35,7 +35,7 @@ impl MaximumAllowableInteractionRange for Triclinic {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic =
-    ///     Triclinic::with_box_dimensions([10.0, 10.0, 10.0, 0.0, 0.0, 0.0]);
+    ///     Triclinic::from_box_vector([10.0, 10.0, 10.0, 0.0, 0.0, 0.0]);
     ///
     /// // For orthogonal box, max range is min(extent)/2 = 5.0
     /// assert_eq!(triclinic.maximum_allowable_interaction_range(), 5.0);
@@ -80,7 +80,7 @@ where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic =
-    ///     Triclinic::with_box_dimensions([10.0, 10.0, 10.0, 0.0, 0.0, 0.0]);
+    ///     Triclinic::from_box_vector([10.0, 10.0, 10.0, 0.0, 0.0, 0.0]);
     /// let periodic = Periodic::new(5.0, triclinic)?;
     ///
     /// let point = Point::new(Cartesian::from([6.0, 0.0, 0.0]));
@@ -146,8 +146,7 @@ where
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic::with_box_dimensions([4.0, 4.0, 4.0, 0.0, 0.0, 0.0]);
+    /// let triclinic = Triclinic::from_box_vector([4.0, 4.0, 4.0, 0.0, 0.0, 0.0]);
     /// let periodic = Periodic::new(1.0, triclinic)?;
     ///
     /// // Point near the x-face
