@@ -21,15 +21,11 @@ mod thermalize_momentum;
 ///    f(p_i) = \frac{1}{\sqrt{2 \pi m k T}} \exp{\left( -\frac{p_i^2}{2 m k T} \right)}
 /// ```
 ///
-/// Set a new random momentum for every body in the microstate with [`thermalize_momentum`].
-/// Call [`thermalize_momentum_with_filter`] to assign new momenta to selected bodies.
-///
 /// `ThermalizeMomentum` gives the system's center of mass a non-zero momentum.
 /// TODO: reference momentum removal method.
 ///
 /// [Maxwell–Boltzmann distribution]: https://en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
 /// [`thermalize_momentum`]: Self::thermalize_momentum
-/// [`thermalize_momentum_with_filter`]: Self::thermalize_momentum_with_filter
 ///
 /// # Example
 ///
@@ -60,17 +56,9 @@ mod thermalize_momentum;
 /// # Ok(())
 /// # }
 /// ```
-pub trait ThermalizeMomentum<B, S, X, C> {
-    /// Assign thermally distributed random momenta to all bodies.
-    #[inline]
-    fn thermalize_momentum(&mut self, temperature: f64) {
-        self.thermalize_momentum_with_filter(temperature, |_| true);
-    }
-
-    /// Assign thermally distributed random momenta to selected bodies.
-    ///
-    /// Does not modify unselected bodies.
-    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F);
+pub trait ThermalizeMomentum {
+    /// Assign thermally distributed random momenta to all bodies in the microstate.
+    fn thermalize_momentum(&mut self, temperature: f64);
 }
 
 /// Thermalize the rotational motion of [`Microstate`].
@@ -201,51 +189,6 @@ mod tests {
 
                 assert_abs_diff_eq!(mean, 0.0, epsilon = expected_variance.sqrt() * EPSILON_MEAN_SCALE);
                 assert_abs_diff_eq!(variance, expected_variance, epsilon = expected_variance * EPSILON_VARIANCE_SCALE);
-            }
-
-            Ok(())
-        }
-
-        #[rstest]
-        fn test_filter() -> anyhow::Result<()> {
-            let temperature = 1.5;
-            let mass = 2.0;
-            let n_bodies = N_BODIES*2;
-            
-            let mut microstate = Microstate::builder().try_build()?;
-            let expected_variance = temperature * mass;
-
-            for _ in 0..n_bodies {
-                microstate
-                    .add_body(create_point_body_3d(
-                        Cartesian::default(),
-                        mass,
-                        Cartesian::default(),
-                    ))
-                    .expect("body should be inside boundary");
-            }
-
-            microstate.thermalize_momentum_with_filter(temperature, |b| b.tag < n_bodies / 2);
-
-            let momenta: Vec<[f64; 3]> = microstate
-                .bodies()
-                .iter()
-                .take(N_BODIES)
-                .map(|b| b.item.properties.momentum().coordinates)
-                .collect();
-
-            for dim in 0..3 {
-                let components: Vec<f64> = momenta.iter().map(|m| m[dim]).collect();
-                let mean = components.iter().sum::<f64>() / N_BODIES as f64;
-                let variance = components.iter().map(|&v| (v - mean).powi(2)).sum::<f64>()
-                    / (N_BODIES - 1) as f64;
-
-                assert_abs_diff_eq!(mean, 0.0, epsilon = expected_variance.sqrt() * EPSILON_MEAN_SCALE);
-                assert_abs_diff_eq!(variance, expected_variance, epsilon = expected_variance * EPSILON_VARIANCE_SCALE);
-            }
-
-            for i in n_bodies/2..n_bodies {
-                check!(microstate.bodies()[i].item.properties.momentum == Cartesian::from([0.0, 0.0, 0.0]));
             }
 
             Ok(())
