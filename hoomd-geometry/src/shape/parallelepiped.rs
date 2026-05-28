@@ -388,7 +388,7 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
     /// box2d.calc_qr();
     ///
     /// assert!( box2d.is_point_inside(&Cartesian::from([ 2.5, -3.5])));  // interior
-    /// assert!( box2d.is_point_inside(&Cartesian::from([-3.0,  4.0]))); // on min face (inside)
+    /// assert!( box2d.is_point_inside(&Cartesian::from([-3.0,  0.0]))); // on min face (inside)
     /// assert!(!box2d.is_point_inside(&Cartesian::from([ 3.0, -3.5]))); // on max face (outside)
     /// assert!(!box2d.is_point_inside(&Cartesian::from([ 4.0, -3.5]))); // beyond max
     /// ```

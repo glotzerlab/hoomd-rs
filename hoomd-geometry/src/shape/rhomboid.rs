@@ -252,15 +252,13 @@ impl Rhomboid {
     ///
     /// ```
     /// use hoomd_geometry::shape::Rhomboid;
-    /// use hoomd_microstate::boundary::Periodic;
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let rhomboid = Rhomboid::from((2.0.try_into()?, 2.0.try_into()?, 0.0));
-    /// let periodic = Periodic::new(1.0, rhomboid)?;
     ///
     /// let frac = Cartesian::from([0.5, 0.0]);
-    /// let pos = periodic.to_absolute(&frac);
+    /// let pos = rhomboid.to_absolute(&frac);
     /// assert_eq!(pos, Cartesian::from([1.0, 0.0]));
     /// # Ok(())
     /// # }

@@ -272,16 +272,14 @@ impl Triclinic {
     ///
     /// ```
     /// use hoomd_geometry::shape::Triclinic;
-    /// use hoomd_microstate::boundary::Periodic;
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic =
-    ///     Triclinic::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
-    /// let periodic = Periodic::new(1.0, triclinic)?;
+    ///     Triclinic::from_box_vector([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
     ///
     /// let pos = Cartesian::from([1.0, 0.0, 0.0]);
-    /// let frac = periodic.to_fractional(&pos);
+    /// let frac = triclinic.to_fractional(&pos);
     /// assert_eq!(frac, Cartesian::from([0.5, 0.0, 0.0]));
     /// # Ok(())
     /// # }
@@ -315,16 +313,14 @@ impl Triclinic {
     ///
     /// ```
     /// use hoomd_geometry::shape::Triclinic;
-    /// use hoomd_microstate::boundary::Periodic;
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic =
-    ///     Triclinic::with_box_dimensions([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
-    /// let periodic = Periodic::new(1.0, triclinic)?;
+    ///     Triclinic::from_box_vector([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
     ///
     /// let frac = Cartesian::from([0.5, 0.0, 0.0]);
-    /// let pos = periodic.to_absolute(&frac);
+    /// let pos = triclinic.to_absolute(&frac);
     /// assert_eq!(pos, Cartesian::from([1.0, 0.0, 0.0]));
     /// # Ok(())
     /// # }
