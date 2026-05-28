@@ -61,6 +61,10 @@
 //!   };
 //! ```
 //!
+//! Use the `Point`, `OrientedPoint` or a custom type to represent interaction sites.
+//! `Point` and `OrientedPoint` can also be used for body properties in Monte Carlo simulations.
+//! Use the `Dynamic` variants for body properties in molecular dynamics simulations.
+//! 
 //! # Custom property types
 //!
 //! When none of the provided types meets your needs, you can define a custom type.
@@ -403,7 +407,7 @@ pub trait NetTorque {
 /// Moment of inertia and angular momentum types.
 ///
 /// [`RotationalMotionTypes`] sets which structs store the moment of inertia
-/// and angular momentum for a given [`Rotation`] representation.
+/// and angular momentum for a given `Rotation` representation.
 pub trait RotationalMotionTypes {
     /// Type that stores the moment of inertia in the natural coordinate frame of the body's  local rotation.
     type MomentOfInertia;
