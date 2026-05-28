@@ -16,3 +16,4 @@ pub mod methods;
 
 mod modify;
 pub use modify::ThermalizeMomentum;
+pub use modify::ZeroCenterMomentum;

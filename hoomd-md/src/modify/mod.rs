@@ -6,7 +6,7 @@
 use hoomd_microstate::{Body, Microstate, Tagged};
 
 // mod remove_com_angular_momentum;
-// mod remove_com_momentum;
+mod zero_center_momentum;
 // mod rotational_dof;
 mod thermalize_momentum;
 
@@ -21,8 +21,8 @@ mod thermalize_momentum;
 ///    f(p_i) = \frac{1}{\sqrt{2 \pi m k T}} \exp{\left( -\frac{p_i^2}{2 m k T} \right)}
 /// ```
 ///
-/// `ThermalizeMomentum` gives the system's center of mass a non-zero momentum.
-/// TODO: reference momentum removal method.
+/// [`ThermalizeMomentum`] gives the system's center of mass a non-zero momentum.
+/// Use [`ZeroCenterMomentum`] to remove it.
 ///
 /// [Maxwell–Boltzmann distribution]: https://en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
 /// [`thermalize_momentum`]: Self::thermalize_momentum
@@ -61,6 +61,49 @@ pub trait ThermalizeMomentum {
     fn thermalize_momentum(&mut self, temperature: f64);
 }
 
+/// Remove translational motion from the system's center of mass.
+///
+/// [`ZeroCenterMomentum`] subtracts the average momentum from every body's momentum:
+/// ```math
+/// \vec{p}_{i,\mathrm{new}} = \vec{p}_{i,\mathrm{old}} - \langle \vec{p}_\mathrm{old} \rangle
+/// ```
+///
+/// # Example
+///
+/// ```
+/// use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
+/// use hoomd_vector::Cartesian;
+/// use hoomd_md::ZeroCenterMomentum;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::builder()
+///     .bodies([
+///         Body { properties: DynamicPoint {
+///           position: Cartesian::from([1.0, 2.0]),
+///           momentum: Cartesian::from([-2.0, 4.0]),
+///           ..Default::default()
+///           },
+///           sites: vec![Point::default()],
+///           },
+///         Body { properties: DynamicPoint {
+///           position: Cartesian::from([-2.0, 3.0]),
+///           momentum: Cartesian::from([3.0, -6.0]),
+///           ..Default::default()
+///           },
+///           sites: vec![Point::default()],
+///           },
+///     ])
+///     .try_build()?;
+///
+/// microstate.zero_center_momentum();
+/// # Ok(())
+/// # }
+/// ```
+pub trait ZeroCenterMomentum {
+    /// Subtract the average momentum from each body's momentum.
+    fn zero_center_momentum(&mut self);
+}
+
 /// Thermalize the rotational motion of [`Microstate`].
 ///
 /// Implement [`RotationalThermalizer`] on a custom type
@@ -71,21 +114,11 @@ pub trait RotationalThermalizer<const N: usize, B, S, X, C> {
     fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, X, C>);
 }
 
-/// Modify the translational momenta of [`Microstate`].
-///
-/// Implement [`TranslationalMomentumModifier`] on a custom type
-/// or use one of the provide method in
-/// [`thermalizer`](crate::thermalizer) in MD simulations.
-pub trait TranslationalMomentumModifier<const N: usize, B, S, X, C> {
-    /// Modify the translational momenta.
-    fn modify(&self, microstate: &mut Microstate<B, S, X, C>);
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use assert2::check;
-    use approxim::assert_abs_diff_eq;
+    use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use hoomd_microstate::{
         Body,
         property::{AngularMomentum, DynamicPoint, Momentum, DynamicOrientedPoint, Point},
@@ -103,30 +136,8 @@ mod tests {
     const EPSILON_MEAN_SCALE: f64 = 4.0 * 0.01;
     const EPSILON_VARIANCE_SCALE: f64 = 4.0 * 0.014_142_840;
 
-    // #[rstest]
-    // fn test_init_zero_mom() {
-    //     // Instantiation
-    //     let _ = ComMomentumRemover {};
-    // }
-
-    // #[rstest]
-    // fn test_init_zero_angularmom() {
-    //     // Instantiation
-    //     let _ = ComAngularMomentumRemover {};
-    // }
-
     mod momentum {
         use super::*;
-
-        // #[rstest]
-        // fn test_mom_removal(
-        //     #[values(1.0, 2.0)] mass1: f64,
-        //     #[values([1.0, -1.0, 0.0], [-1.0, 1.0, 1.0])] mom1: [f64; 3],
-        //     #[values(1.0, 0.5)] mass2: f64,
-        //     #[values([-1.0, 0.0, 1.0], [0.5, 1.5, 3.0])] mom2: [f64; 3],
-        // ) -> anyhow::Result<()> {
-        //     two_particles_mom_removal(mass1, mom1, mass2, mom2)
-        // }
 
         // #[rstest]
         // fn test_angmom_removal(
@@ -169,8 +180,7 @@ mod tests {
                         Cartesian::default(),
                         mass,
                         Cartesian::default(),
-                    ))
-                    .expect("body should be inside boundary");
+                    ))?;
             }
 
             microstate.thermalize_momentum(temperature);
@@ -194,44 +204,40 @@ mod tests {
             Ok(())
         }
 
-        // fn two_particles_mom_removal(
-        //     mass1: f64,
-        //     mom1: [f64; 3],
-        //     mass2: f64,
-        //     mom2: [f64; 3],
-        // ) -> anyhow::Result<()> {
-        //     // Use two point body with arbitrary mass and momenta
-        //     // to test the com momentum remover
-        //     let mom1 = Cartesian::from(mom1);
-        //     let mom2 = Cartesian::from(mom2);
-        //     let com_velocity = (mom1 + mom2) / (mass1 + mass2);
+        #[rstest]
+        fn zero_center_momentum(
+            #[values(1.0, 2.0)] mass_a: f64,
+            #[values([1.0, -1.0, 0.0], [-1.0, 1.0, 1.0])] momentum_a: [f64; 3],
+            #[values(1.0, 0.5)] mass_b: f64,
+            #[values([-1.0, 0.0, 1.0], [0.5, 1.5, 3.0])] momentum_b: [f64; 3],
+        ) -> anyhow::Result<()> {
+            let momentum_1 = Cartesian::from(momentum_a);
+            let momentum_2 = Cartesian::from(momentum_b);
+            let center_momentum = momentum_1 + momentum_2;
 
-        //     let mut microstate = Microstate::builder().try_build()?;
-        //     let com_remover = ComMomentumRemover {};
-        //     microstate
-        //         .add_body(create_point_body_3d(Cartesian::default(), mass1, mom1))
-        //         .expect("body should be inside boundary");
-        //     microstate
-        //         .add_body(create_point_body_3d(Cartesian::default(), mass2, mom2))
-        //         .expect("body should be inside boundary");
+            let mut microstate = Microstate::builder().try_build()?;
+            microstate
+                .add_body(create_point_body_3d(Cartesian::default(), mass_a, momentum_1))?;
+            microstate
+                .add_body(create_point_body_3d(Cartesian::default(), mass_b, momentum_2))?;
 
-        //     com_remover.modify(&mut microstate);
+            microstate.zero_center_momentum();
 
-        //     let modified_mom1 = microstate.bodies()[0].item.properties.momentum;
-        //     let modified_mom2 = microstate.bodies()[1].item.properties.momentum;
+            let modified_momentum_1 = microstate.bodies()[0].item.properties.momentum;
+            let modified_momentum_2 = microstate.bodies()[1].item.properties.momentum;
 
-        //     let expected_mom1 = mom1 - com_velocity * mass1;
-        //     let expected_mom2 = mom2 - com_velocity * mass2;
+            let expected_momentum_1 = momentum_1 - center_momentum / 2.0;
+            let expected_momentum_2 = momentum_2 - center_momentum / 2.0;
 
-        //     assert_abs_diff_eq!(
-        //         modified_mom1 + modified_mom2,
-        //         Cartesian::default(),
-        //         epsilon = 1e-15
-        //     );
-        //     assert_eq!(modified_mom1, expected_mom1);
-        //     assert_eq!(modified_mom2, expected_mom2);
-        //     Ok(())
-        // }
+            assert_abs_diff_eq!(
+                modified_momentum_1 + modified_momentum_2,
+                Cartesian::default(),
+                epsilon = 1e-15
+            );
+            assert_relative_eq!(modified_momentum_1, expected_momentum_1);
+            assert_relative_eq!(modified_momentum_2, expected_momentum_2);
+            Ok(())
+        }
 
         // fn two_particles_stop_rotation(
         //     pos1: [f64; 3],
