@@ -282,8 +282,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     #[must_use]
     #[inline]
     pub fn as_slice(&self) -> &[f64] {
-        // SAFETY: This is safe because the layout of [[f64; M]; N] is contiguous.
-        unsafe { std::slice::from_raw_parts(self.rows.as_ptr().cast::<f64>(), N * M) }
+        self.rows.as_flattened()
     }
 
     /// Returns an iterator over slices of each row in a submatrix view.

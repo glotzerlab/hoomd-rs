@@ -110,29 +110,3 @@ fn svd_mat2(bencher: Bencher) {
         .with_inputs(|| create_random_matrix::<2, 2, _>(&mut rng))
         .bench_local_values(|a| black_box(a.svd()));
 }
-#[divan::bench_group]
-mod gemv {
-    use super::{Bencher, SeedableRng, StdRng, black_box, create_random_matrix, divan};
-    use hoomd_linear_algebra::matrix::gemv::gemv_submatrix_column_into_column;
-
-    const GEMV_DIMS: &[usize] = &[4, 8, 16, 32];
-
-    #[divan::bench(consts = GEMV_DIMS)]
-    fn safe<const N: usize>(bencher: Bencher) {
-        let mut rng = StdRng::seed_from_u64(42);
-        bencher
-            .with_inputs(|| create_random_matrix::<N, N, _>(&mut rng))
-            .bench_local_values(|mut a| {
-                gemv_submatrix_column_into_column(
-                    &mut a,
-                    1..N, // b_rows
-                    1..N, // b_cols
-                    1..N, // x_rows
-                    1,    // x_col
-                    1..N, // y_rows
-                    0,    // y_col
-                );
-                black_box(a);
-            });
-    }
-}

@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::fmt;
 
-/// General matrix-vector products
-pub mod gemv;
 /// ``std::ops`` implementations for [`Matrix`]
 pub mod ops;
 /// ``qr`` decomposition for [`Matrix`] types.
