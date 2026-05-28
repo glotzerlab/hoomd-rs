@@ -9,7 +9,10 @@
 )]
 
 //! Simulate molecular dynamics in systems of particles.
+//! TODO: User guide
 
-pub mod thermalizer;
 pub mod thermostat;
 pub mod methods;
+
+mod modify;
+pub use modify::ThermalizeMomentum;
