@@ -1,20 +1,23 @@
 [package]
 name = "hoomd-md"
 categories.workspace = true
-description = "Simulate molecular dynamics in systems of particles."
+description = "Perform molecular dynamics simulations on systems of bodies in hoomd-rs."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
-readme = "hoomd-md/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
 
 [lints]
 workspace = true
 
 [dependencies]
+# TODO: remove unused dependencies
 arrayvec.workspace = true
 bevy_egui.workspace = true
 rand.workspace = true
