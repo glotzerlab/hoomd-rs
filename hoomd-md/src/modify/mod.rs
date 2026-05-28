@@ -2,12 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Methods for thermalizing or modifying the momenta.
-//!
-use hoomd_microstate::{Body, Microstate, Tagged};
 
 // mod remove_com_angular_momentum;
 mod zero_center_momentum;
-// mod rotational_dof;
+mod thermalize_angular_nomentum;
 mod thermalize_momentum;
 
 // pub use remove_com_angular_momentum::ComAngularMomentumRemover;
@@ -25,7 +23,6 @@ mod thermalize_momentum;
 /// Use [`ZeroCenterMomentum`] to remove it.
 ///
 /// [Maxwell–Boltzmann distribution]: https://en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
-/// [`thermalize_momentum`]: Self::thermalize_momentum
 ///
 /// # Example
 ///
@@ -104,23 +101,58 @@ pub trait ZeroCenterMomentum {
     fn zero_center_momentum(&mut self);
 }
 
-/// Thermalize the rotational motion of [`Microstate`].
+/// Draw random angular momenta from a thermal distribution.
 ///
-/// Implement [`RotationalThermalizer`] on a custom type
-/// or use one of the provide method in
-/// [`thermalizer`](crate::thermalizer) in MD simulations.
-pub trait RotationalThermalizer<const N: usize, B, S, X, C> {
-    /// Thermalize the rotational motion.
-    fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, X, C>);
+/// In the [Maxwell–Boltzmann distribution], each component of the angular momentum $` L_i `$
+/// (aligned to the principal axes) is normally distributed with mean 0 and variance
+/// $` \sigma^2 = I_i k T`$:
+/// ```math
+///    f(L_i) = \frac{1}{\sqrt{2 \pi I_i k T}} \exp{\left( -\frac{L_i^2}{2 I_i k T} \right)}
+/// ```
+///
+/// [Maxwell–Boltzmann distribution]: https://en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
+///
+/// # Example
+///
+/// ```
+/// use hoomd_microstate::{Body, Microstate, property::{DynamicOrientedPoint, Point}};
+/// use hoomd_vector::{Angle, Cartesian};
+/// use hoomd_md::ThermalizeAngularMomentum;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::builder()
+///     .bodies([
+///         Body { properties: DynamicOrientedPoint {
+///           position: Cartesian::from([1.0, 2.0]),
+///           ..Default::default()
+///           },
+///           sites: vec![Point::default()],
+///           },
+///         Body { properties: DynamicOrientedPoint {
+///           position: Cartesian::from([-2.0, 3.0]),
+///           ..Default::default()
+///           },
+///           sites: vec![Point::default()],
+///           },
+///     ])
+///     .try_build()?;
+///
+/// microstate.thermalize_angular_momentum(1.5);
+/// # Ok(())
+/// # }
+/// ```
+pub trait ThermalizeAngularMomentum {
+    /// Assign thermally distributed random angular momenta to all bodies in the microstate.
+    fn thermalize_angular_momentum(&mut self, temperature: f64);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert2::check;
     use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use hoomd_microstate::{
         Body,
+        Microstate,
         property::{AngularMomentum, DynamicPoint, Momentum, DynamicOrientedPoint, Point},
     };
     use hoomd_vector::{Cartesian, Versor, Wedge};
@@ -281,81 +313,67 @@ mod tests {
         // }
     }
 
-    // mod rotational_dof {
-    //     use super::*;
+    mod angular_momentum {
+        use super::*;
 
-    //     #[rstest]
-    //     fn test_mom_distribution(
-    //         #[values([1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 1.0, 1.0], [4.0, 2.0, 0.5])]
-    //         inertia: [f64; 3],
-    //         #[values(0.5, 1.5)] kt: f64,
-    //         #[values(42, 123, 999)] seed: u32,
-    //     ) -> anyhow::Result<()> {
-    //         test_distribution(inertia, kt, seed)
-    //     }
+        fn create_body_3d(
+            moment_of_inertia: [f64; 3],
+            angular_momentum: Cartesian<3>,
+        ) -> Body<DynamicOrientedPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
+            Body {
+                properties: DynamicOrientedPoint {
+                    position: Cartesian::<3>::default(),
+                    orientation: Versor::default(),
+                    momentum: Cartesian::<3>::default(),
+                    net_force: Cartesian::<3>::default(),
+                    moment_of_inertia,
+                    angular_momentum,
+                    net_torque: Cartesian::<3>::default(),
+                    mass: 1.0,
+                },
+                sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
+            }
+        }
 
-    //     fn create_body_3d(
-    //         inertia: Cartesian<3>,
-    //         angmom: Cartesian<3>,
-    //     ) -> Body<DynamicOrientedPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
-    //         Body {
-    //             properties: DynamicOrientedPoint {
-    //                 position: Cartesian::<3>::default(),
-    //                 orientation: Versor::default(),
-    //                 momentum: Cartesian::<3>::default(),
-    //                 net_force: Cartesian::<3>::default(),
-    //                 moment_of_inertia: inertia,
-    //                 angular_momentum: angmom,
-    //                 net_torque: Cartesian::<3>::default(),
-    //                 mass: 1.0,
-    //             },
-    //             sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
-    //         }
-    //     }
+        #[rstest]
+        fn test_distribution(#[values([1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 1.0, 1.0], [4.0, 2.0, 0.5])] inertia: [f64; 3],
+            #[values(0.5, 1.5)] temperature: f64,
+            #[values(42, 123, 999)] seed: u32) -> anyhow::Result<()> {
+            let mut microstate = Microstate::builder().seed(seed).try_build()?;
+            let expected_variance = Cartesian::from(inertia) * temperature;
 
-    //     fn test_distribution(inertia: [f64; 3], kt: f64, seed: u32) -> anyhow::Result<()> {
-    //         let mut microstate = Microstate::builder().seed(seed).try_build()?;
-    //         let thermalizer = Thermalizer { kT: kt };
-    //         let expected_var = Cartesian::from(inertia) * kt;
+            for _ in 0..N_BODIES {
+                microstate
+                    .add_body(create_body_3d(
+                        inertia,
+                        Cartesian::default(),
+                    ))?;
+            }
 
-    //         for _ in 0..N_PARTICLES {
-    //             microstate
-    //                 .add_body(create_body_3d(
-    //                     Cartesian::from(inertia),
-    //                     Cartesian::default(),
-    //                 ))
-    //                 .expect("body should be inside boundary");
-    //         }
+            microstate.thermalize_angular_momentum(temperature);
 
-    //         thermalizer.thermalize_rotation(&mut microstate);
+            let angular_momenta: Vec<[f64; 3]> = microstate
+                .bodies()
+                .iter()
+                .map(|b| b.item.properties.angular_momentum().coordinates)
+                .collect();
 
-    //         // Collect momentum into a nested structure for easier iteration
-    //         let momenta: Vec<[f64; 3]> = microstate
-    //             .bodies()
-    //             .iter()
-    //             .map(|b| b.item.properties.angular_momentum().coordinates)
-    //             .collect();
+            for dim in 0..3 {
+                let components: Vec<f64> = angular_momenta.iter().map(|m| m[dim]).collect();
 
-    //         // Check X, Y, and Z dimensions
-    //         for dim in 0..3 {
-    //             let components: Vec<f64> = momenta.iter().map(|m| m[dim]).collect();
+                let mean = components.iter().sum::<f64>() / (N_BODIES as f64);
+                let variance = components.iter().map(|&v| (v - mean).powi(2)).sum::<f64>()
+                    / (N_BODIES- 1) as f64;
 
-    //             // 1. Calculate Mean
-    //             let mean = components.iter().sum::<f64>() / N_PARTICLES as f64;
+                assert_abs_diff_eq!(mean, 0.0, epsilon = expected_variance[dim].sqrt() * EPSILON_MEAN_SCALE);
+                assert_abs_diff_eq!(
+                    variance,
+                    expected_variance[dim],
+                    epsilon = expected_variance[dim] * EPSILON_VARIANCE_SCALE
+                );
+            }
 
-    //             // 2. Calculate Variance
-    //             let variance = components.iter().map(|&v| (v - mean).powi(2)).sum::<f64>()
-    //                 / (N_PARTICLES - 1) as f64;
-
-    //             assert_abs_diff_eq!(mean, 0.0, epsilon = expected_var[dim].sqrt() * EPSILON_MEAN);
-    //             assert_abs_diff_eq!(
-    //                 variance,
-    //                 expected_var[dim],
-    //                 epsilon = expected_var[dim] * EPSILON_VARIANCE
-    //             );
-    //         }
-
-    //         Ok(())
-    //     }
-    // }
+            Ok(())
+        }
+    }
 }

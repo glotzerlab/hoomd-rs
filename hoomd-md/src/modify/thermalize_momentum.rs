@@ -32,16 +32,18 @@ where
             let mut body_properties = self.bodies()[body_index].item.properties.clone();
 
             let mass = body_properties.mass();
-            let sigma_momentum = (temperature * mass).sqrt();
-            let normal = Normal::new(0.0, sigma_momentum).expect("Normal distribution should be valid");
+            let sigma = (temperature * mass).sqrt();
+            let normal = Normal::new(0.0, sigma).expect("Normal distribution should be valid");
 
-            let random_momentum: Cartesian<N> =
-                array::from_fn(|_| normal.sample(&mut rng)).into();
-            *body_properties.momentum_mut() = random_momentum;
+            if mass > 0.0 {
+                let random_momentum: Cartesian<N> =
+                    array::from_fn(|_| normal.sample(&mut rng)).into();
+                *body_properties.momentum_mut() = random_momentum;
 
-            self
-                .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
+                self
+                    .update_body_properties(body_index, body_properties)
+                    .expect("Bodies and sites should remain in simulation boundary.");
+            }
         }
 
         self.increment_substep();

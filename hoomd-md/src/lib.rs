@@ -15,5 +15,7 @@ pub mod thermostat;
 pub mod methods;
 
 mod modify;
+
+pub use modify::ThermalizeAngularMomentum;
 pub use modify::ThermalizeMomentum;
 pub use modify::ZeroCenterMomentum;
