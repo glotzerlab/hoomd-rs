@@ -30,10 +30,6 @@ use crate::{
 /// ```
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[allow(
-    clippy::unsafe_derive_deserialize,
-    reason = "Matrix uses safe stack-backed representation with no unsafe code"
-)]
 pub struct Matrix<const N: usize, const M: usize> {
     /// The elements of the matrix
     #[serde_as(as = "[[_; M]; N]")]
