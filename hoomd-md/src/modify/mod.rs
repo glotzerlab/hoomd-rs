@@ -3,10 +3,10 @@
 
 //! Methods for thermalizing or modifying the momenta.
 
-// mod remove_com_angular_momentum;
-mod zero_center_momentum;
 mod thermalize_angular_nomentum;
 mod thermalize_momentum;
+mod zero_angular_momentum;
+mod zero_center_momentum;
 
 // pub use remove_com_angular_momentum::ComAngularMomentumRemover;
 // pub use remove_com_momentum::ComMomentumRemover;
@@ -101,6 +101,76 @@ pub trait ZeroCenterMomentum {
     fn zero_center_momentum(&mut self);
 }
 
+/// Remove angular motion about the system's center of mass.
+///
+/// [`ZeroAngularMomentum`] adjusts the translational momentum of every body to zero
+/// out the total angular momentum of the system about the center of mass (ignoring
+/// periodic boundary conditions).
+///
+/// # 2D
+///
+/// In 2D, [`ZeroAngularMomentum`] applies:
+/// ```math
+/// \vec{p}_{i,\mathrm{new}} = \vec{p}_{i,\mathrm{old}} - \left( [-r_{ci}^{y}, r_{ci}^{x}] \right) \frac{L_c}{I_c} m_i
+/// ```
+/// where $`i`$ is the index of each body in a system, $`L_c`$ is the
+/// angular momentum about the center of mass, $`I_c`$ is the moment of
+/// inertia about the center of mass, and $`\vec{r}_{ci}`$ is the position of body *i*
+/// relative to the center of mass.
+///
+/// # 3D
+///
+/// In #D, [`ZeroAngularMomentum`] applies:
+/// ```math
+/// \vec{p}_{i,\mathrm{new}} = \vec{p}_{i,\mathrm{old}} - \left( \vec{\omega}_c \times \vec{r}_{ci} \right) m_k
+/// ```
+/// where $`i`$ is the index of each body in a system,
+/// $`\vec{\omega}_c`$ is angular velocity about the center of mass,
+/// $`\vec{r}_{ci}`$ is the position of body *i* relative to the center of mass.
+///
+/// $`\vec{\omega}_c`$ is obtained by solving the following linear system:
+/// ```math
+/// \mathbf{I}_c \vec{\omega}_c = \vec{L}_c
+/// ```
+/// where $`\mathbf{I}_c`$ moment of inertia about the center of mass,
+/// and $`\vec{L}_c`$ is the angular momentum about the center of mass.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
+/// use hoomd_vector::Cartesian;
+/// use hoomd_md::ZeroAngularMomentum;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::builder()
+///     .bodies([
+///         Body { properties: DynamicPoint {
+///           position: Cartesian::from([1.0, 2.0]),
+///           momentum: Cartesian::from([-2.0, 4.0]),
+///           ..Default::default()
+///           },
+///           sites: vec![Point::default()],
+///           },
+///         Body { properties: DynamicPoint {
+///           position: Cartesian::from([-2.0, 3.0]),
+///           momentum: Cartesian::from([3.0, -6.0]),
+///           ..Default::default()
+///           },
+///           sites: vec![Point::default()],
+///           },
+///     ])
+///     .try_build()?;
+///
+/// microstate.zero_angular_momentum();
+/// # Ok(())
+/// # }
+/// ```
+pub trait ZeroAngularMomentum {
+    /// Subtract the average momentum from each body's momentum.
+    fn zero_angular_momentum(&mut self);
+}
+
 /// Draw random angular momenta from a thermal distribution.
 ///
 /// In the [Maxwell–Boltzmann distribution], each component of the angular momentum $` L_i `$
@@ -170,18 +240,6 @@ mod tests {
 
     mod momentum {
         use super::*;
-
-        // #[rstest]
-        // fn test_angmom_removal(
-        //     #[values([1.0, 0.0, 0.0])] pos1: [f64; 3],
-        //     #[values(1.0, 2.0)] mass1: f64,
-        //     #[values([1.0, -1.0, 0.0], [-1.0, 1.0, 1.0])] mom1: [f64; 3],
-        //     #[values([-1.0, 0.0, 0.0])] pos2: [f64; 3],
-        //     #[values(1.0, 0.5)] mass2: f64,
-        //     #[values([-1.0, 0.0, 1.0], [0.5, 1.5, 3.0])] mom2: [f64; 3],
-        // ) -> anyhow::Result<()> {
-        //     two_particles_stop_rotation(pos1, mass1, mom1, pos2, mass2, mom2)
-        // }
 
         fn create_point_body_3d(
             position: Cartesian<3>,
@@ -271,46 +329,42 @@ mod tests {
             Ok(())
         }
 
-        // fn two_particles_stop_rotation(
-        //     pos1: [f64; 3],
-        //     mass1: f64,
-        //     mom1: [f64; 3],
-        //     pos2: [f64; 3],
-        //     mass2: f64,
-        //     mom2: [f64; 3],
-        // ) -> anyhow::Result<()> {
-        //     // Use two point body with arbitrary positions, masses and momenta
-        //     // to test the com angular momentum remover
-        //     let pos1 = Cartesian::from(pos1);
-        //     let mom1 = Cartesian::from(mom1);
-        //     let pos2 = Cartesian::from(pos2);
-        //     let mom2 = Cartesian::from(mom2);
-        //     let com_pos = (pos1 * mass1 + pos2 * mass2) / (mass1 + mass2);
+        #[rstest]
+        fn two_particles_stop_rotation(
+            #[values([1.0, 0.0, 0.0])] position_a: [f64; 3],
+            #[values(1.0, 2.0)] mass_a: f64,
+            #[values([1.0, -1.0, 0.0], [-1.0, 1.0, 1.0])] momentum_a: [f64; 3],
+            #[values([-1.0, 0.0, 0.0])] position_b: [f64; 3],
+            #[values(1.0, 0.5)] mass_b: f64,
+            #[values([-1.0, 0.0, 1.0], [0.5, 1.5, 3.0])] momentum_b: [f64; 3],
+        ) -> anyhow::Result<()> {
+            let position_a = Cartesian::from(position_a);
+            let momentum_a = Cartesian::from(momentum_a);
+            let position_b = Cartesian::from(position_b);
+            let momentum_b = Cartesian::from(momentum_b);
+            let position_center = (position_a * mass_a + position_b * mass_b) / (mass_a + mass_b);
 
-        //     let mut microstate = Microstate::builder().try_build()?;
-        //     let com_remover = ComAngularMomentumRemover {};
-        //     microstate
-        //         .add_body(create_point_body_3d(pos1, mass1, mom1))
-        //         .expect("body should be inside boundary");
-        //     microstate
-        //         .add_body(create_point_body_3d(pos2, mass2, mom2))
-        //         .expect("body should be inside boundary");
+            let mut microstate = Microstate::builder().try_build()?;
+            microstate
+                .add_body(create_point_body_3d(position_a, mass_a, momentum_a))?;
+            microstate
+                .add_body(create_point_body_3d(position_b, mass_b, momentum_b))?;
 
-        //     com_remover.modify(&mut microstate);
+            microstate.zero_angular_momentum();
 
-        //     let modified_mom1 = microstate.bodies()[0].item.properties.momentum;
-        //     let modified_mom2 = microstate.bodies()[1].item.properties.momentum;
+            let modified_momentum_a = microstate.bodies()[0].item.properties.momentum;
+            let modified_momentum_b = microstate.bodies()[1].item.properties.momentum;
 
-        //     let modified_angmom1 = (pos1 - com_pos).wedge(&modified_mom1);
-        //     let modified_angmom2 = (pos2 - com_pos).wedge(&modified_mom2);
+            let modified_angular_momentum_a = (position_a - position_center).wedge(&modified_momentum_a);
+            let modified_angular_momentum_b = (position_b - position_center).wedge(&modified_momentum_b);
 
-        //     assert_abs_diff_eq!(
-        //         modified_angmom1 + modified_angmom2,
-        //         Cartesian::default(),
-        //         epsilon = 1e-15
-        //     );
-        //     Ok(())
-        // }
+            assert_abs_diff_eq!(
+                modified_angular_momentum_a + modified_angular_momentum_b,
+                Cartesian::default(),
+                epsilon = 1e-15
+            );
+            Ok(())
+        }
     }
 
     mod angular_momentum {
