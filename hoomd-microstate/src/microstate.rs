@@ -10,7 +10,7 @@ use std::{cmp::Reverse, collections::BinaryHeap, fmt, mem};
 use crate::{
     Body, Error, Site, Transform,
     boundary::{GenerateGhosts, MAX_GHOSTS, Open, Wrap},
-    property::Position,
+    property::{NetForce, NetTorque, Position},
 };
 
 use hoomd_geometry::MapPoint;
@@ -1780,6 +1780,44 @@ where
             self.ghosts.items.len()
         )?;
         write!(f, "{}", self.spatial_data)
+    }
+}
+
+impl<V, B, S, X, C> Microstate<B, S, X, C>
+where
+    B: NetForce<NetForce = V>
+{
+    /// Set a body's net force.
+    ///
+    /// [`update_body_properties`] is the normal way to change a body's properties.
+    /// It must assume that the changed properties lead to a change in the transformed
+    /// sites. This is not the case for properties like [`NetForce`] that exist
+    /// only on the body itself. `set_body_net_force` provides a safe and performant
+    /// code path to change the net force on a body without transforming its sites.
+    ///
+    /// [`update_body_properties`]: Self::update_body_properties
+    #[inline]
+    pub fn set_body_net_force(&mut self, body_index: usize, net_force: V) {
+        *self.bodies.items[body_index].item.properties.net_force_mut() = net_force;
+    }
+}
+
+impl<V, B, S, X, C> Microstate<B, S, X, C>
+where
+    B: NetTorque<NetTorque = V>
+{
+    /// Set a body's net torque.
+    ///
+    /// [`update_body_properties`] is the normal way to change a body's properties.
+    /// It must assume that the changed properties lead to a change in the transformed
+    /// sites. This is not the case for properties like [`NetTorque`] that exist
+    /// only on the body itself. `set_body_net_torque` provides a safe and performant
+    /// code path to change the net torque on a body without transforming its sites.
+    ///
+    /// [`update_body_properties`]: Self::update_body_properties
+    #[inline]
+    pub fn set_body_net_torque(&mut self, body_index: usize, net_torque: V) {
+        *self.bodies.items[body_index].item.properties.net_torque_mut() = net_torque;
     }
 }
 

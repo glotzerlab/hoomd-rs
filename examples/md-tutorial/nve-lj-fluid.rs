@@ -9,15 +9,9 @@ use hoomd_interaction::{
     Rigid,
 };
 use hoomd_md::{
-    methods::{
+    ThermalizeMomentum, UpdateNetForce, ZeroAngularMomentum, ZeroCenterMomentum, methods::{
         ConstantVolume,
-        ForceUpdate,
         TranslationalMotion,
-    },
-    thermalizer::{
-        ComAngularMomentumRemover, ComMomentumRemover, Thermalizer,
-        TranslationalMomentumModifier,
-        TranslationalThermalizer,
     }, thermostat::{BussiThermostat, NoThermostat}
 };
 use hoomd_microstate::{
@@ -160,13 +154,10 @@ impl LJFluid {
         // ANCHOR_END: energy_lrc
 
         // ANCHOR: particle_momenta
-        let thermalizer = Thermalizer { kT: kt };
-        thermalizer.thermalize_translation(&mut microstate);
+        microstate.thermalize_momentum(kt);
 
-        let angular_remover = ComAngularMomentumRemover {};
-        let linear_remover = ComMomentumRemover {};
-        angular_remover.modify(&mut microstate);
-        linear_remover.modify(&mut microstate);
+        microstate.zero_angular_momentum();
+        microstate.zero_center_momentum();
         // ANCHOR_END: particle_momenta
 
         // ANCHOR: integrator
@@ -266,8 +257,7 @@ impl LJFluid {
         // ANCHOR_END: first_half_integration
 
         // ANCHOR: update_force
-        self.integrator
-            .update_force(&mut self.microstate, &self.force);
+        self.microstate.update_net_force(&self.force);
         // ANCHOR_END: update_force
 
         // ANCHOR: second_half_integration
@@ -298,8 +288,7 @@ impl LJFluid {
             &Isoenergy {},
         );
 
-        self.integrator
-            .update_force(&mut self.microstate, &self.force);
+        self.microstate.update_net_force(&self.force);
 
         self.integrator.integrate_translation_step_two(
             &mut self.microstate,

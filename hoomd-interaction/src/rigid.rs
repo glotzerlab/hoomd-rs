@@ -45,7 +45,7 @@ pub struct Rigid<F>(pub F);
 
 impl<V, B, S, X, C, F> NetBodyForce<B, S, X, C> for Rigid<F>
 where
-    V: Vector + Default + Wedge,
+    V: Vector + Default,
     B: Transform<S>,
     S: Position<Position = V>,
     F: NetSiteForce<B, S, X, C, Force = V>,

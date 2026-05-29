@@ -20,3 +20,7 @@ pub use modify::ThermalizeAngularMomentum;
 pub use modify::ThermalizeMomentum;
 pub use modify::ZeroCenterMomentum;
 pub use modify::ZeroAngularMomentum;
+
+mod update_net_force;
+pub use update_net_force::UpdateNetForce;
+pub use update_net_force::UpdateNetForceAndTorque;
