@@ -245,12 +245,12 @@ impl MinkowskiPortalRefinement<3> for Cartesian<3> {
     ) -> Option<bool> {
         let tolerance = Self::TOLERANCE * normal.norm(); // Handle non-unit shapes
 
-        // Check if v_new is on the portal plane — no more refinement possible
+        // Check if v_new is on the portal plane: if so, no more refinement is possible
         let d = (*v_new - portal[0]).dot(normal);
         if d.abs() < tolerance {
             return Some(false);
         }
-        // Check if origin is on the portal plane — intersection detected
+        // Check if origin is on the portal plane: if so, intersection detected
         let d = portal[0].dot(normal);
         if d.abs() < tolerance {
             return Some(true);
