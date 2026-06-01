@@ -168,7 +168,6 @@ impl MinkowskiPortalRefinement<3> for Cartesian<3> {
         n
     }
 
-    /// Discover a 2-simplex portal such that the origin passes through the portal face.
     #[inline]
     fn discover_portal<A: SupportMapping<Cartesian<3>>, B: SupportMapping<Cartesian<3>>>(
         s: &MinkowskiDifference<3, A, B>,
@@ -356,7 +355,8 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
 ///
 /// This is the generic implementation underlying [`collide2d`] and [`collide3d`].
 /// Dimension-specific operations (portal discovery, normal computation, tolerance
-/// checks, vertex replacement) are resolved at compile time via the [`Mpr`] trait.
+/// checks, vertex replacement) are resolved at compile time via the
+/// [`MinkowskiPortalRefinement`] trait.
 #[inline]
 pub(crate) fn collide<const N: usize, R, A, B>(
     sa: &A,
