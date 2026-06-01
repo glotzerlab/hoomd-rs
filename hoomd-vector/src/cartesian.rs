@@ -18,7 +18,10 @@ use rand::{
 };
 
 use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
-use hoomd_linear_algebra::{MatMul, matrix::Matrix};
+use hoomd_linear_algebra::{
+    MatMul,
+    matrix::{Matrix, Matrix33},
+};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -463,8 +466,19 @@ impl Cartesian<4> {
     ///
     /// [co-unary]: https://ncatlab.org/nlab/show/cross+product#counary
     #[inline]
-    fn counary_cross(vectors: &[Self; 3]) -> Self {
-        todo!()
+    #[must_use]
+    pub fn counary_cross(vectors: &[Self; 3]) -> Self {
+        std::array::from_fn(|skip| {
+            Matrix33 {
+                rows: std::array::from_fn(|r| {
+                    // Skip the column 'skip' by adding 1 to the index when c >= skip
+                    std::array::from_fn(|c| vectors[r][c + usize::from(c >= skip)])
+                }),
+            }
+            .determinant()
+                * if skip.is_multiple_of(2) { 1.0 } else { -1.0 }
+        })
+        .into()
     }
 }
 
@@ -1195,5 +1209,34 @@ mod tests {
         for (a, b) in transposed.rows().iter().zip(inverted.rows().iter()) {
             assert_relative_eq!(a, b);
         }
+    }
+
+    #[rstest]
+    fn test_generalized_cross_product_combinations(
+        #[values(1.0, -2.5, 4.0)] r1: f64,
+        #[values(1.0, 3.0, -5.1)] r2: f64,
+        #[values(2.0, -1.5, 0.0)] r3: f64,
+        #[values(0.0, 33.0, -12.5, 0.04)] x: f64,
+        #[values(0.0, 1.0, 3.0, -2.6)] y: f64,
+        #[values(0.0, 2.0, -1.5, -0.1)] z: f64,
+    ) {
+        // Construct a lower-triangular matrix of vectors
+        let vecs = [
+            Cartesian::from([r1, 0.0, 0.0, 0.0]),
+            Cartesian::from([x, r2, 0.0, 0.0]),
+            Cartesian::from([y, z, r3, 0.0]),
+        ];
+
+        let cross = Cartesian::<4>::counary_cross(&vecs);
+
+        // Validate the result is perpendicular to all inputs
+        for v in &vecs {
+            assert_relative_eq!(cross.dot(v), 0.0);
+        }
+
+        // Validate the magnitude is exactly the spanned volume
+        // For a triangular matrix, the volume is strictly the product of the diagonals.
+        let expected_volume_sq = (r1 * r2 * r3).powi(2);
+        assert_relative_eq!(cross.norm_squared(), expected_volume_sq);
     }
 }
