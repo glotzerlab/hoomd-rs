@@ -1,21 +1,19 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement `ZeroAngularMomentum`
+//! Implement `ZeroCenterAngularMomentum`
 
-use super::ZeroAngularMomentum;
+use super::ZeroCenterAngularMomentum;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::{DynamicOrientedPoint, DynamicPoint, Mass, Momentum, Position},
+    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{DynamicOrientedPoint, DynamicPoint, Mass, Momentum, Position}
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, InnerProduct, Outer, Versor, Wedge};
 
 /// Zero a 3D microstate's angular momentum.
 #[inline]
-fn zero_angular_momentum_3d<B, S, X, C>(microstate: &mut Microstate<B, S, X, C>)
+fn zero_angular_momentum_3d<B, S, X, C, F>(microstate: &mut Microstate<B, S, X, C>, should_zero: F)
 where
     B: Position<Position = Cartesian<3>>
         + Mass
@@ -25,11 +23,16 @@ where
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-{
+    F: Fn(&Tagged<Body<B, S>>) -> bool
+    {
         let mut center_of_mass = Cartesian::default();
         let mut total_mass = 0.0;
 
         for body in microstate.bodies() {
+            if !should_zero(body) {
+                continue;
+            }
+
             let position = body.item.properties.position();
             let mass = body.item.properties.mass();
 
@@ -41,6 +44,10 @@ where
         let mut angular_momentum_center = Cartesian::default();
         let mut moment_of_inertia_center = Matrix::<3, 3>::zeros();
         for body in microstate.bodies() {
+            if !should_zero(body) {
+                continue;
+            }
+
             let position = body.item.properties.position();
             let momentum = body.item.properties.momentum();
             let mass = body.item.properties.mass();
@@ -77,7 +84,12 @@ where
         let center_angular_velocity = Cartesian::from(omega.rows[0]);
 
         for body_index in 0..microstate.bodies().len() {
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body = &microstate.bodies()[body_index];
+            if !should_zero(body) {
+                continue;
+            }
+            
+            let mut body_properties = body.item.properties.clone();
 
             let position = body_properties.position();
             let mass = body_properties.mass();
@@ -95,7 +107,7 @@ where
 
 /// Zero a 2D microstate's angular momentum.
 #[inline]
-fn zero_angular_momentum_2d<B, S, X, C>(microstate: &mut Microstate<B, S, X, C>)
+fn zero_angular_momentum_2d<B, S, X, C, F>(microstate: &mut Microstate<B, S, X, C>, should_zero: F)
 where
     B: Position<Position = Cartesian<2>>
         + Mass
@@ -105,10 +117,15 @@ where
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    F: Fn(&Tagged<Body<B, S>>) -> bool
 {        let mut center_of_mass = Cartesian::default();
         let mut total_mass = 0.0;
 
         for body in microstate.bodies() {
+            if !should_zero(body) {
+                continue;
+            }
+
             let position = body.item.properties.position();
             let mass = body.item.properties.mass();
 
@@ -121,6 +138,10 @@ where
         let mut moment_of_inertia_center = 0.0;
 
         for body in microstate.bodies() {
+            if !should_zero(body) {
+                continue;
+            }
+
             let position = body.item.properties.position();
             let momentum = body.item.properties.momentum();
             let mass = body.item.properties.mass();
@@ -136,7 +157,12 @@ where
             let angular_velocity_center = angular_momentum_center / moment_of_inertia_center;
 
             for body_index in 0..microstate.bodies().len() {
-                let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+                let body = &microstate.bodies()[body_index];
+                if !should_zero(body) {
+                    continue;
+                }
+            
+                let mut body_properties = body.item.properties.clone();
 
                 let position = body_properties.position();
                 let mass = body_properties.mass();
@@ -152,7 +178,7 @@ where
         }
 }
 
-impl<S, X, C> ZeroAngularMomentum for Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C> 
+impl<S, X, C> ZeroCenterAngularMomentum<DynamicOrientedPoint<Cartesian<3>, Versor>, S> for Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C> 
 where
     DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
     S: Position<Position = Cartesian<3>> + Default,
@@ -160,12 +186,12 @@ where
     C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_angular_momentum(&mut self) {
-        zero_angular_momentum_3d(self);
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(&mut self, should_zero: F) {
+        zero_angular_momentum_3d(self,  should_zero);
     }
 }
 
-impl<S, X, C> ZeroAngularMomentum for Microstate<DynamicPoint<Cartesian<3>>, S, X, C> 
+impl<S, X, C> ZeroCenterAngularMomentum<DynamicPoint<Cartesian<3>>, S> for Microstate<DynamicPoint<Cartesian<3>>, S, X, C> 
 where
     DynamicPoint<Cartesian<3>>: Transform<S>,
     S: Position<Position = Cartesian<3>> + Default,
@@ -173,12 +199,12 @@ where
     C: Wrap<DynamicPoint<Cartesian<3>>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_angular_momentum(&mut self) {
-        zero_angular_momentum_3d(self);
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicPoint<Cartesian<3>>, S>>) -> bool>(&mut self, should_zero: F) {
+        zero_angular_momentum_3d(self, should_zero);
     }
 }
 
-impl<S, X, C> ZeroAngularMomentum for Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>
+impl<S, X, C> ZeroCenterAngularMomentum<DynamicOrientedPoint<Cartesian<2>, Angle>, S> for Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>
 where
     DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>,
     S: Position<Position = Cartesian<2>> + Default,
@@ -186,12 +212,12 @@ where
     C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_angular_momentum(&mut self) {
-        zero_angular_momentum_2d(self);
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(&mut self, should_zero: F) {
+        zero_angular_momentum_2d(self, should_zero);
     }
 }
 
-impl<S, X, C> ZeroAngularMomentum for Microstate<DynamicPoint<Cartesian<2>>, S, X, C>
+impl<S, X, C> ZeroCenterAngularMomentum<DynamicPoint<Cartesian<2>>, S> for Microstate<DynamicPoint<Cartesian<2>>, S, X, C>
 where
     DynamicPoint<Cartesian<2>>: Transform<S>,
     S: Position<Position = Cartesian<2>> + Default,
@@ -199,7 +225,7 @@ where
     C: Wrap<DynamicPoint<Cartesian<2>>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_angular_momentum(&mut self) {
-        zero_angular_momentum_2d(self);
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicPoint<Cartesian<2>>, S>>) -> bool>(&mut self, should_zero: F) {
+        zero_angular_momentum_2d(self, should_zero);
     }
 }

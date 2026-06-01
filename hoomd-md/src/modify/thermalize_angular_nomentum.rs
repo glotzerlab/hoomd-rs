@@ -5,15 +5,13 @@
 
 use super::ThermalizeAngularMomentum;
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::{AngularMomentum, MomentOfInertia, NetTorque, Orientation, Position, DynamicOrientedPoint},
+    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, DynamicOrientedPoint, MomentOfInertia, NetTorque, Orientation, Position}
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, Versor, Wedge};
 use rand_distr::{Distribution, Normal};
 
-impl<P, S, X, C> ThermalizeAngularMomentum for Microstate<DynamicOrientedPoint<P, Angle>, S, X, C>
+impl<P, S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<P, Angle>, S> for Microstate<DynamicOrientedPoint<P, Angle>, S, X, C>
 where
     P: Copy + Wedge,
     DynamicOrientedPoint<P, Angle>: Clone + Transform<S>,
@@ -21,11 +19,17 @@ where
     X: PointUpdate<P, SiteKey>,
     C: Wrap<DynamicOrientedPoint<P, Angle>> + Wrap<S> + GenerateGhosts<S>,
 {
-    fn thermalize_angular_momentum(&mut self, temperature: f64) {
+    #[inline]
+    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Angle>, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F) {
         let mut rng = self.counter().make_rng();
 
         for body_index in 0..self.bodies().len() {
-            let mut body_properties = self.bodies()[body_index].item.properties.clone();
+            let body = &self.bodies()[body_index];
+            if !should_thermalize(body) {
+                continue;
+            }
+            
+            let mut body_properties = body.item.properties.clone();
 
             let moment_of_inertia = body_properties.moment_of_inertia();
             let sigma = (temperature * moment_of_inertia).sqrt();
@@ -43,7 +47,7 @@ where
     }
 }
 
-impl<P,  S, X, C> ThermalizeAngularMomentum for Microstate<DynamicOrientedPoint<P, Versor>, S, X, C>
+impl<P, S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<P, Versor>, S> for Microstate<DynamicOrientedPoint<P, Versor>, S, X, C>
 where
     P: Copy + Wedge,
     DynamicOrientedPoint<P, Versor>: Clone + Transform<S>,
@@ -51,11 +55,17 @@ where
     X: PointUpdate<P, SiteKey>,
     C: Wrap<DynamicOrientedPoint<P, Versor>> + Wrap<S> + GenerateGhosts<S>,
 {
-    fn thermalize_angular_momentum(&mut self, temperature: f64) {
+    #[inline]
+    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Versor>, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F) {
         let mut rng = self.counter().make_rng();
 
         for body_index in 0..self.bodies().len() {
-            let mut body_properties = self.bodies()[body_index].item.properties.clone();
+            let body = &self.bodies()[body_index];
+            if !should_thermalize(body) {
+                continue;
+            }
+            
+            let mut body_properties = body.item.properties.clone();
 
             let moment_of_inertia = body_properties.moment_of_inertia();
 

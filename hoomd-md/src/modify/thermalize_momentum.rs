@@ -7,13 +7,13 @@ use std::array;
 
 use super::ThermalizeMomentum;
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{Mass, Momentum, Position}
+    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{Mass, Momentum, Position}
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::Cartesian;
 use rand_distr::{Distribution, Normal};
 
-impl<const N: usize, B, S, X, C> ThermalizeMomentum for Microstate<B, S, X, C>
+impl<const N: usize, B, S, X, C> ThermalizeMomentum<B, S> for Microstate<B, S, X, C>
 where
     B: Position<Position = Cartesian<N>>
         + Momentum<Momentum = Cartesian<N>>
@@ -25,12 +25,16 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn thermalize_momentum(&mut self, temperature: f64) {
+    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F) {
         let mut rng = self.counter().make_rng();
 
         for body_index in 0..self.bodies().len() {
-            let mut body_properties = self.bodies()[body_index].item.properties.clone();
-
+            let body = &self.bodies()[body_index];
+            if !should_thermalize(body) {
+                continue;
+            }
+            
+            let mut body_properties = body.item.properties.clone();
             let mass = body_properties.mass();
             let sigma = (temperature * mass).sqrt();
             let normal = Normal::new(0.0, sigma).expect("Normal distribution should be valid");

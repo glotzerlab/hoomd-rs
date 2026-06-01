@@ -3,13 +3,12 @@
 
 //! Methods for thermalizing or modifying the momenta.
 
+use hoomd_microstate::{Body, Tagged};
+
 mod thermalize_angular_nomentum;
 mod thermalize_momentum;
-mod zero_angular_momentum;
+mod zero_center_angular_momentum;
 mod zero_center_momentum;
-
-// pub use remove_com_angular_momentum::ComAngularMomentumRemover;
-// pub use remove_com_momentum::ComMomentumRemover;
 
 /// Draw random momenta from a thermal distribution.
 ///
@@ -53,9 +52,15 @@ mod zero_center_momentum;
 /// # Ok(())
 /// # }
 /// ```
-pub trait ThermalizeMomentum {
+pub trait ThermalizeMomentum<B, S> {
     /// Assign thermally distributed random momenta to all bodies in the microstate.
-    fn thermalize_momentum(&mut self, temperature: f64);
+    #[inline]
+    fn thermalize_momentum(&mut self, temperature: f64) {
+        self.thermalize_momentum_with_filter(temperature, |_| true);
+    }
+
+    /// Assign thermally distributed random momenta to a subset of the bodies in the microstate.
+    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F);
 }
 
 /// Remove translational motion from the system's center of mass.
@@ -96,20 +101,26 @@ pub trait ThermalizeMomentum {
 /// # Ok(())
 /// # }
 /// ```
-pub trait ZeroCenterMomentum {
-    /// Subtract the average momentum from each body's momentum.
-    fn zero_center_momentum(&mut self);
+pub trait ZeroCenterMomentum<B, S> {
+    /// Subtract the average momentum from every body's momentum.
+    #[inline]
+    fn zero_center_momentum(&mut self) {
+        self.zero_center_momentum_with_filter(|_| true);
+    }
+
+    /// Subtract the average momentum from each selected body's momentum.
+    fn zero_center_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero: F);
 }
 
 /// Remove angular motion about the system's center of mass.
 ///
-/// [`ZeroAngularMomentum`] adjusts the translational momentum of every body to zero
+/// [`ZeroCenterAngularMomentum`] adjusts the translational momentum of every body to zero
 /// out the total angular momentum of the system about the center of mass (ignoring
 /// periodic boundary conditions).
 ///
 /// # 2D
 ///
-/// In 2D, [`ZeroAngularMomentum`] applies:
+/// In 2D, [`ZeroCenterAngularMomentum`] applies:
 /// ```math
 /// \vec{p}_{i,\mathrm{new}} = \vec{p}_{i,\mathrm{old}} - \left( [-r_{ci}^{y}, r_{ci}^{x}] \right) \frac{L_c}{I_c} m_i
 /// ```
@@ -120,7 +131,7 @@ pub trait ZeroCenterMomentum {
 ///
 /// # 3D
 ///
-/// In #D, [`ZeroAngularMomentum`] applies:
+/// In #D, [`ZeroCenterAngularMomentum`] applies:
 /// ```math
 /// \vec{p}_{i,\mathrm{new}} = \vec{p}_{i,\mathrm{old}} - \left( \vec{\omega}_c \times \vec{r}_{ci} \right) m_k
 /// ```
@@ -140,7 +151,7 @@ pub trait ZeroCenterMomentum {
 /// ```
 /// use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
 /// use hoomd_vector::Cartesian;
-/// use hoomd_md::ZeroAngularMomentum;
+/// use hoomd_md::ZeroCenterAngularMomentum;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::builder()
@@ -162,13 +173,19 @@ pub trait ZeroCenterMomentum {
 ///     ])
 ///     .try_build()?;
 ///
-/// microstate.zero_angular_momentum();
+/// microstate.zero_center_angular_momentum();
 /// # Ok(())
 /// # }
 /// ```
-pub trait ZeroAngularMomentum {
-    /// Subtract the average momentum from each body's momentum.
-    fn zero_angular_momentum(&mut self);
+pub trait ZeroCenterAngularMomentum<B, S> {
+    /// Subtract the average momentum from every body's momentum.
+    #[inline]
+    fn zero_center_angular_momentum(&mut self) {
+        self.zero_center_angular_momentum_with_filter(|_| true);
+    }
+
+    /// Subtract the average momentum from each selected body's momentum.
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero: F);
 }
 
 /// Draw random angular momenta from a thermal distribution.
@@ -211,9 +228,15 @@ pub trait ZeroAngularMomentum {
 /// # Ok(())
 /// # }
 /// ```
-pub trait ThermalizeAngularMomentum {
+pub trait ThermalizeAngularMomentum<B, S> {
     /// Assign thermally distributed random angular momenta to all bodies in the microstate.
-    fn thermalize_angular_momentum(&mut self, temperature: f64);
+    #[inline]
+    fn thermalize_angular_momentum(&mut self, temperature: f64) {
+        self.thermalize_angular_momentum_with_filter(temperature, |_| true);
+    }
+
+    /// Assign thermally distributed random angular momenta to a subset of bodies in the microstate.
+    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F);
 }
 
 #[cfg(test)]
@@ -350,7 +373,7 @@ mod tests {
             microstate
                 .add_body(create_point_body_3d(position_b, mass_b, momentum_b))?;
 
-            microstate.zero_angular_momentum();
+            microstate.zero_center_angular_momentum();
 
             let modified_momentum_a = microstate.bodies()[0].item.properties.momentum;
             let modified_momentum_b = microstate.bodies()[1].item.properties.momentum;
