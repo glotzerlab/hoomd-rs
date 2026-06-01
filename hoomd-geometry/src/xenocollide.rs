@@ -118,6 +118,7 @@ impl MinkowskiPortalRefinement<2> for Cartesian<2> {
         v_new: &Cartesian<2>,
         _normal: &Cartesian<2>,
     ) -> Option<bool> {
+        // In 2D, we either find a valid vertex or require further search to be sure
         let d = (*v_new - portal[0]) - (*v_new - portal[0]).project(&(portal[1] - portal[0]));
         if d.norm_squared() < Self::TOLERANCE * v_new.norm_squared() {
             return Some(true);
@@ -182,8 +183,8 @@ impl MinkowskiPortalRefinement<3> for Cartesian<3> {
         let n = v1.cross(v0);
 
         // Cross product is zero if v0,v1 collinear with origin, but we have already
-        // determined origin is within v1 support plane. If origin is on a line between
-        // v1 and v0, particles overlap.
+        // determined the origin is within the v1 support plane.
+        // If the origin is on a line between v1 and v0, particles overlap.
         if n.into_iter().all(|x| x.abs() < Self::TOLERANCE) {
             return Discovery::Known(true);
         }
