@@ -794,4 +794,49 @@ mod tests {
         let overlaps = collide4d(&c0, &c1, &v.into(), &q_ij);
         assert_eq!(overlaps, c0.intersects_aligned(&c1, &v.into()));
     }
+
+    /// Sweep two unit hypercubes from overlapping to separated along a diagonal direction,
+    /// verifying collide4d matches the analytical result at every step.
+    #[rstest(
+        direction => [
+            [1.0_f64, 1.0, 1.0, 1.0],
+            [2.0_f64, 1.0, 1.0, 1.0],
+            [1.0_f64, 1.0, 1.0, 3.0],
+            [1.0_f64, 2.0, 3.0, 1.0],
+        ],
+    )]
+    fn test_4d_hypercuboid_diagonal_separation_sweep(direction: [f64; 4]) {
+        let one: PositiveReal = 1.0.try_into().unwrap();
+        let c0 = Hypercuboid {
+            edge_lengths: [one; 4],
+        };
+        let c1 = Hypercuboid {
+            edge_lengths: [one; 4],
+        };
+
+        // Half-edge-lengths: 0.5 each, sum = 1.0 each.
+        // Critical t = min_i(1.0 / |dir_i|)
+        let critical_t = (0..4)
+            .map(|i| 1.0 / direction[i].abs())
+            .reduce(f64::min)
+            .unwrap();
+
+        let t_start = critical_t - 0.001;
+        let t_end = critical_t + 0.001;
+        let steps = 10_000;
+        let dt = (t_end - t_start) / f64::from(steps);
+
+        let q_ij = RotationMatrix::<4>::default();
+
+        for step in 0..=steps {
+            let t = t_start + dt * f64::from(step);
+            let d: Cartesian<4> = direction.map(|d_i| d_i * t).into();
+            let expected = c0.intersects_aligned(&c1, &d);
+            let result = collide4d(&c0, &c1, &d, &q_ij);
+            assert_eq!(
+                result, expected,
+                "Mismatch at step {step}, t = {t:.12}, critical_t = {critical_t:.12}"
+            );
+        }
+    }
 }
