@@ -438,14 +438,14 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
     }
 
     fn narrow_portal(
-        _interior: &Cartesian<4>,
+        interior: &Cartesian<4>,
         portal: &mut [Cartesian<4>; 4],
         v_new: Cartesian<4>,
     ) {
         // The 4-simplex (portal[0..4] + v_new) has 4 candidate exit faces.
         // Each exit face is opposite one portal vertex and consists of v_new plus
         // the other 3 portal vertices. We find which face the origin ray exits through
-        // by computing the outward normal to each face.
+        // by computing the outward normal to each face, oriented away from the interior point.
         for i in 0..4 {
             let mut edges: [Cartesian<4>; 3] = Default::default();
             let mut k = 0;
@@ -456,7 +456,7 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
                 }
             }
             let n = Self::counary_cross(&edges);
-            let n = if (portal[i] - v_new).dot(&n) < 0.0 {
+            let n = if (*interior - v_new).dot(&n) < 0.0 {
                 -n
             } else {
                 n
