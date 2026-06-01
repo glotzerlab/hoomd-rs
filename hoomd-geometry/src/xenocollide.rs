@@ -450,8 +450,15 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
         //
         // The signed distance from a point P to the hyperplane through v_new with normal n
         // is (P − v_new) . n. The origin (P = 0) has distance −v_new . n, and interior
-        // has distance (interior − v_new) . n. We orient n to point toward the
-        // interior, so the origin is on the opposite side
+        // has distance (interior − v_new) . n. We orient n toward interior so that the
+        // origin is on the opposite (outward) side when v_new . n > 0.
+        //
+        // In exact arithmetic the origin is always outside exactly one face, so the loop
+        // returns early. The best-face fallback handles floating-point edge cases by
+        // picking the face the origin is nearest to exiting through — consistent with
+        // how the 3D triple-product matching is exhaustive by construction.
+        let mut best_i = 0;
+        let mut best_d = f64::NEG_INFINITY;
         for i in 0..4 {
             // 3 edge vectors of the face opposite portal[i] (modular indexing skips i)
             let edges = std::array::from_fn(|k| portal[(i + k + 1) % 4] - v_new);
@@ -462,14 +469,18 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
             } else {
                 n
             };
-            // Origin is on the outward side of this face
-            if v_new.dot(&n) >= 0.0 {
+            let d = v_new.dot(&n);
+            if d >= 0.0 {
                 portal[i] = v_new;
                 return;
             }
+            if d > best_d {
+                best_d = d;
+                best_i = i;
+            }
         }
-        // Origin is not clearly outside any face
-        portal[0] = v_new;
+        // The origin is not clearly outside any face, so we pick the best one
+        portal[best_i] = v_new;
     }
 }
 
