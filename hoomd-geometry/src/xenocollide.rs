@@ -55,7 +55,7 @@ pub(crate) trait MinkowskiPortalRefinement<const N: usize> {
     /// Dimension-specific convergence tolerance.
     const TOLERANCE: f64;
 
-    /// Compute the outward-facing normal to the portal, oriented away from `interior`.
+    /// Compute the outward-facing normal to the portal (facing toward the surface of the minkowski difference)
     fn outward_normal(portal: &[Cartesian<N>; N], interior: &Cartesian<N>) -> Cartesian<N>;
 
     /// Discover the initial portal for MPR refinement.
