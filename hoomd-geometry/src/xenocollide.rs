@@ -379,7 +379,7 @@ where
 
     // Portal refinement
     // The loop is the same in general dimension, but the outward facing normal function
-    // depends on the (n-1)-ary cross product (perp in 2d, cross in 3d)
+    // depends on the (N-1)-ary cross product (perp in 2d, cross in 3d)
     // See https://ncatlab.org/nlab/show/cross+product#counary for further details on
     // this operation
     let mut count = 0_usize;
