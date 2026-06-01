@@ -1235,7 +1235,7 @@ mod tests {
         }
 
         // Validate the magnitude is exactly the spanned volume
-        // For a triangular matrix, the volume is strictly the product of the diagonals.
+        // For a triangular matrix, the volume is the product of the diagonals.
         let expected_volume_sq = (r1 * r2 * r3).powi(2);
         assert_relative_eq!(cross.norm_squared(), expected_volume_sq);
     }
