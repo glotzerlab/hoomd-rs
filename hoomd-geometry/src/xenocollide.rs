@@ -67,9 +67,11 @@ pub(crate) trait MinkowskiPortalRefinement<const N: usize> {
         A: SupportMapping<Cartesian<N>>,
         B: SupportMapping<Cartesian<N>>;
 
-    /// Check convergence tolerance.
+    /// Check whether the portal has reached the surface of the Minkowski
+    /// difference within numerical precision (in which case we can determine overlap).
     ///
-    /// Returns `Some(bool)` if the tolerance check determines the result, `None` to continue.
+    /// Returns `Some(result)` if convergence is detected, or `None` if
+    /// refinement can continue.
     fn tolerance_check(
         portal: &[Cartesian<N>; N],
         v_new: &Cartesian<N>,
