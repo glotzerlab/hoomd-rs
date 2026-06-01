@@ -339,10 +339,10 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
         }
 
         // v2: support in direction perpendicular to the v0-v1 plane
-        let n = match perp_to_2d_subspace(*v0, v1, Self::TOLERANCE) {
-            Some(n) => n,
-            None => return Discovery::Known(true), // v0, v1, origin collinear
+        let Some(n) = perp_to_2d_subspace(*v0, v1, Self::TOLERANCE) else {
+            return Discovery::Known(true); // v0, v1, origin collinear
         };
+
         let mut v2 = s.composite_support_mapping(n);
         if v2.dot(&n) < 0.0 {
             return Discovery::Known(false);
