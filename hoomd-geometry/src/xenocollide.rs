@@ -59,6 +59,9 @@ pub(crate) trait MinkowskiPortalRefinement<const N: usize> {
     fn outward_normal(portal: &[Cartesian<N>; N], interior: &Cartesian<N>) -> Cartesian<N>;
 
     /// Discover the initial portal for MPR refinement.
+    ///
+    /// The initial portal will be an (N-1)-simplex, through which the ray `-v0` must
+    /// pass on its way to the origin.
     fn discover_portal<A, B>(s: &MinkowskiDifference<N, A, B>, v0: &Cartesian<N>) -> Discovery<N>
     where
         A: SupportMapping<Cartesian<N>>,
