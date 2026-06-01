@@ -437,35 +437,38 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
         None
     }
 
-    fn narrow_portal(
-        interior: &Cartesian<4>,
-        portal: &mut [Cartesian<4>; 4],
-        v_new: Cartesian<4>,
-    ) {
-        // The 4-simplex (portal[0..4] + v_new) has 4 candidate exit faces.
-        // Each exit face is opposite one portal vertex and consists of v_new plus
-        // the other 3 portal vertices. We find which face the origin ray exits through
-        // by computing the outward normal to each face, oriented away from the interior point.
+    fn narrow_portal(interior: &Cartesian<4>, portal: &mut [Cartesian<4>; 4], v_new: Cartesian<4>) {
+        // The 4-simplex [portal[0..4] , v_new] has 5 tetrahedral faces.
+        // The entry face is the current portal (portal[0..4]).
+        // The 4 exit faces each contain v_new and all portal vertices except portal[i].
+        //
+        // The origin ray enters through the portal and must exit through one of these
+        // 4 faces. To determine which, we compute the outward-facing normal to each exit
+        // face and check whether the origin lies on the outward side:
+        //
+        //   n_i = outward normal of the face opposite portal[i]
+        //
+        // The signed distance from a point P to the hyperplane through v_new with normal n
+        // is (P − v_new) . n. The origin (P = 0) has distance −v_new . n, and interior
+        // has distance (interior − v_new) . n. We orient n to point toward the
+        // interior, so the origin is on the opposite side
         for i in 0..4 {
-            let mut edges: [Cartesian<4>; 3] = Default::default();
-            let mut k = 0;
-            for j in 0..4 {
-                if j != i {
-                    edges[k] = portal[j] - v_new;
-                    k += 1;
-                }
-            }
+            // 3 edge vectors of the face opposite portal[i] (modular indexing skips i)
+            let edges = std::array::from_fn(|k| portal[(i + k + 1) % 4] - v_new);
             let n = Self::counary_cross(&edges);
+            // Orient n toward the interior (positive side contains interior)
             let n = if (*interior - v_new).dot(&n) < 0.0 {
                 -n
             } else {
                 n
             };
+            // Origin is on the outward side of this face
             if v_new.dot(&n) >= 0.0 {
                 portal[i] = v_new;
                 return;
             }
         }
+        // Origin is not clearly outside any face
         portal[0] = v_new;
     }
 }
