@@ -24,7 +24,6 @@ where
     fn zero_center_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero: F) {
         let (total_momentum, count) = self.bodies()
             .iter()
-            .by_ref()
             .filter(|&body| should_zero(body))
             .fold((Cartesian::default(), 0), |(total, count), body| (total + *body.item.properties.momentum(), count + 1));
         let average_momentum = total_momentum / f64::from(count);

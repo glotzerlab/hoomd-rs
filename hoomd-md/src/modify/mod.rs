@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Methods for thermalizing or modifying the momenta.
+//! Methods for thermalizing and zeroing the momenta.
 
 use hoomd_microstate::{Body, Tagged};
 

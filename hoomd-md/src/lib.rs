@@ -14,8 +14,11 @@
 pub mod thermostat;
 pub mod methods;
 
-mod modify;
+mod compute;
+pub use compute::TranslationalKineticEnergy;
+pub use compute::RotationalKineticEnergy;
 
+mod modify;
 pub use modify::ThermalizeAngularMomentum;
 pub use modify::ThermalizeMomentum;
 pub use modify::ZeroCenterMomentum;
