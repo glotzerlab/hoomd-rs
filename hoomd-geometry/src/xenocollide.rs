@@ -73,7 +73,13 @@ pub(crate) trait MinkowskiPortalRefinement<const N: usize> {
         normal: &Cartesian<N>,
     ) -> Option<bool>;
 
-    /// Choose which portal vertex to replace with the new support point.
+    /// Narrow the portal by replacing one vertex with a new support point.
+    ///
+    /// The portal vertices and `v_new` form an N-simplex whose interior face
+    /// is the current portal. The origin ray enters through this face and must
+    /// exit through one of the outer faces. This method identifies which outer
+    /// face the ray exits through and replaces the portal vertex opposite that
+    /// face with `v_new`, ensuring that the origin ray always passes through the portal
     fn replace_vertex(interior: &Cartesian<N>, portal: &mut [Cartesian<N>; N], v_new: Cartesian<N>);
 }
 
