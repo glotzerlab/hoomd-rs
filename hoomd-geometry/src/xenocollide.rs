@@ -401,7 +401,7 @@ where
             return false;
         }
 
-        // Tolerance check: are we sure we've hit the portal (within our tolerance)?
+        // Can we numerically distinguish the portal face and the support plane?
         if let Some(result) = Cartesian::<N>::tolerance_check(&portal, &v_new, &normal) {
             return result;
         }
