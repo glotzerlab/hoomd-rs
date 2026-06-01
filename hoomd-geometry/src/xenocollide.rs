@@ -624,6 +624,18 @@ where
     collide::<3, R, A, B>(sa, sb, v_ij, q_ij)
 }
 
+/// Detect collision between two convex 4D objects via Minkowski Portal Refinement.
+#[inline(never)]
+pub fn collide4d<R, A, B>(sa: &A, sb: &B, v_ij: &Cartesian<4>, q_ij: &R) -> bool
+where
+    A: SupportMapping<Cartesian<4>>,
+    B: SupportMapping<Cartesian<4>>,
+    R: Copy,
+    RotationMatrix<4>: From<R>,
+{
+    collide::<4, R, A, B>(sa, sb, v_ij, q_ij)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
