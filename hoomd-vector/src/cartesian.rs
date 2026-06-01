@@ -448,6 +448,26 @@ impl Cross for Cartesian<3> {
     }
 }
 
+impl Cartesian<4> {
+    /// Compute the `N-1`-ary ([co-unary]) cross product of a four-dimensional vector.
+    ///
+    /// This function is a generalization of the cross product to general dimension,
+    /// identifying a unique vector perpendicular to `N-1` other vectors. In two
+    /// dimensions, this is [`Cartesian::<2>::perp`], and in three dimensions this is
+    /// simply [`Cross`].
+    ///
+    /// In geometric algebra terms, this is the Hodge dual of the exterior (Wedge)
+    /// product. Geometrically, the dot product of the resulting vector with all inputs
+    /// is zero and the magnitude of the vector is the hypervolume of the
+    /// parallelepiped spanned by the inputs.
+    ///
+    /// [co-unary]: https://ncatlab.org/nlab/show/cross+product#counary
+    #[inline]
+    fn counary_cross(&self, others: &[Self; 2]) -> Self {
+        todo!()
+    }
+}
+
 impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     /// Sample a Cartesian vector from the uniform [-1, 1] hypercube.
     ///
