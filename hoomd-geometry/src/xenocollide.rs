@@ -371,13 +371,13 @@ where
     let s = MinkowskiDifference::new(sa, sb, v_ij, *q_ij);
     let v0 = *v_ij;
 
-    // Phase 1: Portal discovery
+    // Portal discovery
     let mut portal = match Cartesian::<N>::discover_portal(&s, &v0) {
         Discovery::Found(p) => p,
         Discovery::Known(r) => return r,
     };
 
-    // Phase 2: Portal refinement
+    // Portal refinement
     // The loop is the same in general dimension, but the outward facing normal function
     // depends on the (n-1)-ary cross product (perp in 2d, cross in 3d)
     // See https://ncatlab.org/nlab/show/cross+product#counary for further details on
@@ -388,7 +388,7 @@ where
 
         let normal = Cartesian::<N>::outward_normal(&portal, &v0);
 
-        // Hit test: origin is enclosed by the portal
+        // Hit test: is the origin enclosed by the portal?
         if portal[0].dot(&normal) >= 0.0 {
             return true;
         }
@@ -396,17 +396,17 @@ where
         // Support query in the direction of the portal normal
         let v_new = s.composite_support_mapping(normal);
 
-        // Miss test: origin is outside the support plane
+        // Miss test: is the origin outside the support plane?
         if v_new.dot(&normal) < 0.0 {
             return false;
         }
 
-        // Tolerance check (dimension-specific)
+        // Tolerance check: are we sure we've hit the portal (within our tolerance)?
         if let Some(result) = Cartesian::<N>::tolerance_check(&portal, &v_new, &normal) {
             return result;
         }
 
-        // Face test and vertex replacement (dimension-specific)
+        // Face test and vertex replacement (dimension-specific) TODO
         Cartesian::<N>::replace_vertex(&v0, &mut portal, v_new);
 
         if count >= XENOCOLLIDE_MAX_ITER {
