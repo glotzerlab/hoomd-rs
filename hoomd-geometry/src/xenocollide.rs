@@ -349,9 +349,8 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
         }
 
         // v3: support in direction perpendicular to the v0-v1-v2 subspace
-        let mut n = match perp_to_2d_subspace(v1 - *v0, v2 - *v0, Self::TOLERANCE) {
-            Some(n) => n,
-            None => return Discovery::Known(true),
+        let Some(mut n) = perp_to_2d_subspace(v1 - *v0, v2 - *v0, Self::TOLERANCE) else {
+            return Discovery::Known(true);
         };
         // Orient normal away from v0 (maintain handedness)
         if n.dot(v0) > 0.0 {
