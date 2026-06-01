@@ -463,7 +463,7 @@ impl Cartesian<4> {
     ///
     /// [co-unary]: https://ncatlab.org/nlab/show/cross+product#counary
     #[inline]
-    fn counary_cross(&self, others: &[Self; 2]) -> Self {
+    fn counary_cross(vectors: &[Self; 3]) -> Self {
         todo!()
     }
 }
