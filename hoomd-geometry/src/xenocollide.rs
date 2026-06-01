@@ -48,9 +48,8 @@ pub(crate) enum Discovery<const N: usize> {
 /// Dimension-specific operations for Minkowski Portal Refinement.
 ///
 /// This trait encapsulates the operations that differ between MPR in various dimensions
-/// - Portal normal computation
-/// - Portal discovery (direct in 2D, iterative in 3D)
-/// - Convergence tolerance checks
+/// - Tolerance for convergence check
+/// - Portal discovery (can be done directly in 2D, requires search in 3D and up)
 /// - Portal vertex replacement logic
 pub(crate) trait MinkowskiPortalRefinement<const N: usize> {
     /// Dimension-specific convergence tolerance.
