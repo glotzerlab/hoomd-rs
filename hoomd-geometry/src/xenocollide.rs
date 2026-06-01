@@ -291,6 +291,186 @@ impl MinkowskiPortalRefinement<3> for Cartesian<3> {
     }
 }
 
+/// Find a vector perpendicular to the plane spanned by `a` and `b` in R^4.
+///
+/// `counary_cross` requires 3 inputs but during early portal discovery we only have
+/// 2 vectors. This function uses a standard basis vector as the 3rd input — at least
+/// one of the 4 basis vectors is guaranteed to be non-coplanar with any 2 given vectors.
+fn perp_to_2d_subspace(a: Cartesian<4>, b: Cartesian<4>, tol: f64) -> Option<Cartesian<4>> {
+    for i in 0..4 {
+        let mut e = [0.0f64; 4];
+        e[i] = 1.0;
+        let n = Cartesian::<4>::counary_cross(&[a, b, e.into()]);
+        if n.into_iter().any(|x| x.abs() > tol) {
+            return Some(n);
+        }
+    }
+    None
+}
+
+impl MinkowskiPortalRefinement<4> for Cartesian<4> {
+    const TOLERANCE: f64 = 2e-12;
+
+    #[inline]
+    fn outward_normal(portal: &[Cartesian<4>; 4], interior: &Cartesian<4>) -> Cartesian<4> {
+        let e1 = portal[1] - portal[0];
+        let e2 = portal[2] - portal[0];
+        let e3 = portal[3] - portal[0];
+        let mut n = Self::counary_cross(&[e1, e2, e3]);
+        if (portal[0] - *interior).dot(&n) < 0.0 {
+            n = -n;
+        }
+        n
+    }
+
+    fn discover_portal<A: SupportMapping<Cartesian<4>>, B: SupportMapping<Cartesian<4>>>(
+        s: &MinkowskiDifference<4, A, B>,
+        v0: &Cartesian<4>,
+    ) -> Discovery<4> {
+        // Interior point at origin implies overlap
+        if v0.into_iter().all(|x| x.abs() < Self::TOLERANCE) {
+            return Discovery::Known(true);
+        }
+
+        // v1: first support point
+        let mut v1 = s.composite_support_mapping(-*v0);
+        if v1.dot(v0) > 0.0 {
+            return Discovery::Known(false);
+        }
+
+        // v2: support in direction perpendicular to the v0-v1 plane
+        let n = match perp_to_2d_subspace(*v0, v1, Self::TOLERANCE) {
+            Some(n) => n,
+            None => return Discovery::Known(true), // v0, v1, origin collinear
+        };
+        let mut v2 = s.composite_support_mapping(n);
+        if v2.dot(&n) < 0.0 {
+            return Discovery::Known(false);
+        }
+
+        // v3: support in direction perpendicular to the v0-v1-v2 subspace
+        let mut n = match perp_to_2d_subspace(v1 - *v0, v2 - *v0, Self::TOLERANCE) {
+            Some(n) => n,
+            None => return Discovery::Known(true),
+        };
+        // Orient normal away from v0 (maintain handedness)
+        if n.dot(v0) > 0.0 {
+            (v1, v2) = (v2, v1);
+            n = -n;
+        }
+        let v3 = s.composite_support_mapping(n);
+        if v3.dot(&n) <= 0.0 {
+            return Discovery::Known(false);
+        }
+
+        // Recompute portal normal from 3 edge vectors
+        let mut n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
+        if n.dot(v0) > 0.0 {
+            n = -n;
+        }
+
+        // v4-validation loop
+        // The 3 face checks use the 4D quadruple product:
+        //   counary_cross(&[v_a, v_b, v4]).dot(&v0) = det([v_a, v_b, v4, v0])
+        // Negative means origin is on the wrong side of that face.
+        let mut v3 = v3;
+        let mut count = 0_usize;
+        let v4 = loop {
+            count += 1;
+            if count >= XENOCOLLIDE_MAX_ITER {
+                return Discovery::Known(true);
+            }
+
+            let v4 = s.composite_support_mapping(n);
+            if v4.dot(&n) <= 0.0 {
+                return Discovery::Known(false);
+            }
+
+            // Face (v1, v2, v4) — opposite v3
+            if Self::counary_cross(&[v1, v2, v4]).dot(v0) < 0.0 {
+                v3 = v4;
+                n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
+                if n.dot(v0) > 0.0 {
+                    n = -n;
+                }
+                continue;
+            }
+            // Face (v2, v3, v4) — opposite v1
+            if Self::counary_cross(&[v2, v3, v4]).dot(v0) < 0.0 {
+                v1 = v4;
+                n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
+                if n.dot(v0) > 0.0 {
+                    n = -n;
+                }
+                continue;
+            }
+            // Face (v1, v4, v3) — opposite v2
+            if Self::counary_cross(&[v1, v4, v3]).dot(v0) < 0.0 {
+                v2 = v4;
+                n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
+                if n.dot(v0) > 0.0 {
+                    n = -n;
+                }
+                continue;
+            }
+            break v4;
+        };
+
+        Discovery::Found([v1, v2, v3, v4])
+    }
+
+    #[inline]
+    fn tolerance_check(
+        portal: &[Cartesian<4>; 4],
+        v_new: &Cartesian<4>,
+        normal: &Cartesian<4>,
+    ) -> Option<bool> {
+        let tolerance = Self::TOLERANCE * normal.norm();
+
+        let d = (*v_new - portal[0]).dot(normal);
+        if d.abs() < tolerance {
+            return Some(false);
+        }
+        let d = portal[0].dot(normal);
+        if d.abs() < tolerance {
+            return Some(true);
+        }
+        None
+    }
+
+    fn narrow_portal(
+        _interior: &Cartesian<4>,
+        portal: &mut [Cartesian<4>; 4],
+        v_new: Cartesian<4>,
+    ) {
+        // The 4-simplex (portal[0..4] + v_new) has 4 candidate exit faces.
+        // Each exit face is opposite one portal vertex and consists of v_new plus
+        // the other 3 portal vertices. We find which face the origin ray exits through
+        // by computing the outward normal to each face.
+        for i in 0..4 {
+            let mut edges: [Cartesian<4>; 3] = Default::default();
+            let mut k = 0;
+            for j in 0..4 {
+                if j != i {
+                    edges[k] = portal[j] - v_new;
+                    k += 1;
+                }
+            }
+            let n = Self::counary_cross(&edges);
+            let n = if (portal[i] - v_new).dot(&n) < 0.0 {
+                -n
+            } else {
+                n
+            };
+            if v_new.dot(&n) >= 0.0 {
+                portal[i] = v_new;
+                return;
+            }
+        }
+        portal[0] = v_new;
+    }
+}
+
 /// Stateful type that efficiently computes repeated Minkowski differences.
 pub(crate) struct MinkowskiDifference<
     'a,
