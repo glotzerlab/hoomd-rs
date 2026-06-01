@@ -80,7 +80,7 @@ pub(crate) trait MinkowskiPortalRefinement<const N: usize> {
     /// exit through one of the outer faces. This method identifies which outer
     /// face the ray exits through and replaces the portal vertex opposite that
     /// face with `v_new`, ensuring that the origin ray always passes through the portal
-    fn replace_vertex(interior: &Cartesian<N>, portal: &mut [Cartesian<N>; N], v_new: Cartesian<N>);
+    fn narrow_portal(interior: &Cartesian<N>, portal: &mut [Cartesian<N>; N], v_new: Cartesian<N>);
 }
 
 impl MinkowskiPortalRefinement<2> for Cartesian<2> {
@@ -133,11 +133,7 @@ impl MinkowskiPortalRefinement<2> for Cartesian<2> {
     }
 
     #[inline]
-    fn replace_vertex(
-        interior: &Cartesian<2>,
-        portal: &mut [Cartesian<2>; 2],
-        v_new: Cartesian<2>,
-    ) {
+    fn narrow_portal(interior: &Cartesian<2>, portal: &mut [Cartesian<2>; 2], v_new: Cartesian<2>) {
         let mut v_perp = (v_new - *interior).perpendicular();
         // Orient toward portal[0]
         if (portal[0] - v_new).dot(&v_perp) < 0.0 {
@@ -265,11 +261,7 @@ impl MinkowskiPortalRefinement<3> for Cartesian<3> {
     }
 
     #[inline]
-    fn replace_vertex(
-        interior: &Cartesian<3>,
-        portal: &mut [Cartesian<3>; 3],
-        v_new: Cartesian<3>,
-    ) {
+    fn narrow_portal(interior: &Cartesian<3>, portal: &mut [Cartesian<3>; 3], v_new: Cartesian<3>) {
         let [v1, v2, v3] = *portal;
         // Test origin against the three planes that separate the new portal candidates
         // using the triple product identities as an optimization:
@@ -413,7 +405,7 @@ where
         }
 
         // Face test and vertex replacement (dimension-specific) TODO
-        Cartesian::<N>::replace_vertex(&v0, &mut portal, v_new);
+        Cartesian::<N>::narrow_portal(&v0, &mut portal, v_new);
 
         if count >= XENOCOLLIDE_MAX_ITER {
             return true;
