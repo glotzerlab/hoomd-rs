@@ -727,4 +727,58 @@ mod tests {
         let overlaps = collide3d(&c0, &c1, &v.into(), &theta);
         assert_eq!(overlaps, c0.intersects_aligned(&c1, &v.into()));
     }
+
+    #[rstest(
+        v => [
+            [0.1, 0.1, 0.1, 0.1],
+            [999.9, 0.0, 0.0, -10.9],
+            [0.0, 5.123, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 5.123_000_001],
+        ],
+        radius => [0.001, 1.0, 4.123],
+    )]
+    fn test_4d_spheres_collide(v: [f64; 4], radius: f64) {
+        let (s0, s1) = (
+            Hypersphere {
+                radius: 1.0.try_into().expect("test value is a positive real"),
+            },
+            Hypersphere::<4> {
+                radius: radius.try_into().expect("test value is a positive real"),
+            },
+        );
+        let q_ij = RotationMatrix::<4>::default();
+
+        let overlaps = collide4d(&s0, &s1, &v.into(), &q_ij);
+
+        assert_eq!(
+            overlaps,
+            s0.intersects_at(&s1, &Cartesian::from(v), &q_ij),
+            "4D Xenocollide result did not match standard implementation!"
+        );
+    }
+
+    #[rstest(
+        v => [
+            [0.1, 0.1, 0.1, 0.1],
+            [999.9, 0.0, 0.0, 0.05],
+            [0.0, 5.123, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 5.123_000_000_001],
+        ],
+        tesseract => [
+            [1.0.try_into().expect("test value is a positive real"); 4],
+            [999.0.try_into().expect("test value is a positive real"), 0.1.try_into().expect("test value is a positive real"), 0.5.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")],
+        ],
+    )]
+    fn test_tesseracts_collide(v: [f64; 4], tesseract: [PositiveReal; 4]) {
+        let c0 = Hypercuboid {
+            edge_lengths: tesseract,
+        };
+        let c1 = Hypercuboid {
+            edge_lengths: [1.0.try_into().expect("test value is a positive real"); 4],
+        };
+        let q_ij = RotationMatrix::<4>::default();
+
+        let overlaps = collide4d(&c0, &c1, &v.into(), &q_ij);
+        assert_eq!(overlaps, c0.intersects_aligned(&c1, &v.into()));
+    }
 }
