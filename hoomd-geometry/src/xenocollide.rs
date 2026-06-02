@@ -659,16 +659,6 @@ mod tests {
     use hoomd_utility::valid::PositiveReal;
     use hoomd_vector::{Angle, Rotation, Versor};
     use rand::{RngExt, SeedableRng, rngs::StdRng};
-    use rand_distr::StandardNormal;
-
-    /// Generate a uniformly random unit vector on the (N-1)-sphere in R^N
-    /// using the Muller/Marsaglia method (Method 19 from extremelearning.com.au).
-    ///
-    /// Generate N independent standard normals and normalize.
-    fn random_direction<const N: usize>(rng: &mut impl rand::Rng) -> Cartesian<N> {
-        let z: Cartesian<N> = std::array::from_fn(|_| rng.sample(StandardNormal)).into();
-        z / z.norm()
-    }
 
     #[rstest(
         v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123_f64.next_down()], [0.0, 5.123_000_001]],
@@ -853,8 +843,9 @@ mod tests {
 
     /// Stress-test collide4d with two hyperspheres near their overlap boundary.
     ///
-    /// Generates random displacement directions uniformly on S^3 (Muller/Marsaglia)
-    /// and random radii in a thin shell of width 1e-9 centered on the separation radius
+    /// Generates random displacement directions uniformly on S^3 using random
+    /// unit quaternions ([`Versor`], Muller/Marsaglia Method 19) and random
+    /// radii in a thin shell of width 1e-3 centered on the overlap radius.
     #[rstest(
         r0 => [1.0, 0.5, 3.7],
         r1 => [1.0, 2.0, 0.8],
@@ -876,7 +867,11 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(seed);
 
         for i in 0..n_samples {
-            let dir = random_direction::<4>(&mut rng);
+            // Random unit quaternion → uniform direction on S^3
+            let q: Versor = rng.random();
+            let q = q.get();
+            let dir: Cartesian<4> = [q.scalar, q.vector[0], q.vector[1], q.vector[2]].into();
+
             let r = boundary - shell_half_width + rng.random::<f64>() * 2.0 * shell_half_width;
             let d = dir * r;
 
