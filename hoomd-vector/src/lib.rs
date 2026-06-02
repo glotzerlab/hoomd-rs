@@ -208,6 +208,7 @@ pub mod distribution;
 mod quaternion;
 
 pub mod double_quaternion;
+pub use double_quaternion::DoubleVersor;
 
 pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
