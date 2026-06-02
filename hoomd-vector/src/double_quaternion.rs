@@ -49,6 +49,20 @@ impl DoubleVersor {
     fn right_isoclinic(&self) -> Versor {
         self.r
     }
+    #[inline]
+    fn from_left_isoclinic(&self, l: Versor) -> Self {
+        Self {
+            l,
+            r: Versor::default(),
+        }
+    }
+    #[inline]
+    fn from_right_isoclinic(&self, r: Versor) -> Self {
+        Self {
+            l: Versor::default(),
+            r,
+        }
+    }
 }
 
 impl Rotate<Cartesian<4>> for DoubleVersor {
