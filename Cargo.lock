@@ -3587,6 +3587,7 @@ dependencies = [
  "hoomd-vector",
  "itertools",
  "rand 0.10.1",
+ "rand_distr 0.6.0",
  "robust",
  "rstest",
  "serde",

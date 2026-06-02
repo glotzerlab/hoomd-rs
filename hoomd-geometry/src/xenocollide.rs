@@ -658,6 +658,17 @@ mod tests {
     use crate::shape::{Circle, Hypercuboid, Hypersphere};
     use hoomd_utility::valid::PositiveReal;
     use hoomd_vector::{Angle, Rotation, Versor};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
+    use rand_distr::StandardNormal;
+
+    /// Generate a uniformly random unit vector on the (N-1)-sphere in R^N
+    /// using the Muller/Marsaglia method (Method 19 from extremelearning.com.au).
+    ///
+    /// Generate N independent standard normals and normalize.
+    fn random_direction<const N: usize>(rng: &mut impl rand::Rng) -> Cartesian<N> {
+        let z: Cartesian<N> = std::array::from_fn(|_| rng.sample(StandardNormal)).into();
+        z / z.norm()
+    }
 
     #[rstest(
         v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123_f64.next_down()], [0.0, 5.123_000_001]],
@@ -836,6 +847,44 @@ mod tests {
             assert_eq!(
                 result, expected,
                 "Mismatch at step {step}, t = {t:.12}, critical_t = {critical_t:.12}"
+            );
+        }
+    }
+
+    /// Stress-test collide4d with two hyperspheres near their overlap boundary.
+    ///
+    /// Generates random displacement directions uniformly on S^3 (Muller/Marsaglia)
+    /// and random radii in a thin shell of width 1e-9 centered on the separation radius
+    #[rstest(
+        r0 => [1.0, 0.5, 3.7],
+        r1 => [1.0, 2.0, 0.8],
+        seed => [0, 1, 42],
+    )]
+    fn test_4d_hypersphere_shell_overlap(r0: f64, r1: f64, seed: u64) {
+        let boundary = r0 + r1;
+        let shell_half_width = 5e-10;
+        let n_samples = 10_000;
+
+        let s0 = Hypersphere::<4> {
+            radius: r0.try_into().unwrap(),
+        };
+        let s1 = Hypersphere::<4> {
+            radius: r1.try_into().unwrap(),
+        };
+        let q_ij = RotationMatrix::<4>::default();
+
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        for i in 0..n_samples {
+            let dir = random_direction::<4>(&mut rng);
+            let r = boundary - shell_half_width + rng.random::<f64>() * 2.0 * shell_half_width;
+            let d = dir * r;
+
+            let analytical = r < boundary;
+            let result = collide4d(&s0, &s1, &d, &q_ij);
+            assert_eq!(
+                result, analytical,
+                "Mismatch at sample {i}, |d| = {r:.12}, boundary = {boundary:.12}"
             );
         }
     }
