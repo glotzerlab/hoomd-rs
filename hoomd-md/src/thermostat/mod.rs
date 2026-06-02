@@ -3,9 +3,7 @@
 
 //! Methods for sampling the canonical distribution
 //! of kinetic energy.
-//!
-//! 
-use hoomd_microstate::Microstate;
+use rand::Rng;
 
 mod no_thermostat;
 mod mttk;
@@ -24,30 +22,28 @@ pub use nhc::NHCThermostat;
 /// Implement [`Thermostat`] or use one of the
 /// provided method in [`thermostat`](crate::thermostat)
 /// in MD simulations.
-pub trait Thermostat<B, S, X, C, M> {
+pub trait Thermostat<M> {
     /// Integrate the thermostat dof foward, and return
     /// Note that translation and rotation are assumed to have identical math
     /// behind their scaling factors.
-    fn integrate_step_one<P>(
+    fn integrate_step_one<R: Rng + ?Sized>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        rng: &mut R,
         macrostate: &M,
-        dt: &f64,
-        compute_properties: P,
-    ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64);
+        delta_t: f64,
+        kinetic_energy: f64,
+        degrees_of_freedom: usize,
+    ) -> f64;
 
     /// The scaling factor for velocities in the second half-step.
     /// Note that translation and rotation are assumed to have identical math
     /// behind their scaling factors.
-    fn integrate_step_two<P>(
+    fn integrate_step_two<R: Rng + ?Sized>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        rng: &mut R,
         macrostate: &M,
-        dt: &f64,
-        compute_properties: P,
-    ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64);
+        delta_t: f64,
+        kinetic_energy: f64,
+        degrees_of_freedom: usize,
+    ) -> f64;
 }

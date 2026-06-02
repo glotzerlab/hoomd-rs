@@ -7,11 +7,12 @@ use super::TranslationalKineticEnergy;
 use hoomd_microstate::{
     Body, Microstate, Tagged, property::{Mass, Momentum}
 };
-use hoomd_vector::{Cartesian, InnerProduct};
+use hoomd_vector::{InnerProduct};
 
-impl<const N: usize, B, S, X, C> TranslationalKineticEnergy<B, S> for Microstate<B, S, X, C>
+impl<V, B, S, X, C> TranslationalKineticEnergy<B, S> for Microstate<B, S, X, C>
 where
-    B: Momentum<Momentum = Cartesian<N>>
+    V: InnerProduct,
+    B: Momentum<Momentum = V>
        + Mass,
 {
     #[inline]
@@ -20,7 +21,10 @@ where
         self.bodies()
             .iter()
             .filter(|&body| should_sum(body))
-            .fold((0.0, 0), |(total, count), body| (total + body.item.properties.momentum().norm_squared() / (2.0 * body.item.properties.mass()), count + N))
+            .fold((0.0, 0), |(total, count), body| {
+                let p = body.item.properties.momentum();
+                (total + p.norm_squared() / (2.0 * body.item.properties.mass()), count + p.n_dimensions())
+            })
     }
 }
 

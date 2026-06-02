@@ -53,13 +53,12 @@ pub trait TranslationalMotion<B, S, X, C, T, M> {
 /// stored in a [`macrostate`].
 /// 
 /// The generic type names are:
-/// * `N`: The dimension of the system.
 /// * `B`: The [`Body::properties`] type.
 /// * `S`: The [`Site::properties`] type.
 /// * `C`: The [`boundary`] condition type.
 /// * `T`: The [`Thermostat`] type.
 /// * `M`: The [`macrostate`] type.
-pub trait RotationalMotion<const N: usize, B, S, X, C, T, M> {
+pub trait RotationalMotion<B, S, X, C, T, M> {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
     fn integrate_rotation_step_one(
         &mut self,

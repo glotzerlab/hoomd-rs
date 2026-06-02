@@ -1,9 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 use crate::thermostat::Thermostat;
-use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
+use rand::Rng;
 use rand_distr::{Distribution, Gamma, Normal};
 
 /// [`BussiThermostat`] adjust the temperature with a
@@ -83,40 +83,32 @@ impl BussiThermostat {
     }
 }
 
-impl<B, S, X, C, M> Thermostat<B, S, X, C, M> for BussiThermostat
+impl<M> Thermostat<M> for BussiThermostat
 where
-    B: Clone,
     M: Temperature,
 {
     /// Calculate velocity rescaling factor following
     /// the Appendix in <https://doi.org/10.1063/1.2408420>.
     #[inline]
-    fn integrate_step_one<P>(
+    fn integrate_step_one<R: Rng + ?Sized>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        rng: &mut R,
         macrostate: &M,
-        dt: &f64,
-        mut compute_properties: P,
+        delta_t: f64,
+        kinetic_energy: f64,
+        degrees_of_freedom: usize,
     ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
-        #![allow(non_snake_case)]
-        let kT_setpoint = macrostate.temperature();
-
-        let (ke, dof) = compute_properties(&microstate);
+        let temperature_set_point = macrostate.temperature();
 
         // panic if momenta was not initialized
         assert!(
-            !(ke == 0.0 && dof != 0.0),
+            !(kinetic_energy == 0.0 && degrees_of_freedom != 0),
             "Bussi thermostat requires non-zero initial momenta."
         );
 
-        // get rng from microstate to ensure reproducibility
-        let mut rng = microstate.counter().make_rng();
-
         // trivial case when no particles are present
-        if dof == 0.0 {
+        if degrees_of_freedom == 0 {
             return 1.0;
         }
 
@@ -125,29 +117,29 @@ where
 
         // normal case time decay factor.
         if self.tau.get() != 0.0 {
-            time_decay_factor = (-dt / self.tau.get()).exp();
+            time_decay_factor = (-delta_t / self.tau.get()).exp();
         }
 
         // sample random number form standard normal distribution for the first dof.
-        let random_normal_one: f64 = Normal::new(0.0, 1.0).unwrap().sample(&mut rng);
+        let random_normal_one: f64 = Normal::new(0.0, 1.0).unwrap().sample(rng);
 
         // special case when dof is 1.
         let mut random_gamma: f64 = 0.0;
 
         // sample random numnber from gamma distribution for the rest of dof
-        if dof > 0.0 {
-            random_gamma = 2.0 * Gamma::new((dof - 1.0) / 2.0, 1.0).unwrap().sample(&mut rng);
+        if degrees_of_freedom > 0 {
+            random_gamma = 2.0 * Gamma::new((degrees_of_freedom as f64 - 1.0) / 2.0, 1.0).unwrap().sample(rng);
         }
 
         // assemble everything
-        let v = kT_setpoint / 2.0 / ke;
+        let v = temperature_set_point / 2.0 / kinetic_energy;
         let term1 = v * (1.0 - time_decay_factor) * (random_gamma + random_normal_one.powi(2));
         let term2 =
             2.0 * random_normal_one * (v * (1.0 - time_decay_factor) * time_decay_factor).sqrt();
         let rescaling_factor = (time_decay_factor + term1 + term2).sqrt();
 
         // accumulate energy drift
-        self.cumu_energy_drift += self.energy_drift(&ke, &rescaling_factor);
+        self.cumu_energy_drift += self.energy_drift(&kinetic_energy, &rescaling_factor);
         rescaling_factor
     }
 
@@ -155,17 +147,15 @@ where
     /// performs no temperature adjustment as the Bussi thermostat
     /// requires only one step to finish the temeperature adjustment.
     #[inline]
-    fn integrate_step_two<P>(
+    fn integrate_step_two<R: Rng + ?Sized>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        _rng: &mut R,
         _macrostate: &M,
-        _dt: &f64,
-        mut compute_properties: P,
+        _delta_t: f64,
+        _kinetic_energy: f64,
+        _degrees_of_freedom: usize,
     ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
-        let (_, _) = compute_properties(&microstate);
         1.0
     }
 }

@@ -8,6 +8,7 @@ use arrayvec::ArrayVec;
 use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
+use rand::Rng;
 use rand_distr::{Distribution, Normal};
 
 /// [`NHCThermostat`] implement the Nos$`\text{\'e}`$-Hoover chain thermostat
@@ -73,39 +74,41 @@ impl<const N: usize> NHCThermostat<N> {
     /// Choose random initial values for the thermostat momentum.
     pub fn thermalize<B, S, X, C, M>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
-        dof: &f64,
+        degrees_of_freedom: usize,
     ) where
         M: Temperature,
     {
-        let kT_setpoint = macrostate.temperature();
+        let temperature_set_point = macrostate.temperature();
         let mut rng = microstate.counter().make_rng();
-        let sigma0 = 1.0 / (*dof).sqrt() / self.tau.get();
+        let sigma0 = 1.0 / (degrees_of_freedom as f64).sqrt() / self.tau.get();
         let sigma_other = 1.0 / self.tau.get();
 
         self.xi_arr[0] = Normal::new(0.0, sigma0).unwrap().sample(&mut rng);
         for idx in 1..N {
             self.xi_arr[idx] = Normal::new(0.0, sigma_other).unwrap().sample(&mut rng);
         }
-        self.energy = self.thermostat_energy(kT_setpoint, dof)
+        self.energy = self.thermostat_energy(*temperature_set_point, degrees_of_freedom);
+
+        microstate.increment_substep();
     }
 
     /// Calculate thermostat energy.
-    pub fn thermostat_energy(&self, kT_setpoint: &f64, dof: &f64) -> f64 {
+    pub fn thermostat_energy(&self, temperature_set_point: f64, degrees_of_freedom: usize) -> f64 {
         let mut energy = 0.0;
         energy +=
-            dof * kT_setpoint * self.eta_arr[0] + 0.5 * self.q_arr[0] * (self.xi_arr[0]).powi(2);
+            (degrees_of_freedom as f64) * temperature_set_point * self.eta_arr[0] + 0.5 * self.q_arr[0] * (self.xi_arr[0]).powi(2);
         for idx in 1..N {
-            energy += kT_setpoint * self.eta_arr[idx]
+            energy += temperature_set_point * self.eta_arr[idx]
                 + 0.5 * self.q_arr[idx] * (self.xi_arr[idx]).powi(2);
         }
         energy
     }
 
     /// Get the energy of thermalstat.
-    pub fn get_energy(&self) -> &f64 {
-        &self.energy
+    pub fn get_energy(&self) -> f64 {
+        self.energy
     }
 
     /// Get the chain of position.
@@ -119,112 +122,105 @@ impl<const N: usize> NHCThermostat<N> {
     }
 }
 
-impl<const N: usize, B, S, X, C, M> Thermostat<B, S, X, C, M> for NHCThermostat<N>
+impl<const N: usize, M> Thermostat<M> for NHCThermostat<N>
 where
-    B: Clone,
     M: Temperature,
 {
     /// Integrate extra degrees-of-freedom and
     /// return the velocity rescaling factor, following
     /// Tuckerman's work <https://doi.org/10.1088/0305-4470/39/19/S18>.
     #[inline]
-    fn integrate_step_one<P>(
+    fn integrate_step_one<R: Rng + ?Sized>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        _rng: &mut R,
         macrostate: &M,
-        dt: &f64,
-        mut compute_properties: P,
+        delta_t: f64,
+        kinetic_energy: f64,
+        degrees_of_freedom: usize,
     ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
         // Get current temperature setpoint.
-        let kT_setpoint = macrostate.temperature();
+        let temperature_set_point = *macrostate.temperature();
 
-        // Calculate current kinetic energy and dof of the system.
-        let (ke, dof) = compute_properties(&microstate);
-
-        // Get current kinetic energy setpoint.
-        let nkT_setpoint = dof * kT_setpoint;
+        let n_k_t = (degrees_of_freedom as f64) * temperature_set_point;
 
         // Update chain of mass
-        self.q_arr[0] = nkT_setpoint * self.tau.get().powi(2);
+        self.q_arr[0] = n_k_t * self.tau.get().powi(2);
         for idx in 1..N {
-            self.q_arr[idx] = kT_setpoint * self.tau.get().powi(2);
+            self.q_arr[idx] = temperature_set_point * self.tau.get().powi(2);
         }
 
         // Update the thermostat acceleration coupled to the real system
-        self.g_arr[0] = (2.0 * ke - nkT_setpoint) / self.q_arr[0];
+        self.g_arr[0] = (2.0 * kinetic_energy - n_k_t) / self.q_arr[0];
 
         // Update the chain of velocity
         // start from the last one
-        self.xi_arr[N - 1] += 0.25 * dt * self.g_arr[N - 1];
+        self.xi_arr[N - 1] += 0.25 * delta_t * self.g_arr[N - 1];
         // update the rest
         for idx in (0..N - 1).rev() {
-            let xi_rescaling_factor = (-0.125 * dt * self.xi_arr[idx + 1]).exp();
+            let xi_rescaling_factor = (-0.125 * delta_t * self.xi_arr[idx + 1]).exp();
             self.xi_arr[idx] *= xi_rescaling_factor;
-            self.xi_arr[idx] += 0.25 * dt * self.g_arr[idx];
+            self.xi_arr[idx] += 0.25 * delta_t * self.g_arr[idx];
             self.xi_arr[idx] *= xi_rescaling_factor;
         }
 
         // calculate real velocity rescaling factor
-        let rescaling_factor = (-0.5 * dt * self.xi_arr[0]).exp();
+        let rescaling_factor = (-0.5 * delta_t * self.xi_arr[0]).exp();
 
         // Expected temperature update
-        let ke_new = ke * (rescaling_factor).powi(2);
+        let kinetic_energy_new = kinetic_energy * (rescaling_factor).powi(2);
 
         // Update the thermostat acceleration coupled to the real system
-        self.g_arr[0] = (2.0 * ke_new - nkT_setpoint) / self.q_arr[0];
+        self.g_arr[0] = (2.0 * kinetic_energy_new - n_k_t) / self.q_arr[0];
 
         // Update the chain of position
         for idx in 0..N {
-            self.eta_arr[idx] += 0.5 * dt * self.xi_arr[idx];
+            self.eta_arr[idx] += 0.5 * delta_t * self.xi_arr[idx];
         }
 
         // Update the chain of velocity
         // start from the first one
         if N > 1 {
-            let xi_rescaling_factor = (-0.125 * dt * self.xi_arr[1]).exp();
+            let xi_rescaling_factor = (-0.125 * delta_t * self.xi_arr[1]).exp();
             self.xi_arr[0] *= xi_rescaling_factor;
-            self.xi_arr[0] += 0.25 * dt * self.g_arr[0];
+            self.xi_arr[0] += 0.25 * delta_t * self.g_arr[0];
             self.xi_arr[0] *= xi_rescaling_factor;
         } else {
-            self.xi_arr[0] += 0.25 * dt * self.g_arr[0];
+            self.xi_arr[0] += 0.25 * delta_t * self.g_arr[0];
         }
         // update the rest
         // the chain of acceleration need to be updated here (have done the first one)
         for idx in 1..N - 1 {
-            let xi_rescaling_factor = (-0.125 * dt * self.xi_arr[idx + 1]).exp();
+            let xi_rescaling_factor = (-0.125 * delta_t * self.xi_arr[idx + 1]).exp();
             self.xi_arr[idx] *= xi_rescaling_factor;
-            self.g_arr[idx] = (self.q_arr[idx - 1] * (self.xi_arr[idx - 1]).powi(2) - kT_setpoint)
+            self.g_arr[idx] = (self.q_arr[idx - 1] * (self.xi_arr[idx - 1]).powi(2) - temperature_set_point)
                 / self.q_arr[idx];
-            self.xi_arr[idx] += 0.25 * dt * self.g_arr[idx];
+            self.xi_arr[idx] += 0.25 * delta_t * self.g_arr[idx];
             self.xi_arr[idx] *= xi_rescaling_factor;
         }
         // special for the last one
         if N > 1 {
-            self.g_arr[N - 1] = (self.q_arr[N - 2] * (self.xi_arr[N - 2]).powi(2) - kT_setpoint)
+            self.g_arr[N - 1] = (self.q_arr[N - 2] * (self.xi_arr[N - 2]).powi(2) - temperature_set_point)
                 / self.q_arr[N - 1];
-            self.xi_arr[N - 1] += 0.25 * dt * self.g_arr[N - 1];
+            self.xi_arr[N - 1] += 0.25 * delta_t * self.g_arr[N - 1];
         }
 
-        self.energy = self.thermostat_energy(kT_setpoint, &dof);
+        self.energy = self.thermostat_energy(temperature_set_point, degrees_of_freedom);
         rescaling_factor
     }
 
     /// Call [`integrate_step_one`](NHCThermostat::integrate_step_one) internally.
     #[inline]
-    fn integrate_step_two<P>(
+    fn integrate_step_two<R: Rng + ?Sized>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        rng: &mut R,
         macrostate: &M,
-        dt: &f64,
-        mut compute_properties: P,
+        delta_t: f64,
+        kinetic_energy: f64,
+        degrees_of_freedom: usize,
     ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
-        self.integrate_step_one(microstate, macrostate, &dt, &mut compute_properties)
+        self.integrate_step_one(rng, macrostate, delta_t, kinetic_energy, degrees_of_freedom)
     }
 }
 

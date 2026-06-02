@@ -7,6 +7,7 @@ use crate::thermostat::Thermostat;
 use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
+use rand::Rng;
 use rand_distr::{Distribution, Normal};
 
 /// [`MTTKThermostat`] implement the Nos$`\text{\'e}`$-Hoover thermostat
@@ -98,23 +99,25 @@ impl MTTKThermostat {
     /// Choose random initial values for the thermostat momentum.
     pub fn thermalize<B, S, X, C, M>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
-        dof: &f64,
+        degrees_of_freedom: usize,
     ) where
         M: Temperature,
     {
-        let kT_setpoint = macrostate.temperature();
+        let temperature_set_point = *macrostate.temperature();
         let mut rng = microstate.counter().make_rng();
-        let sigma = 1.0 / *dof / self.tau.get().powi(2);
+        let sigma = 1.0 / (degrees_of_freedom as f64) / self.tau.get().powi(2);
 
         self.xi = Normal::new(0.0, sigma.sqrt()).unwrap().sample(&mut rng);
-        self.energy = self.thermostat_energy(kT_setpoint, dof)
+        self.energy = self.thermostat_energy(temperature_set_point, degrees_of_freedom);
+
+        microstate.increment_substep();
     }
 
     /// Calculate thermostat energy.
-    pub fn thermostat_energy(&self, kT_setpoint: &f64, dof: &f64) -> f64 {
-        dof * kT_setpoint * (self.eta + 0.5 * (self.xi * self.tau.get()).powi(2))
+    pub fn thermostat_energy(&self, temperature_set_point: f64, degrees_of_freedom: usize) -> f64 {
+        (degrees_of_freedom as f64) * temperature_set_point * (self.eta + 0.5 * (self.xi * self.tau.get()).powi(2))
     }
 
     /// Get the energy of thermalstat.
@@ -133,70 +136,66 @@ impl MTTKThermostat {
     }
 }
 
-impl<B, S, X, C, M> Thermostat<B, S, X, C, M> for MTTKThermostat
+impl<M> Thermostat<M> for MTTKThermostat
 where
-    B: Clone,
     M: Temperature,
 {
     /// Integrate extra degrees-of-freedom and
     /// return the velocity rescaling factor, following
     /// Tuckerman's work <https://doi.org/10.1088/0305-4470/39/19/S18>.
     #[inline]
-    fn integrate_step_one<P>(
+    fn integrate_step_one<R: Rng + ?Sized>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        _rng: &mut R,
         macrostate: &M,
-        dt: &f64,
-        mut compute_properties: P,
+        delta_t: f64,
+        kinetic_energy: f64,
+        degrees_of_freedom: usize,
     ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
-        let kT_setpoint = macrostate.temperature();
+        let temperature_set_point = *macrostate.temperature();
 
         // Calculate current temperature
-        let (ke, dof) = compute_properties(&microstate);
-        let kT_instantaneous = 2.0 / dof * ke;
+        let kinetic_temperature = 2.0 * kinetic_energy / (degrees_of_freedom as f64);
 
         // Thermostat acceleration
-        let G = (kT_instantaneous / kT_setpoint - 1.0) / self.tau.get().powi(2);
+        let G = (kinetic_temperature / temperature_set_point - 1.0) / self.tau.get().powi(2);
 
         // Update thermostat velocity
-        let xi_quater = self.xi + 0.25 * G * dt;
+        let xi_quater = self.xi + 0.25 * G * delta_t;
 
-        // Calculate rescaling factor at 0.25*dt
-        let rescaling_factor = (-0.5 * xi_quater * dt).exp();
+        // Calculate rescaling factor at 0.25*delta_t
+        let rescaling_factor = (-0.5 * xi_quater * delta_t).exp();
 
         // Expected update
-        let kT_instantaneous_new = kT_instantaneous * (rescaling_factor).powi(2);
+        let kT_instantaneous_new = kinetic_temperature * (rescaling_factor).powi(2);
 
         // Update thermostat position
-        self.eta += 0.5 * xi_quater * dt;
+        self.eta += 0.5 * xi_quater * delta_t;
 
         // New thermostat acceleration
-        let G_new = (kT_instantaneous_new / kT_setpoint - 1.0) / self.tau.get().powi(2);
+        let G_new = (kT_instantaneous_new / temperature_set_point - 1.0) / self.tau.get().powi(2);
 
         // Update thermostat velocity
-        self.xi = xi_quater + 0.25 * G_new * dt;
+        self.xi = xi_quater + 0.25 * G_new * delta_t;
 
         // Update thermostat energy
-        self.energy = self.thermostat_energy(kT_setpoint, &dof);
+        self.energy = self.thermostat_energy(temperature_set_point, degrees_of_freedom);
         rescaling_factor
     }
 
     /// Call [`integrate_step_one`](MTTKThermostat::integrate_step_one) internally.
     #[inline]
-    fn integrate_step_two<P>(
+    fn integrate_step_two<R: Rng + ?Sized>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        rng: &mut R,
         macrostate: &M,
-        dt: &f64,
-        mut compute_properties: P,
+        delta_t: f64,
+        kinetic_energy: f64,
+        degrees_of_freedom: usize,
     ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
-        self.integrate_step_one(microstate, macrostate, &dt, &mut compute_properties)
+        self.integrate_step_one(rng, macrostate, delta_t, kinetic_energy, degrees_of_freedom)
     }
 }
 

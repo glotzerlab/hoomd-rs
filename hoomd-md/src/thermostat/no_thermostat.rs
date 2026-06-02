@@ -1,6 +1,6 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
-use hoomd_microstate::Microstate;
+use rand::Rng;
 use crate::thermostat::Thermostat;
 
 /// [`NoThermostat`] implement the dummy method
@@ -11,53 +11,46 @@ use crate::thermostat::Thermostat;
 /// integration.
 pub struct NoThermostat;
 
-impl<B, S, X, C, M> Thermostat<B, S, X, C, M> for NoThermostat {
+impl<M> Thermostat<M> for NoThermostat {
     /// Dummy method that performs no temperature
     /// adjustment.
     #[inline]
-    fn integrate_step_one<P>(
+    fn integrate_step_one<R: Rng + ?Sized>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        _rng: &mut R,
         _macrostate: &M,
-        _dt: &f64,
-        mut compute_properties: P,
+        _delta_t: f64,
+        _kinetic_energy: f64,
+        _degrees_of_freedom: usize,
     ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
-        let (_, _) = compute_properties(&microstate);
         1.0
     }
     
     /// Dummy method that performs no temperature
     /// adjustment.
     #[inline]
-    fn integrate_step_two<P>(
+    fn integrate_step_two<R: Rng + ?Sized>(
         &mut self,
-        microstate: &Microstate<B, S, X, C>,
+        _rng: &mut R,
         _macrostate: &M,
-        _dt: &f64,
-        mut compute_properties: P,
+        _delta_t: f64,
+        _kinetic_energy: f64,
+        _degrees_of_freedom: usize,
     ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
-        let (_, _) = compute_properties(&microstate);
         1.0
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use assert2::check;
     use super::*;
-    use hoomd_microstate::Body;
+    use hoomd_microstate::{Body, Microstate};
     use hoomd_vector::Cartesian;
 
     struct NVE;
-
-    fn compute_properties<B, S, X, C>(_m: &Microstate<B, S, X, C>) -> (f64, f64) {
-        (1.0, 1.0)
-    }
 
     #[test]
     fn test_no_thermostat() -> anyhow::Result<()> {
@@ -68,10 +61,11 @@ mod tests {
         let mut microstate = Microstate::new();
         microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
         let macrostate = NVE;
-        let dt = 1.0;
+        let delta_t = 1.0;
+        let mut rng = microstate.counter().make_rng();
 
-        assert_eq!(1.0, thermostat.integrate_step_one(&microstate, &macrostate, &dt, compute_properties));
-        assert_eq!(1.0, thermostat.integrate_step_two(&microstate, &macrostate, &dt, compute_properties));
+        check!(1.0 == thermostat.integrate_step_one(&mut rng, &macrostate, delta_t, 1.0, 3));
+        check!(1.0 == thermostat.integrate_step_two(&mut rng, &macrostate, delta_t, 1.0, 3));
 
         Ok(())
     }

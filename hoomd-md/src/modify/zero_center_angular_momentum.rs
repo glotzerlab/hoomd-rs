@@ -6,10 +6,10 @@
 use super::ZeroCenterAngularMomentum;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{DynamicOrientedPoint, DynamicPoint, Mass, Momentum, Position}
+    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{DynamicOrientedPoint, DynamicPoint, Mass, Momentum, Position, RotationalMotionTypes}
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Angle, Cartesian, InnerProduct, Outer, Versor, Wedge};
+use hoomd_vector::{Cartesian, InnerProduct, Outer, Wedge};
 
 /// Zero a 3D microstate's angular momentum.
 #[inline]
@@ -178,15 +178,16 @@ where
         }
 }
 
-impl<S, X, C> ZeroCenterAngularMomentum<DynamicOrientedPoint<Cartesian<3>, Versor>, S> for Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C> 
+impl<R, S, X, C> ZeroCenterAngularMomentum<DynamicOrientedPoint<Cartesian<3>, R>, S> for Microstate<DynamicOrientedPoint<Cartesian<3>, R>, S, X, C> 
 where
-    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
+    R: RotationalMotionTypes,
+    DynamicOrientedPoint<Cartesian<3>, R>: Transform<S> + Clone,
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<DynamicOrientedPoint<Cartesian<3>, R>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(&mut self, should_zero: F) {
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, R>, S>>) -> bool>(&mut self, should_zero: F) {
         zero_angular_momentum_3d(self,  should_zero);
     }
 }
@@ -204,15 +205,16 @@ where
     }
 }
 
-impl<S, X, C> ZeroCenterAngularMomentum<DynamicOrientedPoint<Cartesian<2>, Angle>, S> for Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>
+impl<R, S, X, C> ZeroCenterAngularMomentum<DynamicOrientedPoint<Cartesian<2>, R>, S> for Microstate<DynamicOrientedPoint<Cartesian<2>, R>, S, X, C>
 where
-    DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>,
+    R: RotationalMotionTypes,
+    DynamicOrientedPoint<Cartesian<2>, R>: Transform<S> + Clone,
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<DynamicOrientedPoint<Cartesian<2>, R>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(&mut self, should_zero: F) {
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, R>, S>>) -> bool>(&mut self, should_zero: F) {
         zero_angular_momentum_2d(self, should_zero);
     }
 }

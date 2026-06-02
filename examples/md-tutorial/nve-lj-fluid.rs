@@ -9,7 +9,7 @@ use hoomd_interaction::{
     Rigid,
 };
 use hoomd_md::{
-    ThermalizeMomentum, UpdateNetForce, ZeroAngularMomentum, ZeroCenterMomentum, methods::{
+    ThermalizeMomentum, TranslationalKineticEnergy, UpdateNetForce, ZeroCenterAngularMomentum, ZeroCenterMomentum, methods::{
         ConstantVolume,
         TranslationalMotion,
     }, thermostat::{BussiThermostat, NoThermostat}
@@ -156,7 +156,7 @@ impl LJFluid {
         // ANCHOR: particle_momenta
         microstate.thermalize_momentum(kt);
 
-        microstate.zero_angular_momentum();
+        microstate.zero_center_angular_momentum();
         microstate.zero_center_momentum();
         // ANCHOR_END: particle_momenta
 
@@ -226,9 +226,8 @@ impl LJFluid {
         // ANCHOR_END: potetial_energy
 
         // ANCHOR: current_temeprature
-        let ke = self.integrator.get_translational_kinetic_energy();
-        let dof = self.integrator.get_translational_dof();
-        let kt = 2.0 * ke / dof;
+        let (ke, dof) = self.microstate.translational_kinetic_energy();
+        let kt = 2.0 * ke / (dof as f64);
         (pe_per_particle, kt)
     }
     // ANCHOR_END: current_temeprature
