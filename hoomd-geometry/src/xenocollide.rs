@@ -658,7 +658,7 @@ mod tests {
     use crate::shape::{Circle, ConvexPolytope, Hypercuboid, Hypersphere};
     use hoomd_utility::valid::PositiveReal;
     use hoomd_vector::{Angle, Rotation, Versor};
-    use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
 
     #[rstest(
         v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123_f64.next_down()], [0.0, 5.123_000_001]],
