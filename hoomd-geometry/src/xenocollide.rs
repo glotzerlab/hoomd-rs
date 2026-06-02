@@ -655,10 +655,10 @@ mod tests {
     use crate::IntersectsAt;
     use rstest::*;
 
-    use crate::shape::{Circle, Hypercuboid, Hypersphere};
+    use crate::shape::{Circle, ConvexPolytope, Hypercuboid, Hypersphere};
     use hoomd_utility::valid::PositiveReal;
     use hoomd_vector::{Angle, Rotation, Versor};
-    use rand::{RngExt, SeedableRng, rngs::StdRng};
+    use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 
     #[rstest(
         v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123_f64.next_down()], [0.0, 5.123_000_001]],
@@ -880,6 +880,68 @@ mod tests {
             assert_eq!(
                 result, analytical,
                 "Mismatch at sample {i}, |d| = {r:.12}, boundary = {boundary:.12}"
+            );
+        }
+    }
+
+    /// Construct a 4-simplex from 5 vertices drawn from c·{±1}⁴.
+    ///
+    /// 9 of the 10 edges have length 2c√2; the v₃–v₄ edge has length 4c.
+    fn pentachoron(c: f64) -> ConvexPolytope<4, 8> {
+        ConvexPolytope::<4, 8>::with_vertices([
+            Cartesian::from([c, c, c, c]),
+            Cartesian::from([c, -c, -c, c]),
+            Cartesian::from([-c, c, -c, c]),
+            Cartesian::from([-c, -c, c, c]),
+            Cartesian::from([c, c, -c, -c]),
+        ])
+        .unwrap()
+    }
+
+    /// Sweep two simplices along vertex-to-vertex (edge) directions.
+    ///
+    /// For two identical simplices with vertices {`v_i`}, a sweep along the
+    /// edge direction `d0 = v_a − v_b` has an exact analytical boundary:
+    /// the t* at intersection equals the edge length `|v_a − v_b|` (9 edges have
+    /// length 2c*sqrt(2), 1 edge has length 4c).
+    #[rstest(
+        edge => [
+            [0.0_f64, 2.0, 2.0, 0.0],   // v0 - v1
+            [2.0_f64, 0.0, 2.0, 0.0],   // v0 - v2
+            [2.0_f64, 2.0, 0.0, 0.0],   // v0 - v3
+            [0.0_f64, 0.0, 2.0, 2.0],   // v0 - v4
+            [2.0_f64, -2.0, 0.0, 0.0],  // v1 - v2
+            [2.0_f64, 0.0, -2.0, 0.0],  // v1 - v3
+            [0.0_f64, -2.0, 0.0, 2.0],  // v1 - v4
+            [0.0_f64, 2.0, -2.0, 0.0],  // v2 - v3
+            [-2.0_f64, 0.0, 0.0, 2.0],  // v2 - v4
+            [-2.0_f64, -2.0, 2.0, 2.0], // v3 - v4
+        ],
+        c => [1.0, 0.5, 2.0],
+    )]
+    fn test_4d_pentachoron_edge_sweep(edge: [f64; 4], c: f64) {
+        let s0 = pentachoron(c);
+        let s1 = pentachoron(c);
+
+        let edge: Cartesian<4> = edge.map(|e| e * c).into();
+        let edge_length = edge.norm();
+        let direction = edge / edge_length;
+
+        let t_start = edge_length - 1.0 / 3.0;
+        let t_end = edge_length + 0.01;
+        let steps = 10_000;
+        let dt = (t_end - t_start) / f64::from(steps);
+
+        let q_ij = RotationMatrix::<4>::default();
+
+        for step in 0..=steps {
+            let t = t_start + dt * f64::from(step);
+            let d = direction * t;
+            let analytical = t < edge_length;
+            let result = collide4d(&s0, &s1, &d, &q_ij);
+            assert_eq!(
+                result, analytical,
+                "Mismatch at step {step}, t = {t:.12}, edge_length = {edge_length:.12}"
             );
         }
     }

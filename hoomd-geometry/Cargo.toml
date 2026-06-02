@@ -36,7 +36,6 @@ anyhow.workspace = true
 assert2.workspace = true
 approxim.workspace = true
 divan.workspace = true
-rand_distr.workspace = true
 rstest.workspace = true
 
 [[bench]]
