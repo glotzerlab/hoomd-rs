@@ -1,4 +1,4 @@
-use crate::{Quaternion, Versor};
+use crate::{Cartesian, Quaternion, Rotate, RotationMatrix, Versor};
 
 /// A pair of [`Versor`]s that represent a 4D rotation.
 ///
@@ -27,5 +27,62 @@ impl Default for DoubleVersor {
             l: Versor::default(),
             r: Versor::default(),
         }
+    }
+}
+
+impl From<(Versor, Versor)> for DoubleVersor {
+    #[inline]
+    fn from(value: (Versor, Versor)) -> Self {
+        Self {
+            l: value.0,
+            r: value.1,
+        }
+    }
+}
+
+impl DoubleVersor {
+    #[inline]
+    fn left_isoclinic(&self) -> Versor {
+        self.l
+    }
+    #[inline]
+    fn right_isoclinic(&self) -> Versor {
+        self.r
+    }
+}
+
+impl Rotate<Cartesian<4>> for DoubleVersor {
+    type Matrix = RotationMatrix<4>;
+
+    /// Rotate a [`Cartesian<4>`] by a [`DoubleVersor`]
+    ///
+    /// ```math
+    /// \mathbf{q} \vec{a} \mathbf{q}^*
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, Rotate, Rotation, DoubleVersor, Versor};
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let a = Cartesian::from([-1.0, 0.0, 0.0, 0.0]);
+    /// let v = DoubleVersor::from_left_isoclinic(
+    ///     Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0)
+    /// );
+    ///
+    /// // Initializing from left isoclinic implies the right isoclinic is unit
+    /// assert_eq!(v.right_isoclinic(), Versor::default());
+    ///
+    /// let b = v.rotate(&a);
+    /// assert_relative_eq!(b, [0.0, -1.0, 0.0, 0.0].into());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn rotate(&self, vector: &Cartesian<4>) -> Cartesian<4> {
+        todo!()
     }
 }
