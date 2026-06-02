@@ -10,5 +10,5 @@
 mod local;
 mod voronoi_neighborlist;
 
-pub use local::{DirectorField, GenerateNeighborList, NeighborList};
+pub use local::{GenerateNeighborList, NeighborList};
 pub use voronoi_neighborlist::{LiftedSeed, PDSeed, PowerDiagram};

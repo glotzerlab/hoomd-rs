@@ -11,5 +11,7 @@
 //! Compute order parameters relating to the density of a system.
 
 mod density;
+mod local;
 
 pub use density::{CorrelationFunction, GenerateHistogram, SpatialHistogram};
+pub use local::DirectorField;
