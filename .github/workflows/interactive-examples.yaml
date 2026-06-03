@@ -25,7 +25,7 @@ env:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-24.04
+    runs-on: macos-26
     permissions:
       contents: read
 
@@ -43,11 +43,13 @@ jobs:
     - name: Check rust installation
       run: rustc -vV
     - name: Install cargo-binstall
-      run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "$HOME/.cargo/bin"
+      run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-aarch64-apple-darwin.full.zip" | tar -xvz --directory "$HOME/.cargo/bin"
+    - name: Set executable bit
+      run: chmod u+x $HOME/.cargo/bin/cargo-binstall $HOME/.cargo/bin/detect-targets $HOME/.cargo/bin/detect-wasi
     - name: Install wasm-bindgen
       run: cargo binstall wasm-bindgen-cli@0.2.122 --no-confirm --disable-strategies=compile --disable-telemetry
     - name: Install binaryen
-      run: curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "$HOME/.cargo/bin"
+      run: curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_130/binaryen-version_130-arm64-macos.tar.gz" | tar -xvz --strip-components 2 --directory "$HOME/.cargo/bin"
 
     # rust-cache already includes a Cargo.lock hash in the key. However, it
     # eagerly restores caches with previous Cargo.lock files. This causes
