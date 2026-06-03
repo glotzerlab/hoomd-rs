@@ -12,26 +12,26 @@
 //!
 //! ## Spherical points
 //!
-//! [`Spherical`] describes a point on an N-sphere of radius R embedded in
-//! [`Cartesian<N+1>`]. The components of a point on an N-sphere
+//! [`Spherical<N>`] describes a point on an $`(N-1)`$-sphere of radius R embedded in
+//! [`Cartesian<N>`]. The components of a point on an $`N`$-sphere
 //! satisfy
 //! ```math
 //! \sum_{i=1}^{N+1}x_i^2 = R^2
 //! ```
 //! [`Spherical`] implements a distance metric through the trait
 //! [`Metric`] which calculates the geodesic distance on the
-//! surface of an N-sphere. Use [`Spherical`] to describe spaces with constant
+//! surface of an $`N`$-sphere. Use [`Spherical`] to describe spaces with constant
 //! positive curvature.
 //!
-//! [`Cartesian<N+1>`]: hoomd_vector::Cartesian
+//! [`Cartesian<N>`]: hoomd_vector::Cartesian
 //! [`Metric`]: hoomd_vector::Metric
 //!
 //! ## Hyperbolic
-//! [`Hyperbolic`] describes a point on the upper sheet of an N-dimensional
-//! two-sheeted Hyperbolic with skirt R embedded in (N+1)-dimensional Minkowski
+//! [`Hyperbolic`] describes a point on the upper sheet of an $`N`$-dimensional
+//! two-sheeted hyperboloid embedded in $`(N+1)`$-dimensional Minkowski
 //! space. The components of a point on the Hyperbolic satisfy
 //! ```math
-//! x_1^2 + \cdots + x_{N-1}^2 - x_{N}^2 = -R^2
+//! x_1^2 + \cdots + x_{N-1}^2 - x_{N}^2 = -1
 //! ```
 //! [`Hyperbolic`] implements a distance metric through the trait
 //! [`Metric`] which calculates the geodesic distance on the
@@ -40,7 +40,7 @@
 //!
 //! ## Minkowski
 //!
-//! [`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the
+//! [`Minkowski<N>`] implements $`(N-1,1)`$-dimensional Minkowski space with the
 //! metric signature $`(+ \;\cdots\; +\; -)`$. [`Minkowski`] supports
 //! [`Vector`] operations such as vector addition and rescaling, but is not a
 //! true inner product space. The distance metric on Minkowski space is given
@@ -61,12 +61,12 @@
 //! assert_eq!(1.0, del);
 //! ```
 //! ## Hyperbolic Rotations
-//! "Hyperbolic rotations" describe elements of the group SO(N,1), which
+//! "Hyperbolic rotations" describe elements of the group $`SO(N,1)`$, which
 //! preserve hyperboloids embedded in [`Minkowski`]. Transformations include
 //! pure spatial rotations as well as "boosts".
 //!
 //! For two-dimensional hyperbolic surfaces, use [`HyperbolicAngle`] to
-//! implement elements of SO(2,1) which rotate points about the z-axis or boost
+//! implement elements of $`SO(2,1)`$ which rotate points about the z-axis or boost
 //! points along the x- and y-axes. Use [`HyperbolicRotationMatrix`] to
 //! generate the matrix from the values defined by [`HyperbolicAngle`].
 //!
@@ -100,7 +100,7 @@
 //!
 //! For three-dimensional hyperbolic surfaces, use [`Biquaternion`].
 //! Biquaternions are a generalization of quaternions which allow for complex
-//! coefficients. Unit biquaternions give a representation of SO(3,1); this can
+//! coefficients. Unit biquaternions give a representation of $`SO(3,1)`$; this can
 //! either be done by converting the biquaternions to a
 //! [`HyperbolicRotationMatrix`] or by using the [`UnitBiquaternion`] algebra
 //! directly.
