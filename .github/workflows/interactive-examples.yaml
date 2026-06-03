@@ -12,6 +12,8 @@ on:
 
   workflow_dispatch:
 
+permissions: {}
+
 defaults:
   run:
     shell: bash
@@ -24,23 +26,26 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
 
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
     - name: Remove native build configuration
       run: rm .cargo/config.toml
     - name: Configure Rust
-      uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
-      with:
-        toolchain: 1.94.0
-        targets: wasm32-unknown-unknown
+      run: rustup toolchain install 1.95.0
+    - name: Install wasm32 target
+      run: rustup target add wasm32-unknown-unknown
     - name: Check rust installation
       run: rustc -vV
     - name: Install cargo-binstall
       run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "$HOME/.cargo/bin"
     - name: Install wasm-bindgen
-      run: cargo binstall wasm-bindgen-cli@0.2.118 --no-confirm --disable-strategies=compile --disable-telemetry
+      run: cargo binstall wasm-bindgen-cli@0.2.122 --no-confirm --disable-strategies=compile --disable-telemetry
     - name: Install binaryen
       run: curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "$HOME/.cargo/bin"
 
@@ -52,9 +57,9 @@ jobs:
     - name: Cache
       uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
-        key: ${{ 'wasm32-unknown-unknown' }}-${{ hashFiles('Cargo.lock') }}
+        key: wasm32-unknown-unknown-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
-        save-if: ${{ github.ref == 'refs/heads/trunk' }}
+        save-if: ${{ github.ref != 'refs/heads/trunk' }}
 
     - name: Create output directory
       run: mkdir -p web
@@ -108,7 +113,11 @@ jobs:
     if: always()
     needs: [build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+    - run: jq --exit-status 'all(.result == "success")' <<< "${NEEDS}"
+      env:
+        NEEDS: ${{ toJson(needs) }}
     - name: Done
       run: exit 0
