@@ -59,7 +59,7 @@ jobs:
       with:
         key: wasm32-unknown-unknown-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
-        save-if: ${{ github.ref == 'refs/heads/trunk' }}
+        save-if: ${{ github.ref != 'refs/heads/trunk' }}
 
     - name: Create output directory
       run: mkdir -p web
