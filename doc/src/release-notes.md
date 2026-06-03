@@ -4,13 +4,22 @@
 
 *Added:*
 
+* `[hoomd-manifold]`: Add `Spherical<4>::from_versor` and the corresponding `::to_versor` (#285).
+* `[hoomd-mc]`: Implement translation moves for `Point<Spherical<4>>` (#287).
+* `[hoomd-utility]`: Implement `Eq`, `PartialOrd`, and `Ord` for `PositiveReal` (#287).
+
 *Changed:*
+
+* `[hoomd-mc]`: Improve the numerical stability of translation moves for `Point<Spherical<3>>` (#287).
+* Build the documentation with mdBook 0.5.3 (#295).
 
 *Deprecated:*
 
 *Removed:*
 
 *Fixed:*
+
+* `[hoomd-manifold]`: Fixed numerical stability issue in `Spherical<3>::distance` where the dot product could result in an out of bounds value.
 
 ## 1.1.0 (2026-04-17)
 
