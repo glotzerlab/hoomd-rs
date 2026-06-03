@@ -636,7 +636,7 @@ impl<const N: usize> Hyperbolic<N> {
         (self.point.coordinates[N - 1]).acosh()
     }
 
-    /// Projects points on the hyperboloid onto the Poincare disk/ball.
+    /// Projects points on the hyperboloid onto the Poincaré disk/ball.
     ///
     /// # Example
     /// ```

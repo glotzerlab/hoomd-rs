@@ -745,7 +745,7 @@ mod tests {
         let wrapped_point = periodic.wrap(point).expect("hard-coded");
         let wrapped_poincare = wrapped_point.position.to_poincare();
 
-        // Check that mapping is consistent with Poincare transformation
+        // Check that mapping is consistent with Poincaré transformation
         let (q_u, q_v) = (
             point.position.to_poincare()[0],
             point.position.to_poincare()[1],
