@@ -499,8 +499,8 @@ pub enum Error {
 /// | :---: | :---: |
 /// | `Spherical<3>` | none; stored as cartesian embedding |
 /// | `Spherical<4>` | stereographic projection |
-/// | `Hyperbolic<3>` | Poincare disk |
-/// | `OrientedHyperbolicPoint<3,Angle>` | Poincare disk |
+/// | `Hyperbolic<3>` | Poincaré disk |
+/// | `OrientedHyperbolicPoint<3,Angle>` | Poincaré disk |
 ///
 /// See [`hoomd_manifold::Spherical::stereographic_projection()`] and
 /// [`hoomd_manifold::Hyperbolic::to_poincare()`] for further details.

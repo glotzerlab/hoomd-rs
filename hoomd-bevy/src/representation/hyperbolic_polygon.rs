@@ -129,7 +129,7 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
     }
 }
 
-/// Project coordinates to Poincare disk
+/// Project coordinates to Poincaré disk
 fn poincare(point: &Minkowski<3>, radius: f64, angle: f32) -> ([f32; 3], f32) {
     let pt = Hyperbolic::from_minkowski_coordinates(*point);
     let proj = pt.to_poincare();
