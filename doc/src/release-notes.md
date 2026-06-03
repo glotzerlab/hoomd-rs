@@ -4,6 +4,7 @@
 
 *Added:*
 
+* `[hoomd-geometry]`: Add `TwelveTwelve` hyperbolic space boundary condition (#296).
 * `[hoomd-manifold]`: Add `Spherical<4>::from_versor` and the corresponding `::to_versor` (#285).
 * `[hoomd-mc]`: Implement translation moves for `Point<Spherical<4>>` (#287).
 * `[hoomd-microstate]`: Implement `AppendMicrostate` for the site types `Point<Spherical<3>>`, `Point<Spherical<4>>`, `OrientedHyperbolicPoint<3, Angle>`, and `Point<Hyperbolic<3>>` (#286).
