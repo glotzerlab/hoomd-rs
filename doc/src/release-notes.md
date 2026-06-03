@@ -21,7 +21,8 @@
 
 *Fixed:*
 
-* `[hoomd-manifold]`: Fixed numerical stability issue in `Spherical<3>::distance` where the dot product could result in an out of bounds value.
+* `[hoomd-manifold]`: Fixed numerical stability issue in `Spherical<3>::distance` where the dot product could result in an out of bounds value (#285).
+* `[hoomd-manifold]`: Improved numerical stability of Hyperbolic space (#303).
 
 ## 1.1.0 (2026-04-17)
 
