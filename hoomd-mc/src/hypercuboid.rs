@@ -19,6 +19,7 @@ use serde_with::serde_as;
 use std::array;
 
 use hoomd_geometry::shape::Hypercuboid;
+use hoomd_manifold::Spherical;
 use hoomd_microstate::boundary::{Closed, Periodic};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
@@ -86,6 +87,60 @@ impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
     #[inline]
     fn point_to_space_index(&self, point: &Cartesian<N>) -> Option<usize> {
         let p = *point - self.origin;
+        let mut space_multi_index: [i64; N] =
+            array::from_fn(|i| (p.coordinates[i] / self.space_width[i]).floor() as i64);
+
+        for (index, shape, periodic) in izip!(&mut space_multi_index, self.shape, self.periodic) {
+            // The origin is in the lower left corner of the box and may be up
+            // to one space width to the left of simulation boundary. Therefore,
+            // negative indices are out of bounds (and should never been seen
+            // for wrapped inputs).
+            if *index < 0 {
+                return None;
+            }
+
+            if periodic {
+                // In periodic boundaries, the checkerboard spaces end before
+                // the right side. The space at the rightmost edge is identical
+                // to space 0 to make the checkerboard coloring commensurate
+                // with the periodic boundary conditions.
+                if *index as usize == shape {
+                    *index = 0;
+                }
+                if *index as usize > shape {
+                    return None;
+                }
+            } else if *index as usize >= shape {
+                // In non-periodic boundaries, the checkerboard extends one full
+                // space to the right of the simulation boundary so that when
+                // it is shifted to the left it will still cover the boundary.
+                // Therefore, any points outside the checkerboard shape are
+                // invalid.
+                return None;
+            }
+        }
+
+        Some(Self::multi_index_to_index(
+            array::from_fn(|i| space_multi_index[i] as usize),
+            self.shape,
+        ))
+    }
+
+    #[inline]
+    fn space_indices_by_color(&self) -> &[Vec<usize>] {
+        &self.space_indices_by_color
+    }
+
+    #[inline]
+    fn num_spaces(&self) -> usize {
+        self.shape.iter().product()
+    }
+}
+
+impl<const N: usize> Checkerboard<Spherical<N>> for HypercuboidCheckerboard<N> {
+    #[inline]
+    fn point_to_space_index(&self, point: &Spherical<N>) -> Option<usize> {
+        let p = *point.point() - self.origin;
         let mut space_multi_index: [i64; N] =
             array::from_fn(|i| (p.coordinates[i] / self.space_width[i]).floor() as i64);
 
