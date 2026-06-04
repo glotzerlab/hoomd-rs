@@ -3725,6 +3725,7 @@ name = "hoomd-spatial"
 version = "1.1.0"
 dependencies = [
  "assert2",
+ "hoomd-manifold",
  "hoomd-utility",
  "hoomd-vector",
  "log",

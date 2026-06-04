@@ -41,10 +41,12 @@ use hoomd_utility::valid::PositiveReal;
 
 mod all_pairs;
 mod hash_cell;
+mod spherical_vec_cell;
 mod vec_cell;
 
 pub use all_pairs::AllPairs;
 pub use hash_cell::{HashCell, HashCellBuilder};
+pub use spherical_vec_cell::{SphericalVecCell, SphericalVecCellBuilder};
 pub use vec_cell::{VecCell, VecCellBuilder};
 
 /// Allow incremental updates to points in the spatial data.
