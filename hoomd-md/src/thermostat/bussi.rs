@@ -1,12 +1,12 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
-use crate::thermostat::Thermostat;
+use crate::Thermostat;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
 use rand::Rng;
 use rand_distr::{Distribution, Gamma, Normal};
 
-/// [`BussiThermostat`] adjust the temperature with a
+/// [`Bussi`] adjust the temperature with a
 /// canonical sampling thermostat that uses stochastic
 /// velocity rescaling with Hamiltonian dynamics
 /// given time constant $`\tau`$.
@@ -49,24 +49,24 @@ use rand_distr::{Distribution, Gamma, Normal};
 /// # Examples
 ///
 /// ```
-/// use hoomd_md::{thermostat::BussiThermostat};
+/// use hoomd_md::{thermostat::Bussi};
 ///    
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let dt = 0.001;
 /// let tau = 100.0*dt;
-/// let thermostat = BussiThermostat::new(tau.try_into()?);
+/// let thermostat = Bussi::new(tau.try_into()?);
 /// # Ok(())
 /// # }
 /// ```
-pub struct BussiThermostat {
+pub struct Bussi {
     /// Thermostat time constant (`[time]`).
     tau: PositiveReal,
     /// Cumulative energy drift due to the thermostat. Useful for checking energy conservation.
     cumu_energy_drift: f64,
 }
 
-impl BussiThermostat {
-    /// Constrcut BussiThermostat.
+impl Bussi {
+    /// Constrcut Bussi.
     pub fn new(tau: PositiveReal) -> Self {
         Self {
             tau: tau,
@@ -83,7 +83,7 @@ impl BussiThermostat {
     }
 }
 
-impl<M> Thermostat<M> for BussiThermostat
+impl<M> Thermostat<M> for Bussi
 where
     M: Temperature,
 {
@@ -169,13 +169,13 @@ mod tests {
     fn test_init() -> anyhow::Result<()> {
         // Blanket Implementation
         let tau = 1.0;
-        let bussi = BussiThermostat::new(tau.try_into()?);
+        let bussi = Bussi::new(tau.try_into()?);
 
         assert_eq!(tau, bussi.tau.get());
         assert_eq!(0.0, *bussi.get_energy());
 
         // Instantiation
-        let custom_bussi = BussiThermostat {
+        let custom_bussi = Bussi {
             tau: tau.try_into()?,
             cumu_energy_drift: 1.0,
         };
@@ -190,6 +190,6 @@ mod tests {
     #[should_panic(expected = "tau should be positive: NotPositive(-1.0)")]
     fn test_invalid_tau() {
         let tau = -1.0;
-        let _ = BussiThermostat::new(tau.try_into().expect("tau should be positive"));
+        let _ = Bussi::new(tau.try_into().expect("tau should be positive"));
     }
 }

@@ -9,7 +9,7 @@ use hoomd_microstate::{
 use hoomd_vector::{
     Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Versor
 };
-use crate::{RotationalKineticEnergy, TranslationalKineticEnergy, thermostat::Thermostat, methods::{TranslationalMotion, RotationalMotion}};
+use crate::{RotationalKineticEnergy, TranslationalKineticEnergy, Thermostat, methods::{TranslationalMotion, RotationalMotion}};
 use hoomd_spatial::PointUpdate;
 
 /// Perform time integration on the [`Microstate`] with the volume constraining

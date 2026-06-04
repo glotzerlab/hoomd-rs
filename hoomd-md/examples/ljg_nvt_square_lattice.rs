@@ -20,7 +20,7 @@ use hoomd_md::{
         TranslationalMomentumModifier,
         TranslationalThermalizer,
     },
-    thermostat::BussiThermostat,
+    thermostat::Bussi,
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicPoint, NetForce, Point}
@@ -55,7 +55,7 @@ struct LJGSquare {
 
     macrostate: Isothermal,
 
-    thermostat: BussiThermostat,
+    thermostat: Bussi,
 
     force: Rigid<PairwiseCutoff<Isotropic<LennardJonesGauss>>>,
 
@@ -149,7 +149,7 @@ impl LJGSquare {
         let integrator = ConstantVolume::new(dt);
 
         // Constant T integration
-        let thermostat = BussiThermostat::new(tau.try_into()?);
+        let thermostat = Bussi::new(tau.try_into()?);
 
         Ok(LJGSquare {
             microstate,

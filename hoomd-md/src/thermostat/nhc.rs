@@ -1,9 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#![allow(non_snake_case)]
-
-use crate::thermostat::Thermostat;
+use crate::Thermostat;
 use arrayvec::ArrayVec;
 use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
@@ -11,14 +9,14 @@ use hoomd_utility::valid::PositiveReal;
 use rand::Rng;
 use rand_distr::{Distribution, Normal};
 
-/// [`NHCThermostat`] implement the Nos$`\text{\'e}`$-Hoover chain thermostat
+/// [`NoséHooverChain`] implement the Nos$`\text{\'e}`$-Hoover chain thermostat
 /// that adjsut temperture using non-Hamiltonian dynamics
 /// given a time constant $`\tau`$.
 ///
 /// The generic type names are:
 /// * `N`: The length of thermostat chain. Must be larger than zero.
 /// When the `N` is one, the behaviour reduces to
-/// [`MTTKThermostat`](crate::thermostat::MTTKThermostat).
+/// [`MartynaTuckermanTobiasKlein`](crate::thermostat::MartynaTuckermanTobiasKlein).
 ///
 /// It perform time integration on the
 /// extra degrees-of-freedom in the non-Hamiltonian
@@ -33,17 +31,17 @@ use rand_distr::{Distribution, Normal};
 /// # Examples
 ///
 /// ```
-/// use hoomd_md::{thermostat::NHCThermostat};
+/// use hoomd_md::{thermostat::NoséHooverChain};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// const N_CHAIN_LENGTH: usize = 10;
 /// let dt = 0.001;
 /// let tau = 100.0*dt;
-/// let thermostat = NHCThermostat::<N_CHAIN_LENGTH>::new(tau.try_into()?);
+/// let thermostat = NoséHooverChain::<N_CHAIN_LENGTH>::new(tau.try_into()?);
 /// # Ok(())
 /// # }
 /// ```
-pub struct NHCThermostat<const N: usize> {
+pub struct NoséHooverChain<const N: usize> {
     /// Thermostat time constant (`[time]`).
     tau: PositiveReal,
     /// Chain of thermostat velocity.
@@ -58,8 +56,8 @@ pub struct NHCThermostat<const N: usize> {
     energy: f64,
 }
 
-impl<const N: usize> NHCThermostat<N> {
-    /// Constrcut NHCThermostat.
+impl<const N: usize> NoséHooverChain<N> {
+    /// Constrcut NoséHooverChain.
     pub fn new(tau: PositiveReal) -> Self {
         Self {
             tau: tau,
@@ -122,7 +120,7 @@ impl<const N: usize> NHCThermostat<N> {
     }
 }
 
-impl<const N: usize, M> Thermostat<M> for NHCThermostat<N>
+impl<const N: usize, M> Thermostat<M> for NoséHooverChain<N>
 where
     M: Temperature,
 {
@@ -209,7 +207,7 @@ where
         rescaling_factor
     }
 
-    /// Call [`integrate_step_one`](NHCThermostat::integrate_step_one) internally.
+    /// Call [`integrate_step_one`](NoséHooverChain::integrate_step_one) internally.
     #[inline]
     fn integrate_step_two<R: Rng + ?Sized>(
         &mut self,
@@ -234,15 +232,15 @@ mod tests {
         // Blanket Implementation
         const N_CHAINS: usize = 5;
         let tau = 1.0;
-        let nhc = NHCThermostat::<N_CHAINS>::new(tau.try_into()?);
+        let nhc = NoséHooverChain::<N_CHAINS>::new(tau.try_into()?);
 
         assert_eq!(tau, nhc.tau.get());
         assert_eq!([0.0; N_CHAINS], nhc.get_position_arr().as_slice());
         assert_eq!([0.0; N_CHAINS], nhc.get_velocity_arr().as_slice());
-        assert_eq!(0.0, *nhc.get_energy());
+        assert_eq!(0.0, nhc.get_energy());
 
         // Instantiation
-        let custom_nhc = NHCThermostat::<N_CHAINS> {
+        let custom_nhc = NoséHooverChain::<N_CHAINS> {
             tau: tau.try_into()?,
             xi_arr: ArrayVec::from([1.0; N_CHAINS]),
             eta_arr: ArrayVec::from([2.0; N_CHAINS]),
@@ -265,6 +263,6 @@ mod tests {
     #[should_panic(expected = "tau should be positive: NotPositive(-1.0)")]
     fn test_invalid_tau() {
         let tau = -1.0;
-        let _ = NHCThermostat::<1>::new(tau.try_into().expect("tau should be positive"));
+        let _ = NoséHooverChain::<1>::new(tau.try_into().expect("tau should be positive"));
     }
 }

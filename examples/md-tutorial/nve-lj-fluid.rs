@@ -12,7 +12,7 @@ use hoomd_md::{
     ThermalizeMomentum, TranslationalKineticEnergy, UpdateNetForce, ZeroCenterAngularMomentum, ZeroCenterMomentum, methods::{
         ConstantVolume,
         TranslationalMotion,
-    }, thermostat::{BussiThermostat, NoThermostat}
+    }, thermostat::{Bussi, NoThermostat}
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicPoint, Point}
@@ -38,7 +38,7 @@ struct LJFluid {
     /// Constant volume MD integrator to sample the NVT and NVE ensemble.
     integrator: ConstantVolume,
     /// Thermostat to control the temperature of the isotherm.
-    thermostat: BussiThermostat,
+    thermostat: Bussi,
     /// Temperature set point.
     macrostate: Isothermal,
     /// Steps to prepare the isotherm in the Equilibrate phase.
@@ -165,7 +165,7 @@ impl LJFluid {
         // ANCHOR_END: integrator
 
         // ANCHOR: thermostat
-        let thermostat = BussiThermostat::new(tau.try_into()?);
+        let thermostat = Bussi::new(tau.try_into()?);
         // ANCHOR_END: thermostat
 
         // ANCHOR: struct_initialize

@@ -11,6 +11,8 @@
 //! Simulate molecular dynamics in systems of particles.
 //! TODO: User guide
 
+use rand::Rng;
+
 pub mod thermostat;
 pub mod methods;
 
@@ -27,3 +29,23 @@ pub use modify::ZeroCenterAngularMomentum;
 mod update_net_force;
 pub use update_net_force::UpdateNetForce;
 pub use update_net_force::UpdateNetForceAndTorque;
+
+pub trait Thermostat<M> {
+    fn integrate_step_one<R: Rng + ?Sized>(
+        &mut self,
+        rng: &mut R,
+        macrostate: &M,
+        delta_t: f64,
+        kinetic_energy: f64,
+        degrees_of_freedom: usize,
+    ) -> f64;
+
+    fn integrate_step_two<R: Rng + ?Sized>(
+        &mut self,
+        rng: &mut R,
+        macrostate: &M,
+        delta_t: f64,
+        kinetic_energy: f64,
+        degrees_of_freedom: usize,
+    ) -> f64;
+}

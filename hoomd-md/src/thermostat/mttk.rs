@@ -1,16 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#![allow(non_snake_case)]
-
-use crate::thermostat::Thermostat;
+use crate::Thermostat;
 use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
 use rand::Rng;
 use rand_distr::{Distribution, Normal};
 
-/// [`MTTKThermostat`] implement the Nos$`\text{\'e}`$-Hoover thermostat
+/// [`MartynaTuckermanTobiasKlein`] implement the Nos$`\text{\'e}`$-Hoover thermostat
 /// that adjsut temperture using non-Hamiltonian dynamics
 /// given a time constant $`\tau`$.
 ///
@@ -19,7 +17,7 @@ use rand_distr::{Distribution, Normal};
 /// equations of motion,
 /// which are designed to sample the canonical (nvt).
 ///
-/// [`MTTKThermostat`] store the extra degrees-of-freedom
+/// [`MartynaTuckermanTobiasKlein`] store the extra degrees-of-freedom
 /// as the one-dimensional thermostat position $`\eta`$ and
 /// thermostat velocity $`\xi`$, resulting in the extended
 /// Hamiltonian $`H`$
@@ -33,7 +31,7 @@ use rand_distr::{Distribution, Normal};
 /// $`k_BT_\mathrm{setpoint}`$ is the temperature setpoint.
 ///
 /// Following the Trotter decomposition of Liouvillian,
-/// [`MTTKThermostat`] integrate the $`\eta`$ and
+/// [`MartynaTuckermanTobiasKlein`] integrate the $`\eta`$ and
 /// $`\xi`$ forward by half time step $`\frac{\delta t}{2}`$
 /// via the following procedure:
 ///
@@ -65,16 +63,16 @@ use rand_distr::{Distribution, Normal};
 /// # Examples
 ///
 /// ```
-/// use hoomd_md::{thermostat::MTTKThermostat};
+/// use hoomd_md::{thermostat::MartynaTuckermanTobiasKlein};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let dt = 0.001;
 /// let tau = 100.0*dt;
-/// let thermostat = MTTKThermostat::new(tau.try_into()?);
+/// let thermostat = MartynaTuckermanTobiasKlein::new(tau.try_into()?);
 /// # Ok(())
 /// # }
 /// ```
-pub struct MTTKThermostat {
+pub struct MartynaTuckermanTobiasKlein {
     /// Thermostat time constant (`[time]`).
     tau: PositiveReal,
     /// Thermostat velocity.
@@ -85,8 +83,8 @@ pub struct MTTKThermostat {
     energy: f64,
 }
 
-impl MTTKThermostat {
-    /// Constrcut MTTKThermostat.
+impl MartynaTuckermanTobiasKlein {
+    /// Constrcut MartynaTuckermanTobiasKlein.
     pub fn new(tau: PositiveReal) -> Self {
         Self {
             tau: tau,
@@ -136,7 +134,7 @@ impl MTTKThermostat {
     }
 }
 
-impl<M> Thermostat<M> for MTTKThermostat
+impl<M> Thermostat<M> for MartynaTuckermanTobiasKlein
 where
     M: Temperature,
 {
@@ -184,7 +182,7 @@ where
         rescaling_factor
     }
 
-    /// Call [`integrate_step_one`](MTTKThermostat::integrate_step_one) internally.
+    /// Call [`integrate_step_one`](MartynaTuckermanTobiasKlein::integrate_step_one) internally.
     #[inline]
     fn integrate_step_two<R: Rng + ?Sized>(
         &mut self,
@@ -208,7 +206,7 @@ mod tests {
     fn test_init() -> anyhow::Result<()> {
         // Blanket Implementation
         let tau = 1.0;
-        let mttk = MTTKThermostat::new(tau.try_into()?);
+        let mttk = MartynaTuckermanTobiasKlein::new(tau.try_into()?);
 
         assert_eq!(tau, mttk.tau.get());
         assert_eq!(0.0, *mttk.get_velocity());
@@ -216,7 +214,7 @@ mod tests {
         assert_eq!(0.0, *mttk.get_energy());
 
         // Instantiation
-        let custom_mttk = MTTKThermostat {
+        let custom_mttk = MartynaTuckermanTobiasKlein {
             tau: tau.try_into()?,
             xi: 1.0,
             eta: 2.0,
@@ -235,6 +233,6 @@ mod tests {
     #[should_panic(expected = "tau should be positive: NotPositive(-1.0)")]
     fn test_invalid_tau() {
         let tau = -1.0;
-        let _ = MTTKThermostat::new(tau.try_into().expect("tau should be positive"));
+        let _ = MartynaTuckermanTobiasKlein::new(tau.try_into().expect("tau should be positive"));
     }
 }

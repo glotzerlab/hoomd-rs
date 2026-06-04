@@ -21,7 +21,7 @@ use hoomd_md::{
         TranslationalMomentumModifier,
         TranslationalThermalizer,
     },
-    thermostat::{BussiThermostat},
+    thermostat::{Bussi},
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicOrientedPoint, Point}
@@ -44,7 +44,7 @@ struct System {
 
     macrostate: Isothermal,
 
-    thermostat: (NHCThermostat<3>, NHCThermostat<3>),
+    thermostat: (NoséHooverChain<3>, NoséHooverChain<3>),
 
     force: Rigid<PairwiseCutoff<Isotropic<LennardJones>>>,
 
@@ -129,7 +129,7 @@ impl System {
         // Notice that the thermostats for translational
         // and rotational dof are separated.
         let tau = PositiveReal::try_from(50.0 * dt)?;
-        let thermostat = (BussiThermostat::new(tau), BussiThermostat::new(tau));
+        let thermostat = (Bussi::new(tau), Bussi::new(tau));
 
         Ok(System {
             microstate,
