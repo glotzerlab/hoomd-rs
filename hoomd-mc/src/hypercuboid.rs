@@ -310,6 +310,38 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
             return result;
         }
 
+        if N == 4 {
+            for offset_l in 0..=1 {
+                for offset_k in 0..=1 {
+                    for offset_j in 0..=1 {
+                        for offset_i in 0..=1 {
+                            let mut space_indices = Vec::new();
+                            let mut multi_index = [0; N];
+
+                            for l in 0..shape[0] / 2 {
+                                multi_index[0] = 2 * l + offset_l;
+                                for k in 0..shape[1] / 2 {
+                                    multi_index[1] = 2 * k + offset_k;
+                                    for j in 0..shape[2] / 2 {
+                                        multi_index[2] = 2 * j + offset_j;
+                                        for i in 0..shape[3] / 2 {
+                                            multi_index[3] = 2 * i + offset_i;
+                                            space_indices
+                                                .push(Self::multi_index_to_index(multi_index, shape));
+                                        }
+                                    }
+                                }
+                            }
+
+                            result.push(space_indices);
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
         todo!("Implement a general method");
     }
 
