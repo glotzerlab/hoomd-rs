@@ -4,10 +4,9 @@
 //! Implement Translation moves on curved surfaces
 
 use rand::{
-    Rng, RngExt,
-    distr::{Distribution, Uniform},
+    Rng,
+    distr::Distribution,
 };
-use rand_distr::StandardNormal;
 
 use crate::{LocalTrial, Translate};
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk};
