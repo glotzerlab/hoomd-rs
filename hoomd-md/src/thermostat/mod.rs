@@ -4,11 +4,11 @@
 //! Thermostats
 
 mod no_thermostat;
-mod mttk;
+mod martyna_tuckerman_tobias_klein;
 mod bussi;
-mod nhc;
+mod nose_hoover_chain;
 
 pub use no_thermostat::NoThermostat;
-pub use mttk::MartynaTuckermanTobiasKlein;
+pub use martyna_tuckerman_tobias_klein::MartynaTuckermanTobiasKlein;
 pub use bussi::Bussi;
-pub use nhc::NoséHooverChain;
+pub use nose_hoover_chain::NoséHooverChain;

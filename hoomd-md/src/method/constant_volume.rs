@@ -9,7 +9,7 @@ use hoomd_microstate::{
 use hoomd_vector::{
     Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Versor
 };
-use crate::{RotationalKineticEnergy, TranslationalKineticEnergy, Thermostat, methods::{TranslationalMotion, RotationalMotion}};
+use crate::{RotationalKineticEnergy, TranslationalKineticEnergy, Thermostat, method::{TranslationalMotion, RotationalMotion}};
 use hoomd_spatial::PointUpdate;
 
 /// Perform time integration on the [`Microstate`] with the volume constraining
@@ -36,7 +36,7 @@ use hoomd_spatial::PointUpdate;
 /// # Example
 ///
 /// ```
-/// use hoomd_md::methods::ConstantVolume;
+/// use hoomd_md::method::ConstantVolume;
 ///
 /// // Create a constant-volume integrator
 /// let dt = 0.001;
@@ -51,7 +51,7 @@ use hoomd_spatial::PointUpdate;
 /// 
 /// [Tuckerman et al. 2006]: <https://doi.org/10.1088/0305-4470/39/19/S18>
 /// [Miller et al. 2002]: <https://doi.org/10.1063/1.1473654>
-#[doc(alias("nve", "nvt"))]
+#[doc(alias = "nvt")]
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConstantVolume {
     /// The size of a timestep.

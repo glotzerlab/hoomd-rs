@@ -154,6 +154,7 @@ cast_precision_loss = "allow"
 float_cmp = "allow"
 similar_names = "allow"
 inline_always = "allow"
+must_use_candidate = "allow"
 
 # opt-in to restrictions
 allow_attributes_without_reason = "warn"
