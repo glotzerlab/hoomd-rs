@@ -12,6 +12,8 @@ on:
 
   workflow_dispatch:
 
+permissions: {}
+
 env:
   CARGO_TERM_COLOR: always
   CLICOLOR: 1
@@ -19,20 +21,25 @@ env:
 jobs:
   cargo-check-clippy:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    - name: Configure Rust
-      uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
       with:
-        toolchain: 1.94.0
-        targets: wasm32-unknown-unknown
-        components: clippy
+        persist-credentials: false
+    - name: Remove native build configuration
+      run: rm .cargo/config.toml
+    - name: Configure Rust
+      run: rustup toolchain install 1.95.0 --component clippy
+    - name: Install wasm32 target
+      run: rustup target add wasm32-unknown-unknown
     - name: Cache
       uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       with:
         key: ${{ hashFiles('Cargo.lock') }}
         cache-bin: false
+        save-if: ${{ github.ref != 'refs/heads/trunk' }}
 
     # Unfortunately, it is not currently possible to mark warnings as errors with cargo check:
     # https://github.com/rust-lang/cargo/issues/8424#issuecomment-1915265827
@@ -105,32 +112,57 @@ jobs:
 
   cargo-fmt:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    - name: Configure Rust
-      uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
       with:
-        toolchain: nightly-2025-09-17
-        components: rustfmt
+        persist-credentials: false
+    - name: Remove native build configuration
+      run: rm .cargo/config.toml
+    - name: Configure Rust
+      run: rustup toolchain install nightly-2025-09-17 --component rustfmt
     - run: cargo +nightly-2025-09-17 fmt --all --check
 
   prek:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
     - name: prek
-      uses: glotzerlab/workflows/prek@204dc7c0f82720090703712694b7cab761aacaa0 # 0.13.0
+      uses: j178/prek-action@bdca6f102f98e2b4c7029491a53dfd366469e33d # v2.0.4
+      with:
+        prek-version: '0.3.8'
+
+  zizmor:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Run zizmor
+      uses: zizmorcore/zizmor-action@5f14fd08f7cf1cb1609c1e344975f152c7ee938d # v0.5.6
+      with:
+        advanced-security: false
 
   # This job is used to provide a single requirement for branch merge conditions.
   tests_complete:
     name: All style checks
     if: always()
-    needs: [cargo-check-clippy, cargo-fmt, prek]
+    needs: [cargo-check-clippy, cargo-fmt, prek, zizmor]
     runs-on: ubuntu-24.04
 
     steps:
-    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
-    - name: Done
-      run: exit 0
+    - run: jq --exit-status 'all(.result == "success")' <<< "${NEEDS}"
+      env:
+        NEEDS: ${{ toJson(needs) }}
+    - run: exit 0

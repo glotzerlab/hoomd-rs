@@ -13,7 +13,7 @@ use hoomd_interaction::{
 };
 use hoomd_mc::{
     QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune,
-    UniformIn,
+    TuneOptions, UniformIn,
 };
 use hoomd_microstate::{
     Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
@@ -232,15 +232,17 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: state_transition
         if self.quick_compress.is_complete() {
-            self.translate_sweep.tune_default(
+            self.translate_sweep.tune_with_options(
                 &self.microstate,
                 &self.hamiltonian,
                 &self.macrostate,
+                &TuneOptions::default(),
             );
-            self.rotate_sweep.tune_default(
+            self.rotate_sweep.tune_with_options(
                 &self.microstate,
                 &self.hamiltonian,
                 &self.macrostate,
+                &TuneOptions::default(),
             );
 
             self.phase = Phase::Equilibrate;

@@ -76,4 +76,4 @@ individual that has contributed to the code.
 
 ### Propose a change log entry
 
-Propose a concise entry describing the change in ``CHANGELOG.md``.
+Propose a concise entry describing the change in ``release-notes.md``.

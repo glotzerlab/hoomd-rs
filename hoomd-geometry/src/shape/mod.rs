@@ -40,3 +40,9 @@ pub use sphere::{Circle, Hypersphere, Sphere};
 
 mod sphero;
 pub use sphero::Sphero;
+
+mod twelvetwelve;
+pub use twelvetwelve::TwelveTwelve;
+
+mod convex_surface_mesh_2d;
+pub use convex_surface_mesh_2d::ConvexSurfaceMesh2d;

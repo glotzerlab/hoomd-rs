@@ -224,9 +224,8 @@ Render with Tachyon, and you should see something like:
 This tutorial showed you how to add bodies with multiple sites and how they
 can be translated and rotated by trial moves.
 
-Navigate to the top of the page and refresh to see the simulation in
-action again. Notice how the randomly generated tetronimoes fall to the
-bottom while randomly rotating.
+Navigate to the top of the page to see the simulation in action. Notice how the
+randomly generated tetronimoes fall to the bottom while randomly rotating.
 
 [Applying Interactions]: applying-interactions.md
 [Custom Random Walk]: custom-random-walk.md

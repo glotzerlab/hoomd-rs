@@ -10,7 +10,7 @@ use hoomd_vector::{Angle, Cartesian, Versor};
 
 use crate::{
     AppendMicrostate, Microstate,
-    boundary::{Closed, Open, Periodic},
+    boundary::{Closed, Periodic},
     property::{OrientedHyperbolicPoint, OrientedPoint, Point},
 };
 
@@ -203,14 +203,31 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<
     }
 }
 
-impl<B, X> AppendMicrostate<B, Point<Spherical<4>>, X, Open> for HoomdGsdFile {
+impl<B, X, C> AppendMicrostate<B, Point<Spherical<3>>, X, C> for HoomdGsdFile {
     #[inline]
     fn append_microstate(
         &mut self,
-        microstate: &Microstate<B, Point<Spherical<4>>, X, Open>,
+        microstate: &Microstate<B, Point<Spherical<3>>, X, C>,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
-            .configuration_box([5.0, 5.0, 5.0, 0.0, 0.0, 0.0])?
+            .configuration_box([2.0, 2.0, 2.0, 0.0, 0.0, 0.0])?
+            .configuration_dimensions(Dimensions::Three)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| *s.properties.position.point()),
+            )
+    }
+}
+
+impl<B, X, C> AppendMicrostate<B, Point<Spherical<4>>, X, C> for HoomdGsdFile {
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, Point<Spherical<4>>, X, C>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box([2.0, 2.0, 2.0, 0.0, 0.0, 0.0])?
             .configuration_dimensions(Dimensions::Three)?
             .particles_position(microstate.iter_sites_tag_order().map(|s| {
                 let proj: Vec<f64> = s.properties.position.stereographic_projection();
@@ -226,7 +243,7 @@ impl<B, X, C> AppendMicrostate<B, OrientedHyperbolicPoint<3, Angle>, X, C> for H
         microstate: &Microstate<B, OrientedHyperbolicPoint<3, Angle>, X, C>,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
-            .configuration_box([2.0, 2.0, 2.0, 0.0, 0.0, 0.0])?
+            .configuration_box([2.0, 2.0, 0.0, 0.0, 0.0, 0.0])?
             .configuration_dimensions(Dimensions::Two)?
             .particles_position(
                 microstate
@@ -257,7 +274,7 @@ impl<B, X, C> AppendMicrostate<B, Point<Hyperbolic<3>>, X, C> for HoomdGsdFile {
         microstate: &Microstate<B, Point<Hyperbolic<3>>, X, C>,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
-            .configuration_box([2.0, 2.0, 2.0, 0.0, 0.0, 0.0])?
+            .configuration_box([2.0, 2.0, 0.0, 0.0, 0.0, 0.0])?
             .configuration_dimensions(Dimensions::Two)?
             .particles_position(
                 microstate
@@ -276,7 +293,7 @@ mod test {
     use tempfile::tempdir;
 
     use super::*;
-    use crate::Body;
+    use crate::{Body, boundary::Open};
     use hoomd_geometry::shape::{EightEight, Rectangle};
     use hoomd_gsd::file_layer::{GsdFile, Mode};
 
@@ -366,6 +383,57 @@ mod test {
     }
 
     #[test]
+    fn point_spherical_2d() -> anyhow::Result<()> {
+        let microstate = Microstate::builder()
+            .boundary(Open)
+            .bodies([
+                Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
+                    -1.0, 0.0, 0.0,
+                ]))),
+                Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
+                    0.0,
+                    f64::sqrt(0.5),
+                    f64::sqrt(0.5),
+                ]))),
+                Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
+                    -f64::sqrt(0.25),
+                    0.0,
+                    f64::sqrt(0.75),
+                ]))),
+            ])
+            .step(1234)
+            .try_build()?;
+
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
+        hoomd_gsd_file.append_microstate(&microstate)?;
+
+        drop(hoomd_gsd_file);
+
+        let gsd_file = GsdFile::open(path, Mode::Read)?;
+
+        assert!(gsd_file.n_frames() == 1);
+
+        let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
+        itertools::assert_equal(step, [1234]);
+
+        let positions: Vec<[f32; 3]> = gsd_file
+            .iter_arrays::<f32, 3>(0, "particles/position")?
+            .collect();
+        assert_relative_eq!(positions[0][0], -1.0);
+        assert_relative_eq!(positions[0][1], 0.0);
+        assert_relative_eq!(positions[0][2], 0.0);
+        assert_relative_eq!(positions[1][0], 0.0);
+        assert_relative_eq!(positions[1][1], f32::sqrt(0.5));
+        assert_relative_eq!(positions[1][2], f32::sqrt(0.5));
+        assert_relative_eq!(positions[2][0], -f32::sqrt(0.25));
+        assert_relative_eq!(positions[2][1], 0.0);
+        assert_relative_eq!(positions[2][2], f32::sqrt(0.75));
+        Ok(())
+    }
+
+    #[test]
     fn point_spherical_3d() -> anyhow::Result<()> {
         let microstate = Microstate::builder()
             .boundary(Open)
@@ -374,10 +442,16 @@ mod test {
                     1.0, 0.0, 0.0, 0.0,
                 ]))),
                 Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
-                    0.0, 1.0, 0.0, 0.0,
+                    f64::sqrt(1.0 / 3.0),
+                    -f64::sqrt(1.0 / 3.0),
+                    f64::sqrt(1.0 / 3.0),
+                    0.0,
                 ]))),
                 Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
-                    0.0, 0.0, 1.0, 0.0,
+                    0.0,
+                    0.0,
+                    f64::sqrt(0.5),
+                    f64::sqrt(0.5),
                 ]))),
             ])
             .step(1234)
@@ -403,12 +477,12 @@ mod test {
         assert_relative_eq!(positions[0][0], 1.0);
         assert_relative_eq!(positions[0][1], 0.0);
         assert_relative_eq!(positions[0][2], 0.0);
-        assert_relative_eq!(positions[1][0], 0.0);
-        assert_relative_eq!(positions[1][1], 1.0);
-        assert_relative_eq!(positions[1][2], 0.0);
+        assert_relative_eq!(positions[1][0], f32::sqrt(1.0 / 3.0));
+        assert_relative_eq!(positions[1][1], -f32::sqrt(1.0 / 3.0));
+        assert_relative_eq!(positions[1][2], f32::sqrt(1.0 / 3.0));
         assert_relative_eq!(positions[2][0], 0.0);
         assert_relative_eq!(positions[2][1], 0.0);
-        assert_relative_eq!(positions[2][2], 1.0);
+        assert_relative_eq!(positions[2][2], f32::sqrt(0.5) / (1.0 - f32::sqrt(0.5)));
         Ok(())
     }
 

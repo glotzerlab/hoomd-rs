@@ -16,13 +16,17 @@ use hoomd_vector::{Cartesian, InnerProduct, Metric, Quaternion, Rotate, Versor};
 
 /// Point on the surface of a sphere.
 ///
-/// [`Spherical`] is a point on a unit N-sphere embedded in (N+1)-dimensional
-/// euclidean space. Explicitly, the N-sphere is defined by the set of
-/// (N+1)-dimensional points whose components satisfy
+/// [`Spherical<N>`] is a point on a unit $`(N-1)`$-sphere embedded in
+/// $`N`$-dimensional Euclidean space. Explicitly, the $`N`$-sphere is defined
+/// by the set of $`(N+1)`$-dimensional points whose components satisfy
 /// ```math
-/// x_1^2 + x_2^2 + \cdots + x_{N+1}^1 = 1.0
+/// x_1^2 + x_2^2 + \cdots + x_{N+1}^2 = 1.0
 /// ```
-/// Note that the radius is fixed to be 1.0.
+/// Note that the radius is fixed to be 1.0. The curvature of `Spherical`
+/// simulations can be tuned by changing the length scale of bodies and
+/// interactions. For example, rescaling all distances by
+/// $`r\rightarrow r/\ell`$ has the same effect as running simulations with
+/// radius $`R=1/\ell`$ or Gauss curvature $`K = \ell^2`$.
 #[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Spherical<const N: usize> {
     /// a cartesian point living on the surface of an N-sphere
@@ -53,8 +57,9 @@ impl<const N: usize> Spherical<N> {
         assert_relative_eq!(rad, 1.0_f64, epsilon = 1e-6);
         Spherical { point }
     }
-    /// Implements a stereographic projection from the 2-sphere to an 2-dimensional
-    /// plane by projecting through the $`(0,0,1)`$ axis.
+    /// Implements a stereographic projection from the $`N`$-sphere to an
+    /// $`n`$-dimensional subspace by projecting through the
+    /// $`(0,\cdots, 0,1)`$ axis.
     ///
     /// # Example
     /// ```
@@ -100,7 +105,18 @@ impl Spherical<3> {
 }
 
 impl Spherical<4> {
-    /// Create a point on a unit-radius 3-sphere from a unit quaternion.
+    /// Create a point on a 3-sphere from spherical coordinates. Note that this uses
+    /// the convention
+    /// ```math
+    /// \begin{pmatrix}
+    /// \sin\theta \cos\phi_1
+    /// \\ \sin\theta \sin\phi_1 \cos\phi_2
+    /// \\ \sin\theta \sin\phi_1 \sin\phi_2
+    /// \\ \cos\theta
+    /// \end{pmatrix}
+    /// ```
+    /// where $`\theta`$ and $`\phi_1`$ both run over the range $`0`$ to $`\pi`$ and $`\phi_2`$
+    /// runs from $`0`$ to $`2\pi`$.
     #[inline]
     #[must_use]
     pub fn from_polar_coordinates(theta: f64, phi_1: f64, phi_2: f64) -> Spherical<4> {
@@ -119,7 +135,8 @@ impl Spherical<4> {
     #[inline]
     #[must_use]
     pub fn from_versor(versor: Versor) -> Spherical<4> {
-        let (a, b, c, d) = versor.get_components();
+        let quat = versor.get();
+        let (a, b, c, d) = (quat.scalar, quat.vector[0], quat.vector[1], quat.vector[2]);
         Spherical::<4>::from_cartesian_coordinates(Cartesian::from([a, b, c, d]))
     }
     /// Create a versor which maps $`(1,0,0,0)`$ to the target `Spherical<4>` point.
@@ -195,17 +212,18 @@ impl Metric for Spherical<3> {
     /// The distance between two [`Spherical<3>`] points.
     ///
     /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a
-    /// 2-sphere with radius $`R`$ is given by
+    /// 2-sphere with unit radius is given by
     ///
     /// ```math
-    /// d_{S_2}(\vec{u}, \vec{v}) = R \arccos\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3)\right]
+    /// d_{S_2}(\vec{u}, \vec{v}) = \arccos\left[u_1v_1 + u_2v_2 + u_3v_3\right]
     /// ```
     /// This choice of metric furnishes a representation of 2-dimensional spherical
-    /// space with Gaussian curvature $`K = 1/R^2`$.
+    /// space with Gaussian curvature $`K = 1`$.
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
-        arg.acos()
+        let arg_clipped = arg.clamp(-1.0, 1.0);
+        arg_clipped.acos()
     }
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
@@ -222,13 +240,13 @@ impl Metric for Spherical<4> {
     ///
     /// Explicitly, the
     /// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a 3-sphere with
-    /// radius  $`R`$ is given by
+    /// unit radius is given by
     ///
     /// ```math
-    /// d_{S_3}(\vec{u}, \vec{v}) = R \arccos\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3 + u_4v_4)\right]
+    /// d_{S_3}(\vec{u}, \vec{v}) = \arccos\left[u_1v_1 + u_2v_2 + u_3v_3 + u_4v_4\right]
     /// ```
     /// This choice of metric furnishes a representation of 3-dimensional spherical
-    /// space with Gaussian curvature $`K = 1/R^2`$.
+    /// space with Gaussian curvature $`K = 1`$.
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
@@ -298,6 +316,8 @@ impl<const N: usize> Default for Spherical<N> {
 }
 
 impl Distribution<Spherical<3>> for SphericalDisk<3> {
+    /// Translates 3-dimensional cartesian vector named "point" along the
+    /// surface of a sphere by maximum distance of r.
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Spherical<3> {
         let max_angle = self.disk_radius.get();
@@ -371,7 +391,7 @@ impl Distribution<Spherical<4>> for SphericalDisk<4> {
         let transformation =
             ((*translation_versor.get()) * (*position_versor.get()) * (*translation_versor.get()))
                 .to_versor()
-                .expect("sperical points cannot be null");
+                .expect("spherical points cannot be null");
         let sphere_point = Spherical::<4>::from_versor(transformation);
         Spherical::<4>::from_cartesian_coordinates(*sphere_point.point())
     }
@@ -474,5 +494,49 @@ mod tests {
             let distance = random_point.point().distance(n_pole.point());
             assert!(d > distance);
         }
+    }
+    #[test]
+    fn from_versor() {
+        // generate a 3-sphere point from a versor
+        let mut rng = StdRng::seed_from_u64(358);
+        let v: Versor = rng.random();
+        let sphere_pt = Spherical::<4>::from_versor(v);
+        assert_eq!(sphere_pt.coordinates()[0], v.get().scalar);
+        assert_eq!(sphere_pt.coordinates()[1], v.get().vector.coordinates[0]);
+        assert_eq!(sphere_pt.coordinates()[2], v.get().vector.coordinates[1]);
+        assert_eq!(sphere_pt.coordinates()[3], v.get().vector.coordinates[2]);
+    }
+    #[test]
+    fn to_versor() {
+        // generate a 3-sphere point from a versor
+        let mut rng = StdRng::seed_from_u64(5121);
+        let v: Versor = rng.random();
+        let sphere_pt = Spherical::<4>::from_versor(v);
+        // get versor which maps identity versor to 3-sphere point
+        let versor_from_spherical = sphere_pt.to_versor();
+        let pole_versor = Quaternion::from([1.0, 0.0, 0.0, 0.0])
+            .to_versor()
+            .expect("not a null vector");
+        let transformation =
+            (*versor_from_spherical.get() * *pole_versor.get() * *versor_from_spherical.get())
+                .to_versor()
+                .expect("Hard-coded example is valid");
+        let q = transformation.get();
+        assert_relative_eq!(q.scalar, v.get().scalar, epsilon = 1e-12);
+        assert_relative_eq!(
+            q.vector.coordinates[0],
+            v.get().vector.coordinates[0],
+            epsilon = 1e-12
+        );
+        assert_relative_eq!(
+            q.vector.coordinates[1],
+            v.get().vector.coordinates[1],
+            epsilon = 1e-12
+        );
+        assert_relative_eq!(
+            q.vector.coordinates[2],
+            v.get().vector.coordinates[2],
+            epsilon = 1e-12
+        );
     }
 }

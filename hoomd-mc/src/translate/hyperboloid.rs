@@ -10,7 +10,7 @@ use rand::{
 use rand_distr::StandardNormal;
 
 use crate::{LocalTrial, Translate};
-use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
+use hoomd_manifold::{Hyperbolic, HyperbolicDisk};
 use hoomd_microstate::property::{Orientation, OrientedHyperbolicPoint, Point, Position};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Angle;
@@ -75,27 +75,6 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
         };
         let trial_sample: Hyperbolic<3> = disk.sample(rng);
         let new = trial_sample.coordinates();
-
-        /* let trial_array = trial.position.coordinates();
-        let dist = Uniform::new(0.0, self.maximum_distance().get() * 0.9)
-            .expect("max distance must be positive real");
-        let displacement = dist.sample(rng);
-        let (snh, csh) = (displacement.sinh(), displacement.cosh());
-        let vec: [f64; 3] = std::array::from_fn(|_| rng.sample(StandardNormal));
-        let proj = vec[0] * trial_array[0] + vec[1] * trial_array[1] - vec[2] * trial_array[2];
-        let tangent = Minkowski::from([
-            vec[0] + proj * trial_array[0],
-            vec[1] + proj * trial_array[1],
-            vec[2] + proj * trial_array[2],
-        ]);
-        let mink_norm =
-            (tangent[0] * tangent[0] + tangent[1] * tangent[1] - tangent[2] * tangent[2]).sqrt();
-        let unit = tangent / mink_norm;
-        let new = [
-            trial_array[0] * csh + unit.coordinates[0] * snh,
-            trial_array[1] * csh + unit.coordinates[1] * snh,
-            trial_array[2] * csh + unit.coordinates[2] * snh,
-        ]; */
         // store in polar coordinates to ensure point is on disk
         let theta = new[1].atan2(new[0]);
         let boost = (new[2]).acosh();

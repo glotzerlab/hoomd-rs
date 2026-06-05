@@ -116,7 +116,7 @@ impl OrientedHyperbolicPoint<3, Angle> {
     /// Compute the change in orientation associated with a transformation from a given
     /// position. Isometries of hyperbolic space can be expressed as a boost conjugated
     /// by a rotation, i.e., $`R(\theta) T(\eta) R(-\theta)`$. Such a transformation can
-    /// be expressed in the Poincare disk representation as the Mobius transformation
+    /// be expressed in the Poincaré disk representation as the Mobius transformation
     /// ```math
     /// g(z) = \begin{bmatrix} \cosh(\eta/2) & e^{i\theta} \sinh(\eta/2) \\ e^{-i\theta}\sinh(\eta/2) & \cosh(\eta/2) \end{bmatrix}
     /// ```

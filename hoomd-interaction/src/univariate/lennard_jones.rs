@@ -57,7 +57,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// assert_relative_eq!(
 ///     lennard_jones.energy(2.0_f64.powf(1.0 / 4.0) * sigma),
 ///     -epsilon,
-///     epsilon = 1e-12,
+///     epsilon = 1e-12
 /// );
 /// assert_abs_diff_eq!(
 ///     lennard_jones.force(2.0_f64.powf(1.0 / 4.0) * sigma),
@@ -174,7 +174,7 @@ mod tests {
         assert_relative_eq!(
             lj.energy(2.0_f64.powf(1.0 / 4.0) * sigma),
             -epsilon,
-            epsilon = 1e-8
+            epsilon = 1e-12
         );
         assert_abs_diff_eq!(
             lj.force(2.0_f64.powf(1.0 / 4.0) * sigma),

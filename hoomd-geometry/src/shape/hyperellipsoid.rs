@@ -228,7 +228,7 @@ impl<const N: usize> Volume for Hyperellipsoid<N> {
 
 impl<R> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R> for Hyperellipsoid<2>
 where
-    R: Rotation + Rotate<Cartesian<2>>,
+    R: Copy,
     Angle: From<R>,
     RotationMatrix<2>: From<R>,
 {
@@ -272,7 +272,7 @@ where
         // K(λ) in this form undesirable in the general case, but in 2D we have a simple
         // closed form for the inverse.
         //
-        // Recall that our ellipsoids do not overlap if there is a real root of Κ(λ) on
+        // Recall that our ellipsoids do not overlap if there is a real root of K(λ) on
         // (0, 1). Rather than searching for such a root, we can instead query for its
         // existence analytically. We can show that K(λ) <= 0 if and only if its numerator
         // polynomial P(λ) <= 0. P(λ) is a $n+1$-degree (cubic) polynomial:

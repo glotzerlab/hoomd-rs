@@ -154,8 +154,7 @@ where
 
 impl<const N: usize, R> IntersectsAt<Capsule<N>, Cartesian<N>, R> for Capsule<N>
 where
-    R: Rotate<Cartesian<N>> + Rotation,
-    Cartesian<N>: From<[f64; N]>,
+    R: Rotate<Cartesian<N>>,
 {
     #[inline]
     fn intersects_at(&self, other: &Capsule<N>, v_ij: &Cartesian<N>, o_ij: &R) -> bool {

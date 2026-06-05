@@ -3,13 +3,14 @@
 
 //! A tetrahedron in three dimensions. This struct should be viewed as a prototype for
 //! more complex geometries in addition to its standalone functionality.
+use hoomd_utility::valid::PositiveReal;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{array, fmt};
 
 use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
 
-use crate::{IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
 
 /// The hull of any 4 noncoplanar points in three dimensions.
 ///
@@ -326,7 +327,7 @@ where
 
 impl<R> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3
 where
-    R: Rotation + Rotate<Cartesian<3>>,
+    R: Copy,
     RotationMatrix<3>: From<R>,
 {
     /// Original C code of algorithm:
@@ -460,6 +461,39 @@ where
         true // No separating planes -> intersection!
     }
 }
+
+impl BoundingSphereRadius for Simplex3 {
+    /// Radius of a sphere that bounds the shape.
+    ///
+    /// The sphere has the same local origin as the shape `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{BoundingSphereRadius, shape::Simplex3};
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let tet = Simplex3::default();
+    ///
+    /// let bounding_radius = tet.bounding_sphere_radius();
+    ///
+    /// assert_relative_eq!(bounding_radius.get(), 3.0_f64.sqrt());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn bounding_sphere_radius(&self) -> PositiveReal {
+        self.vertices
+            .iter()
+            .map(Cartesian::norm_squared)
+            .fold(0.0, &f64::max)
+            .sqrt()
+            .try_into()
+            .expect("All norms are zero or NaN -- check your inputs!")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::xenocollide::collide3d;

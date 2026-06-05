@@ -300,9 +300,9 @@ This tutorial showed you how to add a site radius field, how to use that
 when computing custom site-site interactions, and how to write each
 site's diameter to a GSD file.
 
-Navigate to the top of the page and refresh to see the simulation in action
-again. Notice how the sites have different sizes and are randomly distributed
-in the simulation by `QuickInsert`.
+Navigate to the top of the page to see the simulation in action. Notice how
+the sites have different sizes and are randomly distributed in the simulation
+by `QuickInsert`.
 
 ## Complete Code
 
