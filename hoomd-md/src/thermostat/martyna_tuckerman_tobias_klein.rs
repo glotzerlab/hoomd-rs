@@ -2,7 +2,6 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::Thermostat;
-use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
 use rand::Rng;
@@ -50,6 +49,14 @@ use rand_distr::{Distribution, Normal};
 /// \end{align*}
 /// ```
 ///
+/// # Warning
+///
+/// [`MartynaTuckermanTobiasKlein`] fails to sample the correct distribution when there are
+/// strong harmonic interactions in the system. Prefer [`Bussi`] or [`NoséHooverChain`].
+///
+/// [`Bussi`]: crate::thermostat::Bussi
+/// [`NoséHooverChain`]: crate::thermostat::NoséHooverChain
+///
 /// # References
 /// * [Tuckerman et al. 2006](https://doi.org/10.1088/0305-4470/39/19/S18)
 /// * [Martyna et al. 1994](https://doi.org/10.1063/1.467468)
@@ -78,7 +85,7 @@ impl MartynaTuckermanTobiasKlein {
     /// # Example
     ///
     /// ```
-    /// use hoomd_md::{thermostat::MartynaTuckermanTobiasKlein};
+    /// use hoomd_md::thermostat::MartynaTuckermanTobiasKlein;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let thermostat = MartynaTuckermanTobiasKlein::zero(0.5.try_into()?);
@@ -276,17 +283,15 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::TranslationalKineticEnergy;
-
     use super::*;
-    use hoomd_microstate::{Body, property::{DynamicPoint, Point}};
-    use hoomd_vector::Cartesian;
-    use rstest::*;
     use assert2::check;
 
+    use crate::TranslationalKineticEnergy;
+    use hoomd_microstate::{Microstate, Body, property::{DynamicPoint, Point}};
+    use hoomd_vector::Cartesian;
     use hoomd_simulation::macrostate::Isothermal;
 
-    #[rstest]
+    #[test]
     fn test_zero() -> anyhow::Result<()> {
         let thermostat = MartynaTuckermanTobiasKlein::zero(0.5.try_into()?);
 
@@ -298,7 +303,7 @@ mod tests {
         Ok(())
     }
 
-    #[rstest]
+    #[test]
     fn test_thermalized() -> anyhow::Result<()> {
         let microstate = Microstate::builder()
             .bodies([
