@@ -26,7 +26,18 @@ use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 
 use crate::{IndexFromPosition, hash_cell::CellIndex};
 
-/// TODO: docs
+/// Implement [`VecCell`] for [`Spherical`] bodies.
+///
+/// `Spherical<N>` bodies exist on the surface of an $`(N-1)`$-sphere embedded
+/// in $`N`$-dimensional Cartesian space. As such, methods for `VecCell<K, N>`
+/// can be adapted to work for `Spherical<N>`.
+///
+/// `SphericalVecCell` only differs from `VecCell` in that the user may choose
+/// to use either the `Spherical` geodesic distance or the Euclidean
+/// "line-of-site" distance when specifying nominal and maximum search radii.
+///
+/// [`VecCell`]: hoomd_spatial::VecCell;
+/// [`Spherical`]: hoomd_manifold::Spherical;
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SphericalVecCell<K, const D: usize>
@@ -239,7 +250,17 @@ impl<K, const D: usize> Default for SphericalVecCell<K, D>
 where
     K: Copy + Eq + Hash,
 {
-    /// TODO
+    /// Construct a default [`SphericalVecCell`].
+    ///
+    /// The default sets both the nominal and maximum search to 1.0.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_spatial::SphericalVecCell;
+    ///
+    /// let two_sphere_vec_cell = SphericalVecCell::<usize,3>::default();
+    /// ```
     #[inline]
     fn default() -> Self {
         Self::builder().build()

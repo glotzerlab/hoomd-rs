@@ -144,7 +144,7 @@ impl<const N: usize> Checkerboard<Spherical<N>> for HypercuboidCheckerboard<N> {
         let mut space_multi_index: [i64; N] =
             array::from_fn(|i| (p.coordinates[i] / self.space_width[i]).floor() as i64);
 
-        for (index, shape, periodic) in izip!(&mut space_multi_index, self.shape, self.periodic) {
+        for (index, shape) in izip!(&mut space_multi_index, self.shape) {
             // The origin is in the lower left corner of the box and may be up
             // to one space width to the left of simulation boundary. Therefore,
             // negative indices are out of bounds (and should never been seen
@@ -153,18 +153,7 @@ impl<const N: usize> Checkerboard<Spherical<N>> for HypercuboidCheckerboard<N> {
                 return None;
             }
 
-            if periodic {
-                // In periodic boundaries, the checkerboard spaces end before
-                // the right side. The space at the rightmost edge is identical
-                // to space 0 to make the checkerboard coloring commensurate
-                // with the periodic boundary conditions.
-                if *index as usize == shape {
-                    *index = 0;
-                }
-                if *index as usize > shape {
-                    return None;
-                }
-            } else if *index as usize >= shape {
+            if *index as usize >= shape {
                 // In non-periodic boundaries, the checkerboard extends one full
                 // space to the right of the simulation boundary so that when
                 // it is shifted to the left it will still cover the boundary.
@@ -253,7 +242,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
     /// Partition the space indices by color.
     #[expect(
         clippy::todo,
-        reason = "there are no known use-cases for parallel 4D, 5D, ... simulations at this time"
+        reason = "there are no known use-cases for parallel 5D, 6D, ... simulations at this time"
     )]
     fn construct_space_indices_by_color(shape: [usize; N]) -> Vec<Vec<usize>> {
         for width in shape {
