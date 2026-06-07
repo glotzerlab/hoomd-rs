@@ -28,6 +28,7 @@ hoomd-vector.workspace = true
 hoomd-utility.workspace = true
 
 [dev-dependencies]
+approxim.workspace = true
 assert2.workspace = true
 rand.workspace = true
 rstest.workspace = true

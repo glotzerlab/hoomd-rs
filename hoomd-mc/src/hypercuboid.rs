@@ -326,8 +326,10 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
                                         multi_index[2] = 2 * j + offset_j;
                                         for i in 0..shape[3] / 2 {
                                             multi_index[3] = 2 * i + offset_i;
-                                            space_indices
-                                                .push(Self::multi_index_to_index(multi_index, shape));
+                                            space_indices.push(Self::multi_index_to_index(
+                                                multi_index,
+                                                shape,
+                                            ));
                                         }
                                     }
                                 }

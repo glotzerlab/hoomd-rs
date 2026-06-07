@@ -3724,6 +3724,7 @@ dependencies = [
 name = "hoomd-spatial"
 version = "1.1.0"
 dependencies = [
+ "approxim",
  "assert2",
  "hoomd-manifold",
  "hoomd-utility",
