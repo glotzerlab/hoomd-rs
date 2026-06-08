@@ -17,6 +17,7 @@ mod eighteight;
 mod hyperparallelepiped;
 mod rhomboid;
 mod triclinic;
+mod twelvetwelve;
 
 /// Describe a simulation space that repeats in one or more directions.
 ///
