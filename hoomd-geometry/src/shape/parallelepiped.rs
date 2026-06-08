@@ -6,7 +6,7 @@ use std::array;
 
 use hoomd_linear_algebra::matrix::{
     Matrix,
-    qr::{self, get_r_inv},
+    qr::{self, get_r, get_r_inv},
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
@@ -15,7 +15,7 @@ use rand::{
     distr::{Distribution, Uniform},
 };
 
-use crate::{IsPointInside, MapPoint, SupportMapping};
+use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume};
 
 /// An N-dimensional hyperparallelepiped defined by N edge vectors.
 ///
@@ -280,22 +280,23 @@ impl<const N: usize> Hyperparallelepiped<N> {
     ///
     /// # Mathematical Background
     ///
-    /// The perpendicular distance between faces can be found using the standard reciprocal lattice construction. Let $`\vec{b}_i`$ be a normal vector to the face spanned by all of the edge vectors except $`\vec{a}_i`$. Then the perpendicular distance between faces is given by $`h_k=\lVert \text{proj}_{b_k}(a_k) \rVert`$.
-    /// We can find the normal vectors using $`\mathbf{A^{-1}}`$. Since
+    /// The perpendicular distance between faces can be found using the reciprocal
+    /// lattice construction. Let $\vec{b}_i$ be a normal vector to the face spanned
+    /// by all edge vectors except $\vec{a}_i$. Then
+    /// $h_k = \lVert \operatorname{proj}_{b_k}(\vec{a}_k) \rVert$.
     ///
+    /// For the edge-vector matrix $\mathbf{A}$, write the QR decomposition
+    /// $\mathbf{A} = \mathbf{Q}\mathbf{R}$. Since $\mathbf{Q}$ is orthogonal,
+    /// right-multiplying by $\mathbf{Q}^T$ preserves the Euclidean norm of each
+    /// row. Therefore the norm of the $k$-th row of $\mathbf{R}^{-1}$ is the
+    /// same as the norm of the corresponding row of $\mathbf{A}^{-1}$.
+    ///
+    /// Hence,
     /// ```math
-    /// \newcommand{\horzbar}{\rule[.5ex]{2.5ex}{0.5pt}}
-    /// \mathbf{AA}^{-1} =\begin{bmatrix} | & | & | \\ \mathbf{a}_1 & \mathbf{a}_2 & \mathbf{a}_3 \\ | & | & | \end{bmatrix} \begin{bmatrix} \horzbar & \mathbf{b}_1 & \horzbar \\ \horzbar & \mathbf{b}_2 & \horzbar \\ \horzbar & \mathbf{b}_3 & \horzbar \end{bmatrix} =I,
+    /// h_k = \frac{1}{\left\lVert (\mathbf{R}^{-1})_k \right\rVert},
     /// ```
-    /// the rows of $`A^{-1}`$ satisfy $`a_i \cdot b_j = \delta_{ij}`$. Therefore, the $`b_j`$ are perpendicular to the desired faces (since $`a_i\cdot b_j = 0`$ for $`j\neq i`$) and we have $`a_i\cdot b_i = 1`$. Therefore, we calculate
-    /// ```math
-    /// h_k = \lVert\text{proj}_{b_k}(a_k)\rVert=\left\lVert \frac{a_k\cdot b_k}{\lVert b_k \rVert} \right\rVert = \frac{1}{\lVert b_k \rVert}
-    /// ```
-    /// Since in the QR decomposition, $`\mathbf{A}=\mathbf{QR}`$, $`\mathbf{A}^{-1} \mathbf{Q} = \mathbf{R}^{-1}`$, and so the lengths of the rows of $`\mathbf{R}^{-1}`$ are the same as those of $`\mathbf{A^{-1}}`$. (Geometrically, $`\mathbf{Q}`$ is just represents a rotation of the box and so doesn't affect lenghts.) Therefore, we calculate
-    /// ```math
-    ///     h_k = \frac{1}{\left\lVert \left(\mathbf{R}^{-1} \right)_k \right\rVert}
-    /// ```
-    /// where $`\left\lVert \left(\mathbf{R}^{-1} \right)_k \right\rVert`$ denodes the 2-norm of the $`k`$-th row of $`\mathbf{R}^{-1}`$.
+    /// where $\lVert (\mathbf{R}^{-1})_k \rVert$ denotes the Euclidean norm of the
+    /// $k$-th row of $\mathbf{R}^{-1}$.
     ///
     /// # Returns
     ///
@@ -308,7 +309,6 @@ impl<const N: usize> Hyperparallelepiped<N> {
     #[inline]
     #[must_use]
     pub fn get_nearest_plane_distance(&self) -> [PositiveReal; N] {
-        // Since V = A_ih_i, h_i = V/A_i.
         let r_inv = get_r_inv(
             self.qr
                 .as_ref()
@@ -320,6 +320,62 @@ impl<const N: usize> Hyperparallelepiped<N> {
             inv_norm.try_into().expect("row norm must be positive")
         });
         distances
+    }
+}
+
+impl<const N: usize> Volume for Hyperparallelepiped<N> {
+    /// Compute the N-dimensional hypervolume of the hyperparallelepiped.
+    ///
+    /// The volume is the absolute product of the diagonal elements of the upper
+    /// triangular matrix $`\mathbf{R}`$ from the QR decomposition of the edge-vector
+    /// matrix $`\mathbf{A}=\mathbf{Q}\mathbf{R}`$.
+    ///
+    /// If the QR decomposition has not been calculated, calucales the volume using the
+    /// determinant of the box matrix.
+    #[inline]
+    fn volume(&self) -> f64 {
+        let matrix = Matrix::<N, N> {
+            rows: std::array::from_fn(|r| {
+                std::array::from_fn(|c| self.edge_vectors[c].coordinates[r])
+            }),
+        };
+
+        if let Some(qr_mat) = self.qr.as_ref() {
+            let r = get_r(qr_mat);
+            r.diagonal().elements.iter().product::<f64>().abs()
+        } else {
+            matrix.determinant().abs()
+        }
+    }
+}
+
+impl<const N: usize> Scale for Hyperparallelepiped<N> {
+    /// Produce a scaled hyperparallelepiped by uniformly scaling each edge vector.
+    ///
+    /// The QR cache is recomputed on the returned value so that it is immediately
+    /// usable for coordinate conversions and ghost generation.
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        let mut scaled = Self {
+            edge_vectors: self.edge_vectors.map(|ev| ev * v),
+            qr: None,
+        };
+        scaled.calc_qr();
+        scaled
+    }
+
+    /// Produce a scaled hyperparallelepiped by uniformly scaling volume.
+    ///
+    /// Each edge vector is scaled by `v^(1/N)` so that the N-dimensional
+    /// volume scales by exactly `v`.
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v_linear = v
+            .get()
+            .powf(1.0 / N as f64)
+            .try_into()
+            .expect("v^(1/N) must be positive");
+        self.scale_length(v_linear)
     }
 }
 
