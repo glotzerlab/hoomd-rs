@@ -281,22 +281,22 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// # Mathematical Background
     ///
     /// The perpendicular distance between faces can be found using the reciprocal
-    /// lattice construction. Let $\vec{b}_i$ be a normal vector to the face spanned
-    /// by all edge vectors except $\vec{a}_i$. Then
-    /// $h_k = \lVert \operatorname{proj}_{b_k}(\vec{a}_k) \rVert$.
+    /// lattice construction. Let $`\vec{b}_i`$ be a normal vector to the face spanned
+    /// by all edge vectors except $`\vec{a}_i`$. Then
+    /// $`h_k = \lVert \operatorname{proj}_{b_k}(\vec{a}_k) \rVert`$.
     ///
-    /// For the edge-vector matrix $\mathbf{A}$, write the QR decomposition
-    /// $\mathbf{A} = \mathbf{Q}\mathbf{R}$. Since $\mathbf{Q}$ is orthogonal,
-    /// right-multiplying by $\mathbf{Q}^T$ preserves the Euclidean norm of each
-    /// row. Therefore the norm of the $k$-th row of $\mathbf{R}^{-1}$ is the
-    /// same as the norm of the corresponding row of $\mathbf{A}^{-1}$.
+    /// For the edge-vector matrix $`\mathbf{A}`$, write the QR decomposition
+    /// $`\mathbf{A} = \mathbf{Q}\mathbf{R}`$. Since $`\mathbf{Q}`$ is orthogonal,
+    /// right-multiplying by $`\mathbf{Q}^T`$ preserves the Euclidean norm of each
+    /// row. Therefore the norm of the $`k`$-th row of $`\mathbf{R}^{-1}`$ is the
+    /// same as the norm of the corresponding row of $`\mathbf{A}^{-1}`$.
     ///
     /// Hence,
     /// ```math
     /// h_k = \frac{1}{\left\lVert (\mathbf{R}^{-1})_k \right\rVert},
     /// ```
-    /// where $\lVert (\mathbf{R}^{-1})_k \rVert$ denotes the Euclidean norm of the
-    /// $k$-th row of $\mathbf{R}^{-1}$.
+    /// where $`\lVert (\mathbf{R}^{-1})_k \rVert`$ denotes the Euclidean norm of the
+    /// $`k`$-th row of $`\mathbf{R}^{-1}`$.
     ///
     /// # Returns
     ///
