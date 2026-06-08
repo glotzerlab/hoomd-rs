@@ -550,6 +550,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hyperparallelepiped<N> {
 mod tests {
     use super::*;
     use approxim::assert_ulps_eq;
+    use hoomd_utility::valid::PositiveReal;
 
     fn assert_approx_eq_cartesian<const N: usize>(a: Cartesian<N>, b: Cartesian<N>, tol: f64) {
         for i in 0..N {
@@ -785,6 +786,29 @@ mod tests {
         assert_ulps_eq!(s[0], 1.0, epsilon = 1.0e-12);
         assert_ulps_eq!(s[1], 2.0, epsilon = 1.0e-12);
         assert_ulps_eq!(s[2], 3.0, epsilon = 1.0e-12);
+    }
+
+    #[test]
+    fn scale_length_scales_volume_by_nth_power() {
+        let b = ortho_box_2d(2.0, 3.0);
+        let scaled = b.scale_length(PositiveReal::try_from(2.0).unwrap());
+
+        // scaling length by 2 in 2D multiplies area by 2^2 = 4
+        assert_ulps_eq!(scaled.volume(), 24.0, epsilon = 1.0e-12);
+    }
+
+    #[test]
+    fn scale_volume_scales_box_volume() {
+        let b = Hyperparallelepiped::new([
+            Cartesian::from([2.0, 0.0, 0.0]),
+            Cartesian::from([0.0, 3.0, 0.0]),
+            Cartesian::from([0.0, 0.0, 4.0]),
+        ]);
+
+        assert_ulps_eq!(b.volume(), 24.0, epsilon = 1.0e-12);
+
+        let scaled = b.scale_volume(PositiveReal::try_from(8.0).unwrap());
+        assert_ulps_eq!(scaled.volume(), 192.0, epsilon = 1.0e-12);
     }
 
     #[test]
