@@ -259,7 +259,7 @@ where
     /// ```
     /// use hoomd_spatial::SphericalVecCell;
     ///
-    /// let two_sphere_vec_cell = SphericalVecCell::<usize,3>::default();
+    /// let two_sphere_vec_cell = SphericalVecCell::<usize, 3>::default();
     /// ```
     #[inline]
     fn default() -> Self {

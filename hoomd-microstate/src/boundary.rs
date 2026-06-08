@@ -24,10 +24,12 @@ use arrayvec::ArrayVec;
 use thiserror::Error;
 
 mod closed;
+mod closed_spherical;
 mod open;
 mod periodic;
 
 pub use closed::Closed;
+pub use closed_spherical::ClosedSpherical;
 pub use open::Open;
 pub use periodic::Periodic;
 

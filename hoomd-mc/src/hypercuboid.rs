@@ -20,7 +20,7 @@ use std::array;
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_manifold::Spherical;
-use hoomd_microstate::boundary::{Closed, Periodic};
+use hoomd_microstate::boundary::{Closed, ClosedSpherical, Periodic};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
@@ -466,6 +466,38 @@ impl<const N: usize> Cover<Cartesian<N>> for Periodic<Hypercuboid<N>> {
         interaction_range: PositiveReal,
     ) {
         checkerboard.update(rng, interaction_range, self.shape().edge_lengths, [true; N]);
+    }
+}
+
+impl<const N: usize> Cover<Spherical<N>> for ClosedSpherical<N> {
+    type Checkerboard = HypercuboidCheckerboard<N>;
+    #[inline]
+    fn cover<R: Rng + ?Sized>(
+        &self,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+    ) -> Self::Checkerboard {
+        HypercuboidCheckerboard::new(
+            rng,
+            interaction_range,
+            [2.0.try_into().expect("hard-coded positive number"); N],
+            [false; N],
+        )
+    }
+
+    #[inline]
+    fn cover_into<R: Rng + ?Sized>(
+        &self,
+        checkerboard: &mut Self::Checkerboard,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+    ) {
+        checkerboard.update(
+            rng,
+            interaction_range,
+            [2.0.try_into().expect("hard-coded positive number"); N],
+            [false; N],
+        );
     }
 }
 
