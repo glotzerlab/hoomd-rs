@@ -73,12 +73,13 @@ pub struct MartynaTuckermanTobiasKlein {
 }
 
 impl MartynaTuckermanTobiasKlein {
-    /// Construct a new `MartynaTuckermanTobiasKlein` thermostat with the given time constant.
+    /// Construct a new `MartynaTuckermanTobiasKlein` thermostat with the given time constant,
+    /// $` \xi = 0 `$, and $` \eta = 0 `$ .
     ///
-    /// Give the thermostat a 0 position and 0 momentum. This initial condition is likely to be
-    /// very far from equilibrium which will result in wild kinetic energy oscillations
-    /// for the first hundred to thousand time steps. Use [`thermalized`] to choose the
-    /// initial position and momentum from a thermal distribution.
+    /// This initial condition is likely to be very far from equilibrium which
+    /// will result in wild kinetic energy oscillations for the first hundred to
+    /// thousand time steps. Use [`thermalized`] to choose the initial position
+    /// and momentum from a thermal distribution.
     ///
     /// [`thermalized`]: Self::thermalized
     ///
@@ -102,7 +103,7 @@ impl MartynaTuckermanTobiasKlein {
         }
     }
 
-    /// Construct a new `MartynaTuckermanTobiasKlein` thermostat with a random position and
+    /// Construct a new `MartynaTuckermanTobiasKlein` thermostat with a random $` \xi `$
     /// drawn from a thermal distribution.
     ///
     /// # Panics
