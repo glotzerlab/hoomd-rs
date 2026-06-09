@@ -3,17 +3,14 @@
 use rand::Rng;
 use crate::Thermostat;
 
-/// [`NoThermostat`] implement the dummy method
-/// that performs no adjustment on the temperature
-/// for [`TranslationalMotion`](crate::methods::TranslationalMotion) 
-/// and [`RotationalMotion`](crate::methods::RotationalMotion) 
-/// as they require an input of a [`Thermostat`] during
-/// integration.
+/// Apply no momentum scaling.
+///
+/// Use [`NoThermostat`] with [`ConstantVolume`] to model the microcanonical (NVE) ensemble.
+///
+/// [`ConstantVolume`]: crate::method::ConstantVolume
 pub struct NoThermostat;
 
 impl<M> Thermostat<M> for NoThermostat {
-    /// Dummy method that performs no temperature
-    /// adjustment.
     #[inline]
     fn integrate_step_one<R: Rng + ?Sized>(
         &mut self,
@@ -27,8 +24,6 @@ impl<M> Thermostat<M> for NoThermostat {
         1.0
     }
     
-    /// Dummy method that performs no temperature
-    /// adjustment.
     #[inline]
     fn integrate_step_two<R: Rng + ?Sized>(
         &mut self,

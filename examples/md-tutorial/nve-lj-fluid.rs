@@ -9,10 +9,9 @@ use hoomd_interaction::{
     Rigid,
 };
 use hoomd_md::{
-    ThermalizeMomentum, TranslationalKineticEnergy, UpdateNetForce, ZeroCenterAngularMomentum, ZeroCenterMomentum, methods::{
+    ThermalizeMomentum, TranslationalMotion, TranslationalKineticEnergy, UpdateNetForce, ZeroCenterAngularMomentum, ZeroCenterMomentum, method::
         ConstantVolume,
-        TranslationalMotion,
-    }, thermostat::{Bussi, NoThermostat}
+    thermostat::{Bussi, NoThermostat}
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicPoint, Point}
@@ -35,10 +34,10 @@ struct LJFluid {
     >,
     /// How sites interact with other sites.
     force: Rigid<PairwiseCutoff<Isotropic<LennardJones>>>,
-    /// Constant volume MD integrator to sample the NVT and NVE ensemble.
-    integrator: ConstantVolume,
-    /// Thermostat to control the temperature of the isotherm.
-    thermostat: Bussi,
+    /// Constant volume MD integrator to sample the NVE ensemble.
+    nve_integrator: ConstantVolume<NoThermostat, NoThermostat>,
+    /// Constant volume MD integrator to sample the NVT ensemble.
+    nvt_integrator: ConstantVolume<Bussi, Bussi>,
     /// Temperature set point.
     macrostate: Isothermal,
     /// Steps to prepare the isotherm in the Equilibrate phase.
@@ -161,19 +160,22 @@ impl LJFluid {
         // ANCHOR_END: particle_momenta
 
         // ANCHOR: integrator
-        let integrator = ConstantVolume::new(dt);
+        let nve_integrator = ConstantVolume::new(dt);
         // ANCHOR_END: integrator
 
         // ANCHOR: thermostat
         let thermostat = Bussi::new(tau.try_into()?);
+        let nvt_integrator = ConstantVolume::builder(dt)
+            .thermostat(thermostat)
+            .build();
         // ANCHOR_END: thermostat
 
         // ANCHOR: struct_initialize
         Ok(LJFluid {
             microstate,
             force,
-            integrator,
-            thermostat,
+            nve_integrator,
+            nvt_integrator,
             macrostate,
             eq_step,
             energy_lrc,
@@ -248,9 +250,8 @@ impl LJFluid {
         // ANCHOR_END: state_transition
 
         // ANCHOR: first_half_integration
-        self.integrator.integrate_translation_step_one(
+        self.nvt_integrator.integrate_translation_step_one(
             &mut self.microstate,
-            &mut self.thermostat,
             &self.macrostate,
         );
         // ANCHOR_END: first_half_integration
@@ -260,9 +261,8 @@ impl LJFluid {
         // ANCHOR_END: update_force
 
         // ANCHOR: second_half_integration
-        self.integrator.integrate_translation_step_two(
+        self.nvt_integrator.integrate_translation_step_two(
             &mut self.microstate,
-            &mut self.thermostat,
             &self.macrostate,
         );
         // ANCHOR_END: second_half_integration
@@ -281,17 +281,15 @@ impl LJFluid {
             );
         }
 
-        self.integrator.integrate_translation_step_one(
+        self.nve_integrator.integrate_translation_step_one(
             &mut self.microstate,
-            &mut NoThermostat {},
             &Isoenergy {},
         );
 
         self.microstate.update_net_force(&self.force);
 
-        self.integrator.integrate_translation_step_two(
+        self.nve_integrator.integrate_translation_step_two(
             &mut self.microstate,
-            &mut NoThermostat {},
             &Isoenergy {},
         );
     }

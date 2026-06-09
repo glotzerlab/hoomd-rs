@@ -1,9 +1,13 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
-use crate::Thermostat;
-use hoomd_simulation::macrostate::Temperature;
 use rand::Rng;
 use rand_distr::{Distribution, Gamma, Normal};
+use serde::{Deserialize, Serialize};
+
+use crate::Thermostat;
+use hoomd_simulation::macrostate::Temperature;
+
+// TODO: Apply common derive macros for all types in hoomd_md
 
 /// Stochastic momentum rescaling.
 ///
@@ -35,6 +39,7 @@ use rand_distr::{Distribution, Gamma, Normal};
 /// # Reference
 ///
 /// * [Bussi et al. 2007](https://doi.org/10.1063/1.2408420)
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Bussi {
     /// Thermostat time constant $`[ \mathrm{time} ]`$.
     tau: f64,

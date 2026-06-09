@@ -11,7 +11,7 @@ use hoomd_microstate::{
 use hoomd_vector::{
     Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Versor
 };
-use crate::{RotationalKineticEnergy, TranslationalKineticEnergy, Thermostat, TranslationalMotion, RotationalMotion};
+use crate::{RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, thermostat::NoThermostat};
 use hoomd_spatial::PointUpdate;
 
 /// Perform time integration on the [`Microstate`] with the volume constraining
@@ -57,6 +57,21 @@ use hoomd_spatial::PointUpdate;
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConstantVolume<TT, TR> {
     /// The time step size.
+    pub delta_t: f64,
+
+    /// Translational thermostat.
+    pub translational_thermostat: TT,
+
+    /// Rotational thermostat.
+    pub rotational_thermostat: TR,
+
+    // TODO: Should `ConstantVolume` track the last updated step and panic when:
+    // - Step two is not called after step one?
+    // - Step one is called twice for the same step?
+}
+
+pub struct ConstantVolumeBuilder<TT, TR> {
+    /// The time step size.
     delta_t: f64,
 
     /// Translational thermostat.
@@ -64,23 +79,57 @@ pub struct ConstantVolume<TT, TR> {
 
     /// Rotational thermostat.
     rotational_thermostat: TR,
-
-    // TODO: Should `ConstantVolume` track the last updated step and panic when:
-    // - Step two is not called after step one?
-    // - Step one is called twice for the same step?
 }
 
-impl<T> ConstantVolume<T, T>
-where
-    T: Clone
-    {
-    /// Construct a new [`ConstantVolume`] with the given time step size and thermostat.
-    #[inline]
-    pub fn new(delta_t: f64, thermostat: T) -> Self {
-        Self {
-            delta_t,
+impl<TT, TR> ConstantVolumeBuilder<TT, TR> {
+    pub fn translational_thermostat<T>(self, translational_thermostat: T) -> ConstantVolumeBuilder<T, TR> {
+        ConstantVolumeBuilder {
+            delta_t: self.delta_t,
+            translational_thermostat,
+            rotational_thermostat: self.rotational_thermostat,
+        }
+    }
+    pub fn rotational_thermostat<T>(self, rotational_thermostat: T) -> ConstantVolumeBuilder<TT, T> {
+        ConstantVolumeBuilder {
+            delta_t: self.delta_t,
+            translational_thermostat: self.translational_thermostat,
+            rotational_thermostat,
+        }
+    }
+    pub fn thermostat<T: Clone>(self, thermostat: T) -> ConstantVolumeBuilder<T, T> {
+        ConstantVolumeBuilder {
+            delta_t: self.delta_t,
             translational_thermostat: thermostat.clone(),
             rotational_thermostat: thermostat,
+        }
+    }
+
+    pub fn build(self) -> ConstantVolume<TT, TR> {
+        ConstantVolume {
+            delta_t: self.delta_t,
+            translational_thermostat: self.translational_thermostat,
+            rotational_thermostat: self.rotational_thermostat,
+        }
+    }
+}
+
+impl ConstantVolume<NoThermostat, NoThermostat> {
+    #[inline]
+    pub fn builder(delta_t: f64) -> ConstantVolumeBuilder<NoThermostat, NoThermostat> {
+        ConstantVolumeBuilder {
+            delta_t,
+            translational_thermostat: NoThermostat,
+            rotational_thermostat: NoThermostat,
+        }
+    } 
+
+    /// Construct a new [`ConstantVolume`] with the given time step size and no thermostats.
+    #[inline]
+    pub fn new(delta_t: f64) -> Self {
+        Self {
+            delta_t,
+            translational_thermostat: NoThermostat,
+            rotational_thermostat: NoThermostat,
         }
     }
 }
@@ -776,15 +825,9 @@ mod tests {
 
     #[test]
     fn test_constant_volume() -> anyhow::Result<()> {
-        // Instantiation
-        let custom_cv = ConstantVolume {
-            delta_t: 1.0,
-        };
-
-        // Blanket Implementation
         let dt = 2.0;
-        let new_cv = ConstantVolume::new(dt);
-        assert_eq!(new_cv.delta_t, dt);
+        let cv = ConstantVolume::new(dt);
+        assert_eq!(cv.delta_t, dt);
 
         Ok(())
     }
@@ -811,7 +854,6 @@ mod tests {
         let mut method = ConstantVolume::new(dt);
         struct Isoenergy {}
         let mut macrostate = Isoenergy {};
-        let mut thermostat = NoThermostat;  // TODO: use an actual thermostat
 
         // Update force first so that the particles can move
         microstate.update_net_force(&force);
@@ -819,7 +861,6 @@ mod tests {
         // Check the first halfstep
         method.integrate_translation_step_one(
             &mut microstate,
-            &mut thermostat,
             &mut macrostate
         );
         let mut expected_momentum = Cartesian::<3>::default()
@@ -836,7 +877,6 @@ mod tests {
         // Check the second halfstep
          method.integrate_translation_step_two(
             &mut microstate,
-            &mut thermostat,
             &mut macrostate
         );
         expected_momentum += f_dir * f_mag * dt * 0.5 * -1.0;
@@ -866,7 +906,6 @@ mod tests {
         let mut method = ConstantVolume::new(dt);
         struct Isoenergy {}
         let mut macrostate = Isoenergy {};
-        let mut thermostat = NoThermostat;  // TODO: use an actual thermostat
 
         // Update torque first so that the particles can move
         microstate.update_net_force_and_torque(&torque);
@@ -874,7 +913,6 @@ mod tests {
         // Check the first halfstep
         method.integrate_rotation_step_one(
             &mut microstate,
-            &mut thermostat,
             &mut macrostate
         );
         let mut expected_angular_momentum = t_dir * t_mag * 0.5 * dt;
@@ -890,7 +928,6 @@ mod tests {
         // Check the second halfstep
          method.integrate_rotation_step_two(
             &mut microstate,
-            &mut thermostat,
             &mut macrostate
         );
         expected_angular_momentum += t_dir * t_mag * 0.5 * dt;
@@ -970,7 +1007,6 @@ mod tests {
             r_0: Cartesian::from([0.0, 1.0]),
             force: Cartesian::from([0.0, 1.0]),
         }));
-        let method = ConstantVolume::new(0.1);
         
         microstate.update_net_force(&evaluator);        
         assert_eq!(microstate.bodies()[0].item.properties.net_force, Cartesian::<2>::from([0.0, -1.0]));
@@ -987,7 +1023,6 @@ mod tests {
             r_0: Cartesian::from([0.0, 1.0, 0.0]),
             force: Cartesian::from([0.0, 1.0, 0.0]),
         }));
-        let method = ConstantVolume::new(0.1);
         
         microstate.update_net_force(&evaluator);        
         assert_eq!(microstate.bodies()[0].item.properties.net_force, Cartesian::<3>::from([0.0, -1.0, 0.0]));
@@ -1004,7 +1039,6 @@ mod tests {
         let evaluator = Rigid(External(ConstantTorque {
             torque: 1.0,
         }));
-        let method = ConstantVolume::new(0.1);
         
         microstate.update_net_force_and_torque(&evaluator);        
         assert_eq!(microstate.bodies()[0].item.properties.net_torque, 1.0);
@@ -1021,7 +1055,6 @@ mod tests {
         let evaluator = Rigid(External(ConstantTorque {
             torque: Cartesian::<3>::from([0.0, 0.0, 1.0])
         }));
-        let method = ConstantVolume::new(0.1);
         
         microstate.update_net_force_and_torque(&evaluator);        
         assert_eq!(microstate.bodies()[0].item.properties.net_torque, Cartesian::<3>::from([0.0, 0.0, 1.0]));
