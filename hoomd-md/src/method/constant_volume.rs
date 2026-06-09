@@ -64,6 +64,10 @@ pub struct ConstantVolume<TT, TR> {
 
     /// Rotational thermostat.
     rotational_thermostat: TR,
+
+    // TODO: Should `ConstantVolume` track the last updated step and panic when:
+    // - Step two is not called after step one?
+    // - Step one is called twice for the same step?
 }
 
 impl<T> ConstantVolume<T, T>
@@ -558,13 +562,13 @@ where
 /// * `E`: The interaction [`evaluator`]() type.
 /// * `T`: The [`Thermostat`]() type.
 /// * `M`: The [`macrostate`](crate::macrostate) type.
-impl<S, X, C, T, M> RotationalMotion<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C, T, M> for ConstantVolume
+impl<S, X, C, TT, TR, M> RotationalMotion<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C, M> for ConstantVolume<TT, TR>
 where
     DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>,
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
     C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>> + Wrap<S> + GenerateGhosts<S>,
-    T: Thermostat<M>,
+    TR: Thermostat<M>,
 {
     /// Perform the first-half integration on rotational 
     /// degrees-of-freedom for two-dimensional system, 
@@ -585,15 +589,15 @@ where
     /// $`\delta t`$ is the timestep dt. Note that in two-dimension, every particle only has 
     /// one degrees-of-freedom contributed from their rotational motion.
     #[inline]
-    fn integrate_rotation_step_one(
+    fn integrate_rotation_step_one<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
-        thermostat: &mut T,
         macrostate: &M,
+        should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
-        let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy();
-        let rescaling_factor = thermostat.integrate_step_one(
+        let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
+        let rescaling_factor = self.rotational_thermostat.integrate_step_one(
             &mut rng,
             macrostate,
             self.delta_t,
@@ -601,29 +605,23 @@ where
             degrees_of_freedom,
         );
 
-        // Integrate orientation and angular momentum forward
         for body_index in 0..microstate.bodies().len() {
-            // Get the important information from the body
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue
+            }
+            let mut body_properties = body.item.properties.clone();
 
-            // Shorthand variables
-            // t is the z-component of net torque
-            // I is the z-component of the moment of inertia
-            let t = *body_properties.net_torque();
-            let I = *body_properties.moment_of_inertia();
+            let net_torque = *body_properties.net_torque();
+            let moment_of_inertia = *body_properties.moment_of_inertia();
 
-            // Apply thermostat
-            // Advance p by half a timestep and q by a full timestep following Trotter
-            // factorization of Liouvillian rotation
             *body_properties.angular_momentum_mut() *= rescaling_factor;
-            *body_properties.angular_momentum_mut() += t * 0.5 * self.delta_t;
+            *body_properties.angular_momentum_mut() += net_torque * 0.5 * self.delta_t;
             body_properties.orientation_mut().theta +=
-                *body_properties.angular_momentum() / I * self.delta_t;
+                *body_properties.angular_momentum() / moment_of_inertia * self.delta_t;
 
-            // wrap angle back into [0, 2pi] to improve stability
             *body_properties.orientation_mut() = body_properties.orientation_mut().to_reduced();
 
-            // Update the microstate with new body properties, wrapping automatically
             microstate
                 .update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
@@ -645,34 +643,32 @@ where
     /// \end{align}
     /// ```
     #[inline]
-    fn integrate_rotation_step_two(
+    fn integrate_rotation_step_two<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
-        thermostat: &mut T,
         macrostate: &M,
+        should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
 
-        // Integrate angular momentum forward
         for body_index in 0..microstate.bodies().len() {
-            // Get the important information from the body
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue
+            }
+            let mut body_properties = body.item.properties.clone();
 
-            // Get net torque on body.
-            let t = *body_properties.net_torque();
+            let net_torque = *body_properties.net_torque();
 
-            // Advance p by half a timestep following Trotter
-            // factorization of Liouvillian rotation
-            *body_properties.angular_momentum_mut() += t * 0.5 * self.delta_t;
+            *body_properties.angular_momentum_mut() += net_torque * 0.5 * self.delta_t;
 
-            // Update the microstate with new body properties, wrapping automatically
             microstate
                 .update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
         let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy();
-        let rescaling_factor = thermostat.integrate_step_two(
+        let rescaling_factor = self.rotational_thermostat.integrate_step_two(
             &mut rng,
             macrostate,
             self.delta_t,
