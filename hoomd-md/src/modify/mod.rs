@@ -60,7 +60,7 @@ pub trait ThermalizeMomentum<B, S> {
     }
 
     /// Assign thermally distributed random momenta to a subset of the bodies in the microstate.
-    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F);
+    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize_body: F);
 }
 
 /// Remove translational motion from the system's center of mass.
@@ -109,7 +109,7 @@ pub trait ZeroCenterMomentum<B, S> {
     }
 
     /// Subtract the average momentum from each selected body's momentum.
-    fn zero_center_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero: F);
+    fn zero_center_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero_body: F);
 }
 
 /// Remove angular motion about the system's center of mass.
@@ -185,7 +185,7 @@ pub trait ZeroCenterAngularMomentum<B, S> {
     }
 
     /// Subtract the average momentum from each selected body's momentum.
-    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero: F);
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero_body: F);
 }
 
 /// Draw random angular momenta from a thermal distribution.
@@ -236,7 +236,7 @@ pub trait ThermalizeAngularMomentum<B, S> {
     }
 
     /// Assign thermally distributed random angular momenta to a subset of bodies in the microstate.
-    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F);
+    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize_body: F);
 }
 
 #[cfg(test)]

@@ -21,16 +21,16 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_center_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero: F) {
+    fn zero_center_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero_body: F) {
         let (total_momentum, count) = self.bodies()
             .iter()
-            .filter(|&body| should_zero(body))
+            .filter(|&body| should_zero_body(body))
             .fold((Cartesian::default(), 0), |(total, count), body| (total + *body.item.properties.momentum(), count + 1));
         let average_momentum = total_momentum / f64::from(count);
         
         for body_index in 0..self.bodies().len() {
             let body = &self.bodies()[body_index];
-            if !should_zero(body) {
+            if !should_zero_body(body) {
                 continue;
             }
             

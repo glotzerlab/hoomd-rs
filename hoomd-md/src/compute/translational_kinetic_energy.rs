@@ -16,11 +16,11 @@ where
        + Mass,
 {
     #[inline]
-    fn translational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&self, should_sum: F)
+    fn translational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&self, should_sum_body: F)
         -> (f64, usize) {
         self.bodies()
             .iter()
-            .filter(|&body| should_sum(body))
+            .filter(|&body| should_sum_body(body))
             .fold((0.0, 0), |(total, count), body| {
                 let p = body.item.properties.momentum();
                 (total + p.norm_squared() / (2.0 * body.item.properties.mass()), count + p.n_dimensions())

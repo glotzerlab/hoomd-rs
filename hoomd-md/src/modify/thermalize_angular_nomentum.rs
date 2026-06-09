@@ -20,12 +20,12 @@ where
     C: Wrap<DynamicOrientedPoint<P, Angle>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Angle>, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F) {
+    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Angle>, S>>) -> bool>(&mut self, temperature: f64, should_thermalize_body: F) {
         let mut rng = self.counter().make_rng();
 
         for body_index in 0..self.bodies().len() {
             let body = &self.bodies()[body_index];
-            if !should_thermalize(body) {
+            if !should_thermalize_body(body) {
                 continue;
             }
             
@@ -56,12 +56,12 @@ where
     C: Wrap<DynamicOrientedPoint<P, Versor>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Versor>, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F) {
+    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Versor>, S>>) -> bool>(&mut self, temperature: f64, should_thermalize_body: F) {
         let mut rng = self.counter().make_rng();
 
         for body_index in 0..self.bodies().len() {
             let body = &self.bodies()[body_index];
-            if !should_thermalize(body) {
+            if !should_thermalize_body(body) {
                 continue;
             }
             

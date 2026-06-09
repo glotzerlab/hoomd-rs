@@ -455,7 +455,7 @@ pub trait Outer {
     /// let b = Cartesian::from([4.0, 3.0]);
     ///
     /// let m = Matrix {
-    ///     rows: [[8.0, 6.0], [6.0, 3.0]]
+    ///     rows: [[8.0, 6.0], [4.0, 3.0]]
     /// };
     /// assert_eq!(a.outer(&b), m);
     /// ```

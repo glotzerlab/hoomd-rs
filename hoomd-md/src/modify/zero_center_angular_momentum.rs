@@ -13,7 +13,7 @@ use hoomd_vector::{Cartesian, InnerProduct, Outer, Wedge};
 
 /// Zero a 3D microstate's angular momentum.
 #[inline]
-fn zero_angular_momentum_3d<B, S, X, C, F>(microstate: &mut Microstate<B, S, X, C>, should_zero: F)
+fn zero_angular_momentum_3d<B, S, X, C, F>(microstate: &mut Microstate<B, S, X, C>, should_zero_body: F)
 where
     B: Position<Position = Cartesian<3>>
         + Mass
@@ -29,7 +29,7 @@ where
         let mut total_mass = 0.0;
 
         for body in microstate.bodies() {
-            if !should_zero(body) {
+            if !should_zero_body(body) {
                 continue;
             }
 
@@ -44,7 +44,7 @@ where
         let mut angular_momentum_center = Cartesian::default();
         let mut moment_of_inertia_center = Matrix::<3, 3>::zeros();
         for body in microstate.bodies() {
-            if !should_zero(body) {
+            if !should_zero_body(body) {
                 continue;
             }
 
@@ -85,7 +85,7 @@ where
 
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
-            if !should_zero(body) {
+            if !should_zero_body(body) {
                 continue;
             }
             
@@ -107,7 +107,7 @@ where
 
 /// Zero a 2D microstate's angular momentum.
 #[inline]
-fn zero_angular_momentum_2d<B, S, X, C, F>(microstate: &mut Microstate<B, S, X, C>, should_zero: F)
+fn zero_angular_momentum_2d<B, S, X, C, F>(microstate: &mut Microstate<B, S, X, C>, should_zero_body: F)
 where
     B: Position<Position = Cartesian<2>>
         + Mass
@@ -122,7 +122,7 @@ where
         let mut total_mass = 0.0;
 
         for body in microstate.bodies() {
-            if !should_zero(body) {
+            if !should_zero_body(body) {
                 continue;
             }
 
@@ -138,7 +138,7 @@ where
         let mut moment_of_inertia_center = 0.0;
 
         for body in microstate.bodies() {
-            if !should_zero(body) {
+            if !should_zero_body(body) {
                 continue;
             }
 
@@ -158,7 +158,7 @@ where
 
             for body_index in 0..microstate.bodies().len() {
                 let body = &microstate.bodies()[body_index];
-                if !should_zero(body) {
+                if !should_zero_body(body) {
                     continue;
                 }
             
@@ -187,8 +187,8 @@ where
     C: Wrap<DynamicOrientedPoint<Cartesian<3>, R>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, R>, S>>) -> bool>(&mut self, should_zero: F) {
-        zero_angular_momentum_3d(self,  should_zero);
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, R>, S>>) -> bool>(&mut self, should_zero_body: F) {
+        zero_angular_momentum_3d(self,  should_zero_body);
     }
 }
 
@@ -200,8 +200,8 @@ where
     C: Wrap<DynamicPoint<Cartesian<3>>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicPoint<Cartesian<3>>, S>>) -> bool>(&mut self, should_zero: F) {
-        zero_angular_momentum_3d(self, should_zero);
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicPoint<Cartesian<3>>, S>>) -> bool>(&mut self, should_zero_body: F) {
+        zero_angular_momentum_3d(self, should_zero_body);
     }
 }
 
@@ -214,8 +214,8 @@ where
     C: Wrap<DynamicOrientedPoint<Cartesian<2>, R>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, R>, S>>) -> bool>(&mut self, should_zero: F) {
-        zero_angular_momentum_2d(self, should_zero);
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, R>, S>>) -> bool>(&mut self, should_zero_body: F) {
+        zero_angular_momentum_2d(self, should_zero_body);
     }
 }
 
@@ -227,7 +227,7 @@ where
     C: Wrap<DynamicPoint<Cartesian<2>>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicPoint<Cartesian<2>>, S>>) -> bool>(&mut self, should_zero: F) {
-        zero_angular_momentum_2d(self, should_zero);
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicPoint<Cartesian<2>>, S>>) -> bool>(&mut self, should_zero_body: F) {
+        zero_angular_momentum_2d(self, should_zero_body);
     }
 }

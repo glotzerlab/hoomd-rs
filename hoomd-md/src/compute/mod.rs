@@ -15,7 +15,7 @@ pub trait TranslationalKineticEnergy<B, S> {
     }
 
     fn translational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&self,
-        should_sum: F) -> (f64, usize);
+        should_sum_body: F) -> (f64, usize);
 }
 
 pub trait RotationalKineticEnergy<B, S> {
@@ -25,5 +25,5 @@ pub trait RotationalKineticEnergy<B, S> {
     }
 
     fn rotational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&self,
-        should_sum: F) -> (f64, usize);
+        should_sum_body: F) -> (f64, usize);
 }

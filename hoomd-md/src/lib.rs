@@ -13,6 +13,9 @@
 
 use rand::Rng;
 
+use hoomd_microstate::{Body, Tagged};
+use hoomd_microstate::Microstate;
+
 pub mod thermostat;
 pub mod method;
 
@@ -64,4 +67,68 @@ pub trait Thermostat<M> {
         kinetic_energy: f64,
         degrees_of_freedom: usize,
     ) -> f64;
+}
+
+/// Integrate translational degrees of freedom.
+///
+/// [`TranslationalMotion`] integrates the [`Position`] and [`Momentum`] degrees of
+/// freedom for selected bodies. 
+/// 
+/// The generic type names are:
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `X`: The spatial data structure type.
+/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+/// * `M`: The [`macrostate`](hoomd_simulation::macrostate) type.
+///
+/// [`Position`]: hoomd_microstate::property::Position
+/// [`Momentum`]: hoomd_microstate::property::Momentum
+pub trait TranslationalMotion<B, S, X, C, M> {
+    /// Integrate body positions forward a full step and the momenta forward a half step.
+    fn integrate_translation_step_one<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &mut self,
+        microstate: &mut Microstate<B, S, X, C>,
+        macrostate: &M,
+        should_integrate_body: F,
+    );
+
+    /// Integrate body momenta forward a half step.
+    fn integrate_translation_step_two<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &mut self,
+        microstate: &mut Microstate<B, S, X, C>,
+        macrostate: &M,
+        should_integrate_body: F,
+    );
+}
+
+/// Integrate translational degrees of freedom.
+///
+/// [`TranslationalMotion`] integrates the [`Orientation`] and [`AngularMomentum`] degrees of
+/// freedom for selected bodies. 
+/// 
+/// The generic type names are:
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `X`: The spatial data structure type.
+/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+/// * `M`: The [`macrostate`](hoomd_simulation::macrostate) type.
+///
+/// [`Orientation`]: hoomd_microstate::property::Orientation
+/// [`AngularMomentum`]: hoomd_microstate::property::AngularMomentum
+pub trait RotationalMotion<B, S, X, C, M> {
+    /// Integrate body orientations forward a full step and the angular momenta forward a half step.
+    fn integrate_rotation_step_one<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &mut self,
+        microstate: &mut Microstate<B, S, X, C>,
+        macrostate: &M,
+        should_integrate_body: F,
+    );
+
+    /// Integrate body angular momenta forward a half step.
+    fn integrate_rotation_step_two<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &mut self,
+        microstate: &mut Microstate<B, S, X, C>,
+        macrostate: &M,
+        should_integrate_body: F,
+    );
 }

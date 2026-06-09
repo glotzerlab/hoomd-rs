@@ -13,11 +13,11 @@ impl<P, S, X, C> RotationalKineticEnergy<DynamicOrientedPoint<P, Angle>, S> for 
 where P: Wedge
 {
     #[inline]
-    fn rotational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Angle>, S>>) -> bool>(&self, should_sum: F)
+    fn rotational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Angle>, S>>) -> bool>(&self, should_sum_body: F)
         -> (f64, usize) {
         self.bodies()
             .iter()
-            .filter(|&body| should_sum(body))
+            .filter(|&body| should_sum_body(body))
             .fold((0.0, 0), |(total, count), body| {
                 let moment_of_inertia = body.item.properties.moment_of_inertia;
                 let angular_momentum = body.item.properties.angular_momentum;
@@ -35,11 +35,11 @@ impl<P, S, X, C> RotationalKineticEnergy<DynamicOrientedPoint<P, Versor>, S> for
 where P: Wedge
 {
     #[inline]
-    fn rotational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Versor>, S>>) -> bool>(&self, should_sum: F)
+    fn rotational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Versor>, S>>) -> bool>(&self, should_sum_body: F)
         -> (f64, usize) {
         self.bodies()
             .iter()
-            .filter(|&body| should_sum(body))
+            .filter(|&body| should_sum_body(body))
             .fold((0.0, 0), |(mut total, mut count), body| {
                 let moment_of_inertia = body.item.properties.moment_of_inertia;
                 let angular_momentum = body.item.properties.angular_momentum;

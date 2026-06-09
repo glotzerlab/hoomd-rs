@@ -1,15 +1,17 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use std::array;
+
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
+    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
         AngularMomentum, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Orientation, Position
     }
 };
 use hoomd_vector::{
     Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Versor
 };
-use crate::{RotationalKineticEnergy, TranslationalKineticEnergy, Thermostat, method::{TranslationalMotion, RotationalMotion}};
+use crate::{RotationalKineticEnergy, TranslationalKineticEnergy, Thermostat, TranslationalMotion, RotationalMotion};
 use hoomd_spatial::PointUpdate;
 
 /// Perform time integration on the [`Microstate`] with the volume constraining
@@ -53,22 +55,33 @@ use hoomd_spatial::PointUpdate;
 /// [Miller et al. 2002]: <https://doi.org/10.1063/1.1473654>
 #[doc(alias = "nvt")]
 #[derive(Clone, Debug, PartialEq)]
-pub struct ConstantVolume {
-    /// The size of a timestep.
+pub struct ConstantVolume<TT, TR> {
+    /// The time step size.
     delta_t: f64,
+
+    /// Translational thermostat.
+    translational_thermostat: TT,
+
+    /// Rotational thermostat.
+    rotational_thermostat: TR,
 }
 
-impl ConstantVolume {
-    /// Construct a new [`ConstantVolume`] given timestep dt.
+impl<T> ConstantVolume<T, T>
+where
+    T: Clone
+    {
+    /// Construct a new [`ConstantVolume`] with the given time step size and thermostat.
     #[inline]
-    pub fn new(delta_t: f64) -> Self {
+    pub fn new(delta_t: f64, thermostat: T) -> Self {
         Self {
             delta_t,
+            translational_thermostat: thermostat.clone(),
+            rotational_thermostat: thermostat,
         }
     }
 }
 
-impl<V, B, S, X, C, T, M> TranslationalMotion<B, S, X, C, T, M> for ConstantVolume
+impl<V, B, S, X, C, TT, TR, M> TranslationalMotion<B, S, X, C, M> for ConstantVolume<TT, TR>
 where
     V: Default + InnerProduct,
     B: Position<Position = V>
@@ -80,7 +93,7 @@ where
     S: Position<Position = V> + Default,
     X: PointUpdate<V, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    T: Thermostat<M>,
+    TT: Thermostat<M>,
 {
     /// Perform the first-half integration on translational degrees-of-freedom
     /// , advancing the [`Microstate`] and possibly the [`Thermostat`] state forward as 
@@ -99,15 +112,15 @@ where
     /// $`m`$ is the mass of each [`Body`](hoomd_microstate::Body::properties), and $`t`$ is the time,
     /// $`\delta t`$ is the timestep dt. 
     #[inline]
-    fn integrate_translation_step_one(
+    fn integrate_translation_step_one<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
-        thermostat: &mut T,
         macrostate: &M,
+        should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
-        let (kinetic_energy, degrees_of_freedom) = microstate.translational_kinetic_energy();
-        let rescaling_factor = thermostat.integrate_step_one(
+        let (kinetic_energy, degrees_of_freedom) = microstate.translational_kinetic_energy_with_filter(&should_integrate_body);
+        let rescaling_factor = self.translational_thermostat.integrate_step_one(
             &mut rng,
             macrostate,
             self.delta_t,
@@ -116,7 +129,11 @@ where
         );
 
         for body_index in 0..microstate.bodies().len() {
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue
+            }
+            let mut body_properties = body.item.properties.clone();
 
             let net_force = *body_properties.net_force();
             let mass = body_properties.mass();
@@ -130,6 +147,8 @@ where
             microstate
                 .update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
+
+            // TODO: panic: or return Err when the microstate becomes invalid?
         }
 
         microstate.increment_substep();
@@ -148,16 +167,20 @@ where
     /// \end{align}
     /// ```
     #[inline]
-    fn integrate_translation_step_two(
+    fn integrate_translation_step_two<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
-        thermostat: &mut T,
         macrostate: &M,
+        should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
 
         for body_index in 0..microstate.bodies().len() {
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue
+            }
+            let mut body_properties = body.item.properties.clone();
             let net_force = *body_properties.net_force();
 
             *body_properties.momentum_mut() += net_force * self.delta_t * 0.5;
@@ -168,7 +191,7 @@ where
         }
 
         let (kinetic_energy, degrees_of_freedom) = microstate.translational_kinetic_energy();
-        let rescaling_factor = thermostat.integrate_step_two(
+        let rescaling_factor = self.translational_thermostat.integrate_step_two(
             &mut rng,
             macrostate,
             self.delta_t,
@@ -190,13 +213,36 @@ where
     }
 }
 
-impl<S, X, C, T, M> RotationalMotion<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C, T, M> for ConstantVolume
+
+/// Compute the net torque in the body frame.
+///
+/// Also determine which of the three rotational degrees of freedom are active.
+fn body_net_torque_and_active_degrees_of_freedom(body_properties: &DynamicOrientedPoint<Cartesian<3>, Versor>) -> (Cartesian<3>, [bool; 3]) {
+    let q = body_properties.orientation();
+    let moment_of_inertia = body_properties.moment_of_inertia();
+
+    let mut net_torque = q.inverted().rotate(body_properties.net_torque());
+
+    let active = array::from_fn(|i| moment_of_inertia[i] != 0.0);
+
+    // Limited numerical precision might lead to non-zero torques about axes that should
+    // not be integrated. Zeroing these out improves the stability of the integration.
+    for i in 0..3 {
+        if !active[i] {
+            net_torque[i] = 0.0;
+        }
+    }
+
+    (net_torque, active)
+}
+
+impl<S, X, C, TT, TR, M> RotationalMotion<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C, M> for ConstantVolume<TT, TR>
 where
     DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
     C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>> + Wrap<S> + GenerateGhosts<S>,
-    T: Thermostat<M>,
+    TR: Thermostat<M>,
 {
     /// Perform the first-half integration on rotational degrees-of-freedom
     /// for three-dimensional system, advancing the [`Microstate`] and possibly 
@@ -296,16 +342,15 @@ where
     /// \end{align}
     /// ```
     #[inline]
-    #[allow(clippy::too_many_lines)]
-    fn integrate_rotation_step_one(
+    fn integrate_rotation_step_one<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
-        thermostat: &mut T,
         macrostate: &M,
+        should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
-        let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy();
-        let rescaling_factor = thermostat.integrate_step_one(
+        let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
+        let rescaling_factor = self.rotational_thermostat.integrate_step_one(
             &mut rng,
             macrostate,
             self.delta_t,
@@ -313,154 +358,107 @@ where
             degrees_of_freedom,
         );
 
-        // Integrate orientation and angular momentum forward
         for body_index in 0..microstate.bodies().len() {
-            // Get the important information from the body
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue
+            }
+            let mut body_properties = body.item.properties.clone();
 
-            // Shorthand variables
-            // q is the versor (unit quaternion) representation of orientation
-            // s is the vector representation of angular momentum
-            // t is the 3-vector if torque at t, calculated at previous integrate_rotation_step_two
-            //   or initialized at t=0
-            // I is the 3-vector diagonal values of the moment of inertia
-            let mut q = *body_properties.orientation_mut();
-            let mut s = *body_properties.angular_momentum_mut();
-            let t = *body_properties.net_torque();
-            let moment_of_inertia = *body_properties.moment_of_inertia();
+            let (net_torque, active) = body_net_torque_and_active_degrees_of_freedom(&body_properties);
+            let mut q = *body_properties.orientation().get();
+            let moment_of_inertia = body_properties.moment_of_inertia();
 
-            // Rotate torque into body frame based on principal axes
-            // TODO: check that this is correct
-            let mut t_inframe = q.inverted().rotate(&t);
+            // DynamicOrientedPoint stores angular momentum in vector form. Convert it
+            // into a quaternion, integrate the quaternion, then store it back as a vector.
+            let s = *body_properties.angular_momentum();
+            let mut p = (q * Quaternion::pure(s)) * 2.0;
+            
+            p = p * rescaling_factor + q * Quaternion::pure(net_torque) * self.delta_t;
 
-            let mut q_quaternion = *q.get();
-            // convert angular momentum from a vector to qauternion.
-            let mut p = (q_quaternion
-                * Quaternion {
-                    scalar: 0.0,
-                    vector: s.coordinates.into(),
-                })
-                * 2.0;
-
-            // Ignore torque along axes which have zero contribution to inertia
-            let x_zero = moment_of_inertia[0] == 0.0;
-            let y_zero = moment_of_inertia[1] == 0.0;
-            let z_zero = moment_of_inertia[2] == 0.0;
-
-            if x_zero {
-                t_inframe[0] = 0.0
-            };
-            if y_zero {
-                t_inframe[1] = 0.0
-            };
-            if z_zero {
-                t_inframe[2] = 0.0
-            };
-
-            // Apply thermostat
-            p = p * rescaling_factor;
-            // Advance p and q by half a timestep following Trotter
-            // factorization of Liouvillian rotation
-            p += q_quaternion
-                * Quaternion {
-                    scalar: 0.0,
-                    vector: t_inframe.coordinates.into(),
-                }
-                * self.delta_t;
-
-            // TODO: what do we call these steps?
-            if !z_zero {
+            if active[2] {
                 let p3 = Quaternion::from([-p.vector[2], p.vector[1], -p.vector[0], p.scalar]);
                 let q3 = Quaternion::from([
-                    -q_quaternion.vector[2],
-                    q_quaternion.vector[1],
-                    -q_quaternion.vector[0],
-                    q_quaternion.scalar,
+                    -q.vector[2],
+                    q.vector[1],
+                    -q.vector[0],
+                    q.scalar,
                 ]);
                 let phi3 = (1. / (4. * moment_of_inertia[2])) * ((p.scalar * q3.scalar) + p.vector.dot(&q3.vector));
-                let cphi3 = (0.5 * self.delta_t * phi3).cos();
-                let sphi3 = (0.5 * self.delta_t * phi3).sin();
+                let c_phi3 = (0.5 * self.delta_t * phi3).cos();
+                let s_phi3 = (0.5 * self.delta_t * phi3).sin();
 
-                p = p * cphi3 + p3 * sphi3;
-                q_quaternion = q_quaternion * cphi3 + q3 * sphi3;
+                p = p * c_phi3 + p3 * s_phi3;
+                q = q * c_phi3 + q3 * s_phi3;
             }
 
-            if !y_zero {
+            if active[1] {
                 let p2 = Quaternion::from([-p.vector[1], -p.vector[2], p.scalar, p.vector[0]]);
                 let q2 = Quaternion::from([
-                    -q_quaternion.vector[1],
-                    -q_quaternion.vector[2],
-                    q_quaternion.scalar,
-                    q_quaternion.vector[0],
+                    -q.vector[1],
+                    -q.vector[2],
+                    q.scalar,
+                    q.vector[0],
                 ]);
                 let phi2 = (1. / (4. * moment_of_inertia[1])) * ((p.scalar * q2.scalar) + p.vector.dot(&q2.vector));
-                let cphi2 = (0.5 * self.delta_t * phi2).cos();
-                let sphi2 = (0.5 * self.delta_t * phi2).sin();
+                let c_phi2 = (0.5 * self.delta_t * phi2).cos();
+                let s_phi2 = (0.5 * self.delta_t * phi2).sin();
 
-                p = p * cphi2 + p2 * sphi2;
-                q_quaternion = q_quaternion * cphi2 + q2 * sphi2;
+                p = p * c_phi2 + p2 * s_phi2;
+                q = q * c_phi2 + q2 * s_phi2;
             }
 
-            if !x_zero {
+            if active[0] {
                 let p1 = Quaternion::from([-p.vector[0], p.scalar, p.vector[2], -p.vector[1]]);
                 let q1 = Quaternion::from([
-                    -q_quaternion.vector[0],
-                    q_quaternion.scalar,
-                    q_quaternion.vector[2],
-                    -q_quaternion.vector[1],
+                    -q.vector[0],
+                    q.scalar,
+                    q.vector[2],
+                    -q.vector[1],
                 ]);
                 let phi1 = (1. / (4. * moment_of_inertia[0])) * ((p.scalar * q1.scalar) + p.vector.dot(&q1.vector));
-                let cphi1 = (self.delta_t * phi1).cos();
-                let sphi1 = (self.delta_t * phi1).sin();
+                let c_phi1 = (self.delta_t * phi1).cos();
+                let s_phi1 = (self.delta_t * phi1).sin();
 
-                p = p * cphi1 + p1 * sphi1;
-                q_quaternion = q_quaternion * cphi1 + q1 * sphi1;
+                p = p * c_phi1 + p1 * s_phi1;
+                q = q * c_phi1 + q1 * s_phi1;
             }
 
-            if !y_zero {
+            if active[1] {
                 let p2 = Quaternion::from([-p.vector[1], -p.vector[2], p.scalar, p.vector[0]]);
                 let q2 = Quaternion::from([
-                    -q_quaternion.vector[1],
-                    -q_quaternion.vector[2],
-                    q_quaternion.scalar,
-                    q_quaternion.vector[0],
+                    -q.vector[1],
+                    -q.vector[2],
+                    q.scalar,
+                    q.vector[0],
                 ]);
                 let phi2 = (1. / (4. * moment_of_inertia[1])) * ((p.scalar * q2.scalar) + p.vector.dot(&q2.vector));
-                let cphi2 = (0.5 * self.delta_t * phi2).cos();
-                let sphi2 = (0.5 * self.delta_t * phi2).sin();
+                let c_phi2 = (0.5 * self.delta_t * phi2).cos();
+                let s_phi2 = (0.5 * self.delta_t * phi2).sin();
 
-                p = p * cphi2 + p2 * sphi2;
-                q_quaternion = q_quaternion * cphi2 + q2 * sphi2;
+                p = p * c_phi2 + p2 * s_phi2;
+                q = q * c_phi2 + q2 * s_phi2;
             }
 
-            if !z_zero {
+            if active[2] {
                 let p3 = Quaternion::from([-p.vector[2], p.vector[1], -p.vector[0], p.scalar]);
                 let q3 = Quaternion::from([
-                    -q_quaternion.vector[2],
-                    q_quaternion.vector[1],
-                    -q_quaternion.vector[0],
-                    q_quaternion.scalar,
+                    -q.vector[2],
+                    q.vector[1],
+                    -q.vector[0],
+                    q.scalar,
                 ]);
                 let phi3 = (1. / (4. * moment_of_inertia[2])) * ((p.scalar * q3.scalar) + p.vector.dot(&q3.vector));
-                let cphi3 = (0.5 * self.delta_t * phi3).cos();
-                let sphi3 = (0.5 * self.delta_t * phi3).sin();
+                let c_phi3 = (0.5 * self.delta_t * phi3).cos();
+                let s_phi3 = (0.5 * self.delta_t * phi3).sin();
 
-                p = p * cphi3 + p3 * sphi3;
-                q_quaternion = q_quaternion * cphi3 + q3 * sphi3;
+                p = p * c_phi3 + p3 * s_phi3;
+                q = q * c_phi3 + q3 * s_phi3;
             }
 
-            // Renormalize for improved stability
-            q = q_quaternion.to_versor().unwrap();
+            *body_properties.orientation_mut() = q.to_versor().expect("body orientation should be non-zero");
+            *body_properties.angular_momentum_mut() = ((q.conjugate() * p) * 0.5).vector;
 
-            // Update the particle data
-            *body_properties.orientation_mut() = q;
-
-            // convert angular momentum from a quaternion to vector.
-            // ((q.conjugate() * p) * 0.5).scalar should be 0.
-            s = ((q_quaternion.conjugate() * p) * 0.5).vector;
-            *body_properties.angular_momentum_mut() = s;
-
-            // Update the microstate with new body properties, wrapping automatically
             microstate
                 .update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
@@ -496,78 +494,38 @@ where
     /// \end{equation}
     /// ``` 
     #[inline]
-    fn integrate_rotation_step_two(
+    fn integrate_rotation_step_two<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
-        thermostat: &mut T,
         macrostate: &M,
+        should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
 
         for body_index in 0..microstate.bodies().len() {
-            // Get the important information from the body
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue
+            }
+            let mut body_properties = body.item.properties.clone();
 
-            // Shorthand variables
-            // q is the versor (unit quaternion) representation of orientation
-            // s is the vector representation of angular momentum
-            // I is the diagonal values of the moment of inertia
-            let q = *body_properties.orientation_mut();
-            let t = *body_properties.net_torque();
-            let mut s = *body_properties.angular_momentum_mut();
-            let I = *body_properties.moment_of_inertia();
+            let (net_torque, _) = body_net_torque_and_active_degrees_of_freedom(&body_properties);
+            let q = *body_properties.orientation().get();
+            let s = *body_properties.angular_momentum();
 
-            // Rotate torque into body frame based on principal axes
-            // TODO: check that this is correct
-            let mut t_inframe = q.inverted().rotate(&t);
+            let mut p = q * Quaternion::pure(s) * 2.0;
 
-            // convert orientation from versor to quaternion
-            let q_quaternion = *q.get();
-            // convert angular momentum from a vector to qauternion.
-            let mut p = (q_quaternion
-                * Quaternion {
-                    scalar: 0.0,
-                    vector: s.coordinates.into(),
-                })
-                * 2.0;
+            p += (q * Quaternion::pure(net_torque)) * self.delta_t;
 
-            // Ignore torque along axes which have zero contribution to inertia
-            let x_zero = I[0] == 0.0;
-            let y_zero = I[1] == 0.0;
-            let z_zero = I[2] == 0.0;
+            *body_properties.angular_momentum_mut() = ((q.conjugate() * p) * 0.5).vector;
 
-            if x_zero {
-                t_inframe[0] = 0.0
-            };
-            if y_zero {
-                t_inframe[1] = 0.0
-            };
-            if z_zero {
-                t_inframe[2] = 0.0
-            };
-
-            // Advance p by half a timestep following Trotter
-            // factorization of Liouvillian rotation
-            p += q_quaternion
-                * Quaternion {
-                    scalar: 0.0,
-                    vector: t_inframe.coordinates.into(),
-                }
-                * self.delta_t;
-
-            // convert angular momentum from a quaternion to vector.
-            // ((q.conjugate() * p) * 0.5).scalar should be 0.
-            s = ((q_quaternion.conjugate() * p) * 0.5).vector;
-            *body_properties.angular_momentum_mut() = s;
-
-            // Update the microstate with new body properties, wrapping automatically
             microstate
                 .update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
-        let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy();
-        let rescaling_factor = thermostat.integrate_step_two(
+        let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
+        let rescaling_factor = self.rotational_thermostat.integrate_step_two(
             &mut rng,
             macrostate,
             self.delta_t,
@@ -575,20 +533,11 @@ where
             degrees_of_freedom,
         );
 
-        // Apply thermostat
         for body_index in 0..microstate.bodies().len() {
-            // Get the important information from the body
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
 
-            let mut s = *body_properties.angular_momentum_mut();
+            *body_properties.angular_momentum_mut() *= rescaling_factor;
 
-            // Apply thermostat
-            s = s * rescaling_factor;
-
-            // Update the angular momentum in particle data
-            *body_properties.angular_momentum_mut() = s;
-
-            // Update the microstate with new body properties, wrapping automatically
             microstate
                 .update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");

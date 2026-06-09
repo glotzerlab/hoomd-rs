@@ -343,7 +343,7 @@ pub trait Mass {
 /// A body's resistance to a change in rotational motion: $` I `$
 /// 
 /// [`MomentOfInertia`] connects a body's angular momentum to its angular velocity:
-/// $` \vec{L} = I \vec{\omega} `$
+/// $` \vec{L} = I \vec{\omega} `$.
 ///
 /// `hoomd_md` does not compute or utilize the moment of inertia of sites.
 /// 
@@ -362,9 +362,8 @@ pub trait MomentOfInertia {
 }
 
 /// The rotational motion of a body: $` \vec{L} `$
-/// 
-/// [`AngularMomentum`] describes the rotational motion of the body relative to the origin of the
-/// system coordinate system.
+///
+/// [`AngularMomentum`] describes the rotational motion of the body in the *body* frame.
 ///
 /// `hoomd_md` does not compute or utilize the angular momentum of sites.
 /// 

@@ -165,6 +165,26 @@ pub struct Quaternion {
 }
 
 impl Quaternion {
+    /// Construct a pure quaternion: $` (0, \vec{v}) `$
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, Quaternion};
+    ///
+    /// let q = Quaternion::pure(Cartesian::from([1.0, -2.0, 4.0]));
+    ///
+    /// assert_eq!(q.scalar, 0.0);
+    /// assert_eq!(q.vector, [1.0, -2.0, 4.0].into());
+    /// ```
+    #[inline]
+    pub fn pure(vector: Cartesian<3>) -> Self {
+        Self {
+            scalar: 0.0,
+            vector,
+        }
+    }
+    
     /// The norm of the quaternion, squared.
     /// ```math
     /// |\mathbf{q}|^2

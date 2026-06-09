@@ -25,12 +25,12 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize: F) {
+    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize_body: F) {
         let mut rng = self.counter().make_rng();
 
         for body_index in 0..self.bodies().len() {
             let body = &self.bodies()[body_index];
-            if !should_thermalize(body) {
+            if !should_thermalize_body(body) {
                 continue;
             }
             
