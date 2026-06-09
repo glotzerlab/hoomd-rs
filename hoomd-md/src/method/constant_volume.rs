@@ -116,7 +116,7 @@ where
     /// $`m`$ is the mass of each [`Body`](hoomd_microstate::Body::properties), and $`t`$ is the time,
     /// $`\delta t`$ is the timestep dt. 
     #[inline]
-    fn integrate_translation_step_one<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn integrate_translation_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
@@ -171,7 +171,7 @@ where
     /// \end{align}
     /// ```
     #[inline]
-    fn integrate_translation_step_two<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn integrate_translation_step_two_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
@@ -346,7 +346,7 @@ where
     /// \end{align}
     /// ```
     #[inline]
-    fn integrate_rotation_step_one<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
+    fn integrate_rotation_step_one_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
         macrostate: &M,
@@ -498,7 +498,7 @@ where
     /// \end{equation}
     /// ``` 
     #[inline]
-    fn integrate_rotation_step_two<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
+    fn integrate_rotation_step_two_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
         macrostate: &M,
@@ -589,7 +589,7 @@ where
     /// $`\delta t`$ is the timestep dt. Note that in two-dimension, every particle only has 
     /// one degrees-of-freedom contributed from their rotational motion.
     #[inline]
-    fn integrate_rotation_step_one<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
+    fn integrate_rotation_step_one_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
         macrostate: &M,
@@ -643,7 +643,7 @@ where
     /// \end{align}
     /// ```
     #[inline]
-    fn integrate_rotation_step_two<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
+    fn integrate_rotation_step_two_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
         macrostate: &M,
