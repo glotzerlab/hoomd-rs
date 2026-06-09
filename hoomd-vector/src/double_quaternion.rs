@@ -42,22 +42,26 @@ impl From<(Versor, Versor)> for DoubleVersor {
 
 impl DoubleVersor {
     #[inline]
-    fn left_isoclinic(&self) -> Versor {
+    /// Get the left-isoclinic part of the rotation.
+    pub fn left_isoclinic(&self) -> Versor {
         self.l
     }
     #[inline]
-    fn right_isoclinic(&self) -> Versor {
+    /// Get the right-isoclinic part of the rotation.
+    pub fn right_isoclinic(&self) -> Versor {
         self.r
     }
     #[inline]
-    fn from_left_isoclinic(&self, l: Versor) -> Self {
+    /// Create a purely left-isoclinic double versor.
+    pub fn from_left_isoclinic(&self, l: Versor) -> Self {
         Self {
             l,
             r: Versor::default(),
         }
     }
     #[inline]
-    fn from_right_isoclinic(&self, r: Versor) -> Self {
+    /// Create a purely right-isoclinic double versor.
+    pub fn from_right_isoclinic(&self, r: Versor) -> Self {
         Self {
             l: Versor::default(),
             r,
