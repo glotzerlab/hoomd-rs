@@ -204,7 +204,11 @@ where
         );
 
         for body_index in 0..microstate.bodies().len() {
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue
+            }
+            let mut body_properties = body.item.properties.clone();
 
             *body_properties.momentum_mut() *= rescaling_factor;
 
@@ -367,7 +371,7 @@ where
             if !should_integrate_body(body) {
                 continue
             }
-            let mut body_properties = body.item.properties.clone();
+            let mut body_properties = body.item.properties;
 
             let (net_torque, active) = body_net_torque_and_active_degrees_of_freedom(&body_properties);
             let mut q = *body_properties.orientation().get();
@@ -511,7 +515,7 @@ where
             if !should_integrate_body(body) {
                 continue
             }
-            let mut body_properties = body.item.properties.clone();
+            let mut body_properties = body.item.properties;
 
             let (net_torque, _) = body_net_torque_and_active_degrees_of_freedom(&body_properties);
             let q = *body_properties.orientation().get();
@@ -538,7 +542,12 @@ where
         );
 
         for body_index in 0..microstate.bodies().len() {
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue
+            }
+            let mut body_properties = body.item.properties;
+
 
             *body_properties.angular_momentum_mut() *= rescaling_factor;
 
@@ -610,7 +619,7 @@ where
             if !should_integrate_body(body) {
                 continue
             }
-            let mut body_properties = body.item.properties.clone();
+            let mut body_properties = body.item.properties;
 
             let net_torque = *body_properties.net_torque();
             let moment_of_inertia = *body_properties.moment_of_inertia();
@@ -656,7 +665,7 @@ where
             if !should_integrate_body(body) {
                 continue
             }
-            let mut body_properties = body.item.properties.clone();
+            let mut body_properties = body.item.properties;
 
             let net_torque = *body_properties.net_torque();
 
@@ -678,13 +687,15 @@ where
 
         // Update velocity
         for body_index in 0..microstate.bodies().len() {
-            // Get the important information from the body
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue
+            }
+            let mut body_properties = body.item.properties;
 
-            // Apply thermostat
+
             *body_properties.angular_momentum_mut() *= rescaling_factor;
 
-            // Update the microstate with new body properties, wrapping automatically
             microstate
                 .update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
