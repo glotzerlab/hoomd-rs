@@ -114,7 +114,7 @@ where
 }
 
 /// Iterate over cell indices in row major order.
-struct CellIndexIterator<const D: usize> {
+pub(crate) struct CellIndexIterator<const D: usize> {
     /// The current cell index.
     cell_index: [i64; D],
     /// The half extent of the cube.
@@ -126,7 +126,7 @@ impl<const D: usize> CellIndexIterator<D> {
     ///
     /// The cube extends from `[-half_extent, -half_extent, ..., -half_extent]` to
     /// `[half_extent, half_extent, ..., half_extent]`.
-    fn cube(half_extent: u32) -> Self {
+    pub(crate) fn cube(half_extent: u32) -> Self {
         let mut cell_index = [-i64::from(half_extent); D];
         cell_index[D - 1] -= 1;
         Self {
@@ -164,7 +164,7 @@ impl<const D: usize> Iterator for CellIndexIterator<D> {
 }
 
 /// Generate the stencil for a given radius.
-fn generate_stencil<const D: usize>(radius: u32) -> Vec<[i64; D]> {
+pub fn generate_stencil<const D: usize>(radius: u32) -> Vec<[i64; D]> {
     assert!(radius >= 1, "cell list must have a minimum radius of 1");
 
     let mut result = CellIndexIterator::cube(radius).collect::<Vec<_>>();
@@ -617,30 +617,30 @@ where
 }
 
 /// Iterate over keys in the cell list around a given center cell.
-struct PointsIterator<'a, K, const D: usize>
+pub(crate) struct PointsIterator<'a, K, const D: usize, X>
 where
     K: Eq + Hash,
 {
     /// Keys of the current cell iteration (None if the cell is empty)
-    keys: Option<&'a Vec<K>>,
+    pub(crate) keys: Option<&'a Vec<K>>,
 
     /// The cell list we are iterating in.
-    cell_list: &'a VecCell<K, D>,
+    pub(crate) cell_list: &'a X, //VecCell<K, D>,
 
     /// Current location of the iteration in the cell.
-    index_in_current_cell: usize,
+    pub(crate) index_in_current_cell: usize,
 
     /// Current location of the iteration in the stencil.
-    current_stencil: usize,
+    pub(crate) current_stencil: usize,
 
     /// Cell offsets to iterate over.
-    stencil: &'a [[i64; D]],
+    pub(crate) stencil: &'a [[i64; D]],
 
     /// The cell at the center of the iteration.
-    center: [i64; D],
+    pub(crate) center: [i64; D],
 }
 
-impl<K, const D: usize> Iterator for PointsIterator<'_, K, D>
+impl<K, const D: usize> Iterator for PointsIterator<'_, K, D, VecCell<K,D>>
 where
     K: Copy + Eq + Hash,
 {

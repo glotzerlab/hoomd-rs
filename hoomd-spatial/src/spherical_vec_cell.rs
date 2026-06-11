@@ -24,7 +24,7 @@ use hoomd_utility::valid::PositiveReal;
 
 use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 
-use crate::{IndexFromPosition, hash_cell::CellIndex};
+use crate::{IndexFromPosition, hash_cell::CellIndex, vec_cell::{CellIndexIterator, generate_all_stencils, PointsIterator}};
 
 /// Implement [`VecCell`] for [`Spherical`] bodies.
 ///
@@ -59,82 +59,6 @@ where
     /// Pre-computed stencils.
     #[serde_as(as = "Vec<Vec<[_; D]>>")]
     stencils: Vec<Vec<[i64; D]>>,
-}
-
-/// Iterate over cell indices in row major order.
-struct CellIndexIterator<const D: usize> {
-    /// The current cell index.
-    cell_index: [i64; D],
-    /// The half extent of the cube.
-    half_extent: u32,
-}
-
-impl<const D: usize> CellIndexIterator<D> {
-    /// Iterate over a cube.
-    ///
-    /// The cube extends from `[-half_extent, -half_extent, ..., -half_extent]` to
-    /// `[half_extent, half_extent, ..., half_extent]`.
-    fn cube(half_extent: u32) -> Self {
-        let mut cell_index = [-i64::from(half_extent); D];
-        cell_index[D - 1] -= 1;
-        Self {
-            cell_index,
-            half_extent,
-        }
-    }
-
-    /// Increment the cell index.
-    #[inline]
-    fn increment_cell_index(&mut self) -> Option<[i64; D]> {
-        self.cell_index[D - 1] += 1;
-
-        for i in (0..D).rev() {
-            if self.cell_index[i] > self.half_extent.into() {
-                if i == 0 {
-                    return None;
-                }
-
-                self.cell_index[i] = -(i64::from(self.half_extent));
-                self.cell_index[i - 1] += 1;
-            }
-        }
-
-        Some(self.cell_index)
-    }
-}
-
-impl<const D: usize> Iterator for CellIndexIterator<D> {
-    type Item = [i64; D];
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.increment_cell_index()
-    }
-}
-
-/// Generate the stencil for a given radius.
-fn generate_stencil<const D: usize>(radius: u32) -> Vec<[i64; D]> {
-    assert!(radius >= 1, "cell list must have a minimum radius of 1");
-
-    let mut result = CellIndexIterator::cube(radius).collect::<Vec<_>>();
-    result.sort_by(|a, b| {
-        let r_a = a.iter().map(|x| x.pow(2));
-        let r_b = b.iter().map(|x| x.pow(2));
-        r_a.cmp(r_b)
-    });
-    result
-}
-
-/// Generate the stencils up to a given radius.
-pub(crate) fn generate_all_stencils<const D: usize>(max_radius: u32) -> Vec<Vec<[i64; D]>> {
-    assert!(max_radius >= 1, "cell list must have a minimum radius of 1");
-    let mut result = Vec::new();
-
-    // A cell list will never use radius=0, so stencil[i] stores the stencil needed for
-    // radius i+1.
-    for radius in 0..max_radius {
-        result.push(generate_stencil(radius + 1));
-    }
-    result
 }
 
 /// Construct a [`SphericalVecCell`] with given parameters.
@@ -602,31 +526,7 @@ where
     }
 }
 
-/// Iterate over keys in the cell list around a given center cell.
-struct PointsIterator<'a, K, const D: usize>
-where
-    K: Eq + Hash,
-{
-    /// Keys of the current cell iteration (None if the cell is empty)
-    keys: Option<&'a Vec<K>>,
-
-    /// The cell list we are iterating in.
-    cell_list: &'a SphericalVecCell<K, D>,
-
-    /// Current location of the iteration in the cell.
-    index_in_current_cell: usize,
-
-    /// Current location of the iteration in the stencil.
-    current_stencil: usize,
-
-    /// Cell offsets to iterate over.
-    stencil: &'a [[i64; D]],
-
-    /// The cell at the center of the iteration.
-    center: [i64; D],
-}
-
-impl<K, const D: usize> Iterator for PointsIterator<'_, K, D>
+impl<K, const D: usize> Iterator for PointsIterator<'_, K, D, SphericalVecCell<K,D>>
 where
     K: Copy + Eq + Hash,
 {
