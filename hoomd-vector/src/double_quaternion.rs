@@ -1,5 +1,5 @@
 use hoomd_linear_algebra::{MatMul, matrix::Matrix44};
-use rand::Rng;
+use rand::{Rng, RngExt};
 use rand_distr::{Distribution, StandardUniform};
 
 use crate::{Cartesian, Quaternion, Rotate, RotationMatrix, Versor};
@@ -134,14 +134,14 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     ///
     /// // A rotation of PI/2 radians about the `xy` and `zw` planes
     /// let v = DoubleVersor::from_left_isoclinic(
-    ///     Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI)
+    ///     Versor::from_axis_angle([1.0, 0.0, 0.0].try_into()?, PI)
     /// );
     ///
     /// // Initializing from left isoclinic implies the right isoclinic is [1 0 0 0]
     /// assert_eq!(v.right_isoclinic(), Versor::default());
     ///
     /// let b = v.rotate(&a);
-    /// assert_relative_eq!(b, [0.0, 0.0, 2.0, 1.0].into());
+    /// assert_relative_eq!(b, [-2.0, 1.0, 0.0, 0.0].into());
     /// # Ok(())
     /// # }
     /// ```
@@ -155,6 +155,9 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
 
 impl Distribution<DoubleVersor> for StandardUniform {
     /// Sample a random [`DoubleVersor`] from the uniform distribution over all rotations in SO(4).
+    ///
+    /// This is implemented as a random sampling of *pairs* of [`Versor`]'s, which is
+    /// equivalent to a uniform sampling of the full manifold.
     ///
     /// # Example
     ///
@@ -170,7 +173,7 @@ impl Distribution<DoubleVersor> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> DoubleVersor {
-        todo!()
+        (rng.random(), rng.random()).into()
     }
 }
 
