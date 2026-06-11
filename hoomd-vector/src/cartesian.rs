@@ -618,6 +618,15 @@ impl<const N: usize> From<RotationMatrix<N>> for Matrix<N, N> {
     }
 }
 
+impl<const N: usize> From<Matrix<N, N>> for RotationMatrix<N> {
+    #[inline]
+    fn from(value: Matrix<N, N>) -> Self {
+        Self {
+            rows: value.rows.map(Cartesian::from),
+        }
+    }
+}
+
 impl<const N: usize> RotationMatrix<N> {
     /// Get the rows of the rotation matrix.
     ///

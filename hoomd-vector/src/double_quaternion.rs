@@ -1,3 +1,5 @@
+use hoomd_linear_algebra::{MatMul, matrix::Matrix44};
+
 use crate::{Cartesian, Quaternion, Rotate, RotationMatrix, Versor};
 
 /// A pair of [`Versor`]s that represent a 4D rotation.
