@@ -148,3 +148,24 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
         [q.scalar, x, y, z].into()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use approxim::assert_relative_eq;
+    use std::f64::consts::PI;
+
+    use crate::{Cartesian, DoubleVersor, Rotate, RotationMatrix, Versor};
+
+    #[test]
+    fn rotation_matrix_matches_direct_rotation() {
+        let l = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), PI / 3.0);
+        let r = Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), PI / 5.0);
+        let dv = DoubleVersor::from((l, r));
+        let v = Cartesian::from([1.0, 2.0, -3.0, 4.0]);
+
+        let direct = dv.rotate(&v);
+        let via_matrix = RotationMatrix::from(dv).rotate(&v);
+
+        assert_relative_eq!(direct, via_matrix);
+    }
+}
