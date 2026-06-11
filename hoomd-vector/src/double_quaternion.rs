@@ -92,6 +92,7 @@ impl From<DoubleVersor> for RotationMatrix<4> {
     /// # }
     /// ```
     #[inline]
+    #[expect(clippy::many_single_char_names, reason = "Clarity.")]
     fn from(versor: DoubleVersor) -> RotationMatrix<4> {
         let (&q_l, &q_r) = (
             versor.left_isoclinic().get(),
