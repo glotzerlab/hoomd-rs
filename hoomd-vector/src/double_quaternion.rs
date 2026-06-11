@@ -96,7 +96,7 @@ impl From<DoubleVersor> for RotationMatrix<4> {
             versor.right_isoclinic().get(),
         );
         let (a, [b, c, d]) = (q_l.scalar, q_l.vector.coordinates);
-        let (p, [q, r, s]) = (q_r.scalar, q_l.vector.coordinates);
+        let (p, [q, r, s]) = (q_r.scalar, q_r.vector.coordinates);
 
         // Construct the left-isoclinic matrix L(Q_L)
         let l_mat = [[a, -b, -c, -d], [b, a, -d, c], [c, d, a, -b], [d, -c, b, a]];
