@@ -26,7 +26,10 @@ use hoomd_manifold::Spherical;
 /// ```
 ///
 /// Similar to [`Closed`], `ClosedSpherical` does not wrap bodies and sites,
-/// nor does it generate ghost sites.
+/// nor does it generate ghost sites. However, unlike [`Closed`],
+/// `ClosedSpherical` does not implement `IsPointInside`, `MapPoint`,
+/// `Scale`, or `Volume`, as these methods are unrelated to the boundary
+/// conditions for `Spherical` simulations.
 ///
 /// [`SphericalVecCell`]: hoomd_spatial::SphericalVecCell;
 /// [`ParallelSweep`]: hoomd_mc::ParallelSweep;

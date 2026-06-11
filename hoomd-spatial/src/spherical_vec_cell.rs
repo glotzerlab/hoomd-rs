@@ -24,7 +24,11 @@ use hoomd_utility::valid::PositiveReal;
 
 use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 
-use crate::{IndexFromPosition, hash_cell::CellIndex, vec_cell::{CellIndexIterator, generate_all_stencils, PointsIterator}};
+use crate::{
+    IndexFromPosition,
+    hash_cell::CellIndex,
+    vec_cell::{CellIndexIterator, PointsIterator, generate_all_stencils},
+};
 
 /// Implement [`VecCell`] for [`Spherical`] bodies.
 ///
@@ -526,7 +530,7 @@ where
     }
 }
 
-impl<K, const D: usize> Iterator for PointsIterator<'_, K, D, SphericalVecCell<K,D>>
+impl<K, const D: usize> Iterator for PointsIterator<'_, K, D, SphericalVecCell<K, D>>
 where
     K: Copy + Eq + Hash,
 {

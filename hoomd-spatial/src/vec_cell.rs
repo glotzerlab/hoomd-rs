@@ -625,7 +625,7 @@ where
     pub(crate) keys: Option<&'a Vec<K>>,
 
     /// The cell list we are iterating in.
-    pub(crate) cell_list: &'a X, //VecCell<K, D>,
+    pub(crate) cell_list: &'a X, // VecCell<K, D>,
 
     /// Current location of the iteration in the cell.
     pub(crate) index_in_current_cell: usize,
@@ -640,7 +640,7 @@ where
     pub(crate) center: [i64; D],
 }
 
-impl<K, const D: usize> Iterator for PointsIterator<'_, K, D, VecCell<K,D>>
+impl<K, const D: usize> Iterator for PointsIterator<'_, K, D, VecCell<K, D>>
 where
     K: Copy + Eq + Hash,
 {
