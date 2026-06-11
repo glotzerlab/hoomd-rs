@@ -56,7 +56,7 @@ impl DoubleVersor {
     #[inline]
     #[must_use]
     /// Create a purely left-isoclinic double versor.
-    pub fn from_left_isoclinic(&self, l: Versor) -> Self {
+    pub fn from_left_isoclinic(l: Versor) -> Self {
         Self {
             l,
             r: Versor::default(),
@@ -65,7 +65,7 @@ impl DoubleVersor {
     #[inline]
     #[must_use]
     /// Create a purely right-isoclinic double versor.
-    pub fn from_right_isoclinic(&self, r: Versor) -> Self {
+    pub fn from_right_isoclinic(r: Versor) -> Self {
         Self {
             l: Versor::default(),
             r,
