@@ -73,13 +73,51 @@ impl DoubleVersor {
     }
 }
 
+impl From<DoubleVersor> for RotationMatrix<4> {
+    /// Construct a rotation matrix equivalent to this double versor's rotation.
+    ///
+    /// When rotating many vectors by the same [`DoubleVersor`], improve performance
+    /// by converting to a matrix first and applying that matrix to the vectors.
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn from(versor: DoubleVersor) -> RotationMatrix<4> {
+        let (&q_l, &q_r) = (
+            versor.left_isoclinic().get(),
+            versor.right_isoclinic().get(),
+        );
+        let (a, [b, c, d]) = (q_l.scalar, q_l.vector.coordinates);
+        let (p, [q, r, s]) = (q_r.scalar, q_l.vector.coordinates);
+
+        // Construct the left-isoclinic matrix L(Q_L)
+        let l_mat = [[a, -b, -c, -d], [b, a, -d, c], [c, d, a, -b], [d, -c, b, a]];
+
+        // Construct the right-isoclinic matrix R(Q_R)
+        let r_mat = [[p, -q, -r, -s], [q, p, s, -r], [r, -s, p, q], [s, r, -q, p]];
+
+        // Combine the left and right isoclinic parts as L@R
+        Matrix44 { rows: l_mat }
+            .matmul(&Matrix44 { rows: r_mat })
+            .into()
+    }
+}
+
 impl Rotate<Cartesian<4>> for DoubleVersor {
     type Matrix = RotationMatrix<4>;
 
-    /// Rotate a [`Cartesian<4>`] by a [`DoubleVersor`]
+    /// Rotate a [`Cartesian<4>`] by a [`DoubleVersor`].
     ///
     /// ```math
-    /// \mathbf{q} \vec{a} \mathbf{q}^*
+    /// \mathbf{q_l} \vec{a} \mathbf{q_r}
     /// ```
     ///
     /// # Example
@@ -95,7 +133,7 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     ///     Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0)
     /// );
     ///
-    /// // Initializing from left isoclinic implies the right isoclinic is unit
+    /// // Initializing from left isoclinic implies the right isoclinic is [1 0 0 0]
     /// assert_eq!(v.right_isoclinic(), Versor::default());
     ///
     /// let b = v.rotate(&a);
@@ -105,6 +143,8 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     /// ```
     #[inline]
     fn rotate(&self, vector: &Cartesian<4>) -> Cartesian<4> {
-        todo!()
+        let q = *self.l.get() * Quaternion::from(vector.coordinates) * *self.r.get();
+        let [x, y, z] = q.vector.coordinates;
+        [q.scalar, x, y, z].into()
     }
 }
