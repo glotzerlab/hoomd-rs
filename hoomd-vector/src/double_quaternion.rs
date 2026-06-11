@@ -1,4 +1,6 @@
 use hoomd_linear_algebra::{MatMul, matrix::Matrix44};
+use rand::Rng;
+use rand_distr::{Distribution, StandardUniform};
 
 use crate::{Cartesian, Quaternion, Rotate, RotationMatrix, Versor};
 
@@ -128,16 +130,18 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let a = Cartesian::from([-1.0, 0.0, 0.0, 0.0]);
+    /// let a = Cartesian::from([1.0, 2.0, 0.0, 0.0]);
+    ///
+    /// // A rotation of PI/2 radians about the `xy` and `zw` planes
     /// let v = DoubleVersor::from_left_isoclinic(
-    ///     Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0)
+    ///     Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI)
     /// );
     ///
     /// // Initializing from left isoclinic implies the right isoclinic is [1 0 0 0]
     /// assert_eq!(v.right_isoclinic(), Versor::default());
     ///
     /// let b = v.rotate(&a);
-    /// assert_relative_eq!(b, [0.0, -1.0, 0.0, 0.0].into());
+    /// assert_relative_eq!(b, [0.0, 0.0, 2.0, 1.0].into());
     /// # Ok(())
     /// # }
     /// ```
@@ -148,6 +152,29 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
         [q.scalar, x, y, z].into()
     }
 }
+
+impl Distribution<DoubleVersor> for StandardUniform {
+    /// Sample a random [`DoubleVersor`] from the uniform distribution over all rotations in SO(4).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::DoubleVersor;
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut rng = StdRng::seed_from_u64(1);
+    /// let v: DoubleVersor = rng.random();
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> DoubleVersor {
+        todo!()
+    }
+}
+
+// TODO: implement Rotate and/or Rotation?
 
 #[cfg(test)]
 mod tests {
