@@ -215,14 +215,20 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_geometry::{Volume, BoundingSphereRadius, shape::{ConvexPolytope, ConvexPolyhedron}};
+    /// use hoomd_geometry::{
+    ///     BoundingSphereRadius, Volume,
+    ///     shape::{ConvexPolyhedron, ConvexPolytope},
+    /// };
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
     /// let diamond = ConvexPolytope::<2>::orthoplex();
     /// assert_relative_eq!(diamond.volume(), 1.0);
     ///
     /// let octahedron = ConvexPolyhedron::orthoplex();
-    /// assert_relative_eq!(octahedron.bounding_sphere_radius().get(), f64::sqrt(2.0));
+    /// assert_relative_eq!(
+    ///     octahedron.bounding_sphere_radius().get(),
+    ///     f64::sqrt(2.0)
+    /// );
     ///
     /// // Cross polytopes always have 2*N vertices
     /// let octachoron = ConvexPolytope::<4, 8>::orthoplex();
@@ -294,7 +300,10 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_geometry::{Volume, BoundingSphereRadius, shape::{ConvexPolygon, ConvexPolyhedron,ConvexPolytope}};
+    /// use hoomd_geometry::{
+    ///     BoundingSphereRadius, Volume,
+    ///     shape::{ConvexPolygon, ConvexPolyhedron, ConvexPolytope},
+    /// };
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
     /// let square = ConvexPolygon::hypercube();
