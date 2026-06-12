@@ -6,6 +6,8 @@
 //! efficient than the equivalent matrix representation, but slower when applying
 //! rotations.
 
+use std::f64::consts::{PI, TAU};
+
 use approxim::RelativeEq;
 use hoomd_linear_algebra::{MatMul, matrix::Matrix44};
 use rand::{Rng, RngExt};
@@ -133,16 +135,8 @@ impl DoubleVersor {
         // Print["Norm[A-B, \"Frobenius\"]^2 == 8 - 8*(qL1.qL2)*(qR1.qR2)"];
         // isEquivalent = FullSimplify[explicitFrobeniusSquared == algebraicForm, constraints];
         // Print["Result: ", isEquivalent];
-        let left_dot = self
-            .l
-            .get()
-            .embed_in_cartesian_4()
-            .dot(&other.l.get().embed_in_cartesian_4());
-        let right_dot = self
-            .r
-            .get()
-            .embed_in_cartesian_4()
-            .dot(&other.r.get().embed_in_cartesian_4());
+        let left_dot = self.l.dot_as_cartesian(&other.l);
+        let right_dot = self.r.dot_as_cartesian(&other.r);
         (8.0 * (1.0 - left_dot * right_dot)).max(0.0).sqrt()
     }
 }
@@ -321,7 +315,17 @@ impl Rotation for DoubleVersor {
 
 impl Metric for DoubleVersor {
     #[inline]
-    fn distance_squared(&self, other: &Self) -> f64 {}
+    fn distance_squared(&self, other: &Self) -> f64 {
+        let left_angle = self.l.dot_as_cartesian(&other.l).clamp(-1.0, 1.0).acos();
+        let right_angle = self.r.dot_as_cartesian(&other.r).clamp(-1.0, 1.0).acos();
+
+        // Alpha is the shorter arc of {l+r, 2π-(l+r)}
+        let alpha = f64::min(left_angle + right_angle, TAU - (left_angle + right_angle));
+        let beta = f64::abs(left_angle - right_angle);
+
+        // Multiply by 2.0 to match the standard ||log(R_A^T R_B)||_F^2 scalin
+        2.0 * (alpha.powi(2) + beta.powi(2))
+    }
 
     #[inline]
     /// The dimension of the manifold of SO(N) is $`\frac{N(N-1)}{2}`$, or 6 for SO(4).
@@ -341,7 +345,7 @@ impl Metric for DoubleVersor {
     /// This is equivalent to the matrix form $`||R_u - R_v||_F`$, but does not require
     /// forming the matrix representation of each rotation.
     fn distance(&self, other: &Self) -> f64 {
-        (self.distance_squared(other)).max(0.0).sqrt()
+        self.distance_squared(other).sqrt()
     }
 }
 
