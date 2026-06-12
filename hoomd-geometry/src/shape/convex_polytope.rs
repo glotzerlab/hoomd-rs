@@ -208,18 +208,18 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
 
     /// Build the N-dimensional generalization of an octahedron with unit edge length.
     ///
-    /// This shape, also referred to as the hyperoctahedron or orthoplex, is defined by
-    /// the set of coordinates `{0...±√2/2...0}` for all combinations of `±√2/2` and
-    /// `N-1` zeros.
+    /// This shape, also referred to as the hyperoctahedron or cross polytope, is
+    /// defined by the set of coordinates `{0...±√2/2...0}` for all combinations of
+    /// `±√2/2` and `N-1` zeros.
     ///
     /// # Panics
     /// If `N=0` or `N > MAX_VERTICES/2`.
     #[inline]
     #[must_use]
-    pub fn cross_polytope() -> Self {
+    pub fn orthoplex() -> Self {
         assert!(
             N != 0,
-            "Cross polytope is not well-defined in zero dimensions!"
+            "An orthoplex is not well-defined in zero dimensions!"
         );
         let sqrt_2_halves = f64::sqrt(2.0) / 2.0;
         let bounding_radius = f64::sqrt(2.0).try_into().expect("Hard-coded value");
