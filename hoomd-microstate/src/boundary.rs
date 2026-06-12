@@ -45,7 +45,9 @@ pub enum Error {
 
 /// The maximum number of possible ghosts.
 ///
-/// Override at compile time with `HOOMD_MAX_GHOSTS=15 cargo build`.
+/// Override at compile time with `HOOMD_MAX_GHOSTS=X cargo build`, where X is the
+/// maximum number of ghosts that could be generated for a single particle in your
+/// system.
 pub(crate) const MAX_GHOSTS: usize = match option_env!("HOOMD_MAX_GHOSTS") {
     // from_str is not const, so we need to manually specify the base
     Some(val) => match usize::from_str_radix(val, 10) {
