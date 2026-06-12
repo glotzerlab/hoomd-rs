@@ -1277,7 +1277,8 @@ mod tests {
         let point = Point::new(point);
         let periodic = Periodic::new(0.5, TwelveTwelve {}).expect("hard-coded positive number");
 
-        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 12> = periodic.generate_ghosts(&point);
+        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, MAX_GHOSTS> =
+            periodic.generate_ghosts(&point);
         let ghost_10 = ghost_array[10];
 
         let ans_10 = Hyperbolic::<3>::from_polar_coordinates(v + offset_boost, PI);
@@ -1317,7 +1318,8 @@ mod tests {
         let point = Point::new(point);
         let periodic = Periodic::new(0.5, TwelveTwelve {}).expect("hard-coded positive number");
 
-        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 12> = periodic.generate_ghosts(&point);
+        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, MAX_GHOSTS> =
+            periodic.generate_ghosts(&point);
 
         // check double transformations
         let ghost_2_poincare = ghost_array[2].position.to_poincare();
