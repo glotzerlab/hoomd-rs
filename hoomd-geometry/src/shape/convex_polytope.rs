@@ -205,6 +205,70 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
             .try_into()
             .expect("convex polytope should have a positive bounding radius")
     }
+
+    /// Build the N-dimensional generalization of an octahedron with unit edge length.
+    ///
+    /// This shape, also referred to as the hyperoctahedron or orthoplex, is defined by
+    /// the set of coordinates `{0...±√2/2...0}` for all combinations of `±√2/2` and
+    /// `N-1` zeros.
+    ///
+    /// # Panics
+    /// If `N=0` or `N > MAX_VERTICES/2`.
+    #[inline]
+    #[must_use]
+    pub fn cross_polytope() -> Self {
+        assert!(
+            N != 0,
+            "Cross polytope is not well-defined in zero dimensions!"
+        );
+        let sqrt_2_halves = f64::sqrt(2.0) / 2.0;
+        let bounding_radius = f64::sqrt(2.0).try_into().expect("Hard-coded value");
+        let mut vertices = ArrayVec::<_, MAX_VERTICES>::new();
+
+        for nonzero_index in 0..N {
+            let coord = Cartesian::<N>::from(std::array::from_fn(|i| {
+                f64::from(i == nonzero_index) * sqrt_2_halves
+            }));
+            vertices.push(coord);
+            vertices.push(-coord);
+        }
+        Self {
+            vertices,
+            bounding_radius,
+        }
+    }
+
+    /// Build the N-dimensional generalization of a cube with unit edge length.
+    ///
+    /// This shape, also referred to as the hypercube or orthotope, is defined by
+    /// the signed, length-N combinations of  `{±0.5}`.
+    ///
+    /// # Panics
+    /// If `N=0` or `2^N > MAX_VERTICES`.
+    #[inline]
+    #[must_use]
+    pub fn hypercube() -> Self {
+        #[inline]
+        fn signed_combinations_of_one_half<const N: usize>() -> Vec<Cartesian<N>> {
+            (0..(1usize << N))
+                .map(|bits| {
+                    std::array::from_fn(|i| if bits & (1 << i) == 0 { 0.5 } else { -0.5 }).into()
+                })
+                .collect()
+        }
+        assert!(
+            N != 0,
+            "Cross polytope is not well-defined in zero dimensions!"
+        );
+        let bounding_radius = f64::sqrt(N as f64)
+            .try_into()
+            .expect("sqrt(positive) is positive.");
+
+        Self {
+            vertices: ArrayVec::<_, MAX_VERTICES>::from_iter(signed_combinations_of_one_half::<N>()),
+            bounding_radius,
+        }
+    }
 }
 
 impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
