@@ -1,12 +1,18 @@
+//! Implement [`DoubleVersor`], a representation of rotations in four dimensions.
+//! Similar to [`Versor`] in 3D, this approach is more numerically stable and space
+//! efficient than the equivalent matrix representation, but slower when applying
+//! rotations.
+
 use hoomd_linear_algebra::{MatMul, matrix::Matrix44};
 use rand::{Rng, RngExt};
 use rand_distr::{Distribution, StandardUniform};
 
-use crate::{Cartesian, Quaternion, Rotate, RotationMatrix, Versor};
+use crate::{Cartesian, Quaternion, Rotate, Rotation, RotationMatrix, Versor};
 
 /// A pair of [`Versor`]s that represent a 4D rotation.
 ///
 /// Each [`Versor`] represents an independent rotation about a plane in R^4.
+#[derive(Clone, Copy, Debug)]
 pub struct DoubleVersor {
     /// The left-isoclinic part of the rotation.
     l: Versor,
@@ -127,16 +133,17 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     ///
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_vector::{Cartesian, Rotate, Rotation, DoubleVersor, Versor};
+    /// use hoomd_vector::{Cartesian, DoubleVersor, Rotate, Rotation, Versor};
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([1.0, 2.0, 0.0, 0.0]);
     ///
     /// // A rotation of PI/2 radians about the `xy` and `zw` planes
-    /// let v = DoubleVersor::from_left_isoclinic(
-    ///     Versor::from_axis_angle([1.0, 0.0, 0.0].try_into()?, PI)
-    /// );
+    /// let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
+    ///     [1.0, 0.0, 0.0].try_into()?,
+    ///     PI,
+    /// ));
     ///
     /// // Initializing from left isoclinic implies the right isoclinic is [1 0 0 0]
     /// assert_eq!(v.right_isoclinic(), Versor::default());
@@ -178,7 +185,74 @@ impl Distribution<DoubleVersor> for StandardUniform {
     }
 }
 
-// TODO: implement Rotate and/or Rotation?
+impl Rotation for DoubleVersor {
+    /// Combine two rotations.
+    ///
+    /// The resulting versor is obtained by left and right quaternion multiplications.
+    /// ```math
+    /// \mathbf{q}_{l_{ab}} = \mathbf{q}_{l_a} \mathbf{q}_{l_b}
+    /// \mathbf{q}_{r_{ab}} = \mathbf{q}_{r_a} \mathbf{q}_{r_b}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Rotation, Versor};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn combine(&self, other: &Self) -> Self {
+        Self {
+            l: self.l.combine(&other.l),
+            r: self.r.combine(&other.r),
+        }
+    }
+
+    /// Create the identity [`DoubleVersor`]: ([1, [0, 0, 0]], [1, [0, 0, 0]])
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{DoubleVersor, Rotation};
+    ///
+    /// let identity = DoubleVersor::identity();
+    /// ```
+    #[inline]
+    fn identity() -> Self {
+        Self::default()
+    }
+
+    /// Create a [`DoubleVersor`] that performs the inverse rotation of the given double versor.
+    ///
+    /// ```math
+    /// \mathbf{q}^*
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{DoubleVersor, Rotation};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
+    ///     [0.0, 1.0, 0.0].try_into()?,
+    ///     1.5,
+    /// ));
+    /// let v_star = v.inverted();
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn inverted(self) -> Self {
+        Self {
+            l: self.l.inverted(),
+            r: self.r.inverted(),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
