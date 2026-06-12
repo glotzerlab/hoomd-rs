@@ -6,7 +6,7 @@
 //! efficient than the equivalent matrix representation, but slower when applying
 //! rotations.
 
-use std::f64::consts::{PI, TAU};
+use std::f64::consts::TAU;
 
 use approxim::RelativeEq;
 use hoomd_linear_algebra::{MatMul, matrix::Matrix44};
@@ -14,9 +14,7 @@ use rand::{Rng, RngExt};
 use rand_distr::{Distribution, StandardUniform};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    Cartesian, InnerProduct, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Versor,
-};
+use crate::{Cartesian, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Versor};
 
 /// A pair of [`Versor`]s that represent a 4D rotation.
 ///
