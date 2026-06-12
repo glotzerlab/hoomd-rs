@@ -265,6 +265,31 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
 
     /// Build the N-dimensional generalization of a tetrahedron with unit edge length.
     ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{
+    ///     BoundingSphereRadius, Volume,
+    ///     shape::{ConvexPolygon, ConvexPolyhedron, ConvexPolytope},
+    /// };
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let triangle = ConvexPolygon::simplex();
+    /// assert_relative_eq!(triangle.volume(), f64::sqrt(3.0) / 4.0);
+    ///
+    /// let tetrahedron = ConvexPolyhedron::simplex();
+    /// assert_relative_eq!(
+    ///     tetrahedron.bounding_sphere_radius().get(),
+    ///     f64::sqrt(3.0 / 8.0)
+    /// );
+    ///
+    /// // Simplices always have N+1 vertices
+    /// let pentachoron = ConvexPolytope::<4, 5>::simplex();
+    /// assert_eq!(pentachoron.vertices().len(), 5);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Panics
     /// If `N+1 > MAX_VERTICES`.
     #[inline]
@@ -281,7 +306,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
         }
 
         let c = (1.0 - f64::sqrt(N as f64 + 1.0)) / (f64::sqrt(2.0) * N as f64);
-        vertices.push(std::array::from_fn(|_| c).into());
+        vertices.push([c; N].into());
 
         // Center by subtracting centroid
         let center = Cartesian::from([(inv_sqrt2 + c) / (N as f64 + 1.0); N]);
