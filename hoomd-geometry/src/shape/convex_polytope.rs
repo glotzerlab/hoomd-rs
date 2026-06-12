@@ -262,6 +262,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
             bounding_radius,
         }
     }
+
     /// Build the N-dimensional generalization of a tetrahedron with unit edge length.
     ///
     /// # Panics
