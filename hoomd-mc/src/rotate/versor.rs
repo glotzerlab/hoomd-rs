@@ -183,6 +183,40 @@ mod tests {
         );
     }
 
+    #[rstest]
+    fn rotate_mean_arc_distance(#[values(1e-3, 0.1, 0.5)] a: f64) {
+        // The arc distance is ||s||/2 where s ~ N(0, a^2I), so
+        // $`E[arc_distance] = (a/2) E[\chi_3] = a sqrt(2/π)`$.
+        // Only valid when P(||s|| > π) is small (e.g. a is small). When this
+        // probability grows, the expected value is distorted because we always prune
+        // rotations with an arc distance greater than π/2
+        let expected = a * (2.0 / PI).sqrt();
+
+        let mut rng = StdRng::seed_from_u64(1);
+        let body = OrientedPoint {
+            position: Cartesian::from([0.0, 0.0, 0.0]),
+            orientation: Versor::default(),
+        };
+        let rotate = Rotate::with_maximum_rotation(
+            a.try_into()
+                .expect("hard-coded constant should be a positive real"),
+        );
+
+        let sum: f64 = (0..N)
+            .map(|_| {
+                let trial = rotate.propose(&mut rng, body);
+                trial.orientation.arc_distance(&body.orientation)
+            })
+            .sum();
+
+        let mean = sum / N as f64;
+        assert!(
+            (mean - expected).abs() < 0.0005 * a,
+            "mean = {mean}, expected = {expected}, diff = {}",
+            (mean - expected).abs(),
+        );
+    }
+
     #[test]
     fn test_adjust() -> anyhow::Result<()> {
         let mut rotate = Rotate::<Versor>::with_maximum_rotation(0.5.try_into()?);
