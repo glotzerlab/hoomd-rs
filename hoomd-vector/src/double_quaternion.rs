@@ -15,7 +15,7 @@ use crate::{Cartesian, Quaternion, Rotate, Rotation, RotationMatrix, Versor};
 /// A pair of [`Versor`]s that represent a 4D rotation.
 ///
 /// Each [`Versor`] represents an independent rotation about a plane in R^4.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct DoubleVersor {
     /// The left-isoclinic part of the rotation.
     l: Versor,
