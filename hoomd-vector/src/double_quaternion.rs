@@ -212,7 +212,7 @@ impl Rotation for DoubleVersor {
     fn combine(&self, other: &Self) -> Self {
         Self {
             l: self.l.combine(&other.l),
-            r: self.r.combine(&other.r),
+            r: other.r.combine(&self.r),
         }
     }
 
