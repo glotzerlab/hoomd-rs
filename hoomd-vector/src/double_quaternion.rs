@@ -268,19 +268,6 @@ mod tests {
 
     use crate::{Cartesian, DoubleVersor, Rotate, Rotation, RotationMatrix, Versor};
 
-    #[test]
-    fn rotation_matrix_matches_direct_rotation() {
-        let l = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), PI / 3.0);
-        let r = Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), PI / 5.0);
-        let dv = DoubleVersor::from((l, r));
-        let v = Cartesian::from([1.0, 2.0, -3.0, 4.0]);
-
-        let direct = dv.rotate(&v);
-        let via_matrix = RotationMatrix::from(dv).rotate(&v);
-
-        assert_relative_eq!(direct, via_matrix);
-    }
-
     #[rstest]
     fn random_rotations_match_matrix(
         #[values([0.0, 0.0, 0.0, 0.0], [1.0,2.0,3.0,4.0], [-3.0, 9.12, -0.1, 1.25])] v: [f64; 4],
