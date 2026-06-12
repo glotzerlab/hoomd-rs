@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! Implement [`DoubleVersor`], a representation of rotations in four dimensions.
 //! Similar to [`Versor`] in 3D, this approach is more numerically stable and space
 //! efficient than the equivalent matrix representation, but slower when applying
