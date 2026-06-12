@@ -44,10 +44,18 @@ pub enum Error {
 }
 
 /// The maximum number of possible ghosts.
-pub(crate) const MAX_GHOSTS: usize = 12;
-
-// Ideally, MAX_GHOSTS would be associated with the boundary type, but that is
-// not currently possible in Rust.
+///
+/// Override at compile time with `HOOMD_MAX_GHOSTS=X cargo build`, where X is the
+/// maximum number of ghosts that could be generated for a single particle in your
+/// system.
+pub(crate) const MAX_GHOSTS: usize = match option_env!("HOOMD_MAX_GHOSTS") {
+    // from_str is not const, so we need to manually specify the base
+    Some(val) => match usize::from_str_radix(val, 10) {
+        Ok(n) => n,
+        Err(_) => panic!("HOOMD_MAX_GHOSTS must be a non-negative integer"),
+    },
+    None => 12,
+};
 
 /// Attempt to move any body/site properties back into the simulation boundary.
 ///
