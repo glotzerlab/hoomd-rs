@@ -256,6 +256,35 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
             bounding_radius,
         }
     }
+    /// Build the N-dimensional generalization of a tetrahedron with unit edge length.
+    ///
+    /// The `N+1` vertices are centered at the origin, constructed via an isometric
+    /// projection of the standard simplex from R^{N+1} onto R^N.
+    ///
+    /// # Panics
+    /// If `N+1 > MAX_VERTICES`.
+    #[inline]
+    #[must_use]
+    pub fn simplex() -> Self {
+        let mut vertices = ArrayVec::<_, MAX_VERTICES>::new();
+        for k in 0..=N {
+            vertices.push(Cartesian::<N>::from(std::array::from_fn(|i| {
+                if k > 0 && i == k - 1 {
+                    -f64::sqrt(k as f64 / (2.0 * (k as f64 + 1.0)))
+                } else if i >= k {
+                    1.0 / f64::sqrt(2.0 * (i as f64 + 1.0) * (i as f64 + 2.0))
+                } else {
+                    0.0
+                }
+            })));
+        }
+        Self {
+            vertices,
+            bounding_radius: f64::sqrt(N as f64 / (2.0 * (N as f64 + 1.0)))
+                .try_into()
+                .expect("sqrt of positive is positive"),
+        }
+    }
 
     /// Build the N-dimensional generalization of a cube with unit edge length.
     ///
