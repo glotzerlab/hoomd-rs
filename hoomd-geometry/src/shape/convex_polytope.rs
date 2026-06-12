@@ -305,7 +305,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     ///
     /// // Hypercubes have 2^N vertices
     /// let hypercube = ConvexPolytope::<4, 16>::hypercube();
-    /// assert_eq!(hypercube.vertices().len(), 16)
+    /// assert_eq!(hypercube.vertices().len(), 16);
     /// # Ok(())
     /// # }
     /// ```
