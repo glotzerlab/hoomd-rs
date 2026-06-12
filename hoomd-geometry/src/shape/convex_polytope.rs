@@ -264,26 +264,28 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     }
     /// Build the N-dimensional generalization of a tetrahedron with unit edge length.
     ///
-    /// The `N+1` vertices are centered at the origin, constructed via an isometric
-    /// projection of the standard simplex from R^{N+1} onto R^N.
-    ///
     /// # Panics
     /// If `N+1 > MAX_VERTICES`.
     #[inline]
     #[must_use]
     pub fn simplex() -> Self {
+        // https://en.wikipedia.org/wiki/Simplex#Cartesian_coordinates_for_a_regular_n-dimensional_simplex_in_Rn
+        let inv_sqrt2 = 1.0 / f64::sqrt(2.0);
+
         let mut vertices = ArrayVec::<_, MAX_VERTICES>::new();
-        for k in 0..=N {
-            vertices.push(Cartesian::<N>::from(std::array::from_fn(|i| {
-                if k > 0 && i == k - 1 {
-                    -f64::sqrt(k as f64 / (2.0 * (k as f64 + 1.0)))
-                } else if i >= k {
-                    1.0 / f64::sqrt(2.0 * (i as f64 + 1.0) * (i as f64 + 2.0))
-                } else {
-                    0.0
-                }
-            })));
+
+        // Un-centered: N vertices at scaled standard basis positions + 1 shared vertex
+        for k in 0..N {
+            vertices.push(std::array::from_fn(|i| f64::from(i == k) * inv_sqrt2).into());
         }
+
+        let c = (1.0 - f64::sqrt(N as f64 + 1.0)) / (f64::sqrt(2.0) * N as f64);
+        vertices.push(std::array::from_fn(|_| c).into());
+
+        // Center by subtracting centroid
+        let center = Cartesian::from([(inv_sqrt2 + c) / (N as f64 + 1.0); N]);
+        vertices.iter_mut().for_each(|vertex| *vertex -= center);
+
         Self {
             vertices,
             bounding_radius: f64::sqrt(N as f64 / (2.0 * (N as f64 + 1.0)))
