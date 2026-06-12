@@ -359,7 +359,7 @@ impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
     }
 }
 
-impl Volume for ConvexPolygon {
+impl<const MAX_VERTICES: usize> Volume for ConvexPolytope<2, MAX_VERTICES> {
     #[inline]
     fn volume(&self) -> f64 {
         ConvexSurfaceMesh2d::from_point_set(self.vertices.clone())
