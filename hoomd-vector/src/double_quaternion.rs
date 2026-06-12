@@ -337,11 +337,19 @@ impl Metric for DoubleVersor {
     /// manifold SO(4):
     ///
     /// ```math
-    /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{8 * (1 - (u_l \cdot v_l * u_r \cdot v_r)}
+    /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{2\theta_1^2 + 2\theta_2^2}
     /// ```
     ///
-    /// This is equivalent to the matrix form $`||R_u - R_v||_F`$, but does not require
-    /// forming the matrix representation of each rotation.
+    /// Where the principal planar angles $\theta_1$ and $\theta_2$ are derived
+    /// from the left and right quaternion arc lengths ($\alpha$ and $\beta$),
+    /// accounting double cover of the manifold:
+    /// * $`\alpha = \arccos(\vec{u}_L \cdot \vec{v}_L)`$
+    /// * $`\beta = \arccos(\vec{u}_R \cdot \vec{v}_R)`$
+    /// * $`\theta_1 = \min(\alpha + \beta, 2\pi - (\alpha + \beta))`$
+    /// * $`\theta_2 = |\alpha - \beta|`$
+    ///
+    /// This is equivalent to the scaled matrix logarithm form $`||\log(R_u^T R_v)||_F`$,
+    /// measuring the shortest path along the curved manifold.
     fn distance(&self, other: &Self) -> f64 {
         self.distance_squared(other).sqrt()
     }
