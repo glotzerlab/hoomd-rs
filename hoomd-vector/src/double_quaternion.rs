@@ -127,11 +127,6 @@ impl From<DoubleVersor> for RotationMatrix<4> {
     }
 }
 
-fn quaternion_as_cartesian4(q: &Quaternion) -> Cartesian<4> {
-    let [x, y, z] = q.vector.coordinates;
-    [q.scalar, x, y, z].into()
-}
-
 impl Rotate<Cartesian<4>> for DoubleVersor {
     type Matrix = RotationMatrix<4>;
 
@@ -168,7 +163,7 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     #[inline]
     fn rotate(&self, vector: &Cartesian<4>) -> Cartesian<4> {
         let q = *self.l.get() * Quaternion::from(vector.coordinates) * *self.r.get();
-        quaternion_as_cartesian4(&q)
+        q.embed_in_cartesian_4()
     }
 }
 
@@ -280,34 +275,35 @@ impl Metric for DoubleVersor {
         // qR1 = {p1, q1, r1, s1}; qR2 = {p2, q2, r2, s2};
 
         // (* Construct the explicit SO(4) matrices *)
-        // matA = LMat[qL1] . RMat[qR1];
-        // matB = LMat[qL2] . RMat[qR2];
+        // A = LMat[qL1] . RMat[qR1]; B = LMat[qL2] . RMat[qR2];
 
         // (* Frobenius Norm-based metric *)
         // (* Note we use ComplexExpand, as otherwise the symbolic algebra gets stuck resolving sqrts *)
-        // explicitFrobeniusSquared = ComplexExpand[Norm[matA - matB, "Frobenius"]^2];
+        // explicitFrobeniusSquared = ComplexExpand[Norm[A - B, "Frobenius"]^2];
 
         // (* Quaternion form *)
-        // dotL = qL1 . qL2;
-        // dotR = qR1 . qR2;
-        // algebraicForm = 8 - 8 * dotL * dotR;
+        // algebraicForm = 8 - 8 * (qL1 . qL2) * (qR1 . qR2);
 
         // (* Contrain our solutions to the manifold *)
         // constraints = {
-        //   a1^2 + b1^2 + c1^2 + d1^2 == 1,
-        //   a2^2 + b2^2 + c2^2 + d2^2 == 1,
-        //   p1^2 + q1^2 + r1^2 + s1^2 == 1,
-        //   p2^2 + q2^2 + r2^2 + s2^2 == 1
+        //   a1^2 + b1^2 + c1^2 + d1^2 == 1, a2^2 + b2^2 + c2^2 + d2^2 == 1,
+        //   p1^2 + q1^2 + r1^2 + s1^2 == 1, p2^2 + q2^2 + r2^2 + s2^2 == 1
         // };
 
         // (* Validate *)
         // Print["Norm[A-B, \"Frobenius\"]^2 == 8 - 8*(qL1.qL2)*(qR1.qR2)"];
         // isEquivalent = FullSimplify[explicitFrobeniusSquared == algebraicForm, constraints];
         // Print["Result: ", isEquivalent];
-        let left_dot =
-            quaternion_as_cartesian4(self.l.get()).dot(&quaternion_as_cartesian4(other.l.get()));
-        let right_dot =
-            quaternion_as_cartesian4(self.r.get()).dot(&quaternion_as_cartesian4(other.r.get()));
+        let left_dot = self
+            .l
+            .get()
+            .embed_in_cartesian_4()
+            .dot(&other.l.get().embed_in_cartesian_4());
+        let right_dot = self
+            .r
+            .get()
+            .embed_in_cartesian_4()
+            .dot(&other.r.get().embed_in_cartesian_4());
         8.0 * (1.0 - left_dot * right_dot)
     }
 

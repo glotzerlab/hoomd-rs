@@ -284,6 +284,14 @@ impl Quaternion {
     pub fn to_versor_unchecked(self) -> Versor {
         Versor(self / self.norm())
     }
+
+    /// Embed this quaternion as a point in R^4.
+    #[inline]
+    #[must_use]
+    pub fn embed_in_cartesian_4(&self) -> Cartesian<4> {
+        let [x, y, z] = self.vector.coordinates;
+        [self.scalar, x, y, z].into()
+    }
 }
 
 impl From<[f64; 4]> for Quaternion {
