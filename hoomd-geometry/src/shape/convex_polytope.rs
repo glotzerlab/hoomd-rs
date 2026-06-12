@@ -382,6 +382,8 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<4, MAX_VERTICES> {
     #[must_use]
     /// Create a 24-cell, a regular polychoron unique to four dimensions.
     ///
+    /// This shape's vertices are defined by the permutations of `{±1, ±1, 0, 0}`.
+    ///
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
