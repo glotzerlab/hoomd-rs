@@ -3,6 +3,8 @@
 
 //! N-Dimensional generalization of a convex polyhedron.
 
+use std::f64::consts::SQRT_2;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{BoundingSphereRadius, Error, SupportMapping, Volume, shape::ConvexSurfaceMesh2d};
@@ -246,8 +248,8 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
             N != 0,
             "An orthoplex is not well-defined in zero dimensions!"
         );
-        let sqrt_2_halves = f64::sqrt(2.0) / 2.0;
-        let bounding_radius = f64::sqrt(2.0).try_into().expect("Hard-coded value");
+        let sqrt_2_halves = SQRT_2 / 2.0;
+        let bounding_radius = SQRT_2.try_into().expect("Hard-coded value");
         let mut vertices = ArrayVec::<_, MAX_VERTICES>::new();
 
         for nonzero_index in 0..N {
@@ -296,7 +298,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     #[must_use]
     pub fn simplex() -> Self {
         // https://en.wikipedia.org/wiki/Simplex#Cartesian_coordinates_for_a_regular_n-dimensional_simplex_in_Rn
-        let inv_sqrt2 = 1.0 / f64::sqrt(2.0);
+        let inv_sqrt2 = SQRT_2.recip();
 
         let mut vertices = ArrayVec::<_, MAX_VERTICES>::new();
 
@@ -421,7 +423,7 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<4, MAX_VERTICES> {
 
         Self {
             vertices,
-            bounding_radius: f64::sqrt(2.0).try_into().expect("positive"),
+            bounding_radius: SQRT_2.try_into().expect("positive"),
         }
     }
 }
