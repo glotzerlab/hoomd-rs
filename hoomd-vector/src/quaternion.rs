@@ -518,7 +518,7 @@ pub struct Versor(Quaternion);
 impl Versor {
     /// Take the dot product of the Versor as an element of $`\mathbb{R}^4`$.
     #[inline]
-    fn dot_as_cartesian(&self, other: &Self) -> f64 {
+    pub(crate) fn dot_as_cartesian(&self, other: &Self) -> f64 {
         self.get().scalar * other.get().scalar + self.get().vector.dot(&other.get().vector)
     }
     /// Create a [`Versor`] that rotates by an angle (in radians)
