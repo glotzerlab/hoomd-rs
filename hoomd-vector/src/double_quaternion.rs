@@ -325,6 +325,9 @@ impl Metric for DoubleVersor {
     /// ```math
     /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{8.0 * (1.0 - (u_l \cdot v_l * u_r \cdot v_r)}
     /// ```
+    ///
+    /// This is equivalent to the matrix form $`||R_u - R_v||_F`$, but does not require
+    /// forming the matrix representation of each rotation.
     fn distance(&self, other: &Self) -> f64 {
         (self.distance_squared(other)).max(0.0).sqrt()
     }
