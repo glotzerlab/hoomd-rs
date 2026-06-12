@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{BoundingSphereRadius, Error, SupportMapping};
+use crate::{BoundingSphereRadius, Error, SupportMapping, Volume, shape::ConvexSurfaceMesh2d};
 use arrayvec::ArrayVec;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
@@ -356,6 +356,15 @@ impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
                 })
                 .expect("the 0 match statement should handle empty vectors"),
         }
+    }
+}
+
+impl Volume for ConvexPolygon {
+    #[inline]
+    fn volume(&self) -> f64 {
+        ConvexSurfaceMesh2d::from_point_set(self.vertices.clone())
+            .expect("ConvexPolygon vertices should be convex.")
+            .volume()
     }
 }
 
