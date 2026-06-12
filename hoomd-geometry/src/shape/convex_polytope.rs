@@ -379,8 +379,55 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<4, MAX_VERTICES> {
     #[inline]
     #[must_use]
     /// Create a 24-cell, a regular polychoron unique to four dimensions.
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexPolytope};
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let octaplex = ConvexPolytope::<4, 24>::octaplex();
+    /// assert_eq!(octaplex.vertices().len(), 24);
+    /// assert_eq!(octaplex.bounding_sphere_radius().get(), f64::sqrt(2.0));
+    ///
+    /// assert_eq!(
+    ///     octaplex
+    ///         .vertices()
+    ///         .into_iter()
+    ///         .map(|&v| v.coordinates.iter().map(|&x| f64::abs(x)).sum::<f64>())
+    ///         .collect::<Vec<_>>(),
+    ///     vec![2.0; 24]
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[expect(clippy::missing_panics_doc, reason = "sqrt(2) is positive")]
     pub fn octaplex() -> Self {
-        todo!()
+        let mut vertices = ArrayVec::new();
+
+        for (l, r) in [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)] {
+            for ls in [-1.0, 1.0] {
+                for rs in [-1.0, 1.0] {
+                    vertices.push(
+                        std::array::from_fn(|i| {
+                            if i == l {
+                                ls
+                            } else if i == r {
+                                rs
+                            } else {
+                                0.0
+                            }
+                        })
+                        .into(),
+                    );
+                }
+            }
+        }
+
+        Self {
+            vertices,
+            bounding_radius: f64::sqrt(2.0).try_into().expect("positive"),
+        }
     }
 }
 
