@@ -406,16 +406,8 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<4, MAX_VERTICES> {
             for ls in [-1.0, 1.0] {
                 for rs in [-1.0, 1.0] {
                     vertices.push(
-                        std::array::from_fn(|i| {
-                            if i == l {
-                                ls
-                            } else if i == r {
-                                rs
-                            } else {
-                                0.0
-                            }
-                        })
-                        .into(),
+                        std::array::from_fn(|i| f64::from(i == l) * ls + f64::from(i == r) * rs)
+                            .into(),
                     );
                 }
             }
