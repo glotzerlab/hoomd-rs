@@ -226,7 +226,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     ///
     /// // Cross polytopes always have 2*N vertices
     /// let octachoron = ConvexPolytope::<4, 8>::orthoplex();
-    /// assert_eq!(octachoron.vertices().len(), 8)
+    /// assert_eq!(octachoron.vertices().len(), 8);
     /// # Ok(())
     /// # }
     /// ```
