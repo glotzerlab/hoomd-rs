@@ -301,7 +301,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     /// assert_relative_eq!(square.volume(), 1.0);
     ///
     /// let cube = ConvexPolyhedron::hypercube();
-    /// assert_relative_eq!(octahedron.bounding_sphere_radius().get(), f64::sqrt(cube.N));
+    /// assert_relative_eq!(octahedron.bounding_sphere_radius().get(), f64::sqrt(3.0));
     ///
     /// // Hypercubes have 2^N vertices
     /// let hypercube = ConvexPolytope::<4, 16>::hypercube();
