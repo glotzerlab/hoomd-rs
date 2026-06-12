@@ -347,6 +347,15 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     }
 }
 
+impl<const MAX_VERTICES: usize> ConvexPolytope<4, MAX_VERTICES> {
+    #[inline]
+    #[must_use]
+    /// Create a 24-cell, a regular polychoron unique to four dimensions.
+    pub fn octaplex() -> Self {
+        todo!()
+    }
+}
+
 impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
     for ConvexPolytope<N, MAX_VERTICES>
 {
