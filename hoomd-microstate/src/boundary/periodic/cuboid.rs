@@ -851,4 +851,160 @@ mod tests {
             assert_relative_eq!(ghosts[6].position, [10.5, 5.5, 20.5].into());
         }
     }
+
+    mod cuboid_4 {
+        use super::*;
+        use rstest::rstest;
+
+        fn pos(value: f64) -> PositiveReal {
+            value
+                .try_into()
+                .expect("hard-coded constant should be positive")
+        }
+
+        #[rstest]
+        #[case::min_edge_is_last(
+            [pos(10.0), pos(6.0), pos(4.0), pos(2.0)],
+            1.0,
+        )]
+        #[case::min_edge_is_third(
+            [pos(20.0), pos(10.0), pos(6.0), pos(8.0)],
+            3.0,
+        )]
+        fn maximum_allowable(#[case] edge_lengths: [PositiveReal; 4], #[case] expected: f64) {
+            let cuboid = Hypercuboid { edge_lengths };
+            assert_eq!(cuboid.maximum_allowable_interaction_range(), expected);
+        }
+
+        #[rstest]
+        #[case::interior(
+            [5.0, 3.0, 8.0, -1.0],
+            [5.0, 3.0, 8.0, -1.0],
+        )]
+        #[case::lower_bound(
+            [-10.0, -10.0, -10.0, -10.0],
+            [-10.0, -10.0, -10.0, -10.0],
+        )]
+        #[case::just_below_upper(
+            [10.0_f64.next_down(), 10.0_f64.next_down(), 10.0_f64.next_down(), 10.0_f64.next_down()],
+            [10.0_f64.next_down(), 10.0_f64.next_down(), 10.0_f64.next_down(), 10.0_f64.next_down()],
+        )]
+        #[case::at_upper(
+            [10.0, 10.0, 10.0, 10.0],
+            [-10.0, -10.0, -10.0, -10.0],
+        )]
+        #[case::wrap_around(
+            [25.0, -35.0, 55.0, -15.0],
+            [5.0, 5.0, -5.0, 5.0],
+        )]
+        fn wrap(#[case] input: [f64; 4], #[case] expected: [f64; 4]) {
+            let cuboid = Hypercuboid {
+                edge_lengths: [pos(20.0); 4],
+            };
+            let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
+            assert_eq!(
+                periodic.wrap(Point::new(input.into())),
+                Ok(Point::new(expected.into())),
+            );
+        }
+
+        #[test]
+        fn no_ghosts() {
+            let cuboid = Hypercuboid {
+                edge_lengths: [pos(40.0), pos(20.0), pos(10.0), pos(8.0)],
+            };
+            let periodic = Periodic::new(1.0, cuboid).expect("hard-coded range should be valid");
+
+            let inner = Hypercuboid {
+                edge_lengths: [pos(38.0), pos(18.0), pos(8.0), pos(6.0)],
+            };
+
+            let mut rng = StdRng::seed_from_u64(1);
+            for _ in 0..N_SAMPLES {
+                let point = inner.sample(&mut rng);
+                let ghosts = periodic.generate_ghosts(&Point::new(point));
+                assert!(ghosts.is_empty());
+            }
+        }
+
+        /// lx=20, ly=10, lz=40, lw=8 with interaction range 1.0.
+        fn unequal_box() -> Periodic<Hypercuboid<4>> {
+            let cuboid = Hypercuboid {
+                edge_lengths: [pos(20.0), pos(10.0), pos(40.0), pos(8.0)],
+            };
+            Periodic::new(1.0, cuboid).expect("hard-coded range should be valid")
+        }
+
+        #[rstest]
+        #[case::outside_x([10.5, 0.0, 0.0, 0.0], 0)]
+        #[case::outside_w([0.0, 0.0, 0.0, 4.5], 0)]
+        #[case::face_pos_x([9.5, 0.0, 0.0, 0.0], 1)]
+        #[case::face_neg_x([-9.5, 0.0, 0.0, 0.0], 1)]
+        #[case::face_pos_y([0.0, 4.5, 0.0, 0.0], 1)]
+        #[case::face_pos_w([0.0, 0.0, 0.0, 3.5], 1)]
+        #[case::face_neg_w([0.0, 0.0, 0.0, -3.5], 1)]
+        #[case::edge_pos_x_pos_y([9.5, 4.5, 0.0, 0.0], 3)]
+        #[case::edge_pos_x_neg_y_pos_z([9.5, -4.5, 19.5, 0.0], 7)]
+        fn ghosts(#[case] input: [f64; 4], #[case] expected_count: usize) {
+            let periodic = unequal_box();
+            let ghosts = periodic.generate_ghosts(&Point::new(input.into()));
+            assert_eq!(ghosts.len(), expected_count);
+        }
+
+        #[test]
+        fn ghosts_corner_all_pos() {
+            if MAX_GHOSTS < 15 {
+                return;
+            }
+            let periodic = unequal_box();
+            let ghosts = periodic.generate_ghosts(&Point::new([9.5, 4.5, 19.5, 3.5].into()));
+            assert_eq!(ghosts.len(), 15);
+        }
+
+        #[rstest]
+        #[case::face_pos_x(
+            [9.5, 0.0, 0.0, 0.0],
+            [[-10.5, 0.0, 0.0, 0.0]].to_vec(),
+        )]
+        #[case::face_neg_x(
+            [-9.5, 0.0, 0.0, 0.0],
+            [[10.5, 0.0, 0.0, 0.0]].to_vec(),
+        )]
+        #[case::face_pos_y(
+            [0.0, 4.5, 0.0, 0.0],
+            [[0.0, -5.5, 0.0, 0.0]].to_vec(),
+        )]
+        #[case::face_pos_w(
+            [0.0, 0.0, 0.0, 3.5],
+            [[0.0, 0.0, 0.0, -4.5]].to_vec(),
+        )]
+        #[case::face_neg_w(
+            [0.0, 0.0, 0.0, -3.5],
+            [[0.0, 0.0, 0.0, 4.5]].to_vec(),
+        )]
+        #[case::edge_pos_x_pos_y(
+            [9.5, 4.5, 0.0, 0.0],
+            [[-10.5, -5.5, 0.0, 0.0], [9.5, -5.5, 0.0, 0.0], [-10.5, 4.5, 0.0, 0.0]].to_vec(),
+        )]
+        #[case::edge_pos_x_neg_y_pos_z(
+            [9.5, -4.5, 19.5, 0.0],
+            [
+                [-10.5, 5.5, -20.5, 0.0],
+                [9.5, 5.5, -20.5, 0.0],
+                [-10.5, -4.5, -20.5, 0.0],
+                [9.5, -4.5, -20.5, 0.0],
+                [-10.5, 5.5, 19.5, 0.0],
+                [9.5, 5.5, 19.5, 0.0],
+                [-10.5, -4.5, 19.5, 0.0],
+            ].to_vec(),
+        )]
+        fn ghost_positions(#[case] input: [f64; 4], #[case] expected: Vec<[f64; 4]>) {
+            let periodic = unequal_box();
+            let ghosts = periodic.generate_ghosts(&Point::new(input.into()));
+            assert_eq!(ghosts.len(), expected.len());
+            for (ghost, expected_pos) in ghosts.iter().zip(expected.iter()) {
+                assert_relative_eq!(ghost.position, (*expected_pos).into());
+            }
+        }
+    }
 }
