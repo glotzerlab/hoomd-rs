@@ -1,8 +1,11 @@
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 use std::f64::consts::PI;
 
 use hoomd_microstate::property::Orientation;
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::DoubleVersor;
+use hoomd_vector::{DoubleVersor, Rotation};
 use rand::{Rng, RngExt};
 use rand_distr::Distribution;
 
