@@ -6,7 +6,7 @@ use std::f64::consts::PI;
 use hoomd_microstate::property::Orientation;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{DoubleVersor, Rotation};
-use rand::{Rng, RngExt};
+use rand::Rng;
 use rand_distr::Distribution;
 
 use crate::{Adjust, LocalTrial, Rotate, rotate::versor::VersorDisplacement};
@@ -76,5 +76,99 @@ impl Adjust for Rotate<DoubleVersor> {
                 .try_into()
                 .expect("PI/2.0 should be a positive real");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert2::check;
+    use hoomd_microstate::property::OrientedPoint;
+    use hoomd_vector::{Cartesian, DoubleVersor, Metric};
+    use rand::{SeedableRng, rngs::StdRng};
+    use rstest::*;
+
+    /// Number of trial moves to test.
+    const N: usize = 262_144;
+
+    /// Expected geodesic distance for small a:E[χ₆] = sqrt2*Γ(7/2)/Γ(3) = 15sqrt(2π)/16
+    #[inline]
+    fn expected_chi6_mean() -> f64 {
+        15.0 * (2.0 * PI).sqrt() / 16.0
+    }
+
+    #[rstest]
+    fn rotate(#[values(0.1, 0.5)] a: f64) {
+        let mut rng = StdRng::seed_from_u64(1);
+        let body = OrientedPoint {
+            position: Cartesian::from([0.0, 0.0, 0.0]),
+            orientation: DoubleVersor::default(),
+        };
+        let rotate = Rotate::with_maximum_rotation(
+            a.try_into()
+                .expect("hard-coded constant should be a positive real"),
+        );
+
+        let mut delta_thetas = Vec::with_capacity(N);
+        for _ in 0..N {
+            let trial = rotate.propose(&mut rng, body);
+            delta_thetas.push(trial.orientation.distance(&body.orientation));
+        }
+
+        let mean = delta_thetas.iter().sum::<f64>() / N as f64;
+        let expected = expected_chi6_mean() * a;
+        assert!(
+            (mean - expected).abs() < 0.01 * a, // Should be within a few percent
+            "mean = {mean}, expected = {expected}, diff = {}",
+            (mean - expected).abs(),
+        );
+    }
+
+    #[rstest]
+    fn rotate_mean_distance(#[values(1e-3, 0.1)] a: f64) {
+        // Two independent versor displacements give distance:
+        // sqrt(|sl|² + |sr|²) = a*\chi_6 for small displacements, so
+        // E[distance] = a * sqrt(2) * (15*sqrt(pi)/8)/2 = a * 15sqrt(2π)/16.
+        let expected = expected_chi6_mean() * a;
+
+        let mut rng = StdRng::seed_from_u64(1);
+        let body = OrientedPoint {
+            position: Cartesian::from([0.0, 0.0, 0.0]),
+            orientation: DoubleVersor::default(),
+        };
+        let rotate = Rotate::with_maximum_rotation(
+            a.try_into()
+                .expect("hard-coded constant should be a positive real"),
+        );
+
+        let sum: f64 = (0..N)
+            .map(|_| {
+                let trial = rotate.propose(&mut rng, body);
+                trial.orientation.distance(&body.orientation)
+            })
+            .sum();
+
+        let mean = sum / N as f64;
+        assert!(
+            (mean - expected).abs() < 0.001 * a,
+            "mean = {mean}, expected = {expected}, diff = {}",
+            (mean - expected).abs(),
+        );
+    }
+
+    #[test]
+    fn test_adjust() -> anyhow::Result<()> {
+        let mut rotate = Rotate::<DoubleVersor>::with_maximum_rotation(0.5.try_into()?);
+
+        rotate.adjust(2.0.try_into()?);
+        check!(rotate.maximum_rotation().get() == 1.0);
+
+        rotate.adjust(0.5.try_into()?);
+        check!(rotate.maximum_rotation().get() == 0.5);
+
+        rotate.adjust(10.0.try_into()?);
+        check!(rotate.maximum_rotation().get() == PI / 2.0);
+
+        Ok(())
     }
 }
