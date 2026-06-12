@@ -384,6 +384,7 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<4, MAX_VERTICES> {
     /// ```
     /// use approxim::assert_relative_eq;
     /// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexPolytope};
+    /// use hoomd_vector::{Cartesian, InnerProduct};
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
     /// let octaplex = ConvexPolytope::<4, 24>::octaplex();
@@ -394,7 +395,7 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<4, MAX_VERTICES> {
     ///     octaplex
     ///         .vertices()
     ///         .into_iter()
-    ///         .map(|&v| v.coordinates.iter().map(|&x| f64::abs(x)).sum::<f64>())
+    ///         .map(Cartesian::norm_squared)
     ///         .collect::<Vec<_>>(),
     ///     vec![2.0; 24]
     /// );
