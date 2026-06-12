@@ -285,6 +285,60 @@ where
     }
 }
 
+impl<S> GenerateGhosts<S> for Periodic<Hypercuboid<4>>
+where
+    S: Position<Position = Cartesian<4>> + Copy + Default,
+{
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        self.maximum_interaction_range
+    }
+
+    /// Place periodic images of sites near the edge of the periodic boundary.
+    ///
+    /// For 4D cuboids, `generate_ghosts` places ghosts near the 8 cells (3D faces),
+    /// 24 faces (2D), 32 edges (1D), and 16 vertices (0D).
+    #[inline]
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        let mut result = ArrayVec::new();
+
+        let r = site_properties.position();
+        let max = self.shape.maximal_extents();
+        let min = self.shape.minimal_extents();
+
+        if !self.shape.is_point_inside(r) {
+            return result;
+        }
+
+        let mut near_mask = 0u32;
+        let mut dim_offset = [0.0_f64; 4];
+        for i in 0..4 {
+            if r[i] > max[i] - self.maximum_interaction_range {
+                near_mask |= 1 << i;
+                dim_offset[i] = -self.shape.edge_lengths[i].get();
+            } else if r[i] < min[i] + self.maximum_interaction_range {
+                near_mask |= 1 << i;
+                dim_offset[i] = self.shape.edge_lengths[i].get();
+            }
+        }
+
+        let mut subset = near_mask;
+        while subset != 0 {
+            let mut ghost = *site_properties;
+            let pos = ghost.position_mut();
+            for i in 0..4 {
+                if subset & (1 << i) != 0 {
+                    pos[i] += dim_offset[i];
+                }
+            }
+            result.push(ghost);
+            subset = (subset - 1) & near_mask;
+        }
+
+        result
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
