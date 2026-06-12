@@ -391,14 +391,8 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<4, MAX_VERTICES> {
     /// assert_eq!(octaplex.vertices().len(), 24);
     /// assert_eq!(octaplex.bounding_sphere_radius().get(), f64::sqrt(2.0));
     ///
-    /// assert_eq!(
-    ///     octaplex
-    ///         .vertices()
-    ///         .into_iter()
-    ///         .map(Cartesian::norm_squared)
-    ///         .collect::<Vec<_>>(),
-    ///     vec![2.0; 24]
-    /// );
+    /// // All vertices are the same distance from the origin
+    /// assert!(octaplex.vertices().iter().all(|v| v.norm_squared() == 2.0));
     /// # Ok(())
     /// # }
     /// ```
