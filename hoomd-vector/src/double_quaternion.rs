@@ -264,7 +264,6 @@ mod tests {
     use approxim::assert_relative_eq;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
-    use std::f64::consts::PI;
 
     use crate::{Cartesian, DoubleVersor, Rotate, Rotation, RotationMatrix, Versor};
 
@@ -312,6 +311,16 @@ mod tests {
             assert_relative_eq!(
                 a.combine(&b).combine(&c).rotate(&v),
                 a.combine(&b.combine(&c)).rotate(&v),
+                epsilon = 1e-12,
+            );
+
+            // Double inverse is the original rotation
+            assert_relative_eq!(a.inverted().inverted(), a);
+
+            // Combine then rotate matches applying sequentially
+            assert_relative_eq!(
+                a.combine(&b).rotate(&v),
+                a.rotate(&b.rotate(&v)),
                 epsilon = 1e-12,
             );
         }
