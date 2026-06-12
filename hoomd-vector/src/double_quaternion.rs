@@ -6,9 +6,11 @@
 //! efficient than the equivalent matrix representation, but slower when applying
 //! rotations.
 
+use approxim::RelativeEq;
 use hoomd_linear_algebra::{MatMul, matrix::Matrix44};
 use rand::{Rng, RngExt};
 use rand_distr::{Distribution, StandardUniform};
+use serde::{Deserialize, Serialize};
 
 use crate::{Cartesian, Quaternion, Rotate, Rotation, RotationMatrix, Versor};
 
@@ -260,9 +262,11 @@ impl Rotation for DoubleVersor {
 #[cfg(test)]
 mod tests {
     use approxim::assert_relative_eq;
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
+    use rstest::rstest;
     use std::f64::consts::PI;
 
-    use crate::{Cartesian, DoubleVersor, Rotate, RotationMatrix, Versor};
+    use crate::{Cartesian, DoubleVersor, Rotate, Rotation, RotationMatrix, Versor};
 
     #[test]
     fn rotation_matrix_matches_direct_rotation() {
@@ -275,5 +279,54 @@ mod tests {
         let via_matrix = RotationMatrix::from(dv).rotate(&v);
 
         assert_relative_eq!(direct, via_matrix);
+    }
+
+    #[rstest]
+    fn random_rotations_match_matrix(
+        #[values([0.0, 0.0, 0.0, 0.0], [1.0,2.0,3.0,4.0], [-3.0, 9.12, -0.1, 1.25])] v: [f64; 4],
+    ) {
+        let mut rng = StdRng::seed_from_u64(42);
+        let v = Cartesian::from(v);
+
+        for _ in 0..10_000 {
+            let dv: DoubleVersor = rng.random();
+            assert_relative_eq!(
+                dv.rotate(&v),
+                RotationMatrix::from(dv).rotate(&v),
+                epsilon = 1e-14,
+            );
+        }
+    }
+
+    #[rstest]
+    fn random_combine_invert_roundtrip(
+        #[values([0.0, 0.0, 0.0, 0.0], [1.0,2.0,3.0,4.0], [-3.0, 9.12, -0.1, 1.25])] v: [f64; 4],
+    ) {
+        let mut rng = StdRng::seed_from_u64(42);
+        let v = Cartesian::from(v);
+
+        for _ in 0..10_000 {
+            let a: DoubleVersor = rng.random();
+            let b: DoubleVersor = rng.random();
+            let c: DoubleVersor = rng.random();
+
+            // Inverting undoes the rotation
+            assert_relative_eq!(a.inverted().rotate(&a.rotate(&v)), v, epsilon = 1e-14);
+
+            // Combine then invert gives identity
+            let combined = a.combine(&b);
+            assert_relative_eq!(
+                combined.inverted().combine(&combined).rotate(&v),
+                v,
+                epsilon = 1e-12,
+            );
+
+            // Combine is associative
+            assert_relative_eq!(
+                a.combine(&b).combine(&c).rotate(&v),
+                a.combine(&b.combine(&c)).rotate(&v),
+                epsilon = 1e-12,
+            );
+        }
     }
 }
