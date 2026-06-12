@@ -294,7 +294,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_geometry::{Volume, BoundingSphereRadius, shape::{ConvexPolygon, ConvexPolyhedron}};
+    /// use hoomd_geometry::{Volume, BoundingSphereRadius, shape::{ConvexPolygon, ConvexPolyhedron,ConvexPolytope}};
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
     /// let square = ConvexPolygon::hypercube();
