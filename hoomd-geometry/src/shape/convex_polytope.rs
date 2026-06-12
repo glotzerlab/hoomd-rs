@@ -212,6 +212,25 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     /// defined by the set of coordinates `{0...±√2/2...0}` for all combinations of
     /// `±√2/2` and `N-1` zeros.
     ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{Volume, BoundingSphereRadius, shape::{ConvexPolytope, ConvexPolyhedron}};
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let diamond = ConvexPolytope::<2>::orthoplex();
+    /// assert_relative_eq!(diamond.volume(), 1.0);
+    ///
+    /// let octahedron = ConvexPolyhedron::orthoplex();
+    /// assert_relative_eq!(octahedron.bounding_sphere_radius().get(), f64::sqrt(2.0));
+    ///
+    /// // Cross polytopes always have 2*N vertices
+    /// let octachoron = ConvexPolytope::<4, 8>::orthoplex();
+    /// assert_eq!(octachoron.vertices().len(), 8)
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Panics
     /// If `N=0` or `N > MAX_VERTICES/2`.
     #[inline]
@@ -242,6 +261,25 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     ///
     /// This shape, also referred to as the hypercube or orthotope, is defined by
     /// the signed, length-N combinations of  `{±0.5}`.
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{Volume, BoundingSphereRadius, shape::{ConvexPolygon, ConvexPolyhedron}};
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let square = ConvexPolygon::<2>::hypercube();
+    /// assert_relative_eq!(square.volume(), 1.0);
+    ///
+    /// let cube = ConvexPolyhedron::hypercube();
+    /// assert_relative_eq!(octahedron.bounding_sphere_radius().get(), f64::sqrt(cube.N));
+    ///
+    /// // Hypercubes have 2^N vertices
+    /// let hypercube = ConvexPolytope::<4, 16>::hypercube();
+    /// assert_eq!(hypercube.vertices().len(), 16)
+    /// # Ok(())
+    /// # }
+    /// ```
     ///
     /// # Panics
     /// If `N=0` or `2^N > MAX_VERTICES`.
