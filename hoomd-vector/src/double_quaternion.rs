@@ -12,7 +12,9 @@ use rand::{Rng, RngExt};
 use rand_distr::{Distribution, StandardUniform};
 use serde::{Deserialize, Serialize};
 
-use crate::{Cartesian, Quaternion, Rotate, Rotation, RotationMatrix, Versor};
+use crate::{
+    Cartesian, InnerProduct, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Versor,
+};
 
 /// A pair of [`Versor`]s that represent a 4D rotation.
 ///
@@ -125,6 +127,11 @@ impl From<DoubleVersor> for RotationMatrix<4> {
     }
 }
 
+fn quaternion_as_cartesian4(q: &Quaternion) -> Cartesian<4> {
+    let [x, y, z] = q.vector.coordinates;
+    [q.scalar, x, y, z].into()
+}
+
 impl Rotate<Cartesian<4>> for DoubleVersor {
     type Matrix = RotationMatrix<4>;
 
@@ -161,8 +168,7 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     #[inline]
     fn rotate(&self, vector: &Cartesian<4>) -> Cartesian<4> {
         let q = *self.l.get() * Quaternion::from(vector.coordinates) * *self.r.get();
-        let [x, y, z] = q.vector.coordinates;
-        [q.scalar, x, y, z].into()
+        quaternion_as_cartesian4(&q)
     }
 }
 
@@ -256,6 +262,71 @@ impl Rotation for DoubleVersor {
             l: self.l.inverted(),
             r: self.r.inverted(),
         }
+    }
+}
+
+impl Metric for DoubleVersor {
+    #[inline]
+    fn distance_squared(&self, other: &Self) -> f64 {
+        // We choose a form based on the dot product of pairs of left and right
+        // quaternions -- as expected, this is exactly the same as the standard
+        // Frobenius metric on SO(N), $`||A-B||_F^2`$. The following Mathematica code
+        // symbolically proves the expressions are equivalent
+        // (* See RotationMatrix::from<DoubleVersor> *)
+        // LMat[{a_, b_, c_, d_}] := {{a, -b, -c, -d}, {b, a, -d, c}, {c, d, a, -b}, {d, -c, b, a}}
+        // RMat[{p_, q_, r_, s_}] := {{p, -q, -r, -s}, {q, p, s, -r}, {r, -s, p, q}, {s, r, -q, p}}
+
+        // qL1 = {a1, b1, c1, d1}; qL2 = {a2, b2, c2, d2};
+        // qR1 = {p1, q1, r1, s1}; qR2 = {p2, q2, r2, s2};
+
+        // (* Construct the explicit SO(4) matrices *)
+        // matA = LMat[qL1] . RMat[qR1];
+        // matB = LMat[qL2] . RMat[qR2];
+
+        // (* Frobenius Norm-based metric *)
+        // (* Note we use ComplexExpand, as otherwise the symbolic algebra gets stuck resolving sqrts *)
+        // explicitFrobeniusSquared = ComplexExpand[Norm[matA - matB, "Frobenius"]^2];
+
+        // (* Quaternion form *)
+        // dotL = qL1 . qL2;
+        // dotR = qR1 . qR2;
+        // algebraicForm = 8 - 8 * dotL * dotR;
+
+        // (* Contrain our solutions to the manifold *)
+        // constraints = {
+        //   a1^2 + b1^2 + c1^2 + d1^2 == 1,
+        //   a2^2 + b2^2 + c2^2 + d2^2 == 1,
+        //   p1^2 + q1^2 + r1^2 + s1^2 == 1,
+        //   p2^2 + q2^2 + r2^2 + s2^2 == 1
+        // };
+
+        // (* Validate *)
+        // Print["Norm[A-B, \"Frobenius\"]^2 == 8 - 8*(qL1.qL2)*(qR1.qR2)"];
+        // isEquivalent = FullSimplify[explicitFrobeniusSquared == algebraicForm, constraints];
+        // Print["Result: ", isEquivalent];
+        let left_dot =
+            quaternion_as_cartesian4(self.l.get()).dot(&quaternion_as_cartesian4(other.l.get()));
+        let right_dot =
+            quaternion_as_cartesian4(self.r.get()).dot(&quaternion_as_cartesian4(other.r.get()));
+        8.0 * (1.0 - left_dot * right_dot)
+    }
+
+    #[inline]
+    /// The dimension of the manifold of SO(N) is $`\frac{N(N-1)}{2}`$, or 6 for SO(4).
+    fn n_dimensions(&self) -> usize {
+        6
+    }
+    #[inline]
+    /// The distance between two [`DoubleQuaternion`] points.
+    ///
+    /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on the
+    /// manifold SO(4):
+    ///
+    /// ```math
+    /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{8.0 * (1.0 - (u_l \cdot v_l * u_r \cdot v_r)}
+    /// ```
+    fn distance(&self, other: &Self) -> f64 {
+        (self.distance_squared(other)).max(0.0).sqrt()
     }
 }
 
