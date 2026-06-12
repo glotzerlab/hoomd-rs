@@ -86,6 +86,65 @@ impl DoubleVersor {
             r,
         }
     }
+
+    #[inline]
+    #[must_use]
+    /// The distance between two [`DoubleQuaternion`] points.
+    ///
+    /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$
+    /// *along a chord through the manifold*. This is NOT equivalent to the intrinsic
+    /// distance, defined with [`DoubleQuaternion::Metric`].
+    ///
+    /// ```math
+    /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{8 * (1 - (u_l \cdot v_l * u_r \cdot v_r)}
+    /// ```
+    ///
+    /// This is equivalent to the matrix form $`||R_u - R_v||_F`$, but does not require
+    /// forming the matrix representation of each rotation.
+    pub fn chordal_distanc(&self, other: &Self) -> f64 {
+        // We choose a form based on the dot product of pairs of left and right
+        // quaternions -- as expected, this is exactly the same as the standard
+        // Frobenius metric on SO(N), $`||A-B||_F^2`$. The following Mathematica code
+        // symbolically proves the expressions are equivalent
+        // (* See RotationMatrix::from<DoubleVersor> *)
+        // LMat[{a_, b_, c_, d_}] := {{a, -b, -c, -d}, {b, a, -d, c}, {c, d, a, -b}, {d, -c, b, a}}
+        // RMat[{p_, q_, r_, s_}] := {{p, -q, -r, -s}, {q, p, s, -r}, {r, -s, p, q}, {s, r, -q, p}}
+
+        // qL1 = {a1, b1, c1, d1}; qL2 = {a2, b2, c2, d2};
+        // qR1 = {p1, q1, r1, s1}; qR2 = {p2, q2, r2, s2};
+
+        // (* Construct the explicit SO(4) matrices *)
+        // A = LMat[qL1] . RMat[qR1]; B = LMat[qL2] . RMat[qR2];
+
+        // (* Frobenius Norm-based metric *)
+        // (* Note we use ComplexExpand, as otherwise the symbolic algebra gets stuck resolving sqrts *)
+        // explicitFrobeniusSquared = ComplexExpand[Norm[A - B, "Frobenius"]^2];
+
+        // (* Quaternion form *)
+        // algebraicForm = 8 - 8 * (qL1 . qL2) * (qR1 . qR2);
+
+        // (* Contrain our solutions to the manifold *)
+        // constraints = {
+        //   a1^2 + b1^2 + c1^2 + d1^2 == 1, a2^2 + b2^2 + c2^2 + d2^2 == 1,
+        //   p1^2 + q1^2 + r1^2 + s1^2 == 1, p2^2 + q2^2 + r2^2 + s2^2 == 1
+        // };
+
+        // (* Validate *)
+        // Print["Norm[A-B, \"Frobenius\"]^2 == 8 - 8*(qL1.qL2)*(qR1.qR2)"];
+        // isEquivalent = FullSimplify[explicitFrobeniusSquared == algebraicForm, constraints];
+        // Print["Result: ", isEquivalent];
+        let left_dot = self
+            .l
+            .get()
+            .embed_in_cartesian_4()
+            .dot(&other.l.get().embed_in_cartesian_4());
+        let right_dot = self
+            .r
+            .get()
+            .embed_in_cartesian_4()
+            .dot(&other.r.get().embed_in_cartesian_4());
+        (8.0 * (1.0 - left_dot * right_dot)).max(0.0).sqrt()
+    }
 }
 
 impl From<DoubleVersor> for RotationMatrix<4> {
@@ -262,50 +321,7 @@ impl Rotation for DoubleVersor {
 
 impl Metric for DoubleVersor {
     #[inline]
-    fn distance_squared(&self, other: &Self) -> f64 {
-        // We choose a form based on the dot product of pairs of left and right
-        // quaternions -- as expected, this is exactly the same as the standard
-        // Frobenius metric on SO(N), $`||A-B||_F^2`$. The following Mathematica code
-        // symbolically proves the expressions are equivalent
-        // (* See RotationMatrix::from<DoubleVersor> *)
-        // LMat[{a_, b_, c_, d_}] := {{a, -b, -c, -d}, {b, a, -d, c}, {c, d, a, -b}, {d, -c, b, a}}
-        // RMat[{p_, q_, r_, s_}] := {{p, -q, -r, -s}, {q, p, s, -r}, {r, -s, p, q}, {s, r, -q, p}}
-
-        // qL1 = {a1, b1, c1, d1}; qL2 = {a2, b2, c2, d2};
-        // qR1 = {p1, q1, r1, s1}; qR2 = {p2, q2, r2, s2};
-
-        // (* Construct the explicit SO(4) matrices *)
-        // A = LMat[qL1] . RMat[qR1]; B = LMat[qL2] . RMat[qR2];
-
-        // (* Frobenius Norm-based metric *)
-        // (* Note we use ComplexExpand, as otherwise the symbolic algebra gets stuck resolving sqrts *)
-        // explicitFrobeniusSquared = ComplexExpand[Norm[A - B, "Frobenius"]^2];
-
-        // (* Quaternion form *)
-        // algebraicForm = 8 - 8 * (qL1 . qL2) * (qR1 . qR2);
-
-        // (* Contrain our solutions to the manifold *)
-        // constraints = {
-        //   a1^2 + b1^2 + c1^2 + d1^2 == 1, a2^2 + b2^2 + c2^2 + d2^2 == 1,
-        //   p1^2 + q1^2 + r1^2 + s1^2 == 1, p2^2 + q2^2 + r2^2 + s2^2 == 1
-        // };
-
-        // (* Validate *)
-        // Print["Norm[A-B, \"Frobenius\"]^2 == 8 - 8*(qL1.qL2)*(qR1.qR2)"];
-        // isEquivalent = FullSimplify[explicitFrobeniusSquared == algebraicForm, constraints];
-        // Print["Result: ", isEquivalent];
-        let left_dot = self
-            .l
-            .get()
-            .embed_in_cartesian_4()
-            .dot(&other.l.get().embed_in_cartesian_4());
-        let right_dot = self
-            .r
-            .get()
-            .embed_in_cartesian_4()
-            .dot(&other.r.get().embed_in_cartesian_4());
-        8.0 * (1.0 - left_dot * right_dot)
-    }
+    fn distance_squared(&self, other: &Self) -> f64 {}
 
     #[inline]
     /// The dimension of the manifold of SO(N) is $`\frac{N(N-1)}{2}`$, or 6 for SO(4).
