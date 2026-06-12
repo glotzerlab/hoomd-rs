@@ -239,7 +239,7 @@ impl Rotation for DoubleVersor {
     /// # Example
     ///
     /// ```
-    /// use hoomd_vector::{DoubleVersor, Rotation};
+    /// use hoomd_vector::{DoubleVersor, Rotation, Versor};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
