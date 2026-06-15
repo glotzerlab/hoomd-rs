@@ -436,7 +436,7 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
         }
         None
     }
-
+    #[inline]
     fn narrow_portal(interior: &Cartesian<4>, portal: &mut [Cartesian<4>; 4], v_new: Cartesian<4>) {
         // The 4-simplex [portal[0..4] , v_new] has 5 tetrahedral faces.
         // The entry face is the current portal (portal[0..4]).
@@ -452,35 +452,44 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
         // is (P − v_new) . n. The origin (P = 0) has distance −v_new . n, and interior
         // has distance (interior − v_new) . n. We orient n toward interior so that the
         // origin is on the opposite (outward) side when v_new . n > 0.
-        //
-        // In exact arithmetic the origin is always outside exactly one face, so the loop
-        // returns early. The best-face fallback handles floating-point edge cases by
-        // picking the face the origin is nearest to exiting through — consistent with
-        // how the 3D triple-product matching is exhaustive by construction.
-        let mut best_i = 0;
-        let mut best_d = f64::NEG_INFINITY;
-        for i in 0..4 {
-            // 3 edge vectors of the face opposite portal[i] (modular indexing skips i)
-            let edges = std::array::from_fn(|k| portal[(i + k + 1) % 4] - v_new);
-            let n = Self::counary_cross(&edges);
-            // Orient n toward the interior (positive side contains interior)
-            let n = if (*interior - v_new).dot(&n) < 0.0 {
-                -n
-            } else {
-                n
-            };
-            let d = v_new.dot(&n);
-            if d >= 0.0 {
+        let edges0 = [portal[1] - v_new, portal[2] - v_new, portal[3] - v_new];
+
+        // The counary cross product gives us the normal vector orthogonal to the first
+        // candidate exit face
+        let n0_raw = Self::counary_cross(&edges0);
+
+        // Figure out which direction points "outside" the shape
+        let s = if (*interior - v_new).dot(&n0_raw) < 0.0 {
+            -1.0
+        } else {
+            1.0
+        };
+
+        if s * v_new.dot(&n0_raw) >= 0.0 {
+            portal[0] = v_new;
+            return;
+        }
+
+        for i in 1..3 {
+            // Adding or subtracting a column does not change the determinant, so we
+            // don't actually need to translate our simplex by `v`!
+            let edges = [
+                portal[(i + 1) % 4],
+                portal[(i + 2) % 4],
+                portal[(i + 3) % 4],
+            ];
+
+            let n_raw = Self::counary_cross(&edges);
+            if s * v_new.dot(&n_raw) >= 0.0 {
                 portal[i] = v_new;
                 return;
             }
-            if d > best_d {
-                best_d = d;
-                best_i = i;
-            }
         }
-        // The origin is not clearly outside any face, so we pick the best one
-        portal[best_i] = v_new;
+
+        // The origin is not clearly outside faces 0, 1, or 2, so we pick face 3.
+        // This is technically incorrect in floating-point math, but we make
+        // the same assumption in the lower-dimensional cases.
+        portal[3] = v_new;
     }
 }
 
