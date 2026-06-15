@@ -4,6 +4,7 @@
 //! Implement `ClosedSpherical`
 
 use arrayvec::ArrayVec;
+use serde::{Deserialize, Serialize};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 use crate::property::Position;
@@ -34,6 +35,7 @@ use hoomd_manifold::Spherical;
 /// [`SphericalVecCell`]: hoomd_spatial::SphericalVecCell;
 /// [`ParallelSweep`]: hoomd_mc::ParallelSweep;
 /// [`Spherical`]: hoomd_manifold::Spherical;
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClosedSpherical<const N: usize> {}
 
 impl<BS, const N: usize> Wrap<BS> for ClosedSpherical<N>
