@@ -20,7 +20,7 @@ use rand::{
 use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
 use hoomd_linear_algebra::{
     MatMul,
-    matrix::{Matrix, Matrix33},
+    matrix::Matrix,
 };
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
@@ -468,16 +468,26 @@ impl Cartesian<4> {
     #[inline]
     #[must_use]
     pub fn counary_cross(vectors: &[Self; 3]) -> Self {
-        std::array::from_fn(|skip| {
-            Matrix33 {
-                rows: std::array::from_fn(|r| {
-                    // Skip the column 'skip' by adding 1 to the index when c >= skip
-                    std::array::from_fn(|c| vectors[r][c + usize::from(c >= skip)])
-                }),
-            }
-            .determinant()
-                * if skip.is_multiple_of(2) { 1.0 } else { -1.0 }
-        })
+        let u = &vectors[0];
+        let v = &vectors[1];
+        let w = &vectors[2];
+
+        // 2x2 Minors
+        let m01 = v[0] * w[1] - v[1] * w[0];
+        let m02 = v[0] * w[2] - v[2] * w[0];
+        let m03 = v[0] * w[3] - v[3] * w[0];
+        let m12 = v[1] * w[2] - v[2] * w[1];
+        let m13 = v[1] * w[3] - v[3] * w[1];
+        let m23 = v[2] * w[3] - v[3] * w[2];
+
+        // Association is important here, as we can accumulate small sign errors if we
+        // do not correctly group terms!
+        [
+            (u[1] * m23 - u[2] * m13 + u[3] * m12),
+            -(u[0] * m23 - u[2] * m03 + u[3] * m02),
+            (u[0] * m13 - u[1] * m03 + u[3] * m01),
+            -(u[0] * m12 - u[1] * m02 + u[2] * m01),
+        ]
         .into()
     }
 }
