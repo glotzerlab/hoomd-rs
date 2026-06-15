@@ -3,6 +3,8 @@
 
 //! N-Dimensional generalization of a convex polyhedron.
 
+use std::iter::zip;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{BoundingSphereRadius, Error, SupportMapping};
@@ -207,23 +209,56 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     }
 }
 
+/// Single-precision cartesian vector type.
+#[derive(Clone, Copy)]
+struct CartesianF32<const N: usize> {
+    /// Coordinates of the vector in R^N
+    coordinates: [f32; N],
+}
+impl<const N: usize> CartesianF32<N> {
+    /// Take the dot product of two `CartesianF32` types
+    #[inline(always)]
+    fn dot(&self, other: &Self) -> f32 {
+        zip(self.coordinates.iter(), other.coordinates.iter())
+            .fold(0.0, |product, (&x, &y)| x.mul_add(y, product))
+    }
+    /// Return the `CartesianF32` as a double-precision `Cartesian<N>`
+    #[inline]
+    fn as_double(&self) -> Cartesian<N> {
+        self.coordinates.map(f64::from).into()
+    }
+}
+
+impl<const N: usize> From<Cartesian<N>> for CartesianF32<N> {
+    #[inline]
+    #[expect(clippy::cast_possible_truncation, reason = "Truncation is valid")]
+    fn from(value: Cartesian<N>) -> Self {
+        Self {
+            coordinates: value.coordinates.map(|x| x as f32),
+        }
+    }
+}
+
 impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
     for ConvexPolytope<N, MAX_VERTICES>
 {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
+        let n = &CartesianF32::from(*n);
         match N {
             0 => Cartesian::<N>::default(),
             1 => self.vertices[0],
-            _ => *self
+            _ => self
                 .vertices
                 .iter()
+                .map(|&v| CartesianF32::from(v))
                 .max_by(|a, b| {
                     a.dot(n)
                         .partial_cmp(&b.dot(n))
                         .unwrap_or(std::cmp::Ordering::Equal)
                 })
-                .expect("the 0 match statement should handle empty vectors"),
+                .expect("the 0 match statement should handle empty vectors")
+                .as_double(),
         }
     }
 }
