@@ -9,6 +9,7 @@
 * `[hoomd-mc]`: Implement translation moves for `Point<Spherical<4>>` (#287).
 * `[hoomd-microstate]`: Implement `AppendMicrostate` for the site types `Point<Spherical<3>>`, `Point<Spherical<4>>`, `OrientedHyperbolicPoint<3, Angle>`, and `Point<Hyperbolic<3>>` (#286).
 * `[hoomd-utility]`: Implement `Eq`, `PartialOrd`, and `Ord` for `PositiveReal` (#287).
+* `[hoomd-vector]`: Implement `Cartesian<4>::counary_cross` (#305).
 
 *Changed:*
 

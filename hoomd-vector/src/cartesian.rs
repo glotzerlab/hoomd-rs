@@ -448,6 +448,56 @@ impl Cross for Cartesian<3> {
     }
 }
 
+impl Cartesian<4> {
+    /// Compute the `N-1`-ary ([co-unary]) cross product of a four-dimensional vector.
+    ///
+    /// This function is a generalization of the cross product to general dimension,
+    /// identifying a unique vector perpendicular to `N-1` other vectors. In two
+    /// dimensions, this is [`Cartesian::<2>::perp`], and in three dimensions this is
+    /// simply [`Cross`].
+    ///
+    /// In geometric algebra terms, this is the Hodge dual of the exterior (Wedge)
+    /// product. Geometrically, the dot product of the resulting vector with all inputs
+    /// is zero and the magnitude of the vector is the hypervolume of the
+    /// parallelepiped spanned by the inputs.
+    ///
+    /// [co-unary]: https://ncatlab.org/nlab/show/cross+product#counary
+    #[inline]
+    #[must_use]
+    pub fn counary_cross(vectors: &[Self; 3]) -> Self {
+        /// Calculate a 2x2 matrix determinant while compensating for errors.
+        /// <https://pharr.org/matt/blog/2019/11/03/difference-of-floats>
+        #[inline(always)]
+        fn diff_of_products(a: f64, b: f64, c: f64, d: f64) -> f64 {
+            let cd = c * d;
+            let err = (-c).mul_add(d, cd);
+            let dop = a.mul_add(b, -cd);
+            dop + err
+        }
+        let u = &vectors[0];
+        let v = &vectors[1];
+        let w = &vectors[2];
+
+        // 2x2 Minors via Kahan's Exact FMA
+        let m01 = diff_of_products(v[0], w[1], v[1], w[0]);
+        let m02 = diff_of_products(v[0], w[2], v[2], w[0]);
+        let m03 = diff_of_products(v[0], w[3], v[3], w[0]);
+        let m12 = diff_of_products(v[1], w[2], v[2], w[1]);
+        let m13 = diff_of_products(v[1], w[3], v[3], w[1]);
+        let m23 = diff_of_products(v[2], w[3], v[3], w[2]);
+
+        // Association is important here, as we can accumulate small sign errors if we
+        // do not correctly group terms!
+        [
+            (u[1] * m23 - u[2] * m13 + u[3] * m12),
+            -(u[0] * m23 - u[2] * m03 + u[3] * m02),
+            (u[0] * m13 - u[1] * m03 + u[3] * m01),
+            -(u[0] * m12 - u[1] * m02 + u[2] * m01),
+        ]
+        .into()
+    }
+}
+
 impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     /// Sample a Cartesian vector from the uniform [-1, 1] hypercube.
     ///
@@ -1175,5 +1225,34 @@ mod tests {
         for (a, b) in transposed.rows().iter().zip(inverted.rows().iter()) {
             assert_relative_eq!(a, b);
         }
+    }
+
+    #[rstest]
+    fn test_generalized_cross_product_combinations(
+        #[values(1.0, -2.5, 4.0)] r1: f64,
+        #[values(1.0, 3.0, -5.1)] r2: f64,
+        #[values(2.0, -1.5, 0.0)] r3: f64,
+        #[values(0.0, 33.0, -12.5, 0.04)] x: f64,
+        #[values(0.0, 1.0, 3.0, -2.6)] y: f64,
+        #[values(0.0, 2.0, -1.5, -0.1)] z: f64,
+    ) {
+        // Construct a lower-triangular matrix of vectors
+        let vecs = [
+            Cartesian::from([r1, 0.0, 0.0, 0.0]),
+            Cartesian::from([x, r2, 0.0, 0.0]),
+            Cartesian::from([y, z, r3, 0.0]),
+        ];
+
+        let cross = Cartesian::<4>::counary_cross(&vecs);
+
+        // Validate the result is perpendicular to all inputs
+        for v in &vecs {
+            assert_relative_eq!(cross.dot(v), 0.0);
+        }
+
+        // Validate the magnitude is exactly the spanned volume
+        // For a triangular matrix, the volume is the product of the diagonals.
+        let expected_volume_sq = (r1 * r2 * r3).powi(2);
+        assert_relative_eq!(cross.norm_squared(), expected_volume_sq);
     }
 }
