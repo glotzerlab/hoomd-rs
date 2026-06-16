@@ -384,24 +384,11 @@ mod support_mapping {
     use super::*;
     use hoomd_geometry::SupportMapping;
 
-    const VERTICES: &[usize] = &[6, 16, 32];
-
-    fn random_directions<const N: usize>(count: usize, seed: u64) -> Vec<Cartesian<N>> {
-        let mut rng = StdRng::seed_from_u64(seed);
-        (0..count).map(|_| rng.random::<Cartesian<N>>()).collect()
-    }
-
-    #[divan::bench(consts = VERTICES)]
+    #[divan::bench(consts = DIPYRAMID_VERTICES)]
     fn dipyramid<const N: usize>(bencher: Bencher) {
-        let base = ConvexPolytope::<2>::regular(N);
-        let shape = ConvexPolytope::<3>::with_vertices(
-            base.vertices()
-                .iter()
-                .map(|x| Cartesian::from([x[0], x[1], 0.0]))
-                .chain([[0.0, 0.0, 0.5].into(), [0.0, 0.0, -0.5].into()]),
-        )
-        .expect("constructed polytope should be valid");
-        let directions = random_directions::<3>(1024, 1);
+        let shape = create_dipyramid(N);
+        let mut rng = StdRng::seed_from_u64(1);
+        let directions: Vec<Cartesian<3>> = (0..1024).map(|_| rng.random()).collect();
 
         bencher
             .counter(ItemsCount::from(1024_u32))
