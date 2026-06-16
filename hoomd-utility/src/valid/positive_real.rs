@@ -107,6 +107,7 @@ impl TryFrom<f64> for PositiveReal {
         }
     }
 }
+
 impl Default for PositiveReal {
     /// The default value is 1.0.
     #[inline]
