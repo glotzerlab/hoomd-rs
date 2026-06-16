@@ -4,8 +4,10 @@
 
 *Added:*
 
+* `[hoomd-geometry]`: Add `TwelveTwelve` hyperbolic space boundary condition (#296).
 * `[hoomd-manifold]`: Add `Spherical<4>::from_versor` and the corresponding `::to_versor` (#285).
 * `[hoomd-mc]`: Implement translation moves for `Point<Spherical<4>>` (#287).
+* `[hoomd-microstate]`: Implement `AppendMicrostate` for the site types `Point<Spherical<3>>`, `Point<Spherical<4>>`, `OrientedHyperbolicPoint<3, Angle>`, and `Point<Hyperbolic<3>>` (#286).
 * `[hoomd-utility]`: Implement `Eq`, `PartialOrd`, and `Ord` for `PositiveReal` (#287).
 
 *Changed:*
@@ -19,7 +21,8 @@
 
 *Fixed:*
 
-* `[hoomd-manifold]`: Fixed numerical stability issue in `Spherical<3>::distance` where the dot product could result in an out of bounds value.
+* `[hoomd-manifold]`: Fixed numerical stability issue in `Spherical<3>::distance` where the dot product could result in an out of bounds value (#285).
+* `[hoomd-manifold]`: Improved numerical stability of Hyperbolic space (#303).
 
 ## 1.1.0 (2026-04-17)
 
