@@ -378,3 +378,38 @@ mod capsule {
             .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
     }
 }
+
+#[divan::bench_group]
+mod support_mapping {
+    use super::*;
+    use hoomd_geometry::SupportMapping;
+
+    const VERTICES: &[usize] = &[6, 16, 32];
+
+    fn random_directions<const N: usize>(count: usize, seed: u64) -> Vec<Cartesian<N>> {
+        let mut rng = StdRng::seed_from_u64(seed);
+        (0..count).map(|_| rng.random::<Cartesian<N>>()).collect()
+    }
+
+    #[divan::bench(consts = VERTICES)]
+    fn dipyramid<const N: usize>(bencher: Bencher) {
+        let base = ConvexPolytope::<2>::regular(N);
+        let shape = ConvexPolytope::<3>::with_vertices(
+            base.vertices()
+                .iter()
+                .map(|x| Cartesian::from([x[0], x[1], 0.0]))
+                .chain([[0.0, 0.0, 0.5].into(), [0.0, 0.0, -0.5].into()]),
+        )
+        .expect("constructed polytope should be valid");
+        let directions = random_directions::<3>(1024, 1);
+
+        bencher
+            .counter(ItemsCount::from(1024_u32))
+            .with_inputs(|| directions.clone())
+            .bench_local_values(|dirs| {
+                for d in black_box(dirs) {
+                    black_box(shape.support_mapping(&d));
+                }
+            });
+    }
+}
