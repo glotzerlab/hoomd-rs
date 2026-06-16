@@ -215,15 +215,18 @@ impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
         match N {
             0 => Cartesian::<N>::default(),
             1 => self.vertices[0],
-            _ => *self
-                .vertices
-                .iter()
-                .max_by(|a, b| {
-                    a.dot(n)
-                        .partial_cmp(&b.dot(n))
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-                .expect("the 0 match statement should handle empty vectors"),
+            _ => {
+                let mut best = self.vertices[0];
+                let mut best_dot = best.dot(n);
+                for v in self.vertices.iter().skip(1) {
+                    let d = v.dot(n);
+                    if d > best_dot {
+                        best_dot = d;
+                        best = *v;
+                    }
+                }
+                best
+            }
         }
     }
 }
