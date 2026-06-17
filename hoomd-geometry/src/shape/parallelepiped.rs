@@ -229,7 +229,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     #[inline]
     #[must_use]
     pub fn to_fractional(&self, v: Cartesian<N>) -> Cartesian<N> {
-        Cartesian::from_col_matrix(&qr::qr_solve(
+        Cartesian::from_column_matrix(&qr::qr_solve(
             self.qr
                 .as_ref()
                 .expect("qr attribute is not computed; call calc_qr() first"),

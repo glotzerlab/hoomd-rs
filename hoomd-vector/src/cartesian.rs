@@ -521,12 +521,12 @@ impl<const N: usize> Cartesian<N> {
     /// let m: Matrix<3, 1> = Matrix {
     ///     rows: [[1.0], [2.0], [3.0]],
     /// };
-    /// let v = Cartesian::<3>::from_col_matrix(&m);
+    /// let v = Cartesian::<3>::from_column_matrix(&m);
     /// assert_eq!(v, [1.0, 2.0, 3.0].into());
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_col_matrix(col: &Matrix<N, 1>) -> Self {
+    pub fn from_column_matrix(col: &Matrix<N, 1>) -> Self {
         let mut x = Cartesian::<N>::default();
         for i in 0..N {
             x[i] = col[(i, 0)];
