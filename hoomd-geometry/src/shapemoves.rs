@@ -90,15 +90,15 @@ impl<const N: usize> Scale for Hyperellipsoid<N> {
     }
 }
 
-impl Scale for Simplex3 {
-    /// Scale the simplex by scaling every vertex coordinate.
-    #[inline]
-    fn scale(&mut self, scale_factor: PositiveReal) {
-        for vertex in &mut self.vertices {
-            *vertex *= scale_factor;
-        }
-    }
-}
+// impl Scale for Simplex3 {
+//     /// Scale the simplex by scaling every vertex coordinate.
+//     #[inline]
+//     fn scale(&mut self, scale_factor: PositiveReal) {
+//         for vertex in &mut self.vertices {
+//             *vertex *= scale_factor;
+//         }
+//     }
+// }
 
 impl<const N: usize> Shear<N> for Hyperparallelepiped<N> {
     /// Apply a shear transformation to the hyperparallelepiped.

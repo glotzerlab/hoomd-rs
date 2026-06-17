@@ -12,7 +12,7 @@ use crate::{
     SupportMapping, Volume, shape::Hyperparallelepiped,
 };
 
-/// A non-orthogonal 2D box
+/// A quadrilateral with two pairs of parallel sides described by an upper triangular edge matrix.
 ///
 /// A rhomboid is a 2D parallelogram shape defined by two edge lengths $`(L_x, L_y)`$
 /// and a shear factor $`xy`$ that describes the shearing in the x-direction relative

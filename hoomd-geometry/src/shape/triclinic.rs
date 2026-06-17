@@ -18,7 +18,7 @@ use rand::{
 
 use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume, shape::Hyperparallelepiped};
 
-/// A non-orthogonal 3D box
+/// A hexahedron with three pairs of parallel faces described by an upper-triangular matrix.
 ///
 /// A triclinic box is a parallelepiped defined by three edge vectors that may be
 /// non-orthogonal. It is characterized by three extents $`(L_x, L_y, L_z)`$ and three
