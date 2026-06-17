@@ -517,9 +517,9 @@ impl<const N: usize> Cartesian<N> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_row_matrix(row: &Matrix<1, N>) -> Self {
+    pub fn from_row_matrix(matrix: &Matrix<1, N>) -> Self {
         Self {
-            coordinates: row.rows[0],
+            coordinates: matrix.rows[0],
         }
     }
 
@@ -537,10 +537,10 @@ impl<const N: usize> Cartesian<N> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_column_matrix(col: &Matrix<N, 1>) -> Self {
+    pub fn from_column_matrix(matrix: &Matrix<N, 1>) -> Self {
         let mut x = Cartesian::<N>::default();
         for i in 0..N {
-            x[i] = col[(i, 0)];
+            x[i] = matrix[(i, 0)];
         }
         x
     }
