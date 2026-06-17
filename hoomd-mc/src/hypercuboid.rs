@@ -417,10 +417,18 @@ mod tests {
         check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 4], shape) == 4);
         check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 5], shape) == 5);
 
+        (0..5).for_each(|i| {
+            check!(
+                HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, i, 0], shape) == i * 8
+            );
+        });
+
+        // Same as 3D, multiplied by shape[3]
         check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 1, 0, 0], shape) == 6 * 8);
         check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 2, 0, 0], shape) == 12 * 8);
         check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 3, 0, 0], shape) == 18 * 8);
 
+        // Same as 3D, multiplied by shape[3]
         check!(HypercuboidCheckerboard::<4>::multi_index_to_index([1, 0, 0, 0], shape) == 24 * 8);
         check!(HypercuboidCheckerboard::<4>::multi_index_to_index([2, 0, 0, 0], shape) == 48 * 8);
         check!(HypercuboidCheckerboard::<4>::multi_index_to_index([3, 3, 2, 0], shape) == 92 * 8);
