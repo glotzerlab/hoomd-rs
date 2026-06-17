@@ -631,6 +631,112 @@ mod tests {
     }
 
     #[test]
+    fn test_construct_space_indices_by_color_4d_general() {
+        let space_indices_by_color =
+            HypercuboidCheckerboard::<4>::construct_space_indices_by_color([2, 4, 2, 4]);
+
+        assert!(space_indices_by_color.len() == 16);
+
+        // Colors 0-7: axis 0 offset is 0.
+        assert!(space_indices_by_color[0].len() == 4);
+        check!(space_indices_by_color[0][0] == 0);
+        check!(space_indices_by_color[0][1] == 2);
+        check!(space_indices_by_color[0][2] == 16);
+        check!(space_indices_by_color[0][3] == 18);
+
+        assert!(space_indices_by_color[1].len() == 4);
+        check!(space_indices_by_color[1][0] == 1);
+        check!(space_indices_by_color[1][1] == 3);
+        check!(space_indices_by_color[1][2] == 17);
+        check!(space_indices_by_color[1][3] == 19);
+
+        assert!(space_indices_by_color[2].len() == 4);
+        check!(space_indices_by_color[2][0] == 4);
+        check!(space_indices_by_color[2][1] == 6);
+        check!(space_indices_by_color[2][2] == 20);
+        check!(space_indices_by_color[2][3] == 22);
+
+        assert!(space_indices_by_color[3].len() == 4);
+        check!(space_indices_by_color[3][0] == 5);
+        check!(space_indices_by_color[3][1] == 7);
+        check!(space_indices_by_color[3][2] == 21);
+        check!(space_indices_by_color[3][3] == 23);
+
+        assert!(space_indices_by_color[4].len() == 4);
+        check!(space_indices_by_color[4][0] == 8);
+        check!(space_indices_by_color[4][1] == 10);
+        check!(space_indices_by_color[4][2] == 24);
+        check!(space_indices_by_color[4][3] == 26);
+
+        assert!(space_indices_by_color[5].len() == 4);
+        check!(space_indices_by_color[5][0] == 9);
+        check!(space_indices_by_color[5][1] == 11);
+        check!(space_indices_by_color[5][2] == 25);
+        check!(space_indices_by_color[5][3] == 27);
+
+        assert!(space_indices_by_color[6].len() == 4);
+        check!(space_indices_by_color[6][0] == 12);
+        check!(space_indices_by_color[6][1] == 14);
+        check!(space_indices_by_color[6][2] == 28);
+        check!(space_indices_by_color[6][3] == 30);
+
+        assert!(space_indices_by_color[7].len() == 4);
+        check!(space_indices_by_color[7][0] == 13);
+        check!(space_indices_by_color[7][1] == 15);
+        check!(space_indices_by_color[7][2] == 29);
+        check!(space_indices_by_color[7][3] == 31);
+
+        // Colors 8-15: axis 0 offset is 1 (stride 32 = 4*2*4).
+        assert!(space_indices_by_color[8].len() == 4);
+        check!(space_indices_by_color[8][0] == 32 + 0);
+        check!(space_indices_by_color[8][1] == 32 + 2);
+        check!(space_indices_by_color[8][2] == 32 + 16);
+        check!(space_indices_by_color[8][3] == 32 + 18);
+
+        assert!(space_indices_by_color[9].len() == 4);
+        check!(space_indices_by_color[9][0] == 32 + 1);
+        check!(space_indices_by_color[9][1] == 32 + 3);
+        check!(space_indices_by_color[9][2] == 32 + 17);
+        check!(space_indices_by_color[9][3] == 32 + 19);
+
+        assert!(space_indices_by_color[10].len() == 4);
+        check!(space_indices_by_color[10][0] == 32 + 4);
+        check!(space_indices_by_color[10][1] == 32 + 6);
+        check!(space_indices_by_color[10][2] == 32 + 20);
+        check!(space_indices_by_color[10][3] == 32 + 22);
+
+        assert!(space_indices_by_color[11].len() == 4);
+        check!(space_indices_by_color[11][0] == 32 + 5);
+        check!(space_indices_by_color[11][1] == 32 + 7);
+        check!(space_indices_by_color[11][2] == 32 + 21);
+        check!(space_indices_by_color[11][3] == 32 + 23);
+
+        assert!(space_indices_by_color[12].len() == 4);
+        check!(space_indices_by_color[12][0] == 32 + 8);
+        check!(space_indices_by_color[12][1] == 32 + 10);
+        check!(space_indices_by_color[12][2] == 32 + 24);
+        check!(space_indices_by_color[12][3] == 32 + 26);
+
+        assert!(space_indices_by_color[13].len() == 4);
+        check!(space_indices_by_color[13][0] == 32 + 9);
+        check!(space_indices_by_color[13][1] == 32 + 11);
+        check!(space_indices_by_color[13][2] == 32 + 25);
+        check!(space_indices_by_color[13][3] == 32 + 27);
+
+        assert!(space_indices_by_color[14].len() == 4);
+        check!(space_indices_by_color[14][0] == 32 + 12);
+        check!(space_indices_by_color[14][1] == 32 + 14);
+        check!(space_indices_by_color[14][2] == 32 + 28);
+        check!(space_indices_by_color[14][3] == 32 + 30);
+
+        assert!(space_indices_by_color[15].len() == 4);
+        check!(space_indices_by_color[15][0] == 32 + 13);
+        check!(space_indices_by_color[15][1] == 32 + 15);
+        check!(space_indices_by_color[15][2] == 32 + 29);
+        check!(space_indices_by_color[15][3] == 32 + 31);
+    }
+
+    #[test]
     fn test_point_to_space_index_periodic() -> anyhow::Result<()> {
         let checkerboard = HypercuboidCheckerboard::with_fixed_origin(
             2.0.try_into()?,
