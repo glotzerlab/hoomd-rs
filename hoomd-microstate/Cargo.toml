@@ -40,7 +40,6 @@ assert2.workspace = true
 anyhow.workspace = true
 approxim.workspace = true
 divan.workspace = true
-itertools.workspace = true
 log.workspace = true
 rand.workspace = true
 rstest.workspace = true
