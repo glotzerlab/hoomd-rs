@@ -688,7 +688,7 @@ mod tests {
 
         // Colors 8-15: axis 0 offset is 1 (stride 32 = 4*2*4).
         assert!(space_indices_by_color[8].len() == 4);
-        check!(space_indices_by_color[8][0] == 32 + 0);
+        check!(space_indices_by_color[8][0] == 32);
         check!(space_indices_by_color[8][1] == 32 + 2);
         check!(space_indices_by_color[8][2] == 32 + 16);
         check!(space_indices_by_color[8][3] == 32 + 18);
