@@ -6,7 +6,7 @@
 //! See the [crate-level documentation](crate) for an overview of how boundary
 //! conditions interact with [`Microstate`](crate::Microstate) and model methods.
 //!
-//! ``hoomd-rs`` provides the boundary types [`Open`], [`Closed`], and [`Periodic`].
+//! *hoomd-rs* provides the boundary types [`Open`], [`Closed`], and [`Periodic`].
 //! * [`Open`] boundaries allow bodies and sites to exist anywhere in space.
 //! * [`Closed`] boundaries limit bodies and sites to the inside of a shape and
 //!   are not periodic in any direction.
