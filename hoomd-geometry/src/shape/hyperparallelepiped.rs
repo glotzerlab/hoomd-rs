@@ -28,11 +28,6 @@ use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume};
 /// factorization of the edge vector matrix is cached in `_qr` to accelerate repeated coordinate
 /// conversions between Cartesian and fractional frames.
 ///
-/// # Type aliases
-///
-/// - [`Parallelogram`] — 2D specialization
-/// - [`Parallelepiped`] — 3D specialization
-///
 /// # Example
 ///
 /// ```
@@ -61,12 +56,6 @@ pub struct Hyperparallelepiped<const N: usize> {
     /// [`map_point`](MapPoint::map_point)).
     pub qr: Option<Matrix<N, N>>,
 }
-
-/// A 2D sheared box
-pub type Parallelogram = Hyperparallelepiped<2>;
-
-/// A 3D sheared box
-pub type Parallelepiped = Hyperparallelepiped<3>;
 
 impl<const N: usize> Default for Hyperparallelepiped<N> {
     /// Returns the N-dimensional unit hypercube: edge vectors are the standard
