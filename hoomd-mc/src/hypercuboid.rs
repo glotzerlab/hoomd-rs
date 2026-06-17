@@ -410,23 +410,29 @@ mod tests {
     #[test]
     fn test_multi_index_to_index_4d() {
         let shape = [12, 4, 6, 8];
-        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 0], shape) == 0);
-        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 1], shape) == 1);
-        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 2], shape) == 2);
-        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 3], shape) == 3);
-        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 4], shape) == 4);
-        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 5], shape) == 5);
+        (0..shape[3]).for_each(|i| {
+            check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, i], shape) == i);
+        });
 
-        (0..5).for_each(|i| {
+        (0..shape[2]).for_each(|i| {
             check!(
-                HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, i, 0], shape) == i * 8
+                HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, i, 0], shape)
+                    == i * shape[3]
             );
         });
 
-        // Same as 3D, multiplied by shape[3]
-        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 1, 0, 0], shape) == 6 * 8);
-        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 2, 0, 0], shape) == 12 * 8);
-        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 3, 0, 0], shape) == 18 * 8);
+        (0..shape[1]).for_each(|i| {
+            check!(
+                HypercuboidCheckerboard::<4>::multi_index_to_index([0, i, 0, 0], shape)
+                    == (i * shape[2]) * shape[3]
+            );
+        });
+
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([11, 3, 5, 7], shape) == 2303);
+        check!(
+            HypercuboidCheckerboard::<4>::multi_index_to_index([9, 0, 0, 0], shape)
+                == (9 * 4 * 6) * 8
+        );
 
         // Same as 3D, multiplied by shape[3]
         check!(HypercuboidCheckerboard::<4>::multi_index_to_index([1, 0, 0, 0], shape) == 24 * 8);
