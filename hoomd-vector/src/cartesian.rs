@@ -483,6 +483,17 @@ impl<const N: usize> Cartesian<N> {
     ///
     /// The provided closure is called once for each component, and the returned
     /// vector has the same dimensionality as the original.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let a = Cartesian::from([1.0, 2.0, 3.0]);
+    /// let b = a.map(|x| x * 2.0);
+    ///
+    /// assert_eq!(b, [2.0, 4.0, 6.0].into())
+    /// ```
     #[inline]
     #[must_use]
     pub fn map<F>(self, f: F) -> Cartesian<N>
