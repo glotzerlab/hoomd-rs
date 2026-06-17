@@ -19,14 +19,21 @@ use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume};
 
 /// An N-dimensional hyperparallelepiped defined by N edge vectors.
 ///
-/// A hyperparallelepiped (also known as a parallelotope) is the N-dimensional generalization of a parallelogram in 2D
-/// and parallelepiped in 3D. It is the set of all points that can be expressed as a
-/// linear combination of its edge vectors with coefficients in `[-0.5, 0.5)`.
+/// A hyperparallelepiped (also known as a parallelotope) is the N-dimensional
+/// generalization of a parallelogram in 2D and parallelepiped in 3D. Points
+/// $` \vec{r} `$ inside a hyperparallelepiped can be expressed by
+/// ```math
+/// \vec{r} = \sum_i \lambda_i \vec{e}_i
+/// ```
+/// where $` \vec{e}_i `$ are the edge vectors each $` \lambda_i `$ is in
+/// the interval $` [ 0.5, 0.5 ) `$.
 ///
-/// The shape can be used as the box geometry for simulations, but users should prefer [Rhomboid](crate::shape::Rhomboid)
-/// and [Triclinic](crate::shape::Triclinic) for 2 and 3-dimensional simulations, respectively. The QR
-/// factorization of the edge vector matrix is cached in `_qr` to accelerate repeated coordinate
-/// conversions between Cartesian and fractional frames.
+/// The shape can be used as the box geometry for simulations,
+/// but users should prefer [Rhomboid](crate::shape::Rhomboid) and
+/// [Triclinic](crate::shape::Triclinic) for 2 and 3-dimensional simulations,
+/// respectively. The QR factorization of the edge vector matrix is cached in
+/// `_qr` to accelerate repeated coordinate conversions between Cartesian and
+/// fractional frames.
 ///
 /// # Example
 ///
@@ -34,13 +41,11 @@ use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume};
 /// use hoomd_geometry::shape::Hyperparallelepiped;
 /// use hoomd_vector::Cartesian;
 ///
-/// // Construct an orthorhombic box with dimensions 10 x 12 x 14
-/// let mut box3d = Hyperparallelepiped::new([
-///     Cartesian::from([10.0, 0.0, 0.0]),
-///     Cartesian::from([0.0, 12.0, 0.0]),
-///     Cartesian::from([0.0, 0.0, 14.0]),
+/// let mut hyperparallelepiped = Hyperparallelepiped::new([
+///     Cartesian::from([10.0, 3.0, 0.0]),
+///     Cartesian::from([-2.0, 12.0, -3.0]),
+///     Cartesian::from([1.0, -4.0, 14.0]),
 /// ]);
-/// box3d.calc_qr();
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hyperparallelepiped<const N: usize> {
