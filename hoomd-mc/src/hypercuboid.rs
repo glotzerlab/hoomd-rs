@@ -151,6 +151,17 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         index
     }
 
+    /// Expand a single value in `[0, product(shape)]` back to a multi-dimensional index.
+    #[inline]
+    fn index_to_multi_index(mut index: usize, shape: [usize; N]) -> [usize; N] {
+        let mut multi_index = [0_usize; N];
+        for i in (0..N).rev() {
+            multi_index[i] = index % shape[i];
+            index /= shape[i];
+        }
+        multi_index
+    }
+
     /// Compute the space width and checkerboard shape.
     #[inline]
     fn compute_dimensions(
@@ -206,19 +217,16 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         let total: usize = half.iter().product();
 
         let base: Vec<usize> = (0..total)
-            .map(|mut idx| {
-                let mut multi_index = [0_usize; N];
-                for i in (0..N).rev() {
-                    multi_index[i] = 2 * (idx % half[i]);
-                    idx /= half[i];
-                }
+            .map(|idx| {
+                let half_multi = Self::index_to_multi_index(idx, half);
+                let multi_index: [usize; N] = array::from_fn(|i| 2 * half_multi[i]);
                 Self::multi_index_to_index(multi_index, shape)
             })
             .collect();
 
         (0..num_colors)
             .map(|color| {
-                let offset: [usize; N] = array::from_fn(|i| (color >> (N - 1 - i)) & 1);
+                let offset = Self::index_to_multi_index(color, [2; N]);
                 let delta = Self::multi_index_to_index(offset, shape);
                 base.iter().map(|&b| b + delta).collect()
             })
