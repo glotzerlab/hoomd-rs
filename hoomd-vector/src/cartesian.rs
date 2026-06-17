@@ -132,20 +132,6 @@ impl<const N: usize> From<[f64; N]> for Cartesian<N> {
     }
 }
 
-impl<const N: usize> From<Cartesian<N>> for [f64; N] {
-    /// Create a Cartesian vector with the given coordinates.
-    ///
-    /// # Example
-    ///
-    /// use `hoomd_vector::Cartesian`;
-    ///
-    /// let v: [f64; N] = `Cartesian::from`([4.0, 3.0]).`into()`;
-    #[inline]
-    fn from(coordinates: Cartesian<N>) -> Self {
-        coordinates.coordinates
-    }
-}
-
 impl<const N: usize> IntoIterator for Cartesian<N> {
     type Item = f64;
     type IntoIter = <[f64; N] as IntoIterator>::IntoIter;
@@ -183,28 +169,6 @@ impl From<(f64, f64, f64)> for Cartesian<3> {
     fn from(coordinates: (f64, f64, f64)) -> Self {
         Self {
             coordinates: coordinates.into(),
-        }
-    }
-}
-
-impl<const N: usize> From<Matrix<1, N>> for Cartesian<N> {
-    /// Create a Cartesian vector from a row matrix.
-    ///
-    /// # Example
-    /// ```
-    /// use hoomd_linear_algebra::matrix::Matrix;
-    /// use hoomd_vector::Cartesian;
-    ///
-    /// let m: Matrix<1, 3> = Matrix {
-    ///     rows: [[1.0, 2.0, 3.0]],
-    /// };
-    /// let v: Cartesian<3> = m.into();
-    /// assert_eq!(v, [1.0, 2.0, 3.0].into());
-    /// ```
-    #[inline]
-    fn from(value: Matrix<1, N>) -> Self {
-        Self {
-            coordinates: value.rows[0],
         }
     }
 }
@@ -527,6 +491,7 @@ impl<const N: usize> Cartesian<N> {
     {
         self.coordinates.map(f).into()
     }
+
     /// Create a Cartesian vector from a row matrix.
     /// # Example
     /// ```

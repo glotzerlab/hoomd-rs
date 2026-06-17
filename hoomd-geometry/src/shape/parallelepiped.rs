@@ -170,7 +170,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
             .edge_vectors
             .iter()
             .fold(Cartesian::<N>::default(), |acc, v| v.map(f64::abs) + acc))
-        .into()
+        .coordinates
     }
 
     /// Determine the minimal extents of the hyperparallelepiped along each
