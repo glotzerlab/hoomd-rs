@@ -71,7 +71,7 @@ use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMappi
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Simplex3 {
     /// Vertices of the simplex
-    pub(crate) vertices: [Cartesian<3>; 4], // NOT public, to force orientation on construction
+    vertices: [Cartesian<3>; 4], // NOT public, to force orientation on construction
 }
 
 impl SupportMapping<Cartesian<3>> for Simplex3 {
