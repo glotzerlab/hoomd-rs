@@ -196,66 +196,33 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
     }
 
     /// Partition the space indices by color.
-    #[expect(
-        clippy::todo,
-        reason = "there are no known use-cases for parallel 4D, 5D, ... simulations at this time"
-    )]
     fn construct_space_indices_by_color(shape: [usize; N]) -> Vec<Vec<usize>> {
         for width in shape {
             assert!(width.is_multiple_of(2));
         }
+        let num_colors = 2usize.pow(N as u32);
 
-        let mut result = Vec::new();
+        let half: [usize; N] = array::from_fn(|i| shape[i] / 2);
+        let total: usize = half.iter().product();
 
-        if N == 2 {
-            for offset_j in 0..=1 {
-                for offset_i in 0..=1 {
-                    let mut space_indices = Vec::new();
-                    let mut multi_index = [0; N];
-
-                    for j in 0..shape[0] / 2 {
-                        multi_index[0] = 2 * j + offset_j;
-                        for i in 0..shape[1] / 2 {
-                            multi_index[1] = 2 * i + offset_i;
-                            space_indices.push(Self::multi_index_to_index(multi_index, shape));
-                        }
-                    }
-
-                    result.push(space_indices);
+        let base: Vec<usize> = (0..total)
+            .map(|mut idx| {
+                let mut multi_index = [0_usize; N];
+                for i in (0..N).rev() {
+                    multi_index[i] = 2 * (idx % half[i]);
+                    idx /= half[i];
                 }
-            }
+                Self::multi_index_to_index(multi_index, shape)
+            })
+            .collect();
 
-            return result;
-        }
-
-        if N == 3 {
-            for offset_k in 0..=1 {
-                for offset_j in 0..=1 {
-                    for offset_i in 0..=1 {
-                        let mut space_indices = Vec::new();
-                        let mut multi_index = [0; N];
-
-                        for k in 0..shape[0] / 2 {
-                            multi_index[0] = 2 * k + offset_k;
-                            for j in 0..shape[1] / 2 {
-                                multi_index[1] = 2 * j + offset_j;
-                                for i in 0..shape[2] / 2 {
-                                    multi_index[2] = 2 * i + offset_i;
-                                    space_indices
-                                        .push(Self::multi_index_to_index(multi_index, shape));
-                                }
-                            }
-                        }
-
-                        result.push(space_indices);
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        todo!("Implement a general method");
+        (0..num_colors)
+            .map(|color| {
+                let offset: [usize; N] = array::from_fn(|i| (color >> (N - 1 - i)) & 1);
+                let delta = Self::multi_index_to_index(offset, shape);
+                base.iter().map(|&b| b + delta).collect()
+            })
+            .collect()
     }
 
     /// Construct a checkerboard with a given origin (for testing).
