@@ -408,6 +408,25 @@ mod tests {
     }
 
     #[test]
+    fn test_multi_index_to_index_4d() {
+        let shape = [12, 4, 6, 8];
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 0], shape) == 0);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 1], shape) == 1);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 2], shape) == 2);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 3], shape) == 3);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 4], shape) == 4);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, 5], shape) == 5);
+
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 1, 0, 0], shape) == 6 * 8);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 2, 0, 0], shape) == 12 * 8);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 3, 0, 0], shape) == 18 * 8);
+
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([1, 0, 0, 0], shape) == 24 * 8);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([2, 0, 0, 0], shape) == 48 * 8);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([3, 3, 2, 0], shape) == 92 * 8);
+    }
+
+    #[test]
     fn test_compute_dimensions_exact() -> anyhow::Result<()> {
         let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
             [16.0.try_into()?, 24.0.try_into()?],
