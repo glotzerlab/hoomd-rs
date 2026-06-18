@@ -33,18 +33,18 @@ mod zero_center_momentum;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::builder()
 ///     .bodies([
-///         Body { properties: DynamicPoint {
+///         Body::single_site(DynamicPoint {
 ///           position: Cartesian::from([1.0, 2.0]),
 ///           ..Default::default()
 ///           },
-///           sites: vec![Point::default()],
-///           },
-///         Body { properties: DynamicPoint {
+///           Point::default(),
+///           ),
+///         Body::single_site(DynamicPoint {
 ///           position: Cartesian::from([-2.0, 3.0]),
 ///           ..Default::default()
 ///           },
-///           sites: vec![Point::default()],
-///           },
+///           Point::default(),
+///           ),
 ///     ])
 ///     .try_build()?;
 ///
@@ -131,7 +131,7 @@ pub trait ZeroCenterMomentum<B, S> {
 ///
 /// # 3D
 ///
-/// In #D, [`ZeroCenterAngularMomentum`] applies:
+/// In 3D, [`ZeroCenterAngularMomentum`] applies:
 /// ```math
 /// \vec{p}_{i,\mathrm{new}} = \vec{p}_{i,\mathrm{old}} - \left( \vec{\omega}_c \times \vec{r}_{ci} \right) m_k
 /// ```
@@ -156,20 +156,20 @@ pub trait ZeroCenterMomentum<B, S> {
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::builder()
 ///     .bodies([
-///         Body { properties: DynamicPoint {
+///         Body::single_site(DynamicPoint {
 ///           position: Cartesian::from([1.0, 2.0]),
 ///           momentum: Cartesian::from([-2.0, 4.0]),
 ///           ..Default::default()
 ///           },
-///           sites: vec![Point::default()],
-///           },
-///         Body { properties: DynamicPoint {
+///           Point::default(),
+///           ),
+///         Body::single_site(DynamicPoint {
 ///           position: Cartesian::from([-2.0, 3.0]),
 ///           momentum: Cartesian::from([3.0, -6.0]),
 ///           ..Default::default()
 ///           },
-///           sites: vec![Point::default()],
-///           },
+///           Point::default(),
+///           ),
 ///     ])
 ///     .try_build()?;
 ///
@@ -209,18 +209,18 @@ pub trait ZeroCenterAngularMomentum<B, S> {
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::builder()
 ///     .bodies([
-///         Body { properties: DynamicOrientedPoint {
+///         Body::single_site(DynamicOrientedPoint {
 ///           position: Cartesian::from([1.0, 2.0]),
 ///           ..Default::default()
 ///           },
-///           sites: vec![Point::default()],
-///           },
-///         Body { properties: DynamicOrientedPoint {
+///           Point::default(),
+///           ),
+///         Body::single_site(DynamicOrientedPoint {
 ///           position: Cartesian::from([-2.0, 3.0]),
 ///           ..Default::default()
 ///           },
-///           sites: vec![Point::default()],
-///           },
+///           Point::default(),
+///           ),
 ///     ])
 ///     .try_build()?;
 ///
