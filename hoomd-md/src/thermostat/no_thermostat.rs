@@ -10,6 +10,17 @@ use crate::Thermostat;
 /// Use [`NoThermostat`] with [`ConstantVolume`] to model the microcanonical (NVE) ensemble.
 ///
 /// [`ConstantVolume`]: crate::method::ConstantVolume
+///
+/// # Example
+///
+/// ```
+/// use hoomd_md::{thermostat::NoThermostat};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let thermostat = NoThermostat;
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct NoThermostat;
 

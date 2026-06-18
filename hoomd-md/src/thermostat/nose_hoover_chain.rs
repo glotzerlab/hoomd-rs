@@ -30,14 +30,13 @@ use hoomd_utility::valid::PositiveReal;
 ///
 /// [Martyna et al. 1992]: https://doi.org/10.1063/1.463940
 ///
-/// # Examples
+/// # Example
 ///
 /// ```
 /// use hoomd_md::{thermostat::NoséHooverChain};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// const N_CHAIN_LENGTH: usize = 10;
-/// let thermostat = NoséHooverChain::<N_CHAIN_LENGTH>::zero(0.5.try_into()?);
+/// let thermostat = NoséHooverChain::<3>::zero(0.5.try_into()?);
 /// # Ok(())
 /// # }
 /// ```
