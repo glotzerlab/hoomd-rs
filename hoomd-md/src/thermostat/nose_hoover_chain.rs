@@ -260,7 +260,7 @@ where
     M: Temperature,
 {
     #[inline]
-    fn integrate_step_one<R: Rng + ?Sized>(
+    fn integrate_half_step_one<R: Rng + ?Sized>(
         &mut self,
         _rng: &mut R,
         macrostate: &M,
@@ -336,7 +336,7 @@ where
     }
 
     #[inline]
-    fn integrate_step_two<R: Rng + ?Sized>(
+    fn integrate_half_step_two<R: Rng + ?Sized>(
         &mut self,
         rng: &mut R,
         macrostate: &M,
@@ -345,7 +345,7 @@ where
         degrees_of_freedom: usize,
     ) -> f64
     {
-        self.integrate_step_one(rng, macrostate, delta_t, kinetic_energy, degrees_of_freedom)
+        self.integrate_half_step_one(rng, macrostate, delta_t, kinetic_energy, degrees_of_freedom)
     }
 }
 

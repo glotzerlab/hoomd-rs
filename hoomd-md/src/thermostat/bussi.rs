@@ -91,7 +91,7 @@ where
     M: Temperature,
 {
     #[inline]
-    fn integrate_step_one<R: Rng + ?Sized>(
+    fn integrate_half_step_one<R: Rng + ?Sized>(
         &mut self,
         rng: &mut R,
         macrostate: &M,
@@ -140,7 +140,7 @@ where
     }
 
     #[inline]
-    fn integrate_step_two<R: Rng + ?Sized>(
+    fn integrate_half_step_two<R: Rng + ?Sized>(
         &mut self,
         _rng: &mut R,
         _macrostate: &M,
@@ -177,7 +177,7 @@ mod tests {
 
         let mut rng = StdRng::seed_from_u64(0);
         let macrostate = Isothermal { temperature: 0.4 };
-        let alpha = bussi.integrate_step_one(&mut rng, &macrostate, 0.01, 1000.0, 100);
+        let alpha = bussi.integrate_half_step_one(&mut rng, &macrostate, 0.01, 1000.0, 100);
 
         check!(alpha < 1.0);
         check!(bussi.energy() > 0.0);
@@ -190,7 +190,7 @@ mod tests {
 
         let mut rng = StdRng::seed_from_u64(0);
         let macrostate = Isothermal { temperature: 0.4 };
-        let alpha = bussi.integrate_step_one(&mut rng, &macrostate, 0.01, 1000.0, 10_000);
+        let alpha = bussi.integrate_half_step_one(&mut rng, &macrostate, 0.01, 1000.0, 10_000);
 
         check!(alpha > 1.0);
         check!(bussi.energy() < 0.0);

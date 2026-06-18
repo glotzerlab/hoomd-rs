@@ -174,7 +174,7 @@ where
     ) {
         let mut rng = microstate.counter().make_rng();
         let (kinetic_energy, degrees_of_freedom) = microstate.translational_kinetic_energy_with_filter(&should_integrate_body);
-        let rescaling_factor = self.translational_thermostat.integrate_step_one(
+        let rescaling_factor = self.translational_thermostat.integrate_half_step_one(
             &mut rng,
             macrostate,
             self.delta_t,
@@ -245,7 +245,7 @@ where
         }
 
         let (kinetic_energy, degrees_of_freedom) = microstate.translational_kinetic_energy();
-        let rescaling_factor = self.translational_thermostat.integrate_step_two(
+        let rescaling_factor = self.translational_thermostat.integrate_half_step_two(
             &mut rng,
             macrostate,
             self.delta_t,
@@ -409,7 +409,7 @@ where
     ) {
         let mut rng = microstate.counter().make_rng();
         let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
-        let rescaling_factor = self.rotational_thermostat.integrate_step_one(
+        let rescaling_factor = self.rotational_thermostat.integrate_half_step_one(
             &mut rng,
             macrostate,
             self.delta_t,
@@ -586,7 +586,7 @@ where
         }
 
         let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
-        let rescaling_factor = self.rotational_thermostat.integrate_step_two(
+        let rescaling_factor = self.rotational_thermostat.integrate_half_step_two(
             &mut rng,
             macrostate,
             self.delta_t,
@@ -660,7 +660,7 @@ where
     ) {
         let mut rng = microstate.counter().make_rng();
         let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
-        let rescaling_factor = self.rotational_thermostat.integrate_step_one(
+        let rescaling_factor = self.rotational_thermostat.integrate_half_step_one(
             &mut rng,
             macrostate,
             self.delta_t,
@@ -733,7 +733,7 @@ where
         }
 
         let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy();
-        let rescaling_factor = self.rotational_thermostat.integrate_step_two(
+        let rescaling_factor = self.rotational_thermostat.integrate_half_step_two(
             &mut rng,
             macrostate,
             self.delta_t,

@@ -47,7 +47,7 @@ pub trait Thermostat<M> {
     /// Integrate the thermostat one half step forward in time.
     ///
     /// Returns the momentum scaling factor to use during the first half step.
-    fn integrate_step_one<R: Rng + ?Sized>(
+    fn integrate_half_step_one<R: Rng + ?Sized>(
         &mut self,
         rng: &mut R,
         macrostate: &M,
@@ -59,7 +59,7 @@ pub trait Thermostat<M> {
     /// Integrate the thermostat one half step forward in time.
     ///
     /// Returns the momentum scaling factor to use during the second half step.
-    fn integrate_step_two<R: Rng + ?Sized>(
+    fn integrate_half_step_two<R: Rng + ?Sized>(
         &mut self,
         rng: &mut R,
         macrostate: &M,
@@ -153,7 +153,7 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 
 /// Integrate translational degrees of freedom.
 ///
-/// [`TranslationalMotion`] integrates the [`Orientation`] and [`AngularMomentum`] degrees of
+/// [`RotationalMotion`] integrates the [`Orientation`] and [`AngularMomentum`] degrees of
 /// freedom for selected bodies. 
 /// 
 /// The generic type names are:
