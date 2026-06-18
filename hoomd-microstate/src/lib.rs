@@ -385,6 +385,31 @@ impl<V> Body<Point<V>, Point<V>> {
     }
 }
 
+impl<B, S> Body<B, S> {
+    /// Construct a single site body.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::Body;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let body = Body::point(Cartesian::from([-3.0, 5.0]));
+    /// assert_eq!(body.properties.position, [-3.0, 5.0].into());
+    /// assert_eq!(body.sites.len(), 1);
+    /// assert_eq!(body.sites[0].position, [0.0, 0.0].into());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn single_site(body_properties: B, site_properties: S) -> Self
+    {
+        Self {
+            properties: body_properties,
+            sites: vec![site_properties],
+        }
+    }
+}
+
 /// Take [`Site`] properties in the body frame into the system frame.
 ///
 /// See the [`property`] module-level documentation for an example
