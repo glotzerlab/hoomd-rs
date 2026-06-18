@@ -7,8 +7,6 @@ use serde::{Deserialize, Serialize};
 use crate::Thermostat;
 use hoomd_simulation::macrostate::Temperature;
 
-// TODO: Apply common derive macros for all types in hoomd_md
-
 /// Stochastic momentum rescaling.
 ///
 /// The time constant $` \tau `$ sets how long the kinetic energy of the system
