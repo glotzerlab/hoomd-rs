@@ -207,23 +207,36 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     }
 }
 
+/// Compute the dot product of two `[f32; N]` arrays.
+#[inline(always)]
+fn dot_arrays<const N: usize>(l: &[f32; N], r: &[f32; N]) -> f32 {
+    (0..N).map(|i| l[i] * r[i]).sum()
+}
+
 impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
     for ConvexPolytope<N, MAX_VERTICES>
 {
     #[inline]
+    #[expect(clippy::cast_possible_truncation, reason = "Truncation is ok.")]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
         match N {
             0 => Cartesian::<N>::default(),
             1 => self.vertices[0],
-            _ => *self
-                .vertices
-                .iter()
-                .max_by(|a, b| {
-                    a.dot(n)
-                        .partial_cmp(&b.dot(n))
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-                .expect("the 0 match statement should handle empty vectors"),
+            _ => {
+                let n_f32 = std::array::from_fn(|i| n[i] as f32);
+                let vertices_f32 = self
+                    .vertices
+                    .iter()
+                    .map(|v| v.coordinates.map(|x| x as f32));
+                let support = vertices_f32
+                    .max_by(|a, b| {
+                        dot_arrays(a, &n_f32)
+                            .partial_cmp(&dot_arrays(b, &n_f32))
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    })
+                    .expect("the 0 match statement should handle empty vectors");
+                support.map(f64::from).into()
+            }
         }
     }
 }
