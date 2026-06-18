@@ -14,6 +14,7 @@
 *Changed:*
 
 * `[hoomd-mc]`: Improve the numerical stability of translation moves for `Point<Spherical<3>>` (#287).
+* `[hoomd-mc]`: `HypercuboidCheckerboard` now builds in an arbitrary number of dimensions (#318).
 * Build the documentation with mdBook 0.5.3 (#295).
 
 *Deprecated:*
