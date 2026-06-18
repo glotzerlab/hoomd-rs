@@ -18,10 +18,10 @@ use hoomd_spatial::PointUpdate;
 /// to a constant using Velocity Verlet algorithm.
 /// 
 /// When [`NoThermostat`](crate::thermostat::NoThermostat) is provided to the methods:
-/// [`integrate_translation_step_one`](ConstantVolume::integrate_translation_step_one), 
-/// [`integrate_translation_step_two`](ConstantVolume::integrate_translation_step_two), 
-/// [`integrate_rotation_step_one`](ConstantVolume::integrate_rotation_step_one), and 
-/// [`integrate_rotation_step_two`](ConstantVolume::integrate_rotation_step_two), it 
+/// [`integrate_translation_half_step_one`](ConstantVolume::integrate_translation_half_step_one), 
+/// [`integrate_translation_half_step_two`](ConstantVolume::integrate_translation_half_step_two), 
+/// [`integrate_rotation_half_step_one`](ConstantVolume::integrate_rotation_half_step_one), and 
+/// [`integrate_rotation_half_step_two`](ConstantVolume::integrate_rotation_half_step_two), it 
 /// samples the microcanonical (NVE) ensemble. Otherwise, It samples the 
 /// canonical (NVT) ensemble using the given [`macrostate`](hoomd_simulation::macrostate::Isothermal)
 /// and [`Thermostat`].
@@ -165,7 +165,7 @@ where
     /// $`m`$ is the mass of each [`Body`](hoomd_microstate::Body::properties), and $`t`$ is the time,
     /// $`\delta t`$ is the timestep dt. 
     #[inline]
-    fn integrate_translation_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn integrate_translation_half_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
@@ -207,7 +207,7 @@ where
     }
 
     /// Perform the second-half integration on translational degrees-of-freedom
-    /// , continuing from the last step in [`integrate_translation_step_one`](ConstantVolume::integrate_translation_step_one)
+    /// , continuing from the last step in [`integrate_translation_half_step_one`](ConstantVolume::integrate_translation_half_step_one)
     /// and advancing the [`Microstate`] and possibly the [`Thermostat`] state 
     /// forward as:
     /// ```math
@@ -219,7 +219,7 @@ where
     /// \end{align}
     /// ```
     #[inline]
-    fn integrate_translation_step_two_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn integrate_translation_half_step_two_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
@@ -400,7 +400,7 @@ where
     /// \end{align}
     /// ```
     #[inline]
-    fn integrate_rotation_step_one_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
+    fn integrate_rotation_half_step_one_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
         macrostate: &M,
@@ -530,7 +530,7 @@ where
     /// for three-dimensional system, advancing the [`Microstate`] and possibly 
     /// the [`Thermostat`] state forward as follows
     /// 
-    /// Continue from the last step in [`integrate_rotation_step_one`](ConstantVolume::integrate_rotation_step_one).
+    /// Continue from the last step in [`integrate_rotation_half_step_one`](ConstantVolume::integrate_rotation_half_step_one).
     /// Convert [`AngularMomentum`] and [`NetTorque`] into thier quaternion forms and translate the 
     /// angular momentum $`\mathbf{p}^{(4)}`$ forward:
     /// 
@@ -553,7 +553,7 @@ where
     /// \end{equation}
     /// ``` 
     #[inline]
-    fn integrate_rotation_step_two_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
+    fn integrate_rotation_half_step_two_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
         macrostate: &M,
@@ -651,7 +651,7 @@ where
     /// $`\delta t`$ is the timestep dt. Note that in two-dimension, every particle only has 
     /// one degrees-of-freedom contributed from their rotational motion.
     #[inline]
-    fn integrate_rotation_step_one_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
+    fn integrate_rotation_half_step_one_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
         macrostate: &M,
@@ -694,7 +694,7 @@ where
     }
 
     /// Perform the second-half integration on rotational degrees-of-freedon
-    /// for two-dimensional system, continuing from the last step in [`integrate_rotation_step_one`](ConstantVolume::integrate_rotation_step_one)
+    /// for two-dimensional system, continuing from the last step in [`integrate_rotation_half_step_one`](ConstantVolume::integrate_rotation_half_step_one)
     /// and advancing the [`Microstate`] and possibly the [`Thermostat`] state 
     /// forward as:
     /// ```math
@@ -706,7 +706,7 @@ where
     /// \end{align}
     /// ```
     #[inline]
-    fn integrate_rotation_step_two_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
+    fn integrate_rotation_half_step_two_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
         macrostate: &M,
@@ -866,7 +866,7 @@ mod tests {
         microstate.update_net_force(&force);
         
         // Check the first halfstep
-        method.integrate_translation_step_one(
+        method.integrate_translation_half_step_one(
             &mut microstate,
             &mut macrostate
         );
@@ -882,7 +882,7 @@ mod tests {
         microstate.update_net_force(&force);
 
         // Check the second halfstep
-         method.integrate_translation_step_two(
+         method.integrate_translation_half_step_two(
             &mut microstate,
             &mut macrostate
         );
@@ -918,7 +918,7 @@ mod tests {
         microstate.update_net_force_and_torque(&torque);
         
         // Check the first halfstep
-        method.integrate_rotation_step_one(
+        method.integrate_rotation_half_step_one(
             &mut microstate,
             &mut macrostate
         );
@@ -933,7 +933,7 @@ mod tests {
         microstate.update_net_force_and_torque(&torque);
 
         // Check the second halfstep
-         method.integrate_rotation_step_two(
+         method.integrate_rotation_half_step_two(
             &mut microstate,
             &mut macrostate
         );
@@ -972,7 +972,7 @@ mod tests {
     //     method.update_force_and_torque(&mut microstate, &torque);
         
     //     // Check the first halfstep
-    //     method.integrate_rotation_step_one(
+    //     method.integrate_rotation_half_step_one(
     //         &mut microstate,
     //         &mut thermostat,
     //         &mut macrostate
@@ -993,7 +993,7 @@ mod tests {
     //     // method.update_force_and_torque(&mut microstate, &torque);
 
     //     // // Check the second halfstep
-    //     //  method.integrate_rotation_step_two(
+    //     //  method.integrate_rotation_half_step_two(
     //     //     &mut microstate,
     //     //     &mut thermostat,
     //     //     &mut macrostate

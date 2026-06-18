@@ -86,16 +86,16 @@ pub trait Thermostat<M> {
 pub trait TranslationalMotion<B, S, X, C, M> {
     /// Integrate all body positions forward a full step and the momenta forward a half step.
     #[inline]
-    fn integrate_translation_step_one(
+    fn integrate_translation_half_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
     ) {
-        self.integrate_translation_step_one_with_filter(microstate, macrostate, |_| true);
+        self.integrate_translation_half_step_one_with_filter(microstate, macrostate, |_| true);
     }
 
     /// Integrate selected body positions forward a full step and the momenta forward a half step.
-    fn integrate_translation_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn integrate_translation_half_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
@@ -104,21 +104,51 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 
     /// Integrate all body momenta forward a half step.
     #[inline]
-    fn integrate_translation_step_two(
+    fn integrate_translation_half_step_two(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
     ) {
-        self.integrate_translation_step_one_with_filter(microstate, macrostate, |_| true);
+        self.integrate_translation_half_step_one_with_filter(microstate, macrostate, |_| true);
     }
 
     /// Integrate selected body momenta forward a half step.
-    fn integrate_translation_step_two_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn integrate_translation_half_step_two_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     );
+
+    /// Integrate selected body translational degrees of freedom forward one step.
+    #[inline]
+    fn integrate_translation_with_filter<E, F>(
+        &mut self,
+        microstate: &mut Microstate<B, S, X, C>,
+        macrostate: &M,
+        interaction_model: &E,
+        should_integrate_body: F,
+    ) where
+    F: Fn(&Tagged<Body<B, S>>) -> bool,
+    Microstate<B, S, X, C>: UpdateNetForce<E> {
+        self.integrate_translation_half_step_one_with_filter(microstate, macrostate, &should_integrate_body);
+        microstate.update_net_force(interaction_model);
+        self.integrate_translation_half_step_two_with_filter(microstate, macrostate, &should_integrate_body);
+    }
+
+    /// Integrate selected body translational degrees of freedom forward one step.
+    #[inline]
+    fn integrate_translation<E>(
+        &mut self,
+        microstate: &mut Microstate<B, S, X, C>,
+        macrostate: &M,
+        interaction_model: &E,
+    ) where
+    Microstate<B, S, X, C>: UpdateNetForce<E> {
+        self.integrate_translation_half_step_one_with_filter(microstate, macrostate, |_| true);
+        microstate.update_net_force(interaction_model);
+        self.integrate_translation_half_step_two_with_filter(microstate, macrostate, |_| true);
+    }
 }
 
 /// Integrate translational degrees of freedom.
@@ -138,16 +168,16 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 pub trait RotationalMotion<B, S, X, C, M> {
     /// Integrate all body orientations forward a full step and their angular momenta forward a half step.
     #[inline]
-    fn integrate_rotation_step_one(
+    fn integrate_rotation_half_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
     ) {
-        self.integrate_rotation_step_one_with_filter(microstate, macrostate, |_| true);
+        self.integrate_rotation_half_step_one_with_filter(microstate, macrostate, |_| true);
     }
     
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
-    fn integrate_rotation_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn integrate_rotation_half_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
@@ -156,19 +186,57 @@ pub trait RotationalMotion<B, S, X, C, M> {
 
     /// Integrate all body angular momenta forward a half step.
     #[inline]
-    fn integrate_rotation_step_two(
+    fn integrate_rotation_half_step_two(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
     ) {
-        self.integrate_rotation_step_two_with_filter(microstate, macrostate, |_| true);
+        self.integrate_rotation_half_step_two_with_filter(microstate, macrostate, |_| true);
     }
 
     /// Integrate selected body angular momenta forward a half step.
-    fn integrate_rotation_step_two_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn integrate_rotation_half_step_two_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     );
+
+    /// Integrate selected body translational and rotational degrees of freedom forward one step.
+    #[inline]
+    fn integrate_translation_and_rotation_with_filter<E, F>(
+        &mut self,
+        microstate: &mut Microstate<B, S, X, C>,
+        macrostate: &M,
+        interaction_model: &E,
+        should_integrate_body: F,
+    ) where
+    F: Fn(&Tagged<Body<B, S>>) -> bool,
+    Microstate<B, S, X, C>: UpdateNetForceAndTorque<E>,
+    Self: TranslationalMotion<B, S, X, C, M> 
+    {
+        self.integrate_translation_half_step_one_with_filter(microstate, macrostate, &should_integrate_body);
+        self.integrate_rotation_half_step_one_with_filter(microstate, macrostate, &should_integrate_body);
+        microstate.update_net_force_and_torque(interaction_model);
+        self.integrate_translation_half_step_two_with_filter(microstate, macrostate, &should_integrate_body);
+        self.integrate_rotation_half_step_two_with_filter(microstate, macrostate, &should_integrate_body);
+    }
+
+    /// Integrate selected body translational and rotational degrees of freedom one step.
+    #[inline]
+    fn integrate_translation<E>(
+        &mut self,
+        microstate: &mut Microstate<B, S, X, C>,
+        macrostate: &M,
+        interaction_model: &E,
+    ) where
+    Microstate<B, S, X, C>: UpdateNetForceAndTorque<E>,
+    Self: TranslationalMotion<B, S, X, C, M> 
+    {
+        self.integrate_translation_half_step_one_with_filter(microstate, macrostate, |_| true);
+        self.integrate_rotation_half_step_one_with_filter(microstate, macrostate, |_| true);
+        microstate.update_net_force_and_torque(interaction_model);
+        self.integrate_translation_half_step_two_with_filter(microstate, macrostate, |_| true);
+        self.integrate_rotation_half_step_two_with_filter(microstate, macrostate, |_| true);
+    }
 }

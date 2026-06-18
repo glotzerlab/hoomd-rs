@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Simulation loop
     for timestep in 0..10 {
         // Evolve the system forward using the integrator
-        integrator.integrate_translation_step_one(
+        integrator.integrate_translation_half_step_one(
             &mut microstate,
             &mut thermostat,
             &macrostate,
@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         integrator
             .update_force(&mut microstate, &force);
 
-        integrator.integrate_translation_step_two(
+        integrator.integrate_translation_half_step_two(
             &mut microstate,
             &mut thermostat,
             &macrostate,

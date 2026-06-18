@@ -142,7 +142,7 @@ impl Simulation for System {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         // Evolve the system forward using the integrator
-        self.integrator.integrate_translation_step_one(
+        self.integrator.integrate_translation_half_step_one(
             &mut self.microstate,
             &mut self.thermostat,
             &self.macrostate,
@@ -151,7 +151,7 @@ impl Simulation for System {
         self.integrator
             .update_force(&mut self.microstate, &self.force);
 
-        self.integrator.integrate_translation_step_two(
+        self.integrator.integrate_translation_half_step_two(
             &mut self.microstate,
             &mut self.thermostat,
             &self.macrostate,

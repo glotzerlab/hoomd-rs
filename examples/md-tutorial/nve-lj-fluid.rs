@@ -250,22 +250,12 @@ impl LJFluid {
         // ANCHOR_END: state_transition
 
         // ANCHOR: first_half_integration
-        self.nvt_integrator.integrate_translation_step_one(
+        self.nvt_integrator.integrate_translation(
             &mut self.microstate,
             &self.macrostate,
+            &self.force,
         );
         // ANCHOR_END: first_half_integration
-
-        // ANCHOR: update_force
-        self.microstate.update_net_force(&self.force);
-        // ANCHOR_END: update_force
-
-        // ANCHOR: second_half_integration
-        self.nvt_integrator.integrate_translation_step_two(
-            &mut self.microstate,
-            &self.macrostate,
-        );
-        // ANCHOR_END: second_half_integration
     }
 
     // ANCHOR: nve
@@ -281,16 +271,10 @@ impl LJFluid {
             );
         }
 
-        self.nve_integrator.integrate_translation_step_one(
+        self.nve_integrator.integrate_translation(
             &mut self.microstate,
             &Isoenergy {},
-        );
-
-        self.microstate.update_net_force(&self.force);
-
-        self.nve_integrator.integrate_translation_step_two(
-            &mut self.microstate,
-            &Isoenergy {},
+            &self.force,
         );
     }
 }
