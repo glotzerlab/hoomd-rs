@@ -3,11 +3,10 @@
 
 //! Implement `DynamicPoint`
 
-use super::oriented_point::OrientedPoint;
-use super::point::Point;
-use super::{Mass, Momentum, Position};
+use serde::{Deserialize, Serialize};
+
+use super::{OrientedPoint, Point, Mass, Momentum, NetForce, Position};
 use crate::Transform;
-use crate::property::NetForce;
 use hoomd_vector::Vector;
 
 /// A position in space with mass and momentum.
@@ -29,7 +28,7 @@ use hoomd_vector::Vector;
 ///     ..Default::default()
 /// };
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DynamicPoint<V> {
     /// The location of the extended body in space $`[\mathrm{length}]`$.
     pub position: V,

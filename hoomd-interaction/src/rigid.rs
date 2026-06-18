@@ -4,6 +4,7 @@
 //! Implement Rigid.
 
 use std::ops::{Add, AddAssign};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     NetBodyForce, NetBodyForceAndTorque, NetSiteForce, NetSiteForceAndTorque
@@ -41,6 +42,7 @@ use hoomd_vector::{Rotate, Vector, Wedge};
 /// let evaluator = Isotropic{ interaction: lennard_jones, r_cut: 2.5};
 /// let rigid = Rigid(PairwiseCutoff(evaluator));
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Rigid<F>(pub F);
 
 impl<V, B, S, X, C, F> NetBodyForce<B, S, X, C> for Rigid<F>

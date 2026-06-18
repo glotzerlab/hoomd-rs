@@ -1,11 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use rand::Rng;
+use rand_distr::{Distribution, Normal};
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+
 use crate::Thermostat;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
-use rand::Rng;
-use rand_distr::{Distribution, Normal};
 
 /// Chain of Nosé-Hoover thermostats.
 ///
@@ -40,15 +43,24 @@ use rand_distr::{Distribution, Normal};
 /// # Ok(())
 /// # }
 /// ```
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct NoséHooverChain<const N: usize> {
     /// Thermostat time constant.
     tau: PositiveReal,
+    
     /// Chain of thermostat momenta.
+    #[serde_as(as = "[_; N]")]
     xi: [f64; N],
+
     /// Chain of thermostat positions.
+    #[serde_as(as = "[_; N]")]
     eta: [f64; N],
+
     /// Chain of thermostat accelerations.
+    #[serde_as(as = "[_; N]")]
     g: [f64; N],
+
     /// Energy the thermostat contributes to the Hamiltonian.
     energy: f64,
 }

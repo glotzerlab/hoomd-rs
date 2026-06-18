@@ -2,13 +2,14 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`ConstantTorque`]
+use serde::{Deserialize, Serialize};
 
 use hoomd_vector::Wedge;
 
 use crate::SiteForceAndTorque;
 
 /// Apply the same torque to every site, independent of the site's properties.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConstantTorque<V: Wedge> {
     /// Torque $`[\mathrm{energy}]`$.
     pub torque: V::Bivector,

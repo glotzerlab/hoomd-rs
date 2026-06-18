@@ -3778,6 +3778,7 @@ dependencies = [
  "rand_distr 0.6.0",
  "rstest",
  "serde",
+ "serde_with",
 ]
 
 [[package]]

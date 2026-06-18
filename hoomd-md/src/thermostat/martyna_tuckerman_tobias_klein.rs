@@ -1,11 +1,13 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use rand::Rng;
+use rand_distr::{Distribution, Normal};
+use serde::{Deserialize, Serialize};
+
 use crate::Thermostat;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
-use rand::Rng;
-use rand_distr::{Distribution, Normal};
 
 /// Nosé-Hoover thermostat.
 ///
@@ -61,6 +63,7 @@ use rand_distr::{Distribution, Normal};
 /// * [Tuckerman et al. 2006](https://doi.org/10.1088/0305-4470/39/19/S18)
 /// * [Martyna et al. 1994](https://doi.org/10.1063/1.467468)
 #[doc(alias = "mttk")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MartynaTuckermanTobiasKlein {
     /// Thermostat time constant.
     tau: PositiveReal,

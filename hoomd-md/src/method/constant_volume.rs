@@ -2,6 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use std::array;
+use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
@@ -54,7 +55,7 @@ use hoomd_spatial::PointUpdate;
 /// [Tuckerman et al. 2006]: <https://doi.org/10.1088/0305-4470/39/19/S18>
 /// [Miller et al. 2002]: <https://doi.org/10.1063/1.1473654>
 #[doc(alias = "nvt")]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConstantVolume<TT, TR> {
     /// The time step size.
     pub delta_t: f64,

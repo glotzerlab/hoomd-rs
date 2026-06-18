@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 use rand::Rng;
+use serde::{Deserialize, Serialize};
+
 use crate::Thermostat;
 
 /// Apply no momentum scaling.
@@ -8,6 +10,7 @@ use crate::Thermostat;
 /// Use [`NoThermostat`] with [`ConstantVolume`] to model the microcanonical (NVE) ensemble.
 ///
 /// [`ConstantVolume`]: crate::method::ConstantVolume
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct NoThermostat;
 
 impl<M> Thermostat<M> for NoThermostat {
@@ -45,7 +48,7 @@ mod tests {
     use hoomd_microstate::{Body, Microstate};
     use hoomd_vector::Cartesian;
 
-    struct NVE;
+    struct Nve;
 
     #[test]
     fn test_no_thermostat() -> anyhow::Result<()> {
@@ -55,7 +58,7 @@ mod tests {
         // Thermostat Implementation
         let mut microstate = Microstate::new();
         microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
-        let macrostate = NVE;
+        let macrostate = Nve;
         let delta_t = 1.0;
         let mut rng = microstate.counter().make_rng();
 
