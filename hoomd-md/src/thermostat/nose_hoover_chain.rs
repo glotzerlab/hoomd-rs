@@ -37,9 +37,7 @@ use hoomd_utility::valid::PositiveReal;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// const N_CHAIN_LENGTH: usize = 10;
-/// let dt = 0.001;
-/// let tau = 100.0*dt;
-/// let thermostat = NoséHooverChain::<N_CHAIN_LENGTH>::zero(tau.try_into()?);
+/// let thermostat = NoséHooverChain::<N_CHAIN_LENGTH>::zero(0.5.try_into()?);
 /// # Ok(())
 /// # }
 /// ```
@@ -115,18 +113,17 @@ impl<const N: usize> NoséHooverChain<N> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::builder()
     ///     .bodies([
-    ///         Body { properties: DynamicPoint {
+    ///         Body::single_site(DynamicPoint {
     ///           position: Cartesian::from([1.0, 2.0]),
     ///           ..Default::default()
     ///           },
-    ///           sites: vec![Point::default()],
-    ///           },
-    ///         Body { properties: DynamicPoint {
+    ///           Point::default()),
+    ///         Body::single_site(DynamicPoint {
     ///           position: Cartesian::from([-2.0, 3.0]),
     ///           ..Default::default()
     ///           },
-    ///           sites: vec![Point::default()],
-    ///           },
+    ///           Point::default(),
+    ///           ),
     ///     ])
     ///     .try_build()?;
     ///
