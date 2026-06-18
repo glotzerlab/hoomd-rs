@@ -18,7 +18,10 @@ use rand::{
 };
 
 use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
-use hoomd_linear_algebra::{MatMul, matrix::Matrix};
+use hoomd_linear_algebra::{
+    MatMul,
+    matrix::{Matrix, Matrix33},
+};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///

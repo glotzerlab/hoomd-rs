@@ -34,13 +34,265 @@
 use crate::SupportMapping;
 use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, RotationMatrix};
 
-/// Maximum allowed iterations for Xenocollide in 2D
-const XENOCOLLIDE_2D_MAX_ITER: usize = 1024;
-/// Maximum allowed iterations for Xenocollide in 3D
-const XENOCOLLIDE_3D_MAX_ITER: usize = 1024;
+/// Maximum allowed iterations for Xenocollide portal refinement.
+const XENOCOLLIDE_MAX_ITER: usize = 1024;
+
+/// Result of portal discovery.
+pub(crate) enum Discovery<const N: usize> {
+    /// Collision result already determined during discovery.
+    Known(bool),
+    /// Portal discovered — proceed to refinement.
+    Found([Cartesian<N>; N]),
+}
+
+/// Dimension-specific operations for Minkowski Portal Refinement.
+///
+/// This trait encapsulates the operations that differ between MPR in various dimensions
+/// - Tolerance for convergence check
+/// - Portal discovery (can be done directly in 2D, requires search in 3D and up)
+/// - Portal vertex replacement logic
+pub(crate) trait MinkowskiPortalRefinement<const N: usize> {
+    /// Dimension-specific convergence tolerance.
+    const TOLERANCE: f64;
+
+    /// Compute the outward-facing normal to the portal (facing toward the surface of the minkowski difference)
+    fn outward_normal(portal: &[Cartesian<N>; N], interior: &Cartesian<N>) -> Cartesian<N>;
+
+    /// Discover the initial portal for MPR refinement.
+    ///
+    /// The initial portal will be an (N-1)-simplex, through which the ray `-v0` must
+    /// pass on its way to the origin.
+    fn discover_portal<A, B>(s: &MinkowskiDifference<N, A, B>, v0: &Cartesian<N>) -> Discovery<N>
+    where
+        A: SupportMapping<Cartesian<N>>,
+        B: SupportMapping<Cartesian<N>>;
+
+    /// Check whether the portal has reached the surface of the Minkowski
+    /// difference within numerical precision (in which case we can determine overlap).
+    ///
+    /// Returns `Some(result)` if convergence is detected, or `None` if
+    /// refinement can continue.
+    fn tolerance_check(
+        portal: &[Cartesian<N>; N],
+        v_new: &Cartesian<N>,
+        normal: &Cartesian<N>,
+    ) -> Option<bool>;
+
+    /// Narrow the portal by replacing one vertex with a new support point.
+    ///
+    /// The portal vertices and `v_new` form an N-simplex whose interior face
+    /// is the current portal. The origin ray enters through this face and must
+    /// exit through one of the outer faces. This method identifies which outer
+    /// face the ray exits through and replaces the portal vertex opposite that
+    /// face with `v_new`, ensuring that the origin ray always passes through the portal
+    fn narrow_portal(interior: &Cartesian<N>, portal: &mut [Cartesian<N>; N], v_new: Cartesian<N>);
+}
+
+impl MinkowskiPortalRefinement<2> for Cartesian<2> {
+    const TOLERANCE: f64 = 1e-16;
+
+    #[inline]
+    fn outward_normal(portal: &[Cartesian<2>; 2], interior: &Cartesian<2>) -> Cartesian<2> {
+        let mut n = (portal[1] - portal[0]).perpendicular();
+        if (portal[0] - *interior).dot(&n) < 0.0 {
+            n = -n;
+        }
+        n
+    }
+
+    #[inline]
+    fn discover_portal<A: SupportMapping<Cartesian<2>>, B: SupportMapping<Cartesian<2>>>(
+        s: &MinkowskiDifference<2, A, B>,
+        v0: &Cartesian<2>,
+    ) -> Discovery<2> {
+        // Find the support point in the direction of the origin ray
+        let v1 = s.composite_support_mapping(-*v0);
+
+        // v_perp is on the same side as the origin if v1.dot(v_perp) < 0
+        let mut v_perp_v1v0 = (v1 - *v0).perpendicular();
+        if v1.dot(&v_perp_v1v0) > 0.0 {
+            v_perp_v1v0 = -v_perp_v1v0;
+        }
+
+        // Support point perpendicular to plane containing the origin, v0, and v1
+        let v2 = s.composite_support_mapping(v_perp_v1v0);
+
+        // NOTE: this assumes the origin is within the shape. This assumption matches
+        // HOOMD-Blue, but is important to note regardless.
+
+        Discovery::Found([v1, v2])
+    }
+
+    #[inline]
+    fn tolerance_check(
+        portal: &[Cartesian<2>; 2],
+        v_new: &Cartesian<2>,
+        _normal: &Cartesian<2>,
+    ) -> Option<bool> {
+        // In 2D, we either find a valid vertex or require further search to be sure
+        let d = (*v_new - portal[0]) - (*v_new - portal[0]).project(&(portal[1] - portal[0]));
+        if d.norm_squared() < Self::TOLERANCE * v_new.norm_squared() {
+            return Some(true);
+        }
+        None
+    }
+
+    #[inline]
+    fn narrow_portal(interior: &Cartesian<2>, portal: &mut [Cartesian<2>; 2], v_new: Cartesian<2>) {
+        let mut v_perp = (v_new - *interior).perpendicular();
+        // Orient toward portal[0]
+        if (portal[0] - v_new).dot(&v_perp) < 0.0 {
+            v_perp = -v_perp;
+        }
+        if v_new.dot(&v_perp) < 0.0 {
+            // Origin is on the portal[0] side — replace portal[1]
+            portal[1] = v_new;
+        } else {
+            // Origin is on the portal[1] side — replace portal[0]
+            portal[0] = v_new;
+        }
+    }
+}
+
+impl MinkowskiPortalRefinement<3> for Cartesian<3> {
+    const TOLERANCE: f64 = 2e-12;
+
+    #[inline]
+    fn outward_normal(portal: &[Cartesian<3>; 3], interior: &Cartesian<3>) -> Cartesian<3> {
+        let e1 = portal[1] - portal[0];
+        let e2 = portal[2] - portal[0];
+        let mut n = e1.cross(&e2);
+        if (portal[0] - *interior).dot(&n) < 0.0 {
+            n = -n;
+        }
+        n
+    }
+
+    #[inline]
+    fn discover_portal<A: SupportMapping<Cartesian<3>>, B: SupportMapping<Cartesian<3>>>(
+        s: &MinkowskiDifference<3, A, B>,
+        v0: &Cartesian<3>,
+    ) -> Discovery<3> {
+        // Interior point at origin implies overlap
+        if v0.into_iter().all(|x| x.abs() < Self::TOLERANCE) {
+            return Discovery::Known(true);
+        }
+        // Support point in the direction of the origin ray
+        let mut v1 = s.composite_support_mapping(-*v0);
+
+        // Equivalent to v1 . (v1-v0) <= 0 by convexity
+        if v1.dot(v0) > 0.0 {
+            return Discovery::Known(false);
+        }
+
+        // Direction perpendicular to v0, v1 plane
+        let n = v1.cross(v0);
+
+        // Cross product is zero if v0,v1 collinear with origin, but we have already
+        // determined the origin is within the v1 support plane.
+        // If the origin is on a line between v1 and v0, particles overlap.
+        if n.into_iter().all(|x| x.abs() < Self::TOLERANCE) {
+            return Discovery::Known(true);
+        }
+
+        // Support point perpendicular to plane containing the origin, v0, and v1
+        let mut v2 = s.composite_support_mapping(n);
+
+        if v2.dot(&n) < 0.0 {
+            return Discovery::Known(false);
+        }
+
+        // Support point perpendicular to plane containing interior point and first 2 supports
+        let mut n = (v1 - *v0).cross(&(v2 - *v0));
+        // Maintain known handedness of the portal
+        if n.dot(v0) > 0.0 {
+            (v1, v2) = (v2, v1);
+            n = -n;
+        }
+
+        // while origin_ray_does_not_intersect_candidate()
+        let mut count = 0_usize;
+        let v3 = loop {
+            count += 1;
+
+            if count >= XENOCOLLIDE_MAX_ITER {
+                return Discovery::Known(true);
+            }
+
+            let v3 = s.composite_support_mapping(n);
+            if v3.dot(&n) <= 0.0 {
+                return Discovery::Known(false);
+            }
+
+            // If origin lies on the opposite side of the plane from our third support
+            // point, use the outer facing plane normal.
+            // Check the v3, v0, v1 plane for validity
+            if v1.cross(&v3).dot(v0) < 0.0 {
+                v2 = v3; // Preserve handedness
+                n = (v1 - *v0).cross(&(v2 - *v0));
+                continue;
+            }
+            if v3.cross(&v2).dot(v0) < 0.0 {
+                v1 = v3; // Preserve handedness
+                n = (v1 - *v0).cross(&(v2 - *v0));
+                continue;
+            }
+            break v3;
+        };
+
+        Discovery::Found([v1, v2, v3])
+    }
+
+    #[inline]
+    fn tolerance_check(
+        portal: &[Cartesian<3>; 3],
+        v_new: &Cartesian<3>,
+        normal: &Cartesian<3>,
+    ) -> Option<bool> {
+        let tolerance = Self::TOLERANCE * normal.norm(); // Handle non-unit shapes
+
+        // Check if v_new is on the portal plane: if so, no more refinement is possible
+        let d = (*v_new - portal[0]).dot(normal);
+        if d.abs() < tolerance {
+            return Some(false);
+        }
+        // Check if origin is on the portal plane: if so, intersection detected
+        let d = portal[0].dot(normal);
+        if d.abs() < tolerance {
+            return Some(true);
+        }
+        None
+    }
+
+    #[inline]
+    fn narrow_portal(interior: &Cartesian<3>, portal: &mut [Cartesian<3>; 3], v_new: Cartesian<3>) {
+        let [v1, v2, v3] = *portal;
+        // Test origin against the three planes that separate the new portal candidates
+        // using the triple product identities as an optimization:
+        //   (v1 % v4) * v0 == v1 * (v4 % v0) > 0 if origin inside (v1, v4, v0)
+        //   (v2 % v4) * v0 == v2 * (v4 % v0) > 0 if origin inside (v2, v4, v0)
+        //   (v3 % v4) * v0 == v3 * (v4 % v0) > 0 if origin inside (v3, v4, v0)
+        let v_perp = v_new.cross(interior);
+
+        #[expect(
+            clippy::match_same_arms,
+            reason = "Clearly illustrate translation from c."
+        )]
+        match (
+            v_perp.dot(&v1) > 0.0,
+            v_perp.dot(&v2) > 0.0,
+            v_perp.dot(&v3) > 0.0,
+        ) {
+            (true, true, _) => portal[0] = v_new, // Inside  v1 && inside  v2 => eliminate v1
+            (true, false, _) => portal[2] = v_new, // Inside  v1 && OUTside v2 => eliminate v3
+            (false, _, true) => portal[1] = v_new, // OUTside v1 && inside  v3 => eliminate v2
+            (false, _, false) => portal[0] = v_new, // OUTside v1 && OUTside v3 => eliminate v1
+        }
+    }
+}
 
 /// Stateful type that efficiently computes repeated Minkowski differences.
-struct MinkowskiDifference<
+pub(crate) struct MinkowskiDifference<
     'a,
     const N: usize,
     A: SupportMapping<Cartesian<N>>,
@@ -99,6 +351,73 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
     }
 }
 
+/// Detect collision between two convex N-dimensional objects via Minkowski Portal Refinement.
+///
+/// This is the generic implementation underlying [`collide2d`] and [`collide3d`].
+/// Dimension-specific operations (portal discovery, normal computation, tolerance
+/// checks, vertex replacement) are resolved at compile time via the
+/// [`MinkowskiPortalRefinement`] trait.
+#[inline]
+pub(crate) fn collide<const N: usize, R, A, B>(
+    sa: &A,
+    sb: &B,
+    v_ij: &Cartesian<N>,
+    q_ij: &R,
+) -> bool
+where
+    A: SupportMapping<Cartesian<N>>,
+    B: SupportMapping<Cartesian<N>>,
+    R: Copy,
+    RotationMatrix<N>: From<R>,
+    Cartesian<N>: MinkowskiPortalRefinement<N>,
+{
+    let s = MinkowskiDifference::new(sa, sb, v_ij, *q_ij);
+    let v0 = *v_ij;
+
+    // Portal discovery
+    let mut portal = match Cartesian::<N>::discover_portal(&s, &v0) {
+        Discovery::Found(p) => p,
+        Discovery::Known(r) => return r,
+    };
+
+    // Portal refinement
+    // The loop is the same in general dimension, but the outward facing normal function
+    // depends on the (N-1)-ary cross product (perp in 2d, cross in 3d)
+    // See https://ncatlab.org/nlab/show/cross+product#counary for further details on
+    // this operation
+    let mut count = 0_usize;
+    loop {
+        count += 1;
+
+        let normal = Cartesian::<N>::outward_normal(&portal, &v0);
+
+        // Hit test: is the origin enclosed by the portal?
+        if portal[0].dot(&normal) >= 0.0 {
+            return true;
+        }
+
+        // Support query in the direction of the portal normal
+        let v_new = s.composite_support_mapping(normal);
+
+        // Miss test: is the origin outside the support plane?
+        if v_new.dot(&normal) < 0.0 {
+            return false;
+        }
+
+        // Can we numerically distinguish the portal face and the support plane?
+        if let Some(result) = Cartesian::<N>::tolerance_check(&portal, &v_new, &normal) {
+            return result;
+        }
+
+        // Face test and vertex replacement (dimension-specific) TODO
+        Cartesian::<N>::narrow_portal(&v0, &mut portal, v_new);
+
+        if count >= XENOCOLLIDE_MAX_ITER {
+            return true;
+        }
+    }
+}
+
 /// Detect collision between two convex 2D objects via Minkowski Portal Refinement.
 #[inline]
 pub fn collide2d<R: Copy, A: SupportMapping<Cartesian<2>>, B: SupportMapping<Cartesian<2>>>(
@@ -110,252 +429,19 @@ pub fn collide2d<R: Copy, A: SupportMapping<Cartesian<2>>, B: SupportMapping<Car
 where
     RotationMatrix<2>: From<R>,
 {
-    const TOLERANCE: f64 = 1e-16;
-    let s = MinkowskiDifference::new(sa, sb, v_ij, *q_ij);
-
-    // Phase 1: Portal discovery
-    // Obtain a point lying deep within B⊖A
-    let v0 = *v_ij; // self.centroid()-other.centroid() in extrinsic coords
-
-    // TODO: This is unsafe for types like `ConvexPolytope`. Users can construct
-    // such types where the origin is outside the shape. Option 1: Validate
-    // the vertices when constructing `ConvexPolytope` Option 2: Implement
-    // a `SomePointInside` trait that must always return a point inside the
-    // shape. For `ConvexPolytope` this could be the mean of the vertices.
-    // `ConvexPolytope` makes vertices private, so this point could be
-    // precomputed and result in no performance impact to xenocollide.
-
-    // Find the support point in the direction of the origin ray
-    let mut v1 = s.composite_support_mapping(-v0); // negative, to ensure ||v1|| > 0
-
-    // v_perp is on the same side as the origin if v1.dot(v_perp) < 0
-    let mut v_perp_v1v0 = (v1 - v0).perpendicular();
-    if v1.dot(&v_perp_v1v0) > 0.0 {
-        v_perp_v1v0 = -v_perp_v1v0;
-    }
-
-    // Support point perpendicular to plane containing the origin, v0, and v1
-    let mut v2 = s.composite_support_mapping(v_perp_v1v0);
-
-    // 2. Portal Refinement
-    // Now we have three points which form our portal
-
-    let mut count = 0_usize;
-    loop {
-        count += 1;
-
-        // Vector normal to the portal segment, facing away from the interior point
-        let mut v_perp_v2v1 = (v2 - v1).perpendicular();
-        if (v1 - v0).dot(&v_perp_v2v1) < 0.0 {
-            v_perp_v2v1 = -v_perp_v2v1;
-        }
-
-        // Check if origin is inside or overlapping the initial portal
-        if v1.dot(&v_perp_v2v1) >= 0.0 {
-            // FUTURE: `v1.dot(&v_perp_v2v1) / v_perp_v2v1.norm()` is the approximate overlap distance
-            return true;
-        }
-
-        // Support point in the direction of the portal
-        let v3 = s.composite_support_mapping(v_perp_v2v1);
-
-        // If the origin is outside the support plane, return false (no overlap)
-        if v3.dot(&v_perp_v2v1) < 0.0 {
-            return false;
-        }
-
-        // are we within an epsilon of the surface of the shape? If yes, done (overlap)
-        let d = (v3 - v1) - (v3 - v1).project(&(v2 - v1));
-        if d.norm_squared() < TOLERANCE * v3.norm_squared() {
-            // FUTURE: `d.norm()` is the approximate overlap distance
-            return true;
-        }
-
-        // Choose new portal, which may either be v3v2 or v1v3
-        let mut v_perp_v3v0 = (v3 - v0).perpendicular();
-        // make v_perp_v3v0 point toward v1
-        if (v1 - v3).dot(&v_perp_v3v0) < 0.0 {
-            v_perp_v3v0 = -v_perp_v3v0;
-        }
-        if v3.dot(&v_perp_v3v0) < 0.0 {
-            // Origin is on the v1 side, so new portal is v3v1
-            v2 = v3;
-        } else {
-            // Origin is on the v2 side, so new portal is v3v2
-            v1 = v3;
-        }
-
-        if count >= XENOCOLLIDE_2D_MAX_ITER {
-            // FUTURE: `TOLERANCE` is the approximate overlap distance
-            return true;
-        }
-    }
+    collide::<2, R, A, B>(sa, sb, v_ij, q_ij)
 }
 
 /// Detect collision between two convex 3D objects via Minkowski Portal Refinement.
 #[inline(never)]
-pub fn collide3d<R, A, B>(
-    sa: &A,
-    sb: &B,
-    v_ij: &Cartesian<3>, // Probably ok to take ownership?
-    q_ij: &R,
-) -> bool
+pub fn collide3d<R, A, B>(sa: &A, sb: &B, v_ij: &Cartesian<3>, q_ij: &R) -> bool
 where
     A: SupportMapping<Cartesian<3>>,
     B: SupportMapping<Cartesian<3>>,
     R: Copy,
     RotationMatrix<3>: From<R>,
 {
-    const TOLERANCE: f64 = 2e-12;
-
-    if v_ij.into_iter().all(|x| x.abs() < TOLERANCE) {
-        // Interior point is at the origin => shapes overlap
-        return true;
-    }
-
-    let s = MinkowskiDifference::new(sa, sb, v_ij, *q_ij);
-
-    // Phase 1: Portal discovery
-    // Obtain a point lying deep within B⊖A
-    let v0 = *v_ij; // self.centroid()-other.centroid() in extrinsic coords
-
-    // find_candidate_portal()
-
-    // Support point in the direction of the origin ray
-    let mut v1 = s.composite_support_mapping(-v0); // negative, to ensure ||v1|| > 0
-
-    // Equivalent to v1 . (v1-v0) <= 0 by convexity
-    if v1.dot(&v0) > 0.0 {
-        return false; // Origin is outside the v1 support plane
-    }
-
-    // Direction perpendicular to v0, v1 plane
-    let n = v1.cross(&v0);
-
-    // Cross product is zero if v0,v1 collinear with origin, but we have already
-    // determined origin is within v1 support plane. If origin is on a line between
-    // v1 and v0, particles overlap.
-    if n.into_iter().all(|x| x.abs() < TOLERANCE) {
-        return true;
-    }
-
-    // Support point perpendicular to plane containing the origin, v0, and v1
-    let mut v2 = s.composite_support_mapping(n);
-
-    if v2.dot(&n) < 0.0 {
-        return false; // Origin lies outside the v2 support plane
-    }
-
-    // Support point perpendicular to plane containing interior point and first 2 supports
-    let mut n = (v1 - v0).cross(&(v2 - v0));
-    // Maintain known handedness of the portal
-    if n.dot(&v0) > 0.0 {
-        (v1, v2) = (v2, v1);
-        n = -n;
-    }
-
-    // while origin_ray_does_not_intersect_candidate()
-    let mut count = 0_usize;
-    let mut v3 = loop {
-        count += 1;
-
-        if count >= XENOCOLLIDE_3D_MAX_ITER {
-            return true;
-        }
-
-        let v3 = s.composite_support_mapping(n);
-        if v3.dot(&n) <= 0.0 {
-            return false; // Origin is outside the v3 support plane
-        }
-
-        // If origin lies on the opposite side of the plane from our third support
-        // point, use the outer facing plane normal.
-        // Check the v3, v0, v1 plane for validity
-        if v1.cross(&v3).dot(&v0) < 0.0 {
-            v2 = v3; // Preserve handedness
-            n = (v1 - v0).cross(&(v2 - v0));
-            continue; // Continue iterating to find a valid portal
-        }
-        if v3.cross(&v2).dot(&v0) < 0.0 {
-            v1 = v3; // Preserve handedness
-            n = (v1 - v0).cross(&(v2 - v0));
-            continue;
-        }
-        break v3; // If we've made it this far, we've found a valid portal
-    };
-
-    count = 0;
-    loop {
-        count += 1;
-
-        // Outer-facing normal of the current portal
-        n = (v2 - v1).cross(&(v3 - v1));
-
-        // Check if origin is inside (or overlapping) the portal
-        if n.dot(&v1) >= 0.0 {
-            // We already know that the origin lies within 3 of the faces of our portal
-            // simplex. If it lies within the final face, it lies within B⊖A
-            return true;
-        }
-
-        // Support point in direction of outer-facing normal of portal
-        // This point helps us determine how far outside the portal the origin lies
-        let v4 = s.composite_support_mapping(n);
-
-        // If the origin is outside the support plane, it cannot lie inside B⊖A
-        if n.dot(&v4) < 0.0 {
-            return false;
-        }
-
-        // Are we within an epsilon of the surface of the shape? If yes, done, one way or another.
-        n = (v2 - v1).cross(&(v3 - v1));
-        let mut d = (v4 - v1).dot(&n);
-
-        // Scale the tolerance with the size of the shapes.
-        let tolerance = TOLERANCE * n.norm();
-
-        // First, check if v4 is on plane (v2, v1, v3)
-        if d.abs() < tolerance {
-            // No more refinement possible, but not intersection detected
-            return false;
-        }
-        // Second, check if origin is on plane (v2, v1, v3) and has been missed by other checks
-        d = v1.dot(&n);
-        if d.abs() < tolerance {
-            return true;
-        }
-
-        // Choose a new portal. Two of its edges will be from the planes (v4,v0,v1),
-        // (v4,v0,v2), (v4,v0,v3). Find which two have the origin on the same side.
-
-        /* Test origin against the three planes that separate the new portal candidates
-        Note:  We're taking advantage of the triple product identities here
-        as an optimization
-               (v1 % v4) * v0 == v1 * (v4 % v0) > 0 if origin inside (v1, v4, v0)
-               (v2 % v4) * v0 == v2 * (v4 % v0) > 0 if origin inside (v2, v4, v0)
-               (v3 % v4) * v0 == v3 * (v4 % v0) > 0 if origin inside (v3, v4, v0)
-        */
-        let v_perp_v4v0 = v4.cross(&v0);
-
-        // Compiles to the same code as the original if-else, despite the extra dot
-        #[expect(
-            clippy::match_same_arms,
-            reason = "Clearly illustrate translation from c."
-        )]
-        match (
-            v_perp_v4v0.dot(&v1) > 0.0,
-            v_perp_v4v0.dot(&v2) > 0.0,
-            v_perp_v4v0.dot(&v3) > 0.0,
-        ) {
-            (true, true, _) => v1 = v4,   // Inside  v1 && inside  v2 => eliminate v1
-            (true, false, _) => v3 = v4,  // Inside  v1 && OUTside v2 => eliminate v3
-            (false, _, true) => v2 = v4,  // OUTside v1 && inside  v3 => eliminate v2
-            (false, _, false) => v1 = v4, // OUTside v1 && OUTside v3 => eliminate v1
-        }
-        if count >= XENOCOLLIDE_3D_MAX_ITER {
-            return true;
-        }
-    }
+    collide::<3, R, A, B>(sa, sb, v_ij, q_ij)
 }
 
 #[cfg(test)]
