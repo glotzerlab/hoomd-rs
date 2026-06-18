@@ -64,12 +64,14 @@
 //! a body might have mass, position and velocity while that body's sites have
 //! position and type.
 //!
-//! The `property` module provides a number of property types. It also defines
+//! The [`property`] module provides a number of property types. It also defines
 //! traits that you can use to implement custom property types. At a minimum, *both
 //! `B` and `S` MUST implement [`property::Position`]* so that [`Microstate`] can
 //! place your body's and sites inside the boundary conditions and maintain spatial
-//! data structures. Some model methods (such as shape overlap energies) will
-//! require other traits (such as [`property::Orientation`]). The `property` module
+//! data structures. Some interaction models (such as shape overlap energies) will
+//! require other traits (such as [`property::Orientation`]). Molecular dynamics
+//! simulations operate on bodies with either a [`property::DynamicPoint`] or
+//! [`property::DynamicOrientedPoint`] type. The [`property`] module
 //! documentation provides more details on using the types it provides and how to
 //! define custom types.
 //!

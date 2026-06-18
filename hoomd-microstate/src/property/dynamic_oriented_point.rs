@@ -25,7 +25,7 @@ impl RotationalMotionTypes for Versor {
 /// Use [`DynamicOrientedPoint`] as a [`Body`](crate::Body) property type.
 ///
 /// A default [`DynamicOrientedPoint`] has a mass of 1.0. Position, momentum,
-/// and net force default to the 0 vector. Orientation defaults to the identity.
+/// and net force of $` \vec{0} `$. Orientation defaults to the identity.
 /// `DynamicOrientedPoint<_, Angle>` has a default moment of inertia of 1.0.
 /// `DynamicOrientedPoint<_, Versor>` has a default moment of inertia of
 /// `[1.0, 1.0, 1.0]`.
@@ -357,4 +357,83 @@ where
     }
 }
 
-// TODO: tests.
+#[cfg(test)]
+mod test {
+    use super::*;
+    use assert2::check;
+
+    use hoomd_vector::Cartesian;
+
+    #[test]
+    fn position() {
+        let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
+
+        *dynamic_point.position_mut() = [1.0, 2.0].into();
+        check!(dynamic_point.position == [1.0, 2.0].into());
+        check!(dynamic_point.position() == &[1.0, 2.0].into());
+    }
+
+    #[test]
+    fn orientation() {
+        let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
+
+        *dynamic_point.orientation_mut() = 1.0.into();
+        check!(dynamic_point.orientation == 1.0.into());
+        check!(dynamic_point.orientation() == &1.0.into());
+    }
+
+    #[test]
+    fn mass() {
+        let dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle> {
+            mass: 3.0,
+            .. Default::default()
+        };
+        
+        check!(dynamic_point.mass() == 3.0);
+    }
+
+    #[test]
+    fn momentum() {
+        let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
+
+        *dynamic_point.momentum_mut() = [1.0, 2.0].into();
+        check!(dynamic_point.momentum == [1.0, 2.0].into());
+        check!(dynamic_point.momentum() == &[1.0, 2.0].into());
+    }
+
+    #[test]
+    fn net_force() {
+        let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
+
+        *dynamic_point.net_force_mut() = [1.0, 2.0].into();
+        check!(dynamic_point.net_force == [1.0, 2.0].into());
+        check!(dynamic_point.net_force() == &[1.0, 2.0].into());
+    }
+
+    #[test]
+    fn moment_of_inertia() {
+        let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
+
+        *dynamic_point.moment_of_inertia_mut() = 2.0;
+        check!(dynamic_point.moment_of_inertia == 2.0);
+        check!(dynamic_point.moment_of_inertia() == &2.0);
+    }
+
+    #[test]
+    fn angular_momentum() {
+        let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
+
+        *dynamic_point.angular_momentum_mut() = 2.0;
+        check!(dynamic_point.angular_momentum == 2.0);
+        check!(dynamic_point.angular_momentum() == &2.0);
+    }
+
+    #[test]
+    fn net_torque() {
+        let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
+
+        *dynamic_point.net_torque_mut() = 2.0;
+        check!(dynamic_point.net_torque == 2.0);
+        check!(dynamic_point.net_torque() == &2.0);
+    }
+}

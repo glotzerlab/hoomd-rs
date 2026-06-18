@@ -14,8 +14,8 @@ use hoomd_vector::Vector;
 ///
 /// Use [`DynamicPoint`] as a [`Body`](crate::Body) property type.
 ///
-/// A default [`DynamicPoint`] has a mass of 1.0. Position, momentum, and net force default to
-/// the 0 vector.
+/// A default [`DynamicPoint`] has a mass of 1.0. Position, momentum, and net force
+/// of $` \vec{0} `$.
 ///
 /// # Example
 ///
@@ -203,4 +203,47 @@ impl<V> NetForce for DynamicPoint<V> {
     }
 }
 
-// TODO: tests.
+#[cfg(test)]
+mod test {
+    use super::*;
+    use assert2::check;
+
+    use hoomd_vector::Cartesian;
+
+    #[test]
+    fn position() {
+        let mut dynamic_point = DynamicPoint::<Cartesian<2>>::default();
+
+        *dynamic_point.position_mut() = [1.0, 2.0].into();
+        check!(dynamic_point.position == [1.0, 2.0].into());
+        check!(dynamic_point.position() == &[1.0, 2.0].into());
+    }
+
+    #[test]
+    fn mass() {
+        let dynamic_point = DynamicPoint::<Cartesian<2>> {
+            mass: 3.0,
+            .. Default::default()
+        };
+        
+        check!(dynamic_point.mass() == 3.0);
+    }
+
+    #[test]
+    fn momentum() {
+        let mut dynamic_point = DynamicPoint::<Cartesian<2>>::default();
+
+        *dynamic_point.momentum_mut() = [1.0, 2.0].into();
+        check!(dynamic_point.momentum == [1.0, 2.0].into());
+        check!(dynamic_point.momentum() == &[1.0, 2.0].into());
+    }
+
+    #[test]
+    fn net_force() {
+        let mut dynamic_point = DynamicPoint::<Cartesian<2>>::default();
+
+        *dynamic_point.net_force_mut() = [1.0, 2.0].into();
+        check!(dynamic_point.net_force == [1.0, 2.0].into());
+        check!(dynamic_point.net_force() == &[1.0, 2.0].into());
+    }
+}
