@@ -39,6 +39,14 @@ use hoomd_simulation::macrostate::Temperature;
 /// # Reference
 ///
 /// * [Bussi et al. 2007](https://doi.org/10.1063/1.2408420)
+///
+/// # Example
+///
+/// ```
+/// use hoomd_md::thermostat::Bussi;
+///    
+/// let bussi = Bussi::new(0.5);
+/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Bussi {
     /// Thermostat time constant $`[ \mathrm{time} ]`$.
@@ -56,7 +64,7 @@ impl Bussi {
     /// ```
     /// use hoomd_md::thermostat::Bussi;
     ///    
-    /// let bussi = Bussi::new(0.1);
+    /// let bussi = Bussi::new(0.5);
     /// ```
     #[inline]
     pub fn new(tau: f64) -> Self {

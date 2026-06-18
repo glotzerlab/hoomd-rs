@@ -33,7 +33,7 @@ use hoomd_utility::valid::PositiveReal;
 /// # Example
 ///
 /// ```
-/// use hoomd_md::{thermostat::NoséHooverChain};
+/// use hoomd_md::thermostat::NoséHooverChain;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let thermostat = NoséHooverChain::<3>::zero(0.5.try_into()?);

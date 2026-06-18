@@ -62,6 +62,17 @@ use hoomd_utility::valid::PositiveReal;
 /// # References
 /// * [Tuckerman et al. 2006](https://doi.org/10.1088/0305-4470/39/19/S18)
 /// * [Martyna et al. 1994](https://doi.org/10.1063/1.467468)
+///
+/// # Example
+///
+/// ```
+/// use hoomd_md::thermostat::MartynaTuckermanTobiasKlein;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let thermostat = MartynaTuckermanTobiasKlein::zero(0.5.try_into()?);
+/// # Ok(())
+/// # }
+/// ```
 #[doc(alias = "mttk")]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MartynaTuckermanTobiasKlein {
@@ -124,18 +135,17 @@ impl MartynaTuckermanTobiasKlein {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::builder()
     ///     .bodies([
-    ///         Body { properties: DynamicPoint {
+    ///         Body::single_site(DynamicPoint {
     ///           position: Cartesian::from([1.0, 2.0]),
     ///           ..Default::default()
     ///           },
-    ///           sites: vec![Point::default()],
-    ///           },
-    ///         Body { properties: DynamicPoint {
+    ///           Point::default()),
+    ///         Body::single_site(DynamicPoint {
     ///           position: Cartesian::from([-2.0, 3.0]),
     ///           ..Default::default()
     ///           },
-    ///           sites: vec![Point::default()],
-    ///           },
+    ///           Point::default(),
+    ///           ),
     ///     ])
     ///     .try_build()?;
     ///
