@@ -17,9 +17,6 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 workspace = true
 
 [dependencies]
-# TODO: remove unused dependencies
-arrayvec.workspace = true
-# bevy_egui.workspace = true
 rand.workspace = true
 rand_distr.workspace = true
 serde.workspace = true
@@ -36,10 +33,4 @@ hoomd-simulation.workspace = true
 anyhow.workspace = true
 approxim.workspace = true
 assert2.workspace = true
-# bevy.workspace = true
-divan.workspace = true
-rand.workspace = true
 rstest.workspace = true
-
-hoomd-geometry.workspace = true
-# hoomd-bevy.workspace = true

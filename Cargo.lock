@@ -3766,10 +3766,7 @@ version = "1.1.0"
 dependencies = [
  "anyhow",
  "approxim",
- "arrayvec",
  "assert2",
- "divan",
- "hoomd-geometry",
  "hoomd-interaction",
  "hoomd-linear-algebra",
  "hoomd-microstate",
