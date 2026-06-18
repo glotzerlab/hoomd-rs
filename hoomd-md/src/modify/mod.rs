@@ -80,20 +80,20 @@ pub trait ThermalizeMomentum<B, S> {
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::builder()
 ///     .bodies([
-///         Body { properties: DynamicPoint {
+///         Body::single_site(DynamicPoint {
 ///           position: Cartesian::from([1.0, 2.0]),
 ///           momentum: Cartesian::from([-2.0, 4.0]),
 ///           ..Default::default()
 ///           },
-///           sites: vec![Point::default()],
-///           },
-///         Body { properties: DynamicPoint {
+///           Point::default(),
+///           ),
+///         Body::single_site(DynamicPoint {
 ///           position: Cartesian::from([-2.0, 3.0]),
 ///           momentum: Cartesian::from([3.0, -6.0]),
 ///           ..Default::default()
 ///           },
-///           sites: vec![Point::default()],
-///           },
+///           Point::default(),
+///           ),
 ///     ])
 ///     .try_build()?;
 ///
