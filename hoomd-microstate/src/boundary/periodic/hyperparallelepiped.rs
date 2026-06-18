@@ -43,7 +43,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_geometry::shape::Parallelepiped;
+    /// use hoomd_geometry::shape::Hyperparallelepiped;
     /// use hoomd_microstate::{
     ///     boundary::{Periodic, Wrap},
     ///     property::Point,
@@ -51,7 +51,7 @@ where
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut box_ = Parallelepiped {
+    /// let mut box_ = Hyperparallelepiped {
     ///     edge_vectors: [
     ///         [1.0, 0.0, 0.0].into(),
     ///         [0.5, f64::sqrt(3.0) / 2.0, 0.0].into(),
