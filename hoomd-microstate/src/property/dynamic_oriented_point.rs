@@ -357,29 +357,4 @@ where
     }
 }
 
-// impl DynamicOrientedPoint<Cartesian<3>, Quaternion>
-// {
-//     /// Transform the three-dimensional
-//     /// angular momentum as a quaternion of body to
-//     /// angular velocity in vector form.
-//     pub fn angular_velocity(&self) -> Cartesian<3> {
-//         // transform angmom to vector form (angmom_vec.scalar should be 0.0)
-//         let angmom_vec = (self.orientation.conjugate() * self.angular_momentum) * 0.5;
-//         Cartesian::from([
-//             angmom_vec.vector[0] / self.moment_of_inertia[0],
-//             angmom_vec.vector[1] / self.moment_of_inertia[1],
-//             angmom_vec.vector[2] / self.moment_of_inertia[2]
-//         ])
-//     }
-// }
-
-// impl DynamicOrientedPoint<f64, f64>
-// {
-//     /// Transform the two-dimensional
-//     /// angular momentum to angular velocity.
-//     pub fn angular_velocity(&self) -> f64 {
-//         self.angular_momentum / self.moment_of_inertia
-//     }
-// }
-
 // TODO: tests.

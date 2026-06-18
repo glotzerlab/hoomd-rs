@@ -199,9 +199,8 @@ where
 
             microstate
                 .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
-
-            // TODO: panic: or return Err when the microstate becomes invalid?
+                .expect("Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         microstate.increment_substep();
@@ -240,7 +239,8 @@ where
 
             microstate
                 .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
+                .expect("Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         let (kinetic_energy, degrees_of_freedom) = microstate.translational_kinetic_energy();
@@ -263,7 +263,8 @@ where
 
             microstate
                 .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
+                .expect("Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         microstate.increment_substep();
@@ -518,7 +519,8 @@ where
 
             microstate
                 .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
+                .expect("Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         microstate.increment_substep();
@@ -578,7 +580,8 @@ where
 
             microstate
                 .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
+                .expect("Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
@@ -602,7 +605,8 @@ where
 
             microstate
                 .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
+                .expect("Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         microstate.increment_substep();
@@ -682,7 +686,8 @@ where
 
             microstate
                 .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
+                .expect("Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         microstate.increment_substep();
@@ -722,7 +727,8 @@ where
 
             microstate
                 .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
+                .expect("Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy();
@@ -747,7 +753,8 @@ where
 
             microstate
                 .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
+                .expect("Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         microstate.increment_substep();
