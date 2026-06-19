@@ -291,6 +291,214 @@ impl MinkowskiPortalRefinement<3> for Cartesian<3> {
     }
 }
 
+/// Find a vector perpendicular to the plane spanned by `a` and `b` in R^4.
+///
+/// `counary_cross` requires 3 inputs but during early portal discovery we only have
+/// 2 vectors. This function uses a standard basis vector as the 3rd input — at least
+/// one of the 4 basis vectors is guaranteed to be non-coplanar with any 2 given vectors.
+#[inline]
+fn perp_to_2d_subspace(a: Cartesian<4>, b: Cartesian<4>, tol: f64) -> Option<Cartesian<4>> {
+    for i in 0..4 {
+        let mut e = [0.0f64; 4];
+        e[i] = 1.0;
+        let n = Cartesian::<4>::counary_cross(&[a, b, e.into()]);
+        if n.into_iter().any(|x| x.abs() > tol) {
+            return Some(n);
+        }
+    }
+    None
+}
+
+impl MinkowskiPortalRefinement<4> for Cartesian<4> {
+    const TOLERANCE: f64 = 2e-12;
+
+    #[inline]
+    fn outward_normal(portal: &[Cartesian<4>; 4], interior: &Cartesian<4>) -> Cartesian<4> {
+        let e1 = portal[1] - portal[0];
+        let e2 = portal[2] - portal[0];
+        let e3 = portal[3] - portal[0];
+        let mut n = Self::counary_cross(&[e1, e2, e3]);
+        if (portal[0] - *interior).dot(&n) < 0.0 {
+            n = -n;
+        }
+        n
+    }
+
+    fn discover_portal<A: SupportMapping<Cartesian<4>>, B: SupportMapping<Cartesian<4>>>(
+        s: &MinkowskiDifference<4, A, B>,
+        v0: &Cartesian<4>,
+    ) -> Discovery<4> {
+        // Interior point at origin implies overlap
+        if v0.into_iter().all(|x| x.abs() < Self::TOLERANCE) {
+            return Discovery::Known(true);
+        }
+
+        // v1: first support point
+        let mut v1 = s.composite_support_mapping(-*v0);
+        if v1.dot(v0) > 0.0 {
+            return Discovery::Known(false);
+        }
+
+        // v2: support in direction perpendicular to the v0-v1 plane
+        let Some(n) = perp_to_2d_subspace(*v0, v1, Self::TOLERANCE) else {
+            return Discovery::Known(true); // v0, v1, origin collinear
+        };
+
+        let mut v2 = s.composite_support_mapping(n);
+        if v2.dot(&n) < 0.0 {
+            return Discovery::Known(false);
+        }
+
+        // v3: support in direction perpendicular to the v0-v1-v2 subspace
+        let Some(mut n) = perp_to_2d_subspace(v1 - *v0, v2 - *v0, Self::TOLERANCE) else {
+            return Discovery::Known(true);
+        };
+        // Orient normal away from v0 (maintain handedness)
+        if n.dot(v0) > 0.0 {
+            (v1, v2) = (v2, v1);
+            n = -n;
+        }
+        let v3 = s.composite_support_mapping(n);
+        if v3.dot(&n) <= 0.0 {
+            return Discovery::Known(false);
+        }
+
+        // Recompute portal normal from 3 edge vectors
+        let mut n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
+        // Coplanar v1, v2, v3 with v0 produce a zero normal — origin lies on a flat
+        // boundary region which we treat as overlap
+        if n.into_iter().all(|x| x.abs() < Self::TOLERANCE) {
+            return Discovery::Known(true);
+        }
+        if n.dot(v0) > 0.0 {
+            n = -n;
+        }
+
+        // v4-validation loop
+        // The 3 face checks use the 4D quadruple product:
+        //   counary_cross(&[v_a, v_b, v4]).dot(&v0) = det([v_a, v_b, v4, v0])
+        // Negative means origin is on the wrong side of that face.
+        let mut v3 = v3;
+        let mut count = 0_usize;
+        let v4 = loop {
+            count += 1;
+            if count >= XENOCOLLIDE_MAX_ITER {
+                return Discovery::Known(true);
+            }
+
+            let v4 = s.composite_support_mapping(n);
+            if v4.dot(&n) <= 0.0 {
+                return Discovery::Known(false);
+            }
+
+            // Face (v1, v2, v4) — opposite v3
+            if Self::counary_cross(&[v1, v2, v4]).dot(v0) < 0.0 {
+                v3 = v4;
+                n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
+                if n.dot(v0) > 0.0 {
+                    n = -n;
+                }
+                continue;
+            }
+            // Face (v2, v3, v4) — opposite v1
+            if Self::counary_cross(&[v2, v3, v4]).dot(v0) < 0.0 {
+                v1 = v4;
+                n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
+                if n.dot(v0) > 0.0 {
+                    n = -n;
+                }
+                continue;
+            }
+            // Face (v1, v4, v3) — opposite v2
+            if Self::counary_cross(&[v1, v4, v3]).dot(v0) < 0.0 {
+                v2 = v4;
+                n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
+                if n.dot(v0) > 0.0 {
+                    n = -n;
+                }
+                continue;
+            }
+            break v4;
+        };
+
+        Discovery::Found([v1, v2, v3, v4])
+    }
+
+    #[inline]
+    fn tolerance_check(
+        portal: &[Cartesian<4>; 4],
+        v_new: &Cartesian<4>,
+        normal: &Cartesian<4>,
+    ) -> Option<bool> {
+        let tolerance = Self::TOLERANCE * normal.norm();
+
+        let d = (*v_new - portal[0]).dot(normal);
+        if d.abs() < tolerance {
+            return Some(false);
+        }
+        let d = portal[0].dot(normal);
+        if d.abs() < tolerance {
+            return Some(true);
+        }
+        None
+    }
+    #[inline]
+    fn narrow_portal(interior: &Cartesian<4>, portal: &mut [Cartesian<4>; 4], v_new: Cartesian<4>) {
+        // The 4-simplex [portal[0..4] , v_new] has 5 tetrahedral faces.
+        // The entry face is the current portal (portal[0..4]).
+        // The 4 exit faces each contain v_new and all portal vertices except portal[i].
+        //
+        // The origin ray enters through the portal and must exit through one of these
+        // 4 faces. To determine which, we compute the outward-facing normal to each exit
+        // face and check whether the origin lies on the outward side:
+        //
+        //   n_i = inward normal of the face opposite portal[i]
+        //
+        // The signed distance from a point P to the hyperplane through v_new with normal n
+        // is (P − v_new) . n. The origin (P = 0) has distance −v_new . n, and interior
+        // has distance (interior − v_new) . n. We orient n toward portal[i] so that the
+        // origin is on the opposite (outward) side when v_new . n > 0.
+        // Among faces the ray crosses (d > 0 and num > 0), we pick the one with smallest
+        // t = num / (num + d) and fall back to the face with largest d if none qualify.
+        //
+        // NOTE: This is fundementally different from 3d, where the cross product
+        // uniquely identifies the correct facet (plane, in that case) to exit through.
+        // In 4D, we need to find the *best* facet
+        let mut exit_face: Option<(usize, f64)> = None;
+        let mut fallback_i = 0;
+        let mut fallback_d = f64::NEG_INFINITY;
+
+        for i in 0..4 {
+            let edges = std::array::from_fn(|k| portal[(i + k + 1) % 4] - v_new);
+            let n = Self::counary_cross(&edges);
+            // Skip near-degenerate faces.
+            if n.norm_squared() < Self::TOLERANCE * Self::TOLERANCE * interior.norm_squared() {
+                continue;
+            }
+            let n = if (portal[i] - v_new).dot(&n) < 0.0 {
+                -n
+            } else {
+                n
+            };
+            let d = v_new.dot(&n);
+            let num = (*interior - v_new).dot(&n);
+
+            if d > fallback_d {
+                fallback_d = d;
+                fallback_i = i;
+            }
+            if d > 0.0 && num > 0.0 {
+                let t = num / (num + d);
+                match exit_face {
+                    Some((_, best_t)) if t >= best_t => {}
+                    _ => exit_face = Some((i, t)),
+                }
+            }
+        }
+        portal[exit_face.map_or(fallback_i, |(i, _)| i)] = v_new;
+    }
+}
+
 /// Stateful type that efficiently computes repeated Minkowski differences.
 pub(crate) struct MinkowskiDifference<
     'a,
@@ -391,6 +599,14 @@ where
 
         let normal = Cartesian::<N>::outward_normal(&portal, &v0);
 
+        // If the portal's (N-1)-simplex is degenerate, the normal is near zero and the
+        // rest of the algorithm does not make sense (so we fail safe -> overlap)
+        if normal.norm_squared()
+            < Cartesian::<N>::TOLERANCE * Cartesian::<N>::TOLERANCE * v0.norm_squared()
+        {
+            return true;
+        }
+
         // Hit test: is the origin enclosed by the portal?
         if portal[0].dot(&normal) >= 0.0 {
             return true;
@@ -444,15 +660,28 @@ where
     collide::<3, R, A, B>(sa, sb, v_ij, q_ij)
 }
 
+/// Detect collision between two convex 4D objects via Minkowski Portal Refinement.
+#[inline(never)]
+pub fn collide4d<R, A, B>(sa: &A, sb: &B, v_ij: &Cartesian<4>, q_ij: &R) -> bool
+where
+    A: SupportMapping<Cartesian<4>>,
+    B: SupportMapping<Cartesian<4>>,
+    R: Copy,
+    RotationMatrix<4>: From<R>,
+{
+    collide::<4, R, A, B>(sa, sb, v_ij, q_ij)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::IntersectsAt;
     use rstest::*;
 
-    use crate::shape::{Circle, Hypercuboid, Hypersphere};
+    use crate::shape::{Circle, ConvexPolytope, Hypercuboid, Hypersphere};
     use hoomd_utility::valid::PositiveReal;
     use hoomd_vector::{Angle, Rotation, Versor};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
 
     #[rstest(
         v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123_f64.next_down()], [0.0, 5.123_000_001]],
@@ -534,5 +763,254 @@ mod tests {
 
         let overlaps = collide3d(&c0, &c1, &v.into(), &theta);
         assert_eq!(overlaps, c0.intersects_aligned(&c1, &v.into()));
+    }
+
+    #[rstest(
+        v => [
+            [0.1, 0.1, 0.1, 0.1],
+            [999.9, 0.0, 0.0, -10.9],
+            [0.0, 5.123, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 5.123_000_001],
+        ],
+        radius => [0.001, 1.0, 4.123],
+    )]
+    fn test_4d_spheres_collide(v: [f64; 4], radius: f64) {
+        let (s0, s1) = (
+            Hypersphere {
+                radius: 1.0.try_into().expect("test value is a positive real"),
+            },
+            Hypersphere::<4> {
+                radius: radius.try_into().expect("test value is a positive real"),
+            },
+        );
+        let q_ij = RotationMatrix::<4>::default();
+
+        let overlaps = collide4d(&s0, &s1, &v.into(), &q_ij);
+
+        assert_eq!(
+            overlaps,
+            s0.intersects_at(&s1, &Cartesian::from(v), &q_ij),
+            "4D Xenocollide result did not match standard implementation!"
+        );
+    }
+
+    #[rstest(
+        v => [
+            [0.1, 0.1, 0.1, 0.1],
+            [999.9, 0.0, 0.0, 0.05],
+            [0.0, 5.123, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 5.123_000_000_001],
+        ],
+        tesseract => [
+            [1.0.try_into().expect("test value is a positive real"); 4],
+            [999.0.try_into().expect("test value is a positive real"), 0.1.try_into().expect("test value is a positive real"), 0.5.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")],
+        ],
+    )]
+    fn test_tesseracts_collide(v: [f64; 4], tesseract: [PositiveReal; 4]) {
+        let c0 = Hypercuboid {
+            edge_lengths: tesseract,
+        };
+        let c1 = Hypercuboid {
+            edge_lengths: [1.0.try_into().expect("test value is a positive real"); 4],
+        };
+        let q_ij = RotationMatrix::<4>::default();
+
+        let overlaps = collide4d(&c0, &c1, &v.into(), &q_ij);
+        assert_eq!(overlaps, c0.intersects_aligned(&c1, &v.into()));
+    }
+
+    /// Sweep two unit hypercubes from overlapping to separated along a diagonal direction,
+    /// verifying collide4d matches the analytical result at every step.
+    #[rstest(
+        direction => [
+            [1.0_f64, 1.0, 1.0, 1.0],
+            [2.0_f64, 1.0, 1.0, 1.0],
+            [1.0_f64, 1.0, 1.0, 3.0],
+            [1.0_f64, 2.0, 3.0, 1.0],
+        ],
+    )]
+    fn test_4d_hypercuboid_diagonal_separation_sweep(direction: [f64; 4]) {
+        let one: PositiveReal = 1.0.try_into().unwrap();
+        let c0 = Hypercuboid {
+            edge_lengths: [one; 4],
+        };
+        let c1 = Hypercuboid {
+            edge_lengths: [one; 4],
+        };
+
+        // Half-edge-lengths: 0.5 each, sum = 1.0 each.
+        // Critical t = min_i(1.0 / |dir_i|)
+        let critical_t = (0..4)
+            .map(|i| 1.0 / direction[i].abs())
+            .reduce(f64::min)
+            .unwrap();
+
+        let t_start = critical_t - 0.001;
+        let t_end = critical_t + 0.001;
+        let steps = 10_000;
+        let dt = (t_end - t_start) / f64::from(steps);
+
+        let q_ij = RotationMatrix::<4>::default();
+
+        for step in 0..=steps {
+            let t = t_start + dt * f64::from(step);
+            let d: Cartesian<4> = direction.map(|d_i| d_i * t).into();
+            let expected = c0.intersects_aligned(&c1, &d);
+            let result = collide4d(&c0, &c1, &d, &q_ij);
+            assert_eq!(
+                result, expected,
+                "Mismatch at step {step}, t = {t:.12}, critical_t = {critical_t:.12}"
+            );
+        }
+    }
+
+    /// Sweep two tesseracts (vertex-based `ConvexPolytope::hypercube()`) along
+    /// axis-aligned directions, crossing the Minkowski-difference boundary at a cubical
+    /// facet *center*.
+    #[rstest(
+        direction => [
+            [1.0_f64, 0.0, 0.0, 0.0],
+            [0.0_f64, 1.0, 0.0, 0.0],
+            [0.0_f64, 0.0, 1.0, 0.0],
+            [0.0_f64, 0.0, 0.0, 1.0],
+            [1.0_f64, 1.0, 0.0, 0.0],
+            [0.0_f64, 1.0, 1.0, 0.0],
+            [0.0_f64, 0.0, 1.0, 1.0],
+            [2.0_f64, 1.0, 0.0, 0.0],
+        ],
+    )]
+    fn test_4d_hypercube_polytope_axis_separation_sweep(direction: [f64; 4]) {
+        let c0 = ConvexPolytope::<4, 16>::hypercube();
+        let c1 = ConvexPolytope::<4, 16>::hypercube();
+
+        // Half-edge 0.5 each; collide4d reports overlap (incl. touching) iff |d[i]| <= 1.0
+        // for all i. Critical t = min_i(1.0 / |dir_i|); zero components contribute infinity.
+        let critical_t = (0..4)
+            .map(|i| 1.0 / direction[i].abs())
+            .reduce(f64::min)
+            .unwrap();
+
+        let t_start = critical_t - 0.001;
+        let t_end = critical_t + 0.001;
+        let steps = 10_000;
+        let dt = (t_end - t_start) / f64::from(steps);
+
+        let q_ij = RotationMatrix::<4>::default();
+
+        for step in 0..=steps {
+            let t = t_start + dt * f64::from(step);
+            let d: Cartesian<4> = direction.map(|d_i| d_i * t).into();
+            let expected = (0..4).all(|i| d[i].abs() <= 1.0);
+            let result = collide4d(&c0, &c1, &d, &q_ij);
+            assert_eq!(
+                result, expected,
+                "Mismatch at step {step}, t = {t:.12}, critical_t = {critical_t:.12}"
+            );
+        }
+    }
+
+    /// Stress-test collide4d with two hyperspheres near their overlap boundary.
+    ///
+    /// Generates random displacement directions uniformly on S^3 using random
+    /// unit quaternions ([`Versor`], Muller/Marsaglia Method 19) and random
+    /// radii in a thin shell of width 1e-3 centered on the overlap radius.
+    #[rstest(
+        r0 => [1.0, 0.5, 3.7],
+        r1 => [1.0, 2.0, 0.8],
+        seed => [0, 1, 42],
+    )]
+    fn test_4d_hypersphere_shell_overlap(r0: f64, r1: f64, seed: u64) {
+        let boundary = r0 + r1;
+        let shell_half_width = 5e-10;
+        let n_samples = 10_000;
+
+        let s0 = Hypersphere::<4> {
+            radius: r0.try_into().unwrap(),
+        };
+        let s1 = Hypersphere::<4> {
+            radius: r1.try_into().unwrap(),
+        };
+        let q_ij = RotationMatrix::<4>::default();
+
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        for i in 0..n_samples {
+            // Random unit quaternion → uniform direction on S^3
+            let q: Versor = rng.random();
+            let q = q.get();
+            let dir: Cartesian<4> = [q.scalar, q.vector[0], q.vector[1], q.vector[2]].into();
+
+            let r = boundary - shell_half_width + rng.random::<f64>() * 2.0 * shell_half_width;
+            let d = dir * r;
+
+            let analytical = r < boundary;
+            let result = collide4d(&s0, &s1, &d, &q_ij);
+            assert_eq!(
+                result, analytical,
+                "Mismatch at sample {i}, |d| = {r:.12}, boundary = {boundary:.12}"
+            );
+        }
+    }
+
+    /// Construct a 4-simplex from 5 vertices drawn from c·{±1}⁴.
+    ///
+    /// 9 of the 10 edges have length 2c√2; the v₃–v₄ edge has length 4c.
+    fn pentachoron(c: f64) -> ConvexPolytope<4, 8> {
+        ConvexPolytope::<4, 8>::with_vertices([
+            Cartesian::from([c, c, c, c]),
+            Cartesian::from([c, -c, -c, c]),
+            Cartesian::from([-c, c, -c, c]),
+            Cartesian::from([-c, -c, c, c]),
+            Cartesian::from([c, c, -c, -c]),
+        ])
+        .unwrap()
+    }
+
+    /// Sweep two simplices along vertex-to-vertex (edge) directions.
+    ///
+    /// For two identical simplices with vertices {`v_i`}, a sweep along the
+    /// edge direction `d0 = v_a − v_b` has an exact analytical boundary:
+    /// the t* at intersection equals the edge length `|v_a − v_b|` (9 edges have
+    /// length 2c*sqrt(2), 1 edge has length 4c).
+    #[rstest(
+        edge => [
+            [0.0_f64, 2.0, 2.0, 0.0],   // v0 - v1
+            [2.0_f64, 0.0, 2.0, 0.0],   // v0 - v2
+            [2.0_f64, 2.0, 0.0, 0.0],   // v0 - v3
+            [0.0_f64, 0.0, 2.0, 2.0],   // v0 - v4
+            [2.0_f64, -2.0, 0.0, 0.0],  // v1 - v2
+            [2.0_f64, 0.0, -2.0, 0.0],  // v1 - v3
+            [0.0_f64, -2.0, 0.0, 2.0],  // v1 - v4
+            [0.0_f64, 2.0, -2.0, 0.0],  // v2 - v3
+            [-2.0_f64, 0.0, 0.0, 2.0],  // v2 - v4
+            [-2.0_f64, -2.0, 2.0, 2.0], // v3 - v4
+        ],
+        c => [1.0, 0.5, 2.0],
+    )]
+    fn test_4d_pentachoron_edge_sweep(edge: [f64; 4], c: f64) {
+        let s0 = pentachoron(c);
+        let s1 = pentachoron(c);
+
+        let edge: Cartesian<4> = edge.map(|e| e * c).into();
+        let edge_length = edge.norm();
+        let direction = edge / edge_length;
+
+        let t_start = edge_length - 1.0 / 3.0;
+        let t_end = edge_length + 0.01;
+        let steps = 10_000;
+        let dt = (t_end - t_start) / f64::from(steps);
+
+        let q_ij = RotationMatrix::<4>::default();
+
+        for step in 0..=steps {
+            let t = t_start + dt * f64::from(step);
+            let d = direction * t;
+            let analytical = t < edge_length;
+            let result = collide4d(&s0, &s1, &d, &q_ij);
+            assert_eq!(
+                result, analytical,
+                "Mismatch at step {step}, t = {t:.12}, edge_length = {edge_length:.12}"
+            );
+        }
     }
 }
