@@ -391,8 +391,19 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
                 return Discovery::Known(false);
             }
 
+            // Each face test is a 4×4 determinant. For axis-aligned shapes, the
+            // support vertices are frequently *coplanar* with `v0`, so the determinant
+            // lands within a few ULP of zero. `< 0.0` then fires on floating-point
+            // noise, replacing a vertex and bouncing the portal between states until
+            // `MAX_ITER` bails out with a false-positive overlap.
+            //
+            // A determinant within `det_band` of zero means the origin lies ON the
+            // face (within precision), which we treat as enclosed. Only a clearly-
+            // negative determinant triggers a vertex replacement.
+            let det_tol = Self::TOLERANCE * v1.norm() * v2.norm() * v3.norm() * v0.norm();
+
             // Face (v1, v2, v4) — opposite v3
-            if Self::counary_cross(&[v1, v2, v4]).dot(v0) < 0.0 {
+            if Self::counary_cross(&[v1, v2, v4]).dot(v0) < -det_tol {
                 v3 = v4;
                 n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
                 if n.dot(v0) > 0.0 {
@@ -401,7 +412,7 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
                 continue;
             }
             // Face (v2, v3, v4) — opposite v1
-            if Self::counary_cross(&[v2, v3, v4]).dot(v0) < 0.0 {
+            if Self::counary_cross(&[v2, v3, v4]).dot(v0) < -det_tol {
                 v1 = v4;
                 n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
                 if n.dot(v0) > 0.0 {
@@ -410,7 +421,7 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
                 continue;
             }
             // Face (v1, v4, v3) — opposite v2
-            if Self::counary_cross(&[v1, v4, v3]).dot(v0) < 0.0 {
+            if Self::counary_cross(&[v1, v4, v3]).dot(v0) < -det_tol {
                 v2 = v4;
                 n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
                 if n.dot(v0) > 0.0 {
