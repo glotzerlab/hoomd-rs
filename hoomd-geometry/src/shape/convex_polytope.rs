@@ -394,18 +394,19 @@ impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
             1 => self.vertices[0],
             _ => {
                 let n_f32 = std::array::from_fn(|i| n[i] as f32);
-                let vertices_f32 = self
+
+                let support = self
                     .vertices
                     .iter()
-                    .map(|v| v.coordinates.map(|x| x as f32));
-                let support = vertices_f32
-                    .max_by(|a, b| {
-                        dot_arrays(a, &n_f32)
-                            .partial_cmp(&dot_arrays(b, &n_f32))
-                            .unwrap_or(std::cmp::Ordering::Equal)
+                    .map(|v| {
+                        let v_f32 = v.coordinates.map(|x| x as f32);
+                        let dot = dot_arrays(&v_f32, &n_f32);
+                        (v_f32, dot)
                     })
-                    .expect("the 0 match statement should handle empty vectors");
-                support.map(f64::from).into()
+                    .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                    .expect("N > 1 is guaranteed by match statement");
+
+                support.0.map(f64::from).into()
             }
         }
     }
