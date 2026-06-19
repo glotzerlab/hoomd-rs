@@ -151,7 +151,7 @@ pub trait TranslationalMotion<B, S, X, C, M> {
     }
 }
 
-/// Integrate translational degrees of freedom.
+/// Integrate rotational degrees of freedom.
 ///
 /// [`RotationalMotion`] integrates the [`Orientation`] and [`AngularMomentum`] degrees of
 /// freedom for selected bodies. 
@@ -224,7 +224,7 @@ pub trait RotationalMotion<B, S, X, C, M> {
 
     /// Integrate selected body translational and rotational degrees of freedom one step.
     #[inline]
-    fn integrate_translation<E>(
+    fn integrate_translation_and_rotation<E>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
