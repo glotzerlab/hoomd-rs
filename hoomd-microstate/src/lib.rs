@@ -513,6 +513,25 @@ pub enum Error {
 /// # }
 /// ```
 ///
+/// # Curved space implementations
+///
+/// `append_microstate` is implemented for `Point<Spherical<3>>`,
+/// `Point<Spherical<4>>`, `Point<Hyperbolic<3>>`, and
+/// `OrientedHyperbolicPoint<3, Angle>`. For curved-space types,
+/// `append_microstate` stores particle positions in projected coordinates
+/// rather than the coordinates of the embedding space. The table below
+/// lists which projection is used for each curved space.
+///
+/// | Curved space | Projection |
+/// | :---: | :---: |
+/// | `Spherical<3>` | none; stored as cartesian embedding |
+/// | `Spherical<4>` | stereographic projection |
+/// | `Hyperbolic<3>` | Poincaré disk |
+/// | `OrientedHyperbolicPoint<3,Angle>` | Poincaré disk |
+///
+/// See [`hoomd_manifold::Spherical::stereographic_projection()`] and
+/// [`hoomd_manifold::Hyperbolic::to_poincare()`] for further details.
+///
 /// # Custom implementations
 ///
 /// You can implement [`AppendMicrostate`] for your custom site type and/or

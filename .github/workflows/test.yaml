@@ -37,13 +37,13 @@ jobs:
           - macos-26
           - windows-2025
         rust:
-          - 1.94.0
+          - 1.95.0
         target:
          - ''
 
         include:
         - os: ubuntu-24.04
-          rust: 1.94.0
+          rust: 1.95.0
           target: wasm32-unknown-unknown
 
         # Test MSRV
@@ -53,16 +53,20 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
     - name: Remove native build configuration
       run: rm .cargo/config.toml
     - name: Configure Rust
-      uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
-      with:
-        toolchain: ${{ matrix.rust }}
-        targets: ${{ matrix.target }}
+      run: rustup toolchain install "${TOOLCHAIN}"
+      env:
+        TOOLCHAIN: ${{ matrix.rust }}
+    - name: Install additional target
+      if: ${{ matrix.target }}
+      run: rustup target add "${TARGET}"
+      env:
+        TARGET: ${{ matrix.target }}
     - name: Check rust installation
       run: rustc -vV
     # rust-cache already includes a Cargo.lock hash in the key. However, it
