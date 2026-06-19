@@ -17,12 +17,18 @@ use hoomd_vector::{Rotate, Vector, Wedge};
 
 /// Rigid body interactions.
 ///
-/// The [`Rigid`] newtype implements [`NetBodyForce`] and/or [`NetBodyForceAndTorque`]
-/// for wrapped force interaction model types that implement [`NetSiteForce`] and/or
-/// [`NetSiteForceAndTorque`]. [`Rigid`] computes the net force and/or torque on
-/// a rigid body that results from the forces/torques on all of its sites:
+/// The [`Rigid`] newtype implements [`NetBodyForce`]  for wrapped force
+/// interaction model types that implement [`NetSiteForce`]. It also implements
+/// [`NetBodyForceAndTorque`] for interaction model types that implement
+/// [`NetSiteForceAndTorque`].
+///
+/// [`Rigid`] computes the net force and torque on a rigid body that results
+/// from the forces/torques on all of its sites:
 /// ```math
 /// \vec{F}_\mathrm{body} = \sum_{i \in \mathrm{body}} \vec{F}_{i}
+/// ```
+/// ```math
+/// \vec{\tau}_\mathrm{body} = \sum_{i \in \mathrm{body}} (\mathbf{q}_\mathrm{body} \cdot \vec{r}_{\mathrm{body},i} \cdot \mathbf{q}_\mathrm{body}^*) \wedge \vec{F}_i + \vec{\tau}_{i}
 /// ```
 ///
 /// The generic type names are:
@@ -82,24 +88,18 @@ where
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
     /// microstate.extend_bodies([
-    ///     Body {
-    ///         properties: OrientedPoint {
+    ///     Body::single_site(OrientedPoint {
     ///             position: Cartesian::from([0.0, 0.0, 0.0]),
     ///             orientation: Versor::default(),
     ///         },
-    ///         sites: vec![Point {
-    ///             position: Cartesian::<3>::default(),
-    ///         }],
-    ///         },
-    ///     Body {
-    ///         properties: OrientedPoint {
+    ///         Point::new(Cartesian::<3>::default()),
+    ///         ),
+    ///     Body::single_site(OrientedPoint {
     ///             position: Cartesian::from([1.0, 0.0, 0.0]),
     ///             orientation: Versor::default(),
     ///         },
-    ///         sites: vec![Point {
-    ///             position: Cartesian::<3>::default(),
-    ///         }],
-    ///         },
+    ///         Point::new(Cartesian::<3>::default()),
+    ///         ),
     /// ])?;
     ///
     /// let lennard_jones: LennardJones = LennardJones {
@@ -155,7 +155,7 @@ where
     /// ```
     /// where $` \mathbf{q}_\mathrm{body} `$ is the body's orientation,
     /// $` \vec{r}_{\mathrm{body},i} `$ is the position of site *i* in the body
-    /// frame, and $` \vec{F}_i `$ / $` \vec{\tau}_i `$ are the net site force and torque
+    /// frame, and $` \vec{F}_i `$ and $` \vec{\tau}_i `$ are the net site force and torque
     /// given by `F`'s implementation of [`NetSiteForceAndTorque`].
     ///
     /// The symbol $` \wedge `$ denotes the [`Wedge`] product. The resulting torque
@@ -180,24 +180,18 @@ where
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
     /// microstate.extend_bodies([
-    ///     Body {
-    ///         properties: OrientedPoint {
+    ///     Body::single_site(OrientedPoint {
     ///             position: Cartesian::from([0.0, 2.0, 0.0]),
     ///             orientation: Versor::default(),
     ///         },
-    ///         sites: vec![Point {
-    ///             position: Cartesian::from([0.0, -2.0, 0.0]),
-    ///         }],
-    ///         },
-    ///     Body {
-    ///         properties: OrientedPoint {
+    ///         Point::new(Cartesian::from([0.0, -2.0, 0.0])),
+    ///         ),
+    ///     Body::single_site(OrientedPoint {
     ///             position: Cartesian::from([1.0, 0.0, 0.0]),
     ///             orientation: Versor::default(),
     ///         },
-    ///         sites: vec![Point {
-    ///             position: Cartesian::<3>::default(),
-    ///         }],
-    ///         },
+    ///         Point::new(Cartesian::<3>::default())
+    ///         ),
     /// ])?;
     ///
     /// let lennard_jones: LennardJones = LennardJones {
