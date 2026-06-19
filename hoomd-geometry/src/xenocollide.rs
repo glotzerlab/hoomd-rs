@@ -875,6 +875,69 @@ mod tests {
         }
     }
 
+    #[rstest(seed => [0_usize, 1, 2, 7, 42, 2024])]
+    fn test_4d_hypercuboid_random_near_boundary(seed: usize) {
+        let one: PositiveReal = 1.0.try_into().unwrap();
+        let c0 = Hypercuboid {
+            edge_lengths: [one; 4],
+        };
+        let c1 = Hypercuboid {
+            edge_lengths: [one; 4],
+        };
+        let q_ij = RotationMatrix::<4>::default();
+
+        let mut rng = StdRng::seed_from_u64(seed as u64);
+        let shell = 1e-9_f64;
+        let samples = 100_000_usize;
+        for _ in 0..samples {
+            // Uniform direction in [-1, 1]^4 (scaling is absorbed by `t0`).
+            let dir: Cartesian<4> = rng.random();
+            let max_abs = dir.into_iter().map(f64::abs).fold(0.0_f64, f64::max);
+            if max_abs < f64::EPSILON {
+                continue;
+            }
+            let t0 = 1.0 / max_abs;
+            let t = t0 + (rng.random::<f64>() * 2.0 - 1.0) * shell;
+            let d = dir * t;
+            let expected = c0.intersects_aligned(&c1, &d);
+            let result = collide4d(&c0, &c1, &d, &q_ij);
+            assert_eq!(
+                result, expected,
+                "near-boundary mismatch: dir = {dir:?}, t = {t}, d = {d:?}"
+            );
+        }
+    }
+
+    /// Two unit hypercubes are separated by `d = [2t, t, t, t]`; the analytical boundary
+    /// is `t = 0.5` (`|d_0| = 1`). Just past it (e.g. `t = 0.5000158`) the
+    /// shapes do not overlap, but a coplanar portal previously drove MPR into a cycle
+    /// that falesely reported overlap.
+    #[test]
+    fn test_4d_hypercuboid_diagonal_2111_near_boundary() {
+        let one: PositiveReal = 1.0.try_into().unwrap();
+        let c0 = Hypercuboid {
+            edge_lengths: [one; 4],
+        };
+        let c1 = Hypercuboid {
+            edge_lengths: [one; 4],
+        };
+        let q_ij = RotationMatrix::<4>::default();
+
+        for t in [
+            0.5_f64,
+            0.5 + 5e-6,
+            0.5 + 1.58e-5, // Exact failing case from previous code
+            0.5 + 3e-5,
+            0.5 + 1e-4,
+            0.5 - 1e-4,
+        ] {
+            let d: Cartesian<4> = [2.0 * t, t, t, t].into();
+            let expected = c0.intersects_aligned(&c1, &d);
+            let result = collide4d(&c0, &c1, &d, &q_ij);
+            assert_eq!(result, expected, "t = {t}, d = {d:?}");
+        }
+    }
+
     /// Sweep two tesseracts (vertex-based `ConvexPolytope::hypercube()`) along
     /// axis-aligned directions, crossing the Minkowski-difference boundary at a cubical
     /// facet *center*.
