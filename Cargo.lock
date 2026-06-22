@@ -842,7 +842,7 @@ dependencies = [
  "encase",
  "getrandom 0.3.4",
  "image",
- "itertools",
+ "itertools 0.14.0",
  "js-sys",
  "thread_local",
  "wasm-bindgen",
@@ -976,7 +976,7 @@ dependencies = [
  "bevy_transform",
  "fixedbitset",
  "gltf",
- "itertools",
+ "itertools 0.14.0",
  "percent-encoding",
  "serde",
  "serde_json",
@@ -1163,7 +1163,7 @@ dependencies = [
  "bevy_reflect",
  "derive_more",
  "glam 0.30.10",
- "itertools",
+ "itertools 0.14.0",
  "libm",
  "rand 0.9.4",
  "rand_distr 0.5.1",
@@ -3545,7 +3545,7 @@ dependencies = [
  "hoomd-microstate",
  "hoomd-simulation",
  "hoomd-vector",
- "itertools",
+ "itertools 0.15.0",
  "wayland-sys",
 ]
 
@@ -3571,7 +3571,7 @@ dependencies = [
  "hoomd-manifold",
  "hoomd-utility",
  "hoomd-vector",
- "itertools",
+ "itertools 0.15.0",
  "rand 0.10.1",
  "robust",
  "rstest",
@@ -3588,7 +3588,7 @@ dependencies = [
  "assert2",
  "clap",
  "hoomd-vector",
- "itertools",
+ "itertools 0.15.0",
  "memmap2",
  "tempfile",
  "thiserror 2.0.18",
@@ -3660,7 +3660,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
- "itertools",
+ "itertools 0.15.0",
  "log",
  "rand 0.10.1",
  "rand_distr 0.6.0",
@@ -3687,7 +3687,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
- "itertools",
+ "itertools 0.15.0",
  "log",
  "rand 0.10.1",
  "robust",
@@ -3981,6 +3981,15 @@ name = "itertools"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b4baf93f58d4425749ca49a51c50ebab072c5df6994d08fed93541c331481dc"
 dependencies = [
  "either",
 ]
