@@ -219,7 +219,7 @@ impl Rhomboid {
     /// let rhomboid = Rhomboid::from_box_vector([4.0, 6.0, 0.0]);
     ///
     /// // A point at (1.0, 1.5) should have fractional coords (0.25, 0.25)
-    /// let frac = rhomboid.to_fractional(&Cartesian::from([1.0, 1.5]));
+    /// let frac = rhomboid.fractional(&Cartesian::from([1.0, 1.5]));
     /// assert!((frac[0] - 0.25).abs() < 1e-10);
     /// assert!((frac[1] - 0.25).abs() < 1e-10);
     /// # Ok(())
@@ -227,7 +227,7 @@ impl Rhomboid {
     /// ```
     #[inline]
     #[must_use]
-    pub fn to_fractional(&self, pos: &Cartesian<2>) -> Cartesian<2> {
+    pub fn fractional(&self, pos: &Cartesian<2>) -> Cartesian<2> {
         let lx = self.lx().get();
         let ly = self.ly().get();
         let xy = self.xy();
@@ -240,7 +240,7 @@ impl Rhomboid {
 
     /// Convert fractional coordinates to absolute position.
     ///
-    /// This is the inverse operation of `to_fractional`:
+    /// This is the inverse operation of `fractional`:
     /// ```math
     /// \begin{align*}
     ///     r_1 &= L_x s_1 + xy \cdot L_y s_2\\
@@ -258,14 +258,14 @@ impl Rhomboid {
     /// let rhomboid = Rhomboid::from((2.0.try_into()?, 2.0.try_into()?, 0.0));
     ///
     /// let frac = Cartesian::from([0.5, 0.0]);
-    /// let pos = rhomboid.to_absolute(&frac);
+    /// let pos = rhomboid.absolute(&frac);
     /// assert_eq!(pos, Cartesian::from([1.0, 0.0]));
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     #[must_use]
-    pub fn to_absolute(&self, frac: &Cartesian<2>) -> Cartesian<2> {
+    pub fn absolute(&self, frac: &Cartesian<2>) -> Cartesian<2> {
         let lx = self.lx().get();
         let ly = self.ly().get();
         let xy = self.xy();
@@ -302,7 +302,7 @@ impl Rhomboid {
     #[must_use]
     pub fn vertices(&self) -> [Cartesian<2>; 4] {
         [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]
-            .map(|c| self.to_absolute(&Cartesian::from(c)))
+            .map(|c| self.absolute(&Cartesian::from(c)))
     }
 
     /// Return the rhomboid edge vectors in Cartesian coordinates.
@@ -311,7 +311,7 @@ impl Rhomboid {
     /// sheared by the `xy` factor in the x direction.
     #[inline]
     #[must_use]
-    pub fn get_edge_vectors(&self) -> [Cartesian<2>; 2] {
+    pub fn edge_vectors(&self) -> [Cartesian<2>; 2] {
         let mut edge_vectors = [Cartesian::<2>::default(); 2];
         edge_vectors[0] = [self.lx().get(), 0.].into();
         edge_vectors[1] = [self.ly().get() * self.xy(), self.ly().get()].into();
@@ -331,14 +331,14 @@ impl Rhomboid {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let rhomboid = Rhomboid::from_box_vector([2.0, 3.0, 1.0]);
-    /// let angle = rhomboid.get_box_angle();
+    /// let angle = rhomboid.box_angle();
     /// assert!((angle - (1.0 / (1.0 + 1.0_f64).sqrt()).acos()).abs() < 1e-12);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     #[must_use]
-    pub fn get_box_angle(&self) -> f64 {
+    pub fn box_angle(&self) -> f64 {
         (self.xy() / (1.0 + self.xy() * self.xy()).sqrt()).acos()
     }
 
@@ -356,7 +356,7 @@ impl Rhomboid {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let rhomboid = Rhomboid::from_box_vector([2.0, 2.0, 0.0]);
-    /// let distances = rhomboid.get_nearest_plane_distance();
+    /// let distances = rhomboid.nearest_plane_distance();
     ///
     /// // For orthogonal rhomboid, distances are just extents
     /// assert_eq!(distances[0].get(), 2.0);
@@ -369,7 +369,7 @@ impl Rhomboid {
     /// Panics if the computed nearest-plane width cannot be converted to a positive real.
     #[inline]
     #[must_use]
-    pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 2] {
+    pub fn nearest_plane_distance(&self) -> [PositiveReal; 2] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 2];
         dist[0] = self.lx()
@@ -526,7 +526,7 @@ impl SupportMapping<Cartesian<2>> for Rhomboid {
             self.ly().get() * (self.xy() * n[0] + n[1]),
         ]);
         let s = Cartesian::from([d[0].signum() * 0.5, d[1].signum() * 0.5]);
-        self.to_absolute(&s)
+        self.absolute(&s)
     }
 }
 
@@ -682,8 +682,8 @@ impl MapPoint<Cartesian<2>> for Rhomboid {
     /// and then transformed into the Cartesian coordinates of `other`.
     #[inline]
     fn map_point(&self, point: Cartesian<2>, other: &Self) -> Result<Cartesian<2>, crate::Error> {
-        let fractional = self.to_fractional(&point);
-        let mapped_coords = other.to_absolute(&fractional);
+        let fractional = self.fractional(&point);
+        let mapped_coords = other.absolute(&fractional);
         Ok(mapped_coords)
     }
 }

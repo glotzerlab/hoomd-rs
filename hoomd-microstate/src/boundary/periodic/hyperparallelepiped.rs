@@ -26,7 +26,7 @@ impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N>
     /// # Example
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-        let plane_distances = self.get_nearest_plane_distance();
+        let plane_distances = self.nearest_plane_distance();
         plane_distances
             .iter()
             .map(|x| x.get() * 0.5)
@@ -107,10 +107,10 @@ where
         }
 
         // Determine fractional coordinates of "twighlight zones," where ghosts must be generated
-        let plane_distances = self.shape.get_nearest_plane_distance();
+        let plane_distances = self.shape.nearest_plane_distance();
         let fractional_cutoffs: [f64; N] =
             array::from_fn(|i| self.maximum_interaction_range() / plane_distances[i].get());
-        let fractional_coordinate = self.shape.to_fractional(*r);
+        let fractional_coordinate = self.shape.fractional(*r);
 
         // For each axis, determine if the particle is near the negative or positive face.
         // Use -(i+1) for negative face and +(i+1) for positive face to avoid -0 encoding issues.
@@ -153,13 +153,13 @@ mod tests {
     use rstest::{fixture, rstest};
 
     fn hyper_from_triclinic(tric: &Triclinic) -> Hyperparallelepiped<3> {
-        let mut hyper = Hyperparallelepiped::new(tric.get_edge_vectors());
+        let mut hyper = Hyperparallelepiped::new(tric.edge_vectors());
         hyper.calc_qr();
         hyper
     }
 
     #[fixture]
-    fn get_sheared_triclinic() -> Triclinic {
+    fn sheared_triclinic() -> Triclinic {
         Triclinic::from_box_vector([
             2.0,
             2.0,
@@ -171,13 +171,13 @@ mod tests {
     }
 
     #[fixture]
-    fn get_sheared_hyperparallelepiped(get_sheared_triclinic: Triclinic) -> Hyperparallelepiped<3> {
-        hyper_from_triclinic(&get_sheared_triclinic)
+    fn sheared_hyperparallelepiped(sheared_triclinic: Triclinic) -> Hyperparallelepiped<3> {
+        hyper_from_triclinic(&sheared_triclinic)
     }
 
     #[rstest]
-    fn coordinate_conversion_roundtrip(get_sheared_hyperparallelepiped: Hyperparallelepiped<3>) {
-        let periodic = Periodic::new(0.0, get_sheared_hyperparallelepiped)
+    fn coordinate_conversion_roundtrip(sheared_hyperparallelepiped: Hyperparallelepiped<3>) {
+        let periodic = Periodic::new(0.0, sheared_hyperparallelepiped)
             .expect("valid periodic hyperparallelepiped");
 
         let test_frac_positions = vec![
@@ -190,19 +190,19 @@ mod tests {
 
         for frac_array in test_frac_positions {
             let frac = Cartesian::<3>::from(frac_array);
-            let pos = periodic.shape.to_absolute(frac);
-            let frac_back = periodic.shape.to_fractional(pos);
+            let pos = periodic.shape.absolute(frac);
+            let frac_back = periodic.shape.fractional(pos);
             assert_relative_eq!(frac, frac_back, epsilon = 1e-8);
         }
     }
 
     #[rstest]
-    fn no_ghosts_interior(get_sheared_hyperparallelepiped: Hyperparallelepiped<3>) {
-        let periodic = Periodic::new(0.01, get_sheared_hyperparallelepiped)
+    fn no_ghosts_interior(sheared_hyperparallelepiped: Hyperparallelepiped<3>) {
+        let periodic = Periodic::new(0.01, sheared_hyperparallelepiped)
             .expect("valid periodic hyperparallelepiped");
 
         let frac_pos = Cartesian::<3>::from([0.2, 0.2, 0.2]);
-        let abs_pos = periodic.shape.to_absolute(frac_pos);
+        let abs_pos = periodic.shape.absolute(frac_pos);
 
         let ghosts = periodic.generate_ghosts(&Point::new(abs_pos));
         assert!(
@@ -212,12 +212,12 @@ mod tests {
     }
 
     #[rstest]
-    fn ghosts_face_centers(get_sheared_hyperparallelepiped: Hyperparallelepiped<3>) {
-        let periodic = Periodic::new(0.3, get_sheared_hyperparallelepiped)
+    fn ghosts_face_centers(sheared_hyperparallelepiped: Hyperparallelepiped<3>) {
+        let periodic = Periodic::new(0.3, sheared_hyperparallelepiped)
             .expect("valid periodic hyperparallelepiped");
 
         let frac_pos = Cartesian::<3>::from([0.49, 0.0, 0.0]);
-        let abs_point = Point::new(periodic.shape.to_absolute(frac_pos));
+        let abs_point = Point::new(periodic.shape.absolute(frac_pos));
 
         let ghosts = periodic.generate_ghosts(&abs_point);
         assert!(!ghosts.is_empty(), "Should generate ghosts near face");
@@ -239,7 +239,7 @@ mod tests {
         ];
 
         for frac_pos in test_points {
-            let abs_point = Point::new(periodic_tric.shape.to_absolute(&frac_pos));
+            let abs_point = Point::new(periodic_tric.shape.absolute(&frac_pos));
 
             let wrapped_tric = periodic_tric.wrap(abs_point).unwrap();
             let wrapped_hyper = periodic_hyper.wrap(abs_point).unwrap();

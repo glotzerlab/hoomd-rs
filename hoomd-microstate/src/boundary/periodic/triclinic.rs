@@ -44,7 +44,7 @@ impl MaximumAllowableInteractionRange for Triclinic {
     /// ```
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-        let plane_distances = self.get_nearest_plane_distance();
+        let plane_distances = self.nearest_plane_distance();
         plane_distances
             .iter()
             .map(|x| x.get() * 0.5)
@@ -92,7 +92,7 @@ where
     #[inline]
     fn wrap(&self, mut properties: P) -> Result<P, Error> {
         let r = properties.position_mut();
-        let mut fractional = self.shape.to_fractional(r);
+        let mut fractional = self.shape.fractional(r);
         for i in 0..3 {
             fractional[i] -= fractional[i].round();
             fractional[i] = if fractional[i] == 0.5 {
@@ -101,7 +101,7 @@ where
                 fractional[i]
             };
         }
-        *r = self.shape.to_absolute(&fractional);
+        *r = self.shape.absolute(&fractional);
         Ok(properties)
     }
 }
@@ -167,8 +167,8 @@ where
             return result;
         }
 
-        let plane_distances = self.shape.get_nearest_plane_distance();
-        let frac = self.shape.to_fractional(r);
+        let plane_distances = self.shape.nearest_plane_distance();
+        let frac = self.shape.fractional(r);
 
         // For each axis, determine if the particle is near the negative or positive face.
         // Use -(i+1) for negative face and +(i+1) for positive face to avoid -0 encoding issues.
@@ -187,7 +187,7 @@ where
         // Generate ghosts for every non-empty subset of the relevant directions.
         for subset in ghost_directions.iter().powerset().filter(|s| !s.is_empty()) {
             let mut offset = Cartesian::<3>::default();
-            let edge_vectors = self.shape.get_edge_vectors();
+            let edge_vectors = self.shape.edge_vectors();
             for &&direction in &subset {
                 let axis = (direction.unsigned_abs() - 1) as usize;
                 // Negative direction (near negative face) means ADD the edge vector (image on positive side).
@@ -215,15 +215,15 @@ mod tests {
     use rstest::{fixture, rstest};
 
     #[fixture]
-    fn get_sheared_triclinic() -> Triclinic {
+    fn sheared_triclinic() -> Triclinic {
         Triclinic::from_box_vector([2., 2., 2., f64::sqrt(2.), f64::sqrt(2.), f64::sqrt(2.)])
     }
 
     #[rstest]
-    fn coordinate_conversion_roundtrip(get_sheared_triclinic: Triclinic) {
+    fn coordinate_conversion_roundtrip(sheared_triclinic: Triclinic) {
         // Test that converting to fractional and back gives the original position
         let periodic =
-            Periodic::new(0.0, get_sheared_triclinic).expect("hard-coded range should be valid");
+            Periodic::new(0.0, sheared_triclinic).expect("hard-coded range should be valid");
 
         let test_frac_positions = vec![
             [0.0, 0.0, 0.0],
@@ -235,8 +235,8 @@ mod tests {
 
         for frac_array in test_frac_positions {
             let frac = Cartesian::<3>::from(frac_array);
-            let pos = periodic.shape.to_absolute(&frac);
-            let frac_back = periodic.shape.to_fractional(&pos);
+            let pos = periodic.shape.absolute(&frac);
+            let frac_back = periodic.shape.fractional(&pos);
             assert_relative_eq!(frac, frac_back, epsilon = 1e-8);
         }
     }
@@ -249,9 +249,9 @@ mod tests {
     }
 
     #[rstest]
-    fn maximum_allowable_tilted(get_sheared_triclinic: Triclinic) {
+    fn maximum_allowable_tilted(sheared_triclinic: Triclinic) {
         // Test with tilted box
-        let max_range = get_sheared_triclinic.maximum_allowable_interaction_range();
+        let max_range = sheared_triclinic.maximum_allowable_interaction_range();
         assert!(max_range == 1.0 / (9.0_f64 - 4.0 * 2.0_f64.sqrt()).sqrt());
     }
 
@@ -290,10 +290,10 @@ mod tests {
     }
 
     #[rstest]
-    fn wrap_tilted(get_sheared_triclinic: Triclinic) {
+    fn wrap_tilted(sheared_triclinic: Triclinic) {
         // Test wrapping with tilted box
         let periodic =
-            Periodic::new(0.0, get_sheared_triclinic).expect("hard-coded range should be valid");
+            Periodic::new(0.0, sheared_triclinic).expect("hard-coded range should be valid");
 
         // Point inside box should not change
         let point = Point::new([0.5, 0.5, 0.5].into());
@@ -305,23 +305,23 @@ mod tests {
 
         // Point at center should wrap
         let frac_point = [1.0, 1.0, 1.0].into();
-        let abs_point = Point::new(periodic.shape.to_absolute(&frac_point));
+        let abs_point = Point::new(periodic.shape.absolute(&frac_point));
         let wrapped = periodic.wrap(abs_point).expect("wrap should succeed");
         // Verify it's back inside the box
         assert_relative_eq!(wrapped.position, [0.0, 0.0, 0.0].into(), epsilon = 1e-8);
     }
 
     #[rstest]
-    fn no_ghosts_interior(get_sheared_triclinic: Triclinic) {
+    fn no_ghosts_interior(sheared_triclinic: Triclinic) {
         // Test that interior points generate no ghosts and boundary points do
-        let periodic = Periodic::new(0.01, get_sheared_triclinic.clone())
+        let periodic = Periodic::new(0.01, sheared_triclinic.clone())
             .expect("hard-coded range should be valid");
 
-        let _edge_vectors = get_sheared_triclinic.get_edge_vectors();
+        let _edge_vectors = sheared_triclinic.edge_vectors();
 
         // Test interior point (not at origin)
         let mut interior_pos = Cartesian::from([0.2, 0.2, 0.2]);
-        interior_pos = periodic.shape.to_absolute(&interior_pos);
+        interior_pos = periodic.shape.absolute(&interior_pos);
 
         let ghosts = periodic.generate_ghosts(&Point::new(interior_pos));
         assert!(
@@ -331,16 +331,16 @@ mod tests {
     }
 
     #[rstest]
-    fn ghosts_face_centers(get_sheared_triclinic: Triclinic) {
+    fn ghosts_face_centers(sheared_triclinic: Triclinic) {
         // Test that points near face centers generate appropriate ghosts
-        let periodic = Periodic::new(0.3, get_sheared_triclinic.clone())
+        let periodic = Periodic::new(0.3, sheared_triclinic.clone())
             .expect("hard-coded range should be valid");
 
-        let _edge_vectors = get_sheared_triclinic.get_edge_vectors();
+        let _edge_vectors = sheared_triclinic.edge_vectors();
 
         // Point near the x-face (at maximum x)
         let frac_pos = Cartesian::<3>::from([0.49, 0.0, 0.0]);
-        let abs_point = Point::new(periodic.shape.to_absolute(&frac_pos));
+        let abs_point = Point::new(periodic.shape.absolute(&frac_pos));
 
         let ghosts = periodic.generate_ghosts(&abs_point);
         // Should generate at least 1 ghost (one for the face)
@@ -385,13 +385,13 @@ mod tests {
     }
 
     #[rstest]
-    fn ghosts_tilted_box(get_sheared_triclinic: Triclinic) {
+    fn ghosts_tilted_box(sheared_triclinic: Triclinic) {
         // Test ghost generation with a tilted box
-        let periodic = Periodic::new(0.1, get_sheared_triclinic.clone())
+        let periodic = Periodic::new(0.1, sheared_triclinic.clone())
             .expect("hard-coded range should be valid");
 
         // Point inside the box should not generate ghosts unless near a boundary
-        let _edge_vectors = get_sheared_triclinic.get_edge_vectors();
+        let _edge_vectors = sheared_triclinic.edge_vectors();
         let interior_pos = Cartesian::<3>::default();
 
         let ghosts = periodic.generate_ghosts(&Point::new(interior_pos));
@@ -400,7 +400,7 @@ mod tests {
 
         // Point at boundary vertex
         let frac_pos = Cartesian::<3>::from([0.499, 0.499, 0.499]);
-        let abs_point = Point::new(periodic.shape.to_absolute(&frac_pos));
+        let abs_point = Point::new(periodic.shape.absolute(&frac_pos));
 
         let ghosts = periodic.generate_ghosts(&abs_point);
         // Should generate 7 ghosts, all of which should wrap back to same point

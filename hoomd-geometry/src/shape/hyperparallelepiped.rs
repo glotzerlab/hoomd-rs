@@ -56,24 +56,10 @@ pub struct Hyperparallelepiped<const N: usize> {
     /// Cached (condensed) QR factorization of the column matrix formed by the
     /// edge vectors. This is `None` until [`calc_qr`](Self::calc_qr) is called,
     /// and must be computed before any method that converts coordinates between
-    /// absolute and fractional positions (e.g. [`to_fractional`](Self::to_fractional),
+    /// absolute and fractional positions (e.g. [`fractional`](Self::fractional),
     /// [`is_point_inside`](IsPointInside::is_point_inside), and
     /// [`map_point`](MapPoint::map_point)).
     pub qr: Option<Matrix<N, N>>,
-}
-
-impl<const N: usize> Default for Hyperparallelepiped<N> {
-    /// Returns the N-dimensional unit hypercube: edge vectors are the standard
-    /// Cartesian basis vectors `e_0, e_1, …, e_{N-1}` with unit length.
-    #[inline]
-    fn default() -> Self {
-        Self {
-            edge_vectors: std::array::from_fn(|i| {
-                std::array::from_fn(|j| if i == j { 1. } else { 0. }).into()
-            }),
-            qr: None,
-        }
-    }
 }
 
 impl<const N: usize> Hyperparallelepiped<N> {
@@ -116,7 +102,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     ///
     /// The edge vectors are assembled into an N×N matrix $`\mathbf{A}`$ whose *columns*
     /// are the edge vectors, and the result is stored in `self.qr`. This
-    /// factorization is later used by [`to_fractional`](Self::to_fractional),
+    /// factorization is later used by [`fractional`](Self::fractional),
     /// [`is_point_inside`](IsPointInside::is_point_inside), and
     /// [`map_point`](MapPoint::map_point) to solve the linear system
     /// $`\mathbf{A} \vec{s} = \vec{r}`$.
@@ -154,7 +140,10 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// use hoomd_geometry::shape::Hyperparallelepiped;
     /// use hoomd_vector::Cartesian;
     ///
-    /// let unit_square = Hyperparallelepiped::<2>::default();
+    /// let unit_square = Hyperparallelepiped::new([
+    ///     Cartesian::from([1.0, 0.0]),
+    ///     Cartesian::from([0.0, 1.0]),
+    /// ]);
     /// assert_eq!(unit_square.maximal_extents(), [0.5, 0.5]);
     /// ```
     #[inline]
@@ -182,8 +171,12 @@ impl<const N: usize> Hyperparallelepiped<N> {
     ///
     /// ```
     /// use hoomd_geometry::shape::Hyperparallelepiped;
+    /// use hoomd_vector::Cartesian;
     ///
-    /// let unit_square = Hyperparallelepiped::<2>::default();
+    /// let unit_square = Hyperparallelepiped::new([
+    ///     Cartesian::from([1.0, 0.0]),
+    ///     Cartesian::from([0.0, 1.0]),
+    /// ]);
     /// assert_eq!(unit_square.minimal_extents(), [-0.5, -0.5]);
     /// ```
     #[inline]
@@ -216,13 +209,13 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// box2d.calc_qr();
     ///
     /// // A point at (1.0, 1.5) should have fractional coords (0.25, 0.25)
-    /// let frac = box2d.to_fractional(Cartesian::from([1.0, 1.5]));
+    /// let frac = box2d.fractional(Cartesian::from([1.0, 1.5]));
     /// assert!((frac[0] - 0.25).abs() < 1e-10);
     /// assert!((frac[1] - 0.25).abs() < 1e-10);
     /// ```
     #[inline]
     #[must_use]
-    pub fn to_fractional(&self, v: Cartesian<N>) -> Cartesian<N> {
+    pub fn fractional(&self, v: Cartesian<N>) -> Cartesian<N> {
         Cartesian::from_column_matrix(&qr::qr_solve(
             self.qr
                 .as_ref()
@@ -233,7 +226,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
 
     /// Convert fractional (lattice) coordinates to Cartesian coordinates.
     ///
-    /// This is the inverse of [`to_fractional`](Self::to_fractional). Given a
+    /// This is the inverse of [`fractional`](Self::fractional). Given a
     /// vector of fractional coefficients $`\vec{s}`$, the Cartesian point is:
     ///
     /// ```math
@@ -255,13 +248,13 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// box2d.calc_qr();
     ///
     /// // Fractional (0.25, 0.25) should map back to Cartesian (1.0, 1.5)
-    /// let cart = box2d.to_absolute(Cartesian::from([0.25, 0.25]));
+    /// let cart = box2d.absolute(Cartesian::from([0.25, 0.25]));
     /// assert!((cart[0] - 1.0).abs() < 1e-10);
     /// assert!((cart[1] - 1.5).abs() < 1e-10);
     /// ```
     #[inline]
     #[must_use]
-    pub fn to_absolute(&self, f: Cartesian<N>) -> Cartesian<N> {
+    pub fn absolute(&self, f: Cartesian<N>) -> Cartesian<N> {
         let mut absolute = Cartesian::<N>::default();
         for (i, edge_vector) in self.edge_vectors.iter().enumerate() {
             absolute += f[i] * *edge_vector;
@@ -302,7 +295,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// Panics if the QR decomposition has not been computed using [`calc_qr`](Self::calc_qr).
     #[inline]
     #[must_use]
-    pub fn get_nearest_plane_distance(&self) -> [PositiveReal; N] {
+    pub fn nearest_plane_distance(&self) -> [PositiveReal; N] {
         let r_inv = get_r_inv(
             self.qr
                 .as_ref()
@@ -398,7 +391,10 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperparallelepiped<N> {
     /// use hoomd_geometry::{SupportMapping, shape::Hyperparallelepiped};
     /// use hoomd_vector::Cartesian;
     ///
-    /// let unit_square = Hyperparallelepiped::<2>::default();
+    /// let unit_square = Hyperparallelepiped::new([
+    ///     Cartesian::from([1.0, 0.0]),
+    ///     Cartesian::from([0.0, 1.0]),
+    /// ]);
     ///
     /// // Querying along +x should return the top-right corner (0.5, 0.5)
     /// let s = unit_square.support_mapping(&Cartesian::from([1.0, 1.0]));
@@ -477,7 +473,7 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hyperparallelepiped<N> {
     ///
     /// # Panics
     ///
-    /// Panics if the QR decomposition has not been computed using [`calc_qr`](Self::calc_qr). (needed for [`to_fractional`](Hyperparallelepiped::to_fractional)).
+    /// Panics if the QR decomposition has not been computed using [`calc_qr`](Self::calc_qr). (needed for [`fractional`](Hyperparallelepiped::fractional)).
     ///
     /// # Example
     ///
@@ -503,8 +499,8 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hyperparallelepiped<N> {
     /// ```
     #[inline]
     fn map_point(&self, point: Cartesian<N>, other: &Self) -> Result<Cartesian<N>, crate::Error> {
-        let fractional = self.to_fractional(point);
-        let mapped_coords = other.to_absolute(fractional);
+        let fractional = self.fractional(point);
+        let mapped_coords = other.absolute(fractional);
         Ok(mapped_coords)
     }
 }
@@ -536,7 +532,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hyperparallelepiped<N> {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
         let uniform = Uniform::new(-0.5, 0.5).expect("");
         let fractional: [f64; N] = array::from_fn(|_| uniform.sample(rng));
-        self.to_absolute(Cartesian::from(fractional))
+        self.absolute(Cartesian::from(fractional))
     }
 }
 
@@ -565,6 +561,10 @@ mod tests {
         b
     }
 
+    fn unit_box_2d() -> Hyperparallelepiped<2> {
+        Hyperparallelepiped::new([Cartesian::from([1.0, 0.0]), Cartesian::from([0.0, 1.0])])
+    }
+
     fn ortho_box_3d(lx: f64, ly: f64, lz: f64) -> Hyperparallelepiped<3> {
         let mut b = Hyperparallelepiped::new([
             Cartesian::from([lx, 0.0, 0.0]),
@@ -577,7 +577,7 @@ mod tests {
 
     #[test]
     fn default_2d_is_unit_square() {
-        let b = Hyperparallelepiped::<2>::default();
+        let b = unit_box_2d();
         assert_eq!(b.edge_vectors[0], Cartesian::from([1.0, 0.0]));
         assert_eq!(b.edge_vectors[1], Cartesian::from([0.0, 1.0]));
         assert!(b.qr.is_none());
@@ -585,7 +585,11 @@ mod tests {
 
     #[test]
     fn default_3d_is_unit_cube() {
-        let b = Hyperparallelepiped::<3>::default();
+        let b = Hyperparallelepiped::new([
+            Cartesian::from([1.0, 0.0, 0.0]),
+            Cartesian::from([0.0, 1.0, 0.0]),
+            Cartesian::from([0.0, 0.0, 1.0]),
+        ]);
         assert_eq!(b.edge_vectors[0], Cartesian::from([1.0, 0.0, 0.0]));
         assert_eq!(b.edge_vectors[1], Cartesian::from([0.0, 1.0, 0.0]));
         assert_eq!(b.edge_vectors[2], Cartesian::from([0.0, 0.0, 1.0]));
@@ -608,13 +612,13 @@ mod tests {
 
     #[test]
     fn maximal_extents_unit_square() {
-        let b = Hyperparallelepiped::<2>::default();
+        let b = unit_box_2d();
         assert_eq!(b.maximal_extents(), [0.5, 0.5]);
     }
 
     #[test]
     fn minimal_extents_unit_square() {
-        let b = Hyperparallelepiped::<2>::default();
+        let b = unit_box_2d();
         assert_eq!(b.minimal_extents(), [-0.5, -0.5]);
     }
 
@@ -645,8 +649,8 @@ mod tests {
     fn fractional_round_trip_ortho_2d() {
         let b = ortho_box_2d(4.0, 6.0);
         let original = Cartesian::from([1.0, 1.5]);
-        let frac = b.to_fractional(original);
-        let back = b.to_absolute(frac);
+        let frac = b.fractional(original);
+        let back = b.absolute(frac);
         assert_approx_eq_cartesian(back, original, 1e-10);
     }
 
@@ -654,8 +658,8 @@ mod tests {
     fn fractional_round_trip_ortho_3d() {
         let b = ortho_box_3d(10.0, 12.0, 14.0);
         let original = Cartesian::from([3.0, -4.0, 6.5]);
-        let frac = b.to_fractional(original);
-        let back = b.to_absolute(frac);
+        let frac = b.fractional(original);
+        let back = b.absolute(frac);
         assert_approx_eq_cartesian(back, original, 1e-10);
     }
 
@@ -666,25 +670,25 @@ mod tests {
             Hyperparallelepiped::new([Cartesian::from([3.0, 0.0]), Cartesian::from([1.0, 4.0])]);
         b.calc_qr();
         let original = Cartesian::from([0.5, 1.0]);
-        let frac = b.to_fractional(original);
-        let back = b.to_absolute(frac);
+        let frac = b.fractional(original);
+        let back = b.absolute(frac);
         assert_approx_eq_cartesian(back, original, 1e-10);
     }
 
     #[test]
-    fn to_fractional_known_values_ortho() {
+    fn fractional_known_values_ortho() {
         // For a 4×6 box, the point (1, 1.5) should have fractional coords (0.25, 0.25)
         let b = ortho_box_2d(4.0, 6.0);
-        let frac = b.to_fractional(Cartesian::from([1.0, 1.5]));
+        let frac = b.fractional(Cartesian::from([1.0, 1.5]));
         assert!((frac[0] - 0.25).abs() < 1e-10);
         assert!((frac[1] - 0.25).abs() < 1e-10);
     }
 
     #[test]
-    fn to_absolute_origin_maps_to_origin() {
+    fn absolute_origin_maps_to_origin() {
         let b = ortho_box_3d(5.0, 7.0, 9.0);
         let origin = Cartesian::from([0.0, 0.0, 0.0]);
-        let result = b.to_absolute(origin);
+        let result = b.absolute(origin);
         assert_approx_eq_cartesian(result, origin, 1e-12);
     }
 
@@ -747,7 +751,7 @@ mod tests {
 
     #[test]
     fn support_mapping_axis_aligned_2d() {
-        let b = Hyperparallelepiped::<2>::default();
+        let b = unit_box_2d();
         // Direction (1, 1) → top-right corner (0.5, 0.5)
         let s = b.support_mapping(&Cartesian::from([1.0, 1.0]));
         assert_ulps_eq!(s[0], 0.5, epsilon = 1.0e-12);
@@ -756,7 +760,7 @@ mod tests {
 
     #[test]
     fn support_mapping_negative_direction() {
-        let b = Hyperparallelepiped::<2>::default();
+        let b = unit_box_2d();
         // Direction (−1, −1) → bottom-left corner (−0.5, −0.5)
         let s = b.support_mapping(&Cartesian::from([-1.0, -1.0]));
         assert_ulps_eq!(s[0], -0.5, epsilon = 1.0e-12);
@@ -851,7 +855,7 @@ mod tests {
         ]);
         b.calc_qr();
 
-        let distances = b.get_nearest_plane_distance();
+        let distances = b.nearest_plane_distance();
         let expected = [3.39199, 3.88057, 4.];
 
         for i in 0..3 {
@@ -868,7 +872,7 @@ mod tests {
             Cartesian::from([4.06538, 1.17863, 1.75598]),
         ]);
         b.calc_qr();
-        let distances = b.get_nearest_plane_distance();
+        let distances = b.nearest_plane_distance();
         let expected = [3.39199, 3.88057, 4.];
 
         for i in 0..3 {

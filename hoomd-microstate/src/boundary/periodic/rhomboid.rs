@@ -42,7 +42,7 @@ impl MaximumAllowableInteractionRange for Rhomboid {
     /// ```
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-        let plane_distances = self.get_nearest_plane_distance();
+        let plane_distances = self.nearest_plane_distance();
         f64::min(
             plane_distances[0].get() * 0.5,
             plane_distances[1].get() * 0.5,
@@ -83,7 +83,7 @@ where
     #[inline]
     fn wrap(&self, mut properties: P) -> Result<P, Error> {
         let r = properties.position_mut();
-        let mut fractional = self.shape.to_fractional(r);
+        let mut fractional = self.shape.fractional(r);
         for i in 0..2 {
             fractional[i] -= fractional[i].round();
             fractional[i] = if fractional[i] == 0.5 {
@@ -92,7 +92,7 @@ where
                 fractional[i]
             };
         }
-        *r = self.shape.to_absolute(&fractional);
+        *r = self.shape.absolute(&fractional);
         Ok(properties)
     }
 }
@@ -151,7 +151,7 @@ where
             return result;
         }
 
-        let edge_vectors = self.shape.get_edge_vectors();
+        let edge_vectors = self.shape.edge_vectors();
 
         let new_site = |x, y| {
             let mut new_site = *site_properties;
@@ -160,8 +160,8 @@ where
             new_site
         };
 
-        let plane_distances = self.shape.get_nearest_plane_distance();
-        let frac = self.shape.to_fractional(r);
+        let plane_distances = self.shape.nearest_plane_distance();
+        let frac = self.shape.fractional(r);
 
         let near_right = frac[0] > 0.5 - self.maximum_interaction_range / plane_distances[0].get();
         let near_left = frac[0] < -0.5 + self.maximum_interaction_range / plane_distances[0].get();
@@ -210,7 +210,7 @@ mod tests {
     use rstest::{fixture, rstest};
 
     #[fixture]
-    fn get_sheared_rhomboid() -> Rhomboid {
+    fn sheared_rhomboid() -> Rhomboid {
         Rhomboid::from((
             2.0.try_into().unwrap(),
             2.0.try_into().unwrap(),
@@ -219,10 +219,10 @@ mod tests {
     }
 
     #[rstest]
-    fn coordinate_conversion_roundtrip(get_sheared_rhomboid: Rhomboid) {
+    fn coordinate_conversion_roundtrip(sheared_rhomboid: Rhomboid) {
         // Test that converting to fractional and back gives the original position
         let periodic =
-            Periodic::new(0.0, get_sheared_rhomboid).expect("hard-coded range should be valid");
+            Periodic::new(0.0, sheared_rhomboid).expect("hard-coded range should be valid");
 
         let test_frac_positions = vec![
             [0.0, 0.0],
@@ -234,8 +234,8 @@ mod tests {
 
         for frac_array in test_frac_positions {
             let frac = Cartesian::<2>::from(frac_array);
-            let pos = periodic.shape.to_absolute(&frac);
-            let frac_back = periodic.shape.to_fractional(&pos);
+            let pos = periodic.shape.absolute(&frac);
+            let frac_back = periodic.shape.fractional(&pos);
             assert_relative_eq!(frac, frac_back, epsilon = 1e-8);
         }
     }
@@ -248,9 +248,9 @@ mod tests {
     }
 
     #[rstest]
-    fn maximum_allowable_tilted(get_sheared_rhomboid: Rhomboid) {
+    fn maximum_allowable_tilted(sheared_rhomboid: Rhomboid) {
         // Test with tilted rhomboid
-        let max_range = get_sheared_rhomboid.maximum_allowable_interaction_range();
+        let max_range = sheared_rhomboid.maximum_allowable_interaction_range();
         // For lx=ly=2, xy=sqrt(2), the distance to parallel planes in x is:
         // dx = 2 / sqrt(1 + 2) = 2 / sqrt(3)
         // dy = 2
@@ -284,10 +284,10 @@ mod tests {
     }
 
     #[rstest]
-    fn wrap_tilted(get_sheared_rhomboid: Rhomboid) {
+    fn wrap_tilted(sheared_rhomboid: Rhomboid) {
         // Test wrapping with tilted rhomboid
         let periodic =
-            Periodic::new(0.0, get_sheared_rhomboid).expect("hard-coded range should be valid");
+            Periodic::new(0.0, sheared_rhomboid).expect("hard-coded range should be valid");
 
         // Point inside rhomboid should not change
         let point = Point::new([0.5, 0.5].into());
@@ -299,21 +299,21 @@ mod tests {
 
         // Point at center should wrap
         let frac_point = Cartesian::<2>::from([1.0, 1.0]);
-        let abs_point = Point::new(periodic.shape.to_absolute(&frac_point));
+        let abs_point = Point::new(periodic.shape.absolute(&frac_point));
         let wrapped = periodic.wrap(abs_point).expect("wrap should succeed");
         // Verify it's back inside the rhomboid
         assert_relative_eq!(wrapped.position, [0.0, 0.0].into(), epsilon = 1e-8);
     }
 
     #[rstest]
-    fn no_ghosts_interior(get_sheared_rhomboid: Rhomboid) {
+    fn no_ghosts_interior(sheared_rhomboid: Rhomboid) {
         // Test that interior points generate no ghosts and boundary points do
         let periodic =
-            Periodic::new(0.01, get_sheared_rhomboid).expect("hard-coded range should be valid");
+            Periodic::new(0.01, sheared_rhomboid).expect("hard-coded range should be valid");
 
         // Test interior point (not at origin)
         let mut interior_pos = Cartesian::from([0.2, 0.2]);
-        interior_pos = periodic.shape.to_absolute(&interior_pos);
+        interior_pos = periodic.shape.absolute(&interior_pos);
 
         let ghosts = periodic.generate_ghosts(&Point::new(interior_pos));
         assert!(
@@ -323,14 +323,14 @@ mod tests {
     }
 
     #[rstest]
-    fn ghosts_face_centers(get_sheared_rhomboid: Rhomboid) {
+    fn ghosts_face_centers(sheared_rhomboid: Rhomboid) {
         // Test that points near face centers generate appropriate ghosts
         let periodic =
-            Periodic::new(0.3, get_sheared_rhomboid).expect("hard-coded range should be valid");
+            Periodic::new(0.3, sheared_rhomboid).expect("hard-coded range should be valid");
 
         // Point near the x-face (at maximum x)
         let frac_pos = Cartesian::<2>::from([0.49, 0.0]);
-        let abs_point = Point::new(periodic.shape.to_absolute(&frac_pos));
+        let abs_point = Point::new(periodic.shape.absolute(&frac_pos));
 
         let ghosts = periodic.generate_ghosts(&abs_point);
         // Should generate at least 1 ghost (one for the face)
@@ -370,10 +370,10 @@ mod tests {
     }
 
     #[rstest]
-    fn ghosts_tilted_box(get_sheared_rhomboid: Rhomboid) {
+    fn ghosts_tilted_box(sheared_rhomboid: Rhomboid) {
         // Test ghost generation with a tilted rhomboid
         let periodic =
-            Periodic::new(0.1, get_sheared_rhomboid).expect("hard-coded range should be valid");
+            Periodic::new(0.1, sheared_rhomboid).expect("hard-coded range should be valid");
 
         // Point inside the rhomboid should not generate ghosts unless near a boundary
         let interior_pos = Cartesian::<2>::default();
@@ -384,7 +384,7 @@ mod tests {
 
         // Point at boundary vertex
         let frac_pos = Cartesian::<2>::from([0.499, 0.499]);
-        let abs_point = Point::new(periodic.shape.to_absolute(&frac_pos));
+        let abs_point = Point::new(periodic.shape.absolute(&frac_pos));
 
         let ghosts = periodic.generate_ghosts(&abs_point);
         // Should generate 3 ghosts (at vertex: 2 faces + 1 edge), all of which should wrap back to same point

@@ -9,7 +9,7 @@
 //! See [`crate::shape`] for the available shapes these impls target.
 
 use crate::shape::{
-    Capsule, Cylinder, Hypercuboid, Hyperellipsoid, Hyperparallelepiped, Hypersphere, Simplex3,
+    Capsule, Cylinder, Hypercuboid, Hyperellipsoid, Hyperparallelepiped, Hypersphere,
 };
 use hoomd_linear_algebra::{MatMul, SquareMatrix, matrix::Matrix};
 use hoomd_utility::valid::PositiveReal;
@@ -127,6 +127,17 @@ impl<const N: usize> Shear<N> for Hyperparallelepiped<N> {
 mod tests {
     use super::*;
     use approxim::assert_relative_eq;
+
+    fn unit_box_3d() -> Hyperparallelepiped<3> {
+        let mut b = Hyperparallelepiped::new([
+            Cartesian::from([1.0, 0.0, 0.0]),
+            Cartesian::from([0.0, 1.0, 0.0]),
+            Cartesian::from([0.0, 0.0, 1.0]),
+        ]);
+        b.calc_qr();
+        b
+    }
+
     #[test]
     fn test_cuboid_scale() {
         let scale_factor: PositiveReal = 5.0.try_into().unwrap();
@@ -143,7 +154,7 @@ mod tests {
 
     #[test]
     fn test_parallelepiped_shear() {
-        let mut my_box = Hyperparallelepiped::<3>::default();
+        let mut my_box = unit_box_3d();
         let parallel_axis = Cartesian {
             coordinates: [1., 0., 0.],
         };

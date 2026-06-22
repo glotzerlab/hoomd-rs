@@ -278,14 +278,14 @@ impl Triclinic {
     /// let triclinic = Triclinic::from_box_vector([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
     ///
     /// let pos = Cartesian::from([1.0, 0.0, 0.0]);
-    /// let frac = triclinic.to_fractional(&pos);
+    /// let frac = triclinic.fractional(&pos);
     /// assert_eq!(frac, Cartesian::from([0.5, 0.0, 0.0]));
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     #[must_use]
-    pub fn to_fractional(&self, pos: &Cartesian<3>) -> Cartesian<3> {
+    pub fn fractional(&self, pos: &Cartesian<3>) -> Cartesian<3> {
         let l: Cartesian<3> = self.extents.map(|x| x.get()).into();
         let mut frac = *pos;
         frac[0] -= (self.xz() - self.yz() * self.xy()) * pos[2] + self.xy() * pos[1];
@@ -298,7 +298,7 @@ impl Triclinic {
 
     /// Convert fractional coordinates to absolute position.
     ///
-    /// This is the inverse operation of `to_fractional`, $`\vec{r} = \mathbf{A} \vec{s}`$.
+    /// This is the inverse operation of `fractional`, $`\vec{r} = \mathbf{A} \vec{s}`$.
     /// Namely,
     /// ```math
     /// \begin{align*}
@@ -318,14 +318,14 @@ impl Triclinic {
     /// let triclinic = Triclinic::from_box_vector([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
     ///
     /// let frac = Cartesian::from([0.5, 0.0, 0.0]);
-    /// let pos = triclinic.to_absolute(&frac);
+    /// let pos = triclinic.absolute(&frac);
     /// assert_eq!(pos, Cartesian::from([1.0, 0.0, 0.0]));
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     #[must_use]
-    pub fn to_absolute(&self, frac: &Cartesian<3>) -> Cartesian<3> {
+    pub fn absolute(&self, frac: &Cartesian<3>) -> Cartesian<3> {
         let mut pos: Cartesian<3> = Cartesian::from([1.0, 1.0, 1.0]);
         for i in 0..3 {
             pos[i] = self.extents[i].get() * frac[i];
@@ -354,7 +354,7 @@ impl Triclinic {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic = Triclinic::from_box_vector([2.0, 3.0, 4.0, 0.5, 0.0, 0.0]);
-    /// let edges = triclinic.get_edge_vectors();
+    /// let edges = triclinic.edge_vectors();
     ///
     /// assert_eq!(edges[0], Cartesian::from([2.0, 0.0, 0.0]));
     /// assert_eq!(edges[1], Cartesian::from([1.5, 3.0, 0.0])); // xy * ly = 0.5 * 3.0
@@ -364,7 +364,7 @@ impl Triclinic {
     /// ```
     #[inline]
     #[must_use]
-    pub fn get_edge_vectors(&self) -> [Cartesian<3>; 3] {
+    pub fn edge_vectors(&self) -> [Cartesian<3>; 3] {
         let mut edge_vectors = [Cartesian::<3>::default(); 3];
         edge_vectors[0] = [self.lx().get(), 0., 0.].into();
         edge_vectors[1] = [self.ly().get() * self.xy(), self.ly().get(), 0.].into();
@@ -405,7 +405,7 @@ impl Triclinic {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic =
     ///     Triclinic::from_box_vector([10.0, 10.0, 10.0, 0.0, 0.0, 0.0]);
-    /// let angles = triclinic.get_box_angles();
+    /// let angles = triclinic.box_angles();
     ///
     /// // For orthogonal box, all angles should be 90 degrees
     /// assert!((angles[0] - PI / 2.0).abs() < 1e-10);
@@ -416,7 +416,7 @@ impl Triclinic {
     /// ```
     #[inline]
     #[must_use]
-    pub fn get_box_angles(&self) -> [f64; 3] {
+    pub fn box_angles(&self) -> [f64; 3] {
         let xy = self.xy();
         let xz = self.xz();
         let yz = self.yz();
@@ -443,7 +443,7 @@ impl Triclinic {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let triclinic = Triclinic::from_box_vector([2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
-    /// let distances = triclinic.get_nearest_plane_distance();
+    /// let distances = triclinic.nearest_plane_distance();
     ///
     /// // For orthogonal box, distances are just extents/2
     /// assert_eq!(distances[0].get(), 2.0);
@@ -457,7 +457,7 @@ impl Triclinic {
     /// Panics if any intermediate `try_into` conversion fails.
     #[inline]
     #[must_use]
-    pub fn get_nearest_plane_distance(&self) -> [PositiveReal; 3] {
+    pub fn nearest_plane_distance(&self) -> [PositiveReal; 3] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2, a_3), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 3];
         dist[0] = self.lx()
@@ -539,7 +539,7 @@ impl SupportMapping<Cartesian<3>> for Triclinic {
             d[1].signum() * 0.5,
             d[2].signum() * 0.5,
         ]);
-        self.to_absolute(&s)
+        self.absolute(&s)
     }
 }
 
@@ -669,15 +669,15 @@ impl Distribution<Cartesian<3>> for Triclinic {
         let y = uniform.sample(rng);
         let z = uniform.sample(rng);
 
-        self.to_absolute(&Cartesian::from([x, y, z]))
+        self.absolute(&Cartesian::from([x, y, z]))
     }
 }
 
 impl MapPoint<Cartesian<3>> for Triclinic {
     #[inline]
     fn map_point(&self, point: Cartesian<3>, other: &Self) -> Result<Cartesian<3>, crate::Error> {
-        let fractional = self.to_fractional(&point);
-        let mapped_coords = other.to_absolute(&fractional);
+        let fractional = self.fractional(&point);
+        let mapped_coords = other.absolute(&fractional);
         Ok(mapped_coords)
     }
 }
