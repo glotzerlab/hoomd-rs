@@ -211,7 +211,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
 ///
 /// This returns an `ExactSizeIterator` of f64 values with `lhs.len()` elements.
 #[inline(always)]
-fn gemv<const MAX_VERTICES: usize, const N: usize>(
+fn matrix_vector_multiply<const MAX_VERTICES: usize, const N: usize>(
     lhs: &ArrayVec<Cartesian<N>, MAX_VERTICES>,
     rhs: Cartesian<N>, // Copy appears to be compiled out, and this lets us elide '_
 ) -> impl ExactSizeIterator<Item = f64> + '_ {
@@ -228,7 +228,7 @@ impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
             0 => Cartesian::<N>::default(),
             1 => self.vertices[0],
             _ => {
-                let scalars = gemv(&self.vertices, *n);
+                let scalars = matrix_vector_multiply(&self.vertices, *n);
 
                 let (mut argmax, mut max_val) = (0, f64::NEG_INFINITY);
                 scalars.enumerate().for_each(|(i, x)| {
