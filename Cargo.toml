@@ -266,6 +266,8 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.bevy_macro_utils]
 opt-level = 3
+[profile.dev.package.bevy_material]
+opt-level = 3
 [profile.dev.package.bevy_math]
 opt-level = 3
 [profile.dev.package.bevy_mesh]
