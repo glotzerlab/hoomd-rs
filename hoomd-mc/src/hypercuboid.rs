@@ -140,43 +140,17 @@ impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
 impl<const N: usize> Checkerboard<Spherical<N>> for HypercuboidCheckerboard<N> {
     #[inline]
     fn point_to_space_index(&self, point: &Spherical<N>) -> Option<usize> {
-        let p = *point.point() - self.origin;
-        let mut space_multi_index: [i64; N] =
-            array::from_fn(|i| (p.coordinates[i] / self.space_width[i]).floor() as i64);
-
-        for (index, shape) in izip!(&mut space_multi_index, self.shape) {
-            // The origin is in the lower left corner of the box and may be up
-            // to one space width to the left of simulation boundary. Therefore,
-            // negative indices are out of bounds (and should never been seen
-            // for wrapped inputs).
-            if *index < 0 {
-                return None;
-            }
-
-            if *index as usize >= shape {
-                // In non-periodic boundaries, the checkerboard extends one full
-                // space to the right of the simulation boundary so that when
-                // it is shifted to the left it will still cover the boundary.
-                // Therefore, any points outside the checkerboard shape are
-                // invalid.
-                return None;
-            }
-        }
-
-        Some(Self::multi_index_to_index(
-            array::from_fn(|i| space_multi_index[i] as usize),
-            self.shape,
-        ))
+        <Self as Checkerboard<Cartesian<N>>>::point_to_space_index(self, &Cartesian::from(*point.coordinates()))
     }
 
     #[inline]
     fn space_indices_by_color(&self) -> &[Vec<usize>] {
-        &self.space_indices_by_color
+        <Self as Checkerboard<Cartesian<N>>>::space_indices_by_color(self)
     }
 
     #[inline]
     fn num_spaces(&self) -> usize {
-        self.shape.iter().product()
+        <Self as Checkerboard<Cartesian<N>>>::num_spaces(self)
     }
 }
 
