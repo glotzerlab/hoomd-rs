@@ -83,7 +83,7 @@ strum_macros = "=0.28.0"
 clap = {version = "4.5.48", features = ["derive"]}
 clap-verbosity-flag = "3.0.3"
 env_logger = "0.11.8"
-itertools = "0.14.0"
+itertools = "0.15.0"
 log = "0.4.28"
 postcard = {version = "1.1.3", default-features = false, features = ["use-std"]}
 rand_distr = "0.6.0"
@@ -105,11 +105,11 @@ serde = { version = "1.0.228", features = ["derive"]}
 thiserror = "2.0.12"
 
 # Bevy and bevy-adjacent dependencies
-bevy_egui = "0.39.0"
+bevy_egui = "0.40.0"
 wayland-sys = "0.31.8"
 
 [workspace.dependencies.bevy]
-version = "0.18.0"
+version = "0.19.0"
 default-features = false
 
 # Include all 2d and 3d features, but NOT audio or gamepad support.
@@ -131,10 +131,10 @@ features = ["default_app",
             "bevy_dev_tools"]
 
 [workspace.dependencies.bevy_diagnostic]
-version = "0.18.0"
+version = "0.19.0"
 
 [workspace.dependencies.bevy_winit]
-version = "0.18.0"
+version = "0.19.0"
 
 [workspace.lints.rust]
 missing_docs = "warn"
@@ -265,6 +265,8 @@ opt-level = 3
 [profile.dev.package.bevy_light]
 opt-level = 3
 [profile.dev.package.bevy_macro_utils]
+opt-level = 3
+[profile.dev.package.bevy_material]
 opt-level = 3
 [profile.dev.package.bevy_math]
 opt-level = 3

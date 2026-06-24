@@ -52,7 +52,7 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
         material: In<HyperbolicPolygonMaterialParameters>,
         mut commands: Commands,
         //#[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))] mut buffers: ResMut<
-        //    Assets<ShaderStorageBuffer>,
+        //    Assets<ShaderBuffer>,
         //>,
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<HyperbolicPolygonMaterial>>,

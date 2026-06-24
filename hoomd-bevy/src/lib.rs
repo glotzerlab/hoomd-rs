@@ -65,6 +65,7 @@ use std::{ops::Range, time::Duration};
 use anyhow::Context;
 use bevy::{
     asset::embedded_asset,
+    ecs::component::Mutable,
     input::{
         common_conditions::{input_just_released, input_pressed},
         mouse::MouseWheel,
@@ -84,10 +85,10 @@ use bevy_diagnostic::{
     RegisterDiagnostic,
 };
 use bevy_egui::{
-    EguiContextSettings, EguiContexts, EguiPlugin, EguiPrimaryContextPass,
+    EguiContexts, EguiPlugin, EguiPrimaryContextPass,
     egui::{
         self,
-        gui_zoom::kb_shortcuts::{ZOOM_IN, ZOOM_IN_SECONDARY, ZOOM_OUT, ZOOM_RESET},
+        gui_zoom::kb_shortcuts::{ZOOM_IN, ZOOM_OUT, ZOOM_RESET},
     },
     input::{egui_wants_any_keyboard_input, egui_wants_any_pointer_input},
 };
@@ -292,7 +293,7 @@ pub struct MouseInputSet;
 
 impl<Sim> HoomdBevyPlugin<Sim>
 where
-    Sim: Resource + Simulation,
+    Sim: Resource<Mutability = Mutable> + Simulation,
 {
     /// Bevy diagnostic that counts the number of steps executed per second.
     pub const SPS: DiagnosticPath = DiagnosticPath::const_new("sps");
@@ -736,7 +737,7 @@ where
                     Self::camera_mouse_pan_control_2d
                         .run_if(
                             input_pressed(MouseButton::Left)
-                                .or(input_just_released(MouseButton::Left)),
+                                .or_else(input_just_released(MouseButton::Left)),
                         )
                         .in_set(MouseInputSet),
                 )
@@ -788,9 +789,6 @@ where
         let context = contexts.ctx_mut()?;
         context.memory_mut(|m| {
             m.options.theme_preference = egui::ThemePreference::Dark;
-
-            // bevy_egui overrides the egui built-in zoom. Disable it to avoid conflicts.
-            m.options.zoom_with_keyboard = false;
         });
 
         Ok(())
@@ -800,7 +798,6 @@ where
     fn ui_system(
         #[cfg(not(target_arch = "wasm32"))] mut commands: Commands,
         mut contexts: EguiContexts,
-        mut context_settings: Single<&mut EguiContextSettings>,
         mut ui_state: ResMut<UiState>,
         mut options_window_state: ResMut<OptionsWindowState>,
         mut parameters_window_state: ResMut<ParametersWindowState>,
@@ -942,7 +939,7 @@ where
 
         {
             let context = contexts.ctx_mut()?;
-            if !context.wants_keyboard_input() {
+            if !context.egui_wants_keyboard_input() {
                 if context.input_mut(|i| i.consume_shortcut(&advance_shortcut)) {
                     advance_simulation.write(AdvanceSimulation);
                 }
@@ -971,19 +968,6 @@ where
                     commands
                         .spawn(Screenshot::primary_window())
                         .observe(save_to_disk("screenshot.png"));
-                }
-
-                if context.input_mut(|i| i.consume_shortcut(&ZOOM_IN)) {
-                    context_settings.scale_factor *= 1.125;
-                }
-                if context.input_mut(|i| i.consume_shortcut(&ZOOM_IN_SECONDARY)) {
-                    context_settings.scale_factor *= 1.125;
-                }
-                if context.input_mut(|i| i.consume_shortcut(&ZOOM_OUT)) {
-                    context_settings.scale_factor /= 1.125;
-                }
-                if context.input_mut(|i| i.consume_shortcut(&ZOOM_RESET)) {
-                    context_settings.scale_factor = 1.0;
                 }
             }
         }
