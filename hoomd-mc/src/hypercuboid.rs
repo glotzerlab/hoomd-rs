@@ -268,7 +268,6 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
             })
             .collect();
 
-
         (0..num_colors)
             .map(|color| {
                 let offset = Self::index_to_multi_index(color, [2; N]);
