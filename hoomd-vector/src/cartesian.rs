@@ -453,7 +453,7 @@ impl Cartesian<4> {
     ///
     /// This function is a generalization of the cross product to general dimension,
     /// identifying a unique vector perpendicular to `N-1` other vectors. In two
-    /// dimensions, this is [`Cartesian::<2>::perp`], and in three dimensions this is
+    /// dimensions, this is [`Cartesian::<2>::perpendicular`], and in three dimensions this is
     /// simply [`Cross`].
     ///
     /// In geometric algebra terms, this is the Hodge dual of the exterior (Wedge)
