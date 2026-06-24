@@ -140,7 +140,10 @@ impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
 impl<const N: usize> Checkerboard<Spherical<N>> for HypercuboidCheckerboard<N> {
     #[inline]
     fn point_to_space_index(&self, point: &Spherical<N>) -> Option<usize> {
-        <Self as Checkerboard<Cartesian<N>>>::point_to_space_index(self, &Cartesian::from(*point.coordinates()))
+        <Self as Checkerboard<Cartesian<N>>>::point_to_space_index(
+            self,
+            &Cartesian::from(*point.coordinates()),
+        )
     }
 
     #[inline]
