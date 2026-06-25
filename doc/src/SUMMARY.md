@@ -9,7 +9,7 @@
 - [Overview](guide/overview.md)
 - [All crates](api/index.md)
 
-# Tutorials
+# Tutorials and examples
 
 - [Running the Examples](examples.md)
 - [Monte Carlo Tutorial](mc-tutorial/index.md)
@@ -24,8 +24,6 @@
   - [Seeded Self-Assembly](mc-tutorial/seeded-self-assembly.md)
   - [Type-dependent Interactions](mc-tutorial/type-dependent-interactions.md)
   - [Polydisperse Interactions](mc-tutorial/polydisperse-hard-disk-model.md)
-- [Molecular Dynamics Tutorial](md-tutorial/index.md)
-  - [NVE Lennard-Jones fluid](md-tutorial/nve-lj-fluid.md)
 - [Workflow Tutorial](workflow-tutorial/index.md)
   - [The State Point](workflow-tutorial/state-point.md)
   - [The Simulation Model](workflow-tutorial/simulation-model.md)
@@ -33,6 +31,9 @@
   - [The `action` Binary](workflow-tutorial/action-binary.md)
   - [The Row Workflow](workflow-tutorial/row-workflow.md)
   - [Conclusion](workflow-tutorial/conclusion.md)
+- [Molecular Dynamics Examples](md-examples/index.md)
+  - [NVE Lennard-Jones fluid](md-examples/nvt-lj-fluid.md)
+
 # Reference
 
 - [Release notes](release-notes.md)

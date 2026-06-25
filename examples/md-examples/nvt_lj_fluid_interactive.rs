@@ -1,19 +1,18 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings,
-    representation::disk,     representation::surface_mesh,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings, representation::surface_mesh,
 };
 
 use anyhow::Context;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 
-use super::LJFluid;
+use super::LennardJonesFluid;
 
 /// Mark the disk representation type.
 struct A;
 
 pub(crate) fn main() -> anyhow::Result<()> {
-    let simulation = LJFluid::new()
+    let simulation = LennardJonesFluid::new()
         .context("failed to setup simulation")?;
     let l =
         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
@@ -47,7 +46,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
     app.add_systems(
         Update,
         (sync_sites,)
-            .run_if(resource_changed::<LJFluid>)
+            .run_if(resource_changed::<LennardJonesFluid>)
             .after(AdvanceSet),
     );
 
@@ -64,7 +63,7 @@ fn sync_sites(
         (Entity, &mut Transform),
         With<surface_mesh::SurfaceMesh<A>>,
     >,
-    simulation: Res<LJFluid>,
+    simulation: Res<LennardJonesFluid>,
 ) {
     let sites = simulation.microstate.sites();
     surface_mesh::SurfaceMesh::sync(
