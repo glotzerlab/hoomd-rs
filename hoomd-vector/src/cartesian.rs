@@ -18,10 +18,7 @@ use rand::{
 };
 
 use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
-use hoomd_linear_algebra::{
-    MatMul,
-    matrix::{Matrix, Matrix33},
-};
+use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -456,7 +453,7 @@ impl Cartesian<4> {
     ///
     /// This function is a generalization of the cross product to general dimension,
     /// identifying a unique vector perpendicular to `N-1` other vectors. In two
-    /// dimensions, this is [`Cartesian::<2>::perp`], and in three dimensions this is
+    /// dimensions, this is [`Cartesian::<2>::perpendicular`], and in three dimensions this is
     /// simply [`Cross`].
     ///
     /// In geometric algebra terms, this is the Hodge dual of the exterior (Wedge)
@@ -468,16 +465,35 @@ impl Cartesian<4> {
     #[inline]
     #[must_use]
     pub fn counary_cross(vectors: &[Self; 3]) -> Self {
-        std::array::from_fn(|skip| {
-            Matrix33 {
-                rows: std::array::from_fn(|r| {
-                    // Skip the column 'skip' by adding 1 to the index when c >= skip
-                    std::array::from_fn(|c| vectors[r][c + usize::from(c >= skip)])
-                }),
-            }
-            .determinant()
-                * if skip.is_multiple_of(2) { 1.0 } else { -1.0 }
-        })
+        /// Calculate a 2x2 matrix determinant while compensating for errors.
+        /// <https://pharr.org/matt/blog/2019/11/03/difference-of-floats>
+        #[inline(always)]
+        fn diff_of_products(a: f64, b: f64, c: f64, d: f64) -> f64 {
+            let cd = c * d;
+            let err = (-c).mul_add(d, cd);
+            let dop = a.mul_add(b, -cd);
+            dop + err
+        }
+        let u = &vectors[0];
+        let v = &vectors[1];
+        let w = &vectors[2];
+
+        // 2x2 Minors via Kahan's Exact FMA
+        let m01 = diff_of_products(v[0], w[1], v[1], w[0]);
+        let m02 = diff_of_products(v[0], w[2], v[2], w[0]);
+        let m03 = diff_of_products(v[0], w[3], v[3], w[0]);
+        let m12 = diff_of_products(v[1], w[2], v[2], w[1]);
+        let m13 = diff_of_products(v[1], w[3], v[3], w[1]);
+        let m23 = diff_of_products(v[2], w[3], v[3], w[2]);
+
+        // Association is important here, as we can accumulate small sign errors if we
+        // do not correctly group terms!
+        [
+            (u[1] * m23 - u[2] * m13 + u[3] * m12),
+            -(u[0] * m23 - u[2] * m03 + u[3] * m02),
+            (u[0] * m13 - u[1] * m03 + u[3] * m01),
+            -(u[0] * m12 - u[1] * m02 + u[2] * m01),
+        ]
         .into()
     }
 }
