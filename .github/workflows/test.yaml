@@ -24,7 +24,7 @@ env:
 
 jobs:
   unit_test:
-    name: Unit test [rust-${{ matrix.rust }}-${{ matrix.os }}-${{ matrix.target || 'native' }}]
+    name: Unit test [${{ matrix.os }}-${{ matrix.target || 'native' }}]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -36,8 +36,6 @@ jobs:
           - ubuntu-24.04
           - macos-26
           - windows-2025
-        rust:
-          - 1.96.0
         target:
          - ''
 
@@ -45,11 +43,6 @@ jobs:
         - os: ubuntu-24.04
           rust: 1.96.0
           target: wasm32-unknown-unknown
-
-        # Test MSRV
-        - os: ubuntu-24.04
-          rust: 1.95.0
-          target: ''
 
     steps:
     - name: Checkout
@@ -61,7 +54,7 @@ jobs:
     - name: Configure Rust
       uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
       with:
-        toolchain: ${{ matrix.rust }}
+        toolchain: 1.96.0
         targets: ${{ matrix.target }}
     - name: Check rust installation
       run: rustc -vV
