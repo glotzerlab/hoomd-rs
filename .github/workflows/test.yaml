@@ -48,7 +48,7 @@ jobs:
 
         # Test MSRV
         - os: ubuntu-24.04
-          rust: 1.91.0
+          rust: 1.95.0
           target: ''
 
     steps:
