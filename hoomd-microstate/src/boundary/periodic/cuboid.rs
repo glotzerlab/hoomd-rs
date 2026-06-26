@@ -119,7 +119,7 @@ where
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_microstate::{
-    ///     boundary::{Periodic, GenerateGhosts},
+    ///     boundary::{GenerateGhosts, Periodic},
     ///     property::Point,
     /// };
     /// use hoomd_vector::Cartesian;
@@ -128,7 +128,8 @@ where
     /// let periodic =
     ///     Periodic::new(1.0, Rectangle::with_equal_edges(10.0.try_into()?))?;
     /// // A site near the right edge produces an image shifted across it.
-    /// let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([4.6, 0.0])));
+    /// let ghosts =
+    ///     periodic.generate_ghosts(&Point::new(Cartesian::from([4.6, 0.0])));
     /// assert_eq!(ghosts.len(), 1);
     /// # Ok(())
     /// # }
@@ -1177,7 +1178,7 @@ mod tests {
 
         #[test]
         fn matches_reference_2d() {
-            let mut rng = StdRng::seed_from_u64(0xC0DE);
+            let mut rng = StdRng::seed_from_u64(0xc0de);
             for (edge_lengths, range) in [
                 ([pos(20.0), pos(10.0)], 1.0),
                 ([pos(5.0), pos(5.0)], 2.0),
@@ -1199,7 +1200,7 @@ mod tests {
 
         #[test]
         fn matches_reference_3d() {
-            let mut rng = StdRng::seed_from_u64(0xBEEF);
+            let mut rng = StdRng::seed_from_u64(0xbeef);
             for (edge_lengths, range) in [
                 ([pos(20.0), pos(10.0), pos(40.0)], 1.0),
                 ([pos(6.0), pos(6.0), pos(6.0)], 2.0),
