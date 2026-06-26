@@ -2828,6 +2828,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
+ "itertools",
  "parquet",
  "parquet_derive",
  "rand 0.10.1",

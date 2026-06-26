@@ -10,7 +10,7 @@ Here are links to the documentation for every *hoomd-rs* crate:
 - [hoomd-linear-algebra](../api/hoomd_linear_algebra/index.html): Linear algebra methods used by other *hoomd-rs* crates.
 - [hoomd-manifold](../api/hoomd_manifold/index.html): Define points in curved space and operate on them.
 - [hoomd-mc](../api/hoomd_mc/index.html): Perform Monte Carlo simulations.
-- [hoomd-md](../api/hoomd_md/index.html): Perform Molecular Dynamics simulations.
+- [hoomd-md](../api/hoomd_md/index.html): Perform molecular dynamics simulations.
 - [hoomd-microstate](../api/hoomd_microstate/index.html): Represent the degrees of freedom in your simulation model.
 - [hoomd-rand](../api/hoomd_rand/index.html): Pseudorandom number generation methods used by other *hoomd-rs* crates.
 - [hoomd-simulation](../api/hoomd_simulation/index.html): Traits that define the macrostate and the simulation model as a whole.

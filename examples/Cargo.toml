@@ -47,6 +47,7 @@ parquet_derive.workspace = true
 rand.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
+itertools.workspace = true
 
 [[example]]
 name = "hello"
@@ -127,8 +128,8 @@ path = "mc-tutorial/polydisperse-hard-disk-model.rs"
 path = "mc-tutorial"
 
 [[example]]
-name = "nvt-lj-fluid"
-path = "md-examples/nvt-lj-fluid.rs"
+name = "lj-fluid"
+path = "md-examples/lj-fluid.rs"
 
-[package.metadata.example.nve-lj-fluid]
+[package.metadata.example.lj-fluid]
 path = "md-examples"

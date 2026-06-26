@@ -1,3 +1,5 @@
-# Molecular Dynamics Tutorial
+# Molecular Dynamics Examples
 
-The [`hoomd-md`] crate implements Molecular Dynamics simulations.
+These examples demonstrate molecular dynamics simulations using the [`hoomd-md`] crate.
+
+[`hoomd-md`]: ../api/hoomd_md/index.html

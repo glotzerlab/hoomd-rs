@@ -32,11 +32,11 @@
   - [The Row Workflow](workflow-tutorial/row-workflow.md)
   - [Conclusion](workflow-tutorial/conclusion.md)
 - [Molecular Dynamics Examples](md-examples/index.md)
-  - [NVE Lennard-Jones fluid](md-examples/nvt-lj-fluid.md)
+  - [Lennard-Jones fluid](md-examples/lj-fluid.md)
 
 # Reference
 
-- [Release notes](release-notes.md)
+- [Release Notes](release-notes.md)
 - [Topics](topics.md)
 - [Notation](notation.md)
 - [Development](development.md)

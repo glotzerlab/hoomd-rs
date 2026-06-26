@@ -58,7 +58,7 @@ use hoomd_spatial::PointUpdate;
 /// [Miller et al. 2002]: <https://doi.org/10.1063/1.1473654>
 #[doc(alias = "nvt")]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ConstantVolume<TT, TR> {
+pub struct ConstantVolume<TT, TR=TT> {
     /// The time step size.
     pub delta_t: f64,
 
