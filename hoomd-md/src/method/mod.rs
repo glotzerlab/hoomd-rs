@@ -4,4 +4,4 @@
 //! Integration methods.
 
 mod constant_volume;
-pub use constant_volume::ConstantVolume;
+pub use constant_volume::{ConstantVolume, ConstantVolumeBuilder};

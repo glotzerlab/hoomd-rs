@@ -48,7 +48,7 @@ use hoomd_simulation::macrostate::Temperature;
 ///    
 /// let bussi = Bussi::new(0.5);
 /// ```
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Bussi {
     /// Thermostat time constant $`[ \mathrm{time} ]`$.
     tau: f64,

@@ -17,45 +17,40 @@ use hoomd_vector::{
 use crate::{RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, thermostat::NoThermostat};
 use hoomd_spatial::PointUpdate;
 
-/// Perform time integration on the [`Microstate`] with the volume constraining
-/// to a constant using Velocity Verlet algorithm.
-/// 
-/// When [`NoThermostat`](crate::thermostat::NoThermostat) is provided to the methods:
-/// [`integrate_translation_half_step_one`](ConstantVolume::integrate_translation_half_step_one), 
-/// [`integrate_translation_half_step_two`](ConstantVolume::integrate_translation_half_step_two), 
-/// [`integrate_rotation_half_step_one`](ConstantVolume::integrate_rotation_half_step_one), and 
-/// [`integrate_rotation_half_step_two`](ConstantVolume::integrate_rotation_half_step_two), it 
-/// samples the microcanonical (NVE) ensemble. Otherwise, It samples the 
-/// canonical (NVT) ensemble using the given [`macrostate`](hoomd_simulation::macrostate::Isothermal)
-/// and [`Thermostat`].
-/// 
-/// The force and torque updates are separated from the four integration methods mentioned
-/// above. To perform the integration correctly, force and torque must be updated in between
-/// the first (step_one) and second-half (step_two) of the integration by using the methods:
-/// [`update_force`](ConstantVolume::update_force), [`update_torque`](ConstantVolume::update_torque)
-/// , or [`update_force_and_torque`](ConstantVolume::update_force_and_torque).
-/// 
-/// The imeplementation follows the sympletic integration scheme by [Tuckerman et al. 2006] 
-/// for translational motion and [Miller et al. 2002] for rotational motion.
-/// 
-/// # Example
+/// Integrate the translational and rotational body degrees of freedom in the microstate.
 ///
+/// The [`ConstantVolume`] implementation follows the symplectic integration
+/// scheme by [Tuckerman et al. 2006] for translational motion and [Miller et
+/// al. 2002] for rotational motion. 
+/// 
+/// Use [`NoThermostat`] to integrate trajectories that sample the microcanonical ensemble:
 /// ```
 /// use hoomd_md::method::ConstantVolume;
 ///
-/// // Create a constant-volume integrator
-/// let dt = 0.001;
-/// let integrator = ConstantVolume::new(dt);
+/// let delta_t = 0.001;
+/// let constant_volume = ConstantVolume::builder(delta_t).build();
+/// ```
+///
+/// Use [`Bussi`] (or one of the other thermostats) to integrate trajectories that sample
+/// the canonical ensemble:
+/// ```
+/// use hoomd_md::{method::ConstantVolume, thermostat::Bussi};
+///
+/// let delta_t = 0.001;
+/// let constant_volume = ConstantVolume::builder(delta_t)
+///    .thermostat(Bussi::default())
+///    .build();
 /// ```
 /// 
 /// # Reference
 /// 
-/// [Tuckerman et al. 2006]
-/// 
-/// [Miller et al. 2002]
-/// 
-/// [Tuckerman et al. 2006]: <https://doi.org/10.1088/0305-4470/39/19/S18>
-/// [Miller et al. 2002]: <https://doi.org/10.1063/1.1473654>
+/// * [Tuckerman et al. 2006]
+/// * [Miller et al. 2002]
+///
+/// [`NoThermostat`]: crate::thermostat::NoThermostat
+/// [`Bussi`]: crate::thermostat::Bussi
+/// [Tuckerman et al. 2006]: https://doi.org/10.1088/0305-4470/39/19/S18
+/// [Miller et al. 2002]: https://doi.org/10.1063/1.1473654
 #[doc(alias = "nvt")]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConstantVolume<TT, TR=TT> {
@@ -67,12 +62,11 @@ pub struct ConstantVolume<TT, TR=TT> {
 
     /// Rotational thermostat.
     pub rotational_thermostat: TR,
-
-    // TODO: Should `ConstantVolume` track the last updated step and panic when:
-    // - Step two is not called after step one?
-    // - Step one is called twice for the same step?
 }
 
+/// Builder that constructs [`ConstantVolume`].
+///
+/// Call [`ConstantVolume::builder`] to start building a new [`ConstantVolume`].
 pub struct ConstantVolumeBuilder<TT, TR> {
     /// The time step size.
     delta_t: f64,
@@ -85,6 +79,19 @@ pub struct ConstantVolumeBuilder<TT, TR> {
 }
 
 impl<TT, TR> ConstantVolumeBuilder<TT, TR> {
+    /// Set the thermostat that applies to the translational degrees of freedom.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_md::{method::ConstantVolume, thermostat::Bussi};
+    ///
+    /// let delta_t = 0.001;
+    /// let constant_volume = ConstantVolume::builder(delta_t)
+    ///    .translational_thermostat(Bussi::default())
+    ///    .build();
+    /// ```
+    #[inline]
     pub fn translational_thermostat<T>(self, translational_thermostat: T) -> ConstantVolumeBuilder<T, TR> {
         ConstantVolumeBuilder {
             delta_t: self.delta_t,
@@ -92,6 +99,20 @@ impl<TT, TR> ConstantVolumeBuilder<TT, TR> {
             rotational_thermostat: self.rotational_thermostat,
         }
     }
+    
+    /// Set the thermostat that applies to the rotational degrees of freedom.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_md::{method::ConstantVolume, thermostat::Bussi};
+    ///
+    /// let delta_t = 0.001;
+    /// let constant_volume = ConstantVolume::builder(delta_t)
+    ///    .rotational_thermostat(Bussi::default())
+    ///    .build();
+    /// ```
+    #[inline]
     pub fn rotational_thermostat<T>(self, rotational_thermostat: T) -> ConstantVolumeBuilder<TT, T> {
         ConstantVolumeBuilder {
             delta_t: self.delta_t,
@@ -99,6 +120,23 @@ impl<TT, TR> ConstantVolumeBuilder<TT, TR> {
             rotational_thermostat,
         }
     }
+    
+    /// Set the thermostat that applies to both translational and rotational degrees of freedom.
+    ///
+    /// The given thermostat is cloned. The translational and rotational thermostats evolve
+    /// independently.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_md::{method::ConstantVolume, thermostat::Bussi};
+    ///
+    /// let delta_t = 0.001;
+    /// let constant_volume = ConstantVolume::builder(delta_t)
+    ///    .thermostat(Bussi::default())
+    ///    .build();
+    /// ```
+    #[inline]
     pub fn thermostat<T: Clone>(self, thermostat: T) -> ConstantVolumeBuilder<T, T> {
         ConstantVolumeBuilder {
             delta_t: self.delta_t,
@@ -107,6 +145,17 @@ impl<TT, TR> ConstantVolumeBuilder<TT, TR> {
         }
     }
 
+    /// Complete building a new [`ConstantVolume`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_md::method::ConstantVolume;
+    ///
+    /// let delta_t = 0.001;
+    /// let constant_volume = ConstantVolume::builder(delta_t).build();
+    /// ```
+    #[inline]
     pub fn build(self) -> ConstantVolume<TT, TR> {
         ConstantVolume {
             delta_t: self.delta_t,
@@ -118,6 +167,21 @@ impl<TT, TR> ConstantVolumeBuilder<TT, TR> {
 
 impl ConstantVolume<NoThermostat, NoThermostat> {
     #[inline]
+    /// Start building a new [`ConstantVolume`].
+    ///
+    /// The default builder uses the given value for `delta_t` and [`NoThermostat`]
+    /// for both the translational and rotational thermostats. Call zero or more
+    /// of the [`ConstantVolumeBuilder`] methods to set the thermostats.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_md::method::ConstantVolume;
+    ///
+    /// let delta_t = 0.001;
+    /// let constant_volume = ConstantVolume::builder(delta_t).build();
+    /// ```
+    /// [`NoThermostat`]: crate::thermostat::NoThermostat
     pub fn builder(delta_t: f64) -> ConstantVolumeBuilder<NoThermostat, NoThermostat> {
         ConstantVolumeBuilder {
             delta_t,
@@ -127,6 +191,15 @@ impl ConstantVolume<NoThermostat, NoThermostat> {
     } 
 
     /// Construct a new [`ConstantVolume`] with the given time step size and no thermostats.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_md::method::ConstantVolume;
+    ///
+    /// let delta_t = 0.001;
+    /// let constant_volume = ConstantVolume::new(delta_t);
+    /// ```
     #[inline]
     pub fn new(delta_t: f64) -> Self {
         Self {
@@ -134,6 +207,32 @@ impl ConstantVolume<NoThermostat, NoThermostat> {
             translational_thermostat: NoThermostat,
             rotational_thermostat: NoThermostat,
         }
+    }
+}
+
+impl<TT, TR> ConstantVolume<TT, TR> {
+    /// Access the translational thermostat.
+    #[inline]
+    pub fn translational_thermostat(&self) -> &TT {
+        &self.translational_thermostat
+    }
+
+    /// Access the translational thermostat (mutable).
+    #[inline]
+    pub fn translational_thermostat_mut(&mut self) -> &mut TT {
+        &mut self.translational_thermostat
+    }
+
+    /// Access the rotational thermostat.
+    #[inline]
+    pub fn rotational_thermostat(&self) -> &TR {
+        &self.rotational_thermostat
+    }
+
+    /// Access the rotational thermostat (mutable).
+    #[inline]
+    pub fn rotational_thermostat_mut(&mut self) -> &mut TR {
+        &mut self.rotational_thermostat
     }
 }
 
@@ -151,22 +250,19 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     TT: Thermostat<M>,
 {
-    /// Perform the first-half integration on translational degrees-of-freedom
-    /// , advancing the [`Microstate`] and possibly the [`Thermostat`] state forward as 
-    /// :
-    /// ```math
-    /// \begin{align}
+    /// Integrate selected body positions forward a full step and the momenta forward a half step.
     ///
-    /// &\mathbf{p}\left\{ t \right\} = \mathrm{Adjust\_temperature\_update\_thermostat}() \\
-    /// &\mathbf{p}\left\{ t + \frac{\delta t}{2} \right\} = \mathbf{p}\left\{ t \right\} + \frac{1}{2} \delta t \mathbf{f} \\
-    /// &\mathbf{r}\left\{ t + \delta t \right\} = \mathbf{r}\left\{ t \right\} + \delta t \frac{\mathbf{p}\left\{ t + \frac{\delta t}{2} \right\}}{m}
+    /// ```math
+    /// \begin{align*}
+    ///
+    /// \vec{p'}_i\left( t \right) &= \vec{p}_i\left( t \right) \cdot \mathrm{thermostat\_half\_step\_one}\left( \sum_{i \in \mathrm{selection}} \frac{\vec{p}_i(t) \cdot \vec{p}_i(t)}{2m_i} \right) \\
+    /// \vec{p}_i\left( t + \frac{\delta t}{2} \right) &= \vec{p'}_i\left( t \right)+ \frac{1}{2} \vec{F}_i(t) \delta t \\
+    /// \vec{r}_i\left( t + \delta t \right) &= \vec{r}_i\left( t \right) + \frac{\vec{p}_i\left( t + \frac{\delta t}{2} \right)}{m_i} \delta t
     ///         
-    /// \end{align}
+    /// \end{align*}
     /// ```
-    /// 
-    /// Where $`\mathbf{r}`$ is the position, $`\mathbf{p}`$ is the momentum, $`\mathbf{f}`$ is the force,
-    /// $`m`$ is the mass of each [`Body`](hoomd_microstate::Body::properties), and $`t`$ is the time,
-    /// $`\delta t`$ is the timestep dt. 
+    ///
+    /// `thermostat_half_step_one(K)` is the first half step method implemented by `TT`.
     #[inline]
     fn integrate_translation_half_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
@@ -209,18 +305,17 @@ where
         microstate.increment_substep();
     }
 
-    /// Perform the second-half integration on translational degrees-of-freedom
-    /// , continuing from the last step in [`integrate_translation_half_step_one`](ConstantVolume::integrate_translation_half_step_one)
-    /// and advancing the [`Microstate`] and possibly the [`Thermostat`] state 
-    /// forward as:
+    /// Integrate selected body momenta forward a half step.
     /// ```math
-    /// \begin{align}
+    /// \begin{align*}
     ///
-    /// &\mathbf{p}\left\{ t + \delta t \right\} = \mathbf{p}\left\{ t + \frac{1}{2} \delta t \right\} + \frac{1}{2} \delta t \mathbf{f} \\
-    /// &\mathbf{p}\left\{ t + \delta t \right\} = \mathrm{Adjust\_temperature\_update\_thermostat}() \\
+    /// \vec{p'}\left( t + \delta t \right) &= \vec{p}\left( t + \frac{1}{2} \delta t \right) + \frac{1}{2} \vec{F}(t + \delta t) \delta t \\
+    /// \vec{p}\left( t + \delta t \right) &= \vec{p'}\left( t + \delta t \right) \cdot \mathrm{thermostat\_half\_step\_two}\left( \sum_{i \in \mathrm{selection}} \frac{\vec{p'}\left( t + \delta t \right) \cdot \vec{p'}\left( t + \delta t \right)}{2m_i} \right) \\
     ///         
-    /// \end{align}
+    /// \end{align*}
     /// ```
+    ///
+    /// `thermostat_half_step_two(K)` is the second half step method implemented by `TT`.
     #[inline]
     fn integrate_translation_half_step_two_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
@@ -305,35 +400,27 @@ where
     C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>> + Wrap<S> + GenerateGhosts<S>,
     TR: Thermostat<M>,
 {
-    /// Perform the first-half integration on rotational degrees-of-freedom
-    /// for three-dimensional system, advancing the [`Microstate`] and possibly 
-    /// the [`Thermostat`] state forward as follows
+    /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
+    /// Ignore any rotational degrees of freedom with a moment of inertia of 0.
     /// 
-    /// First, perform temperature adjustment and update [`Thermostat`] state due
-    /// to rotational degrees-of-freedom:
+    /// This method first performs temperature adjustment and and integrates the rotational thermostat.
     /// ```math
-    /// \begin{equation}
-    ///
-    /// \mathbf{l}\left\{ t \right\} = \mathrm{Adjust\_temperature\_update\_thermostat}()
-    ///         
-    /// \end{equation}
+    /// \vec{L}'_i(t) = \vec{L}_i(t) \cdot \mathrm{rotational\_thermostat.half\_step\_one}\left(\sum_{i \in \mathrm{selection}}\frac{L_{x,i}(t)^2}{2I_{xx,i}} + \frac{L_{y,i}(t)^2}{2I_{yy,i}} + \frac{L_{z,i}(t)^2}{2I_{zz,i}} \right) \\
     /// ```
+    ///
+    /// The remaining steps are applied to each body *i* implicitly.
     /// 
-    /// Next, the [`AngularMomentum`] $`\mathbf{l}`$ and [`NetTorque`] $`\boldsymbol{\tau}`$ in 
-    /// the body frame are converted into the quaternion form: $`\mathbf{p}^{(4)}`$ and $`\mathbf{f}^{(4)}`$ , 
-    /// using [`Orientation`] quaternion $`\mathbf{q}=(q_0, q_1, q_2, q_3)`$. To clarify, starting from this
-    /// section, variables being labeled by a superscript $`^{'}`$ represents the old varialbes that
-    /// being produce in the previous step. Besides, we express the calculation as matrix-vector 
-    /// algebra instead of quaternion algebra for simpilicity:
+    /// Next, it converts the angular momentum $`\vec{L}'`$ and net torque $`\vec{\tau}`$ into
+    /// quaternion form: $`\mathbf{p}^{(4)}`$ and $`\mathbf{f}^{(4)}`$:
     /// ```math
-    /// \begin{align}
+    /// \begin{align*}
     ///
-    /// &\mathbf{p}^{(4)} = 2S(\mathbf{q}) \mathbf{l}^{(4) '},\; \mathbf{l}^{(4) '}=(0, l_x^{'}, l_y^{'}, l_z^{'}) \\
-    /// &\mathbf{f}^{(4)} = 2S(\mathbf{q}) \boldsymbol{\tau}^{(4)},\; \boldsymbol{\tau}^{(4)}=(0, \tau_x, \tau_y, \tau_z)\\
+    /// \mathbf{p}^{(4)} &= 2S(\mathbf{q}) \mathbf{l}^{(4) '},\; \mathbf{l}^{(4) '}=(0, L_x^{'}, L_y^{'}, L_z^{'}) \\
+    /// \mathbf{f}^{(4)} &= 2S(\mathbf{q}) \boldsymbol{\tau}^{(4)},\; \boldsymbol{\tau}^{(4)}=(0, \tau_x, \tau_y, \tau_z)\\
     ///         
-    /// \end{align}
+    /// \end{align*}
     /// ```
-    /// Where, expressed as real $`4\times4`$ matrices
+    /// where
     /// ```math
     /// \begin{align*}
     ///
@@ -347,47 +434,43 @@ where
     ///         
     /// \end{align*}
     /// ```
-    /// Then, we start the NOvel Symplectic QUaternIon ScHeme (NO_SQUISH) algorithm that 
-    /// integrate $`( \mathbf{q},  \mathbf{p}^{(4)})`$
-    /// forward that is sympletic, phase space volume preserving, and unit orientation 
-    /// quaternion preserving, i.e., $`|\mathbf{q}|=1`$:
-    /// 
-    /// First, we translate the angular momentum foward using torque $`\mathbf{f}^{(4)}`$
-    /// ```math
-    /// \begin{align}
     ///
+    /// Then, it uses the NOvel Symplectic QUaternIon ScHeme (NO_SQUISH) algorithm to 
+    /// integrate $`( \mathbf{q},  \mathbf{p}^{(4)})`$ forward in a sympletic and unit orientation 
+    /// quaternion preserving fashion.
+    /// 
+    /// The first step of NO_SQUISH integrates the momentum forward:
+    /// ```math
     /// \mathbf{p}^{(4)} = \mathbf{p}^{(4) '} + \frac{\delta t}{2} \mathbf{f}^{(4)}
-    ///         
-    /// \end{align} 
     /// ```
     /// 
-    /// Second, we use the properties of quaternion algebra that decompose the 
-    /// Liovillian into a sum over permutation matrices applying on $`(\mathbf{q}, \mathbf{p}^{(4)})`$,
-    /// resulting in a five-steps updates:
+    /// The second uses the properties of quaternion algebra that decompose the 
+    /// Liovillian into a sum over permutation matrices applying on $`(\mathbf{q}, \mathbf{p}^{(4)})`$.
+    /// There are five steps to the update:
     /// 
     /// ```math
-    /// \begin{align}
+    /// \begin{align*}
     /// 
-    /// &\phi_3 = \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_3 \mathbf{q}^{'} \right) \\
-    /// &\mathbf{q} = \cos{(\phi_3 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{q}^{'} \nonumber \\
-    /// &\mathbf{p}^{(4)} = \cos{(\phi_3 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{p}^{(4) '} \nonumber \\ \nonumber \\
+    /// \phi_3 &= \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_3 \mathbf{q}^{'} \right) \\
+    /// \mathbf{q} &= \cos{(\phi_3 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{q}^{'} \nonumber \\
+    /// \mathbf{p}^{(4)} &= \cos{(\phi_3 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{p}^{(4) '} \nonumber \\ \nonumber \\
     /// 
-    /// &\phi_2 = \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_2 \mathbf{q}^{'} \right) \\
-    /// &\mathbf{q} = \cos{(\phi_2 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{q}^{'} \nonumber \\
-    /// &\mathbf{p}^{(4)} = \cos{(\phi_2 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{p}^{(4) '} \nonumber \\ \nonumber \\
+    /// \phi_2 &= \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_2 \mathbf{q}^{'} \right) \\
+    /// \mathbf{q} &= \cos{(\phi_2 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{q}^{'} \nonumber \\
+    /// \mathbf{p}^{(4)} &= \cos{(\phi_2 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{p}^{(4) '} \nonumber \\ \nonumber \\
     /// 
-    /// &\phi_1 = \frac{1}{4 I_{11}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_1 \mathbf{q}^{'} \right) \\
-    /// &\mathbf{q} = \cos{(\phi_1 \delta t)} \mathbf{q}^{'} +  \sin{(\phi_1 \delta t)} P_1 \mathbf{q}^{'} \nonumber \\
-    /// &\mathbf{p}^{(4)} = \cos{(\phi_1 \delta t)} \mathbf{p}^{(4) '} +  \sin{(\phi_1 \delta t)} P_1 \mathbf{p}^{(4) '} \nonumber  \nonumber \\ \nonumber \\
+    /// \phi_1 &= \frac{1}{4 I_{11}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_1 \mathbf{q}^{'} \right) \\
+    /// \mathbf{q} &= \cos{(\phi_1 \delta t)} \mathbf{q}^{'} +  \sin{(\phi_1 \delta t)} P_1 \mathbf{q}^{'} \nonumber \\
+    /// \mathbf{p}^{(4)} &= \cos{(\phi_1 \delta t)} \mathbf{p}^{(4) '} +  \sin{(\phi_1 \delta t)} P_1 \mathbf{p}^{(4) '} \nonumber  \nonumber \\ \nonumber \\
     ///
-    /// &\phi_2 = \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_2 \mathbf{q}^{'} \right) \\
-    /// &\mathbf{q} = \cos{(\phi_2 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{q}^{'} \nonumber \\
-    /// &\mathbf{p}^{(4)} = \cos{(\phi_2 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{p}^{(4) '} \nonumber  \nonumber \\ \nonumber \\
+    /// \phi_2 &= \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_2 \mathbf{q}^{'} \right) \\
+    /// \mathbf{q} &= \cos{(\phi_2 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{q}^{'} \nonumber \\
+    /// \mathbf{p}^{(4)} &= \cos{(\phi_2 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{p}^{(4) '} \nonumber  \nonumber \\ \nonumber \\
     ///
-    /// &\phi_3 = \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_3 \mathbf{q}^{'} \right) \\
-    /// &\mathbf{q} \left\{ t + \delta t \right\} = \cos{(\phi_3 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{q}^{'} \nonumber \\
-    /// &\mathbf{p}^{(4)} \left\{ t + \frac{\delta t}{2} \right\} = \cos{(\phi_3 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{p}^{(4) '} \nonumber    \nonumber \\ \nonumber \\
-    /// \end{align} 
+    /// \phi_3 &= \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_3 \mathbf{q}^{'} \right) \\
+    /// \mathbf{q} \left\{ t + \delta t \right\} &= \cos{(\phi_3 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{q}^{'} \nonumber \\
+    /// \mathbf{p}^{(4)} \left\{ t + \frac{\delta t}{2} \right\} &= \cos{(\phi_3 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{p}^{(4) '} \nonumber    \nonumber \\ \nonumber \\
+    /// \end{align*} 
     /// ```
     /// Where $`I_{kk}`$ are the principal compoenets of moment of inertia, and $`P_k`$ are the permuation matrices, such that $`P_1q=(-q_1, q_0, q_3, -q_2)`$, $`P_2q=(-q_2, -q_3, q_0, q_1)`$, 
     /// $`P_3q=(-q_3, q_2, -q_1, q_0)`$, $`P_0q=(q_0, q_1, q_2, q_3)`$, and $`(PP^T)_{\alpha \beta}=\delta_{\alpha \beta}`$.
@@ -396,11 +479,7 @@ where
     /// the vector form as:
     /// 
     /// ```math
-    /// \begin{align}
-    ///
-    /// &\mathbf{l}^{(4)} = \frac{1}{2}S(\mathbf{q}^{'})^T \mathbf{p}^{(4) '},\; \mathbf{l}^{(4)}=(0, l_x, l_y, l_z)
-    ///         
-    /// \end{align}
+    /// \mathbf{l}^{(4)} = \frac{1}{2}S(\mathbf{q}^{'})^T \mathbf{p}^{(4) '},\; \mathbf{l}^{(4)}=(0, l_x, l_y, l_z)
     /// ```
     #[inline]
     fn integrate_rotation_half_step_one_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
@@ -529,31 +608,19 @@ where
         microstate.increment_substep();
     }
 
-    /// Perform the second-half integration on rotational degrees-of-freedom
-    /// for three-dimensional system, advancing the [`Microstate`] and possibly 
-    /// the [`Thermostat`] state forward as follows
-    /// 
-    /// Continue from the last step in [`integrate_rotation_half_step_one`](ConstantVolume::integrate_rotation_half_step_one).
-    /// Convert [`AngularMomentum`] and [`NetTorque`] into thier quaternion forms and translate the 
-    /// angular momentum $`\mathbf{p}^{(4)}`$ forward:
-    /// 
-    /// ```math
-    /// \begin{align}
+    /// Integrate selected body angular momenta forward a half step.
+    /// Ignore any rotational degrees of freedom with a moment of inertia of 0.
     ///
+    /// As in half step one, convert angular momentum and torque to quaternion form.
+    ///
+    /// ```math
     /// \mathbf{p}^{(4)}\left\{ t + \delta t \right\} = \mathbf{p}^{(4)}\left\{ t + \frac{\delta t}{2} \right\} + \frac{\delta t}{2} \mathbf{f}^{(4)}
-    ///         
-    /// \end{align} 
     /// ```
     /// 
-    /// Then, convert angular momentum back to its vector form $`\mathbf{l}`$, perform 
-    /// temperature adjustment, and update [`Thermostat`] state due
-    /// to rotational degrees-of-freedom:
+    /// Then, convert angular momentum back to its vector form $`\vec{L}'`$ integrate the
+    /// thermostat and scale the angular momentum accordingly.
     /// ```math
-    /// \begin{equation}
-    ///
-    /// \mathbf{l}\left\{ t + \delta t \right\} = \mathrm{Adjust\_temperature\_update\_thermostat}()
-    ///         
-    /// \end{equation}
+    /// \vec{L}_i(t + \delta t) = \vec{L}'_i(t + \delta t) \cdot \mathrm{rotational\_thermostat.half\_step\_two}\left(\sum_{i \in \mathrm{selection}}\frac{L'_{x,i}(t)^2}{2I_{xx},i} + \frac{L'_{y,i}(t)^2}{2I_{yy},i} + \frac{L'_{z,i}(t)^2}{2I_{zz,i}} \right) \\
     /// ``` 
     #[inline]
     fn integrate_rotation_half_step_two_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
@@ -616,17 +683,6 @@ where
     }
 }
 
-/// Integrate rotational degrees of freedom in 2-dimensional Cartesian space.
-///
-/// [`ConstantVolume`] integration is only defined for macrostates with [`Temperature`].
-///
-/// The generic type names are:
-/// * `B`: The [`Body::properties`](crate::Body) type.
-/// * `S`: The [`Site::properties`](crate::Site) type.
-/// * `C`: The [`boundary`](crate::boundary) condition type.
-/// * `E`: The interaction [`evaluator`]() type.
-/// * `T`: The [`Thermostat`]() type.
-/// * `M`: The [`macrostate`](crate::macrostate) type.
 impl<S, X, C, TT, TR, M> RotationalMotion<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C, M> for ConstantVolume<TT, TR>
 where
     DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>,
@@ -635,24 +691,20 @@ where
     C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>> + Wrap<S> + GenerateGhosts<S>,
     TR: Thermostat<M>,
 {
-    /// Perform the first-half integration on rotational 
-    /// degrees-of-freedom for two-dimensional system, 
-    /// advancing the [`Microstate`] and possibly the 
-    /// [`Thermostat`] state forward as:
-    /// ```math
-    /// \begin{align}
+    /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
+    /// Ignore any rotational degrees of freedom with a moment of inertia of 0.
     ///
-    /// &p\left\{ t \right\} = \mathrm{Adjust\_temperature\_update\_thermostat}() \\
-    /// &p\left\{ t + \frac{\delta t}{2} \right\} = p\left\{ t \right\} + \frac{1}{2} \delta t f \\
-    /// &\theta\left\{ t + \delta t \right\} = \theta\left\{ t \right\} + \delta t \frac{p\left\{ t + \frac{\delta t}{2} \right\}}{I}
+    /// ```math
+    /// \begin{align*}
+    ///
+    /// L'_i(t) &= L_i(t) \cdot \mathrm{rotational\_thermostat.half\_step\_one}\left(\sum_{i \in \mathrm{selection}}\frac{L_i(t)^2}{2I_i} \right) \\
+    /// L_i\left(t + \frac{\delta t}{2}\right) &= L'_i(t) + \frac{1}{2} \tau_i(t) \delta t \\
+    /// \theta_i(t + \delta t) &= \theta_i(t) + \frac{L_i\left( t + \frac{\delta t}{2} \right)}{I} \delta t \\
     ///         
-    /// \end{align}
+    /// \end{align*}
     /// ```
     /// 
-    /// Where $`\theta`$ is the orientation, $`p`$ is the angular momentum, $`f`$ is the toruqe, and
-    /// $`I`$ is the moment of inertia on each [`Body`](hoomd_microstate::Body::properties), and $`t`$ is the time,
-    /// $`\delta t`$ is the timestep dt. Note that in two-dimension, every particle only has 
-    /// one degrees-of-freedom contributed from their rotational motion.
+    /// `rotational_thermostat.half_step_one(K)` is the first half step method implemented by `TR`.
     #[inline]
     fn integrate_rotation_half_step_one_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
         &mut self,
@@ -696,18 +748,19 @@ where
         microstate.increment_substep();
     }
 
-    /// Perform the second-half integration on rotational degrees-of-freedon
-    /// for two-dimensional system, continuing from the last step in [`integrate_rotation_half_step_one`](ConstantVolume::integrate_rotation_half_step_one)
-    /// and advancing the [`Microstate`] and possibly the [`Thermostat`] state 
-    /// forward as:
-    /// ```math
-    /// \begin{align}
+    /// Integrate selected body angular momenta forward a half step.
+    /// Ignore any rotational degrees of freedom with a moment of inertia of 0.
     ///
-    /// &p\left\{ t + \delta t \right\} = p\left\{ t + \frac{1}{2} \delta t \right\} + \frac{1}{2} \delta t f \\
-    /// &p\left\{ t + \delta t \right\} = \mathrm{Adjust\_temperature\_update\_thermostat}() \\
+    /// ```math
+    /// \begin{align*}
+    ///
+    /// L'_i(t + \delta t) &= L_i\left( t + \frac{1}{2} \delta t \right) + \frac{1}{2} \tau_i(t + \delta_t) \delta t \\
+    /// L_i(t + \delta t) &= L'_i(t + \delta t) \cdot \mathrm{rotational\_thermostat.half\_step\_one}\left(\sum_{i \in \mathrm{selection}}\frac{L'_i(t + \delta t)^2}{2I_i} \right) \\
     ///         
-    /// \end{align}
+    /// \end{align*}
     /// ```
+    ///
+    /// `rotational_thermostat.half_step_two(K)` is the second half step method implemented by `TR`.
     #[inline]
     fn integrate_rotation_half_step_two_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
         &mut self,
@@ -743,7 +796,6 @@ where
             degrees_of_freedom,
         );
 
-        // Update velocity
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
             if !should_integrate_body(body) {
@@ -793,53 +845,52 @@ mod tests {
                 position: Cartesian::<3>::default(),
                 momentum: Cartesian::<3>::default(),
                 net_force: Cartesian::<3>::default(),
-                mass: mass,
+                mass,
             },
             sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
         }
     }
 
     /// A simple 2d oriented dynamics point body
-    fn oriented_dynamics_body_2d(mass: f64, moi: f64) -> Body<DynamicOrientedPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>> {
+    fn oriented_dynamics_body_2d(mass: f64, moment_of_inertia: f64) -> Body<DynamicOrientedPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>> {
         Body {
             properties: DynamicOrientedPoint {
                 position: Cartesian::<2>::default(),
                 orientation: Angle::default(),
                 momentum: Cartesian::<2>::default(),
                 net_force: Cartesian::<2>::default(),
-                moment_of_inertia: moi,
+                moment_of_inertia,
                 angular_momentum: 0.0,
                 net_torque: 0.0,
-                mass: mass,
+                mass,
             },
             sites: vec![Point::new(Cartesian::from([0.0, 0.0]))],
         }
     }
 
     /// A simple 2d oriented dynamics point body
-    fn oriented_dynamics_body_3d(mass: f64, moi: [f64; 3]) -> Body<DynamicOrientedPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
-        Body {
-            properties: DynamicOrientedPoint {
-                position: Cartesian::<3>::default(),
-                orientation: Versor::default(),
-                momentum: Cartesian::<3>::default(),
-                net_force: Cartesian::<3>::default(),
-                moment_of_inertia: moi,
-                angular_momentum: Cartesian::<3>::default(),
-                net_torque: Cartesian::<3>::default(),
-                mass: mass,
-            },
-            sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
-        }
-    }
+    // fn oriented_dynamics_body_3d(mass: f64, moi: [f64; 3]) -> Body<DynamicOrientedPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
+    //     Body {
+    //         properties: DynamicOrientedPoint {
+    //             position: Cartesian::<3>::default(),
+    //             orientation: Versor::default(),
+    //             momentum: Cartesian::<3>::default(),
+    //             net_force: Cartesian::<3>::default(),
+    //             moment_of_inertia: moi,
+    //             angular_momentum: Cartesian::<3>::default(),
+    //             net_torque: Cartesian::<3>::default(),
+    //             mass,
+    //         },
+    //         sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
+    //     }
+    // }
+
 
     #[test]
-    fn test_constant_volume() -> anyhow::Result<()> {
+    fn test_constant_volume() {
         let dt = 2.0;
         let cv = ConstantVolume::new(dt);
         assert_eq!(cv.delta_t, dt);
-
-        Ok(())
     }
 
     #[test]
@@ -862,8 +913,7 @@ mod tests {
             r_0: [0.0, 0.0, 0.0].into(),
         }));
         let mut method = ConstantVolume::new(dt);
-        struct Isoenergy {}
-        let mut macrostate = Isoenergy {};
+        let macrostate = ();
 
         // Update force first so that the particles can move
         microstate.update_net_force(&force);
@@ -871,7 +921,7 @@ mod tests {
         // Check the first halfstep
         method.integrate_translation_half_step_one(
             &mut microstate,
-            &mut macrostate
+            &macrostate
         );
         let mut expected_momentum = Cartesian::<3>::default()
             + (f_dir * f_mag * dt * 0.5 * -1.0);
@@ -887,7 +937,7 @@ mod tests {
         // Check the second halfstep
          method.integrate_translation_half_step_two(
             &mut microstate,
-            &mut macrostate
+            &macrostate
         );
         expected_momentum += f_dir * f_mag * dt * 0.5 * -1.0;
         assert_eq!(expected_momentum, microstate.bodies()[0].item.properties.momentum);
@@ -914,8 +964,7 @@ mod tests {
             torque: t_dir * t_mag,
         }));
         let mut method = ConstantVolume::new(dt);
-        struct Isoenergy {}
-        let mut macrostate = Isoenergy {};
+        let macrostate = ();
 
         // Update torque first so that the particles can move
         microstate.update_net_force_and_torque(&torque);
@@ -923,7 +972,7 @@ mod tests {
         // Check the first halfstep
         method.integrate_rotation_half_step_one(
             &mut microstate,
-            &mut macrostate
+            &macrostate
         );
         let mut expected_angular_momentum = t_dir * t_mag * 0.5 * dt;
         let expected_orientation = Angle::default().theta
@@ -938,7 +987,7 @@ mod tests {
         // Check the second halfstep
          method.integrate_rotation_half_step_two(
             &mut microstate,
-            &mut macrostate
+            &macrostate
         );
         expected_angular_momentum += t_dir * t_mag * 0.5 * dt;
         assert_eq!(expected_angular_momentum, microstate.bodies()[0].item.properties.angular_momentum);
@@ -967,8 +1016,7 @@ mod tests {
     //         torque: t_dir * t_mag,
     //     }));
     //     let mut method = ConstantVolume::new(dt);
-    //     struct Isoenergy {}
-    //     let mut macrostate = Isoenergy {};
+    //     let macrostate = ();
     //     let mut thermostat = NoThermostat;  // TODO: use an actual thermostat
 
     //     // Update torque first so that the particles can move
@@ -978,7 +1026,7 @@ mod tests {
     //     method.integrate_rotation_half_step_one(
     //         &mut microstate,
     //         &mut thermostat,
-    //         &mut macrostate
+    //         &macrostate
     //     );
 
     //     // TODO: return here
@@ -999,118 +1047,12 @@ mod tests {
     //     //  method.integrate_rotation_half_step_two(
     //     //     &mut microstate,
     //     //     &mut thermostat,
-    //     //     &mut macrostate
+    //     //     &macrostate
     //     // );
     //     // expected_angular_momentum += t_dir * t_mag * 0.5 * dt;
     //     // assert_eq!(expected_angular_momentum, microstate.bodies()[0].item.properties.angular_momentum);
     //     // assert_eq!(expected_orientation, microstate.bodies()[0].item.properties.orientation.theta);
 
     //     Ok(())
-    // }
-
-    #[test]
-    fn test_force_update_2d() -> anyhow::Result<()> {
-        let mut microstate = Microstate::builder()
-            .bodies([dynamics_body_2d()])
-            .try_build()?;
-        let evaluator = Rigid(External(ConstantForce {
-            r_0: Cartesian::from([0.0, 1.0]),
-            force: Cartesian::from([0.0, 1.0]),
-        }));
-        
-        microstate.update_net_force(&evaluator);        
-        assert_eq!(microstate.bodies()[0].item.properties.net_force, Cartesian::<2>::from([0.0, -1.0]));
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_force_update_3d() -> anyhow::Result<()> {
-        let mut microstate = Microstate::builder()
-            .bodies([dynamics_body_3d(1.0)])
-            .try_build()?;
-        let evaluator = Rigid(External(ConstantForce {
-            r_0: Cartesian::from([0.0, 1.0, 0.0]),
-            force: Cartesian::from([0.0, 1.0, 0.0]),
-        }));
-        
-        microstate.update_net_force(&evaluator);        
-        assert_eq!(microstate.bodies()[0].item.properties.net_force, Cartesian::<3>::from([0.0, -1.0, 0.0]));
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_torque_update_2d() -> anyhow::Result<()> {
-        let mut microstate = Microstate::builder()
-            .bodies([oriented_dynamics_body_2d(1.0, 1.0)])
-            .try_build()?;
-
-        let evaluator = Rigid(External(ConstantTorque {
-            torque: 1.0,
-        }));
-        
-        microstate.update_net_force_and_torque(&evaluator);        
-        assert_eq!(microstate.bodies()[0].item.properties.net_torque, 1.0);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_torque_update_3d() -> anyhow::Result<()> {
-        let mut microstate = Microstate::builder()
-            .bodies([oriented_dynamics_body_3d(1.0, [1.0, 1.0, 1.0])])
-            .try_build()?;
-
-        let evaluator = Rigid(External(ConstantTorque {
-            torque: Cartesian::<3>::from([0.0, 0.0, 1.0])
-        }));
-        
-        microstate.update_net_force_and_torque(&evaluator);        
-        assert_eq!(microstate.bodies()[0].item.properties.net_torque, Cartesian::<3>::from([0.0, 0.0, 1.0]));
-
-        Ok(())
-    }
-    
-    // TODO: return here, and start by creating derive macros for NetForce, NetTorque, Momentum, AngularMomentum, etc.
-    // #[test]
-    // fn test_force_and_torque_update_2d() -> anyhow::Result<()> {
-    //     let mut microstate = Microstate::builder()
-    //         .bodies([oriented_dynamics_body_2d(1.0, 1.0)])
-    //         .try_build()?;
-
-    //     let torque_evaluator = Rigid(External(ConstantTorque {
-    //         torque: 1.0
-    //     }));
-    //     let force_evaluator = Rigid(External(ConstantForce {
-    //         force: [0.0, 1.0].into(),
-    //         r_0: [0.0, 1.0].into(),
-    //     }));
-    //     let evaluator = (torque_evaluator, force_evaluator);
-    //     let method = ConstantVolume::new(0.1);
-        
-    //     method.update_force_and_torque(&mut microstate, &evaluator);
-    //     assert_eq!(microstate.bodies()[0].item.properties.net_force, Cartesian::<2>::from([0.0, 1.0]));
-    //     assert_eq!(microstate.bodies()[0].item.properties.net_torque, 1.0);
-        
-    //     Ok(())
-    // }
-
-    // #[test]
-    // fn test_force_and_torque_update_3d() {
-    //     // #[derive(MaximumInteractionRange)]
-    //     struct OverallInteraction {
-    //         force: ConstantForce<Cartesian<3>>,
-    //         torque: ConstantTorque<Cartesian<3>>
-    //     }
-
-    //     let interaction = OverallInteraction {
-    //         force: ConstantForce {
-    //             alpha: f_mag,
-    //             plane_origin: [0.0, 0.0, 0.0].into(),
-    //             plane_normal: f_dir.to_unit()?.0,
-    //         },
-    //         torque: ConstantTorque { alpha: 1.0, direction: 1.0 }
-    //     };
     // }
 }

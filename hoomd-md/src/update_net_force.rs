@@ -95,7 +95,6 @@ where
 {
     #[inline]
     fn update_net_force(&mut self, interaction_model: &E) {
-        // TODO: rayon parallelization and benchmarks
         for body_index in 0..self.bodies().len() {
             let net_force = interaction_model.net_body_force(self, body_index);
             self.set_body_net_force(body_index, net_force);
@@ -111,7 +110,6 @@ where
 {
     #[inline]
     fn update_net_force_and_torque(&mut self, interaction_model: &E) {
-        // TODO: rayon parallelization and benchmarks
         for body_index in 0..self.bodies().len() {
             let (net_force, net_torque) = interaction_model.net_body_force_and_torque(self, body_index);
             self.set_body_net_force(body_index, net_force);

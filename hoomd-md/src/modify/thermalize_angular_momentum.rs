@@ -5,7 +5,7 @@
 
 use super::ThermalizeAngularMomentum;
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, DynamicOrientedPoint, MomentOfInertia, NetTorque, Orientation, Position}
+    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, DynamicOrientedPoint, MomentOfInertia, Position}
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, Versor, Wedge};
