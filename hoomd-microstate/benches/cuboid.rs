@@ -6,10 +6,6 @@
     reason = "benches don't need public documentation"
 )]
 #![expect(clippy::wildcard_imports, reason = "simplifies code")]
-#![expect(
-    clippy::needless_pass_by_value,
-    reason = "divan takes Bencher by value"
-)]
 
 //! Benchmark periodic ghost generation for [`Hypercuboid`].
 //!
