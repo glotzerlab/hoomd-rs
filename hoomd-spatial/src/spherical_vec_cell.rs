@@ -1,15 +1,6 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#![expect(
-    clippy::cast_possible_truncation,
-    reason = "the necessary conversions are necessary and have been checked"
-)]
-#![expect(
-    clippy::cast_sign_loss,
-    reason = "the necessary conversions are necessary and have been checked"
-)]
-
 //! Implement `SphericalVecCell`
 
 use serde::{Deserialize, Serialize};
@@ -222,10 +213,6 @@ where
     /// # Ok(())
     /// # }
     /// ```
-    #[expect(
-        clippy::missing_panics_doc,
-        reason = "hard-coded constant will never panic"
-    )]
     #[inline]
     #[must_use]
     pub fn builder() -> SphericalVecCellBuilder<K, D> {
@@ -268,7 +255,7 @@ where
     /// ```
     #[inline]
     fn insert(&mut self, key: K, position: Spherical<D>) {
-        VecCell::<K, D>::insert(&mut self.0, key, *position.point())
+        VecCell::<K, D>::insert(&mut self.0, key, *position.point());
     }
 
     /// Remove the point with the given key.
@@ -365,7 +352,7 @@ where
     /// ```
     #[inline]
     fn clear(&mut self) {
-        self.0.clear()
+        self.0.clear();
     }
 }
 
@@ -519,18 +506,19 @@ mod tests {
             .build();
         check!(
             spherical_cell_list.0.cell_index_from_position(
-                &Spherical::<3>::from_polar_coordinates(PI / 2.0, 0.0).point()
+                Spherical::<3>::from_polar_coordinates(PI / 2.0, 0.0).point()
             ) == [2, 0, 0]
         );
         check!(
             spherical_cell_list.0.cell_index_from_position(
-                &Spherical::<3>::from_polar_coordinates(PI / 2.0, PI / 2.0).point()
+                Spherical::<3>::from_polar_coordinates(PI / 2.0, PI / 2.0).point()
             ) == [0, 2, 0]
         );
         check!(
-            spherical_cell_list.0.cell_index_from_position(
-                &Spherical::<3>::from_polar_coordinates(0.0, 0.0).point()
-            ) == [0, 0, 2]
+            spherical_cell_list
+                .0
+                .cell_index_from_position(Spherical::<3>::from_polar_coordinates(0.0, 0.0).point())
+                == [0, 0, 2]
         );
     }
 
@@ -541,22 +529,22 @@ mod tests {
             .build();
         check!(
             spherical_cell_list.0.cell_index_from_position(
-                &Spherical::<4>::from_polar_coordinates(PI / 2.0, 0.0, 0.0).point()
+                Spherical::<4>::from_polar_coordinates(PI / 2.0, 0.0, 0.0).point()
             ) == [2, 0, 0, 0]
         );
         check!(
             spherical_cell_list.0.cell_index_from_position(
-                &Spherical::<4>::from_polar_coordinates(PI / 2.0, PI / 2.0, 0.0).point()
+                Spherical::<4>::from_polar_coordinates(PI / 2.0, PI / 2.0, 0.0).point()
             ) == [0, 2, 0, 0]
         );
         check!(
             spherical_cell_list.0.cell_index_from_position(
-                &Spherical::<4>::from_polar_coordinates(PI / 2.0, PI / 2.0, PI / 2.0).point()
+                Spherical::<4>::from_polar_coordinates(PI / 2.0, PI / 2.0, PI / 2.0).point()
             ) == [0, 0, 2, 0]
         );
         check!(
             spherical_cell_list.0.cell_index_from_position(
-                &Spherical::<4>::from_polar_coordinates(0.0, 0.0, 0.0).point()
+                Spherical::<4>::from_polar_coordinates(0.0, 0.0, 0.0).point()
             ) == [0, 0, 0, 2]
         );
     }
@@ -719,7 +707,7 @@ mod tests {
                 let key = key_distribution.sample(&mut rng);
 
                 cell_list.insert(key, position);
-                reference.insert(key, cell_list.0.cell_index_from_position(&position.point()));
+                reference.insert(key, cell_list.0.cell_index_from_position(position.point()));
             } else {
                 let key = key_distribution.sample(&mut rng);
                 cell_list.remove(&key);
@@ -772,7 +760,7 @@ mod tests {
                 let key = key_distribution.sample(&mut rng);
 
                 cell_list.insert(key, position);
-                reference.insert(key, cell_list.0.cell_index_from_position(&position.point()));
+                reference.insert(key, cell_list.0.cell_index_from_position(position.point()));
             } else {
                 let key = key_distribution.sample(&mut rng);
                 cell_list.remove(&key);
