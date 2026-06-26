@@ -97,16 +97,16 @@ where
     K: Eq + Hash,
 {
     /// The width of each cell.
-    cell_width: PositiveReal,
+    pub(crate) cell_width: PositiveReal,
 
     /// A map from cell indices to cell contents.
-    keys_map: Vec<Vec<K>>,
+    pub(crate) keys_map: Vec<Vec<K>>,
 
     /// A map from particle indices to cell indices.
-    cell_index: FxHashMap<K, CellIndex<D>>,
+    pub(crate) cell_index: FxHashMap<K, CellIndex<D>>,
 
     /// The shape of `keys_map` is `(half_extent * 2 + 1).powi(D)`.
-    half_extent: u32,
+    pub(crate) half_extent: u32,
 
     /// Pre-computed stencils.
     #[serde_as(as = "Vec<Vec<[_; D]>>")]
@@ -206,13 +206,13 @@ pub(crate) fn generate_all_stencils<const D: usize>(max_radius: u32) -> Vec<Vec<
 /// ```
 pub struct VecCellBuilder<K, const D: usize> {
     /// Most commonly used search radius.
-    nominal_search_radius: PositiveReal,
+    pub(crate) nominal_search_radius: PositiveReal,
 
     /// Largest possible search radius.
-    maximum_search_radius: f64,
+    pub(crate) maximum_search_radius: f64,
 
     /// Track the key type.
-    phantom_key: PhantomData<K>,
+    pub(crate) phantom_key: PhantomData<K>,
 }
 
 impl<K, const D: usize> VecCellBuilder<K, D>
@@ -353,7 +353,7 @@ where
 {
     /// Compute the cell index given a position in space.
     #[inline]
-    fn cell_index_from_position(&self, position: &Cartesian<D>) -> [i64; D] {
+    pub(crate) fn cell_index_from_position(&self, position: &Cartesian<D>) -> [i64; D] {
         std::array::from_fn(|j| (position.coordinates[j] / self.cell_width.get()).floor() as i64)
     }
 
@@ -361,7 +361,7 @@ where
     ///
     /// Returns `None` when the index is out of bounds.
     #[inline]
-    fn map_index_from_cell(half_extent: u32, cell_index: &[i64; D]) -> Option<usize> {
+    pub(crate) fn map_index_from_cell(half_extent: u32, cell_index: &[i64; D]) -> Option<usize> {
         assert!(D > 1);
 
         let mut vec_index: usize = 0;
@@ -385,7 +385,7 @@ where
     /// Get the keys in a given cell index
     #[cfg(test)]
     #[inline]
-    fn get_keys(&self, cell_index: &[i64; D]) -> &[K] {
+    pub(crate) fn get_keys(&self, cell_index: &[i64; D]) -> &[K] {
         let index = Self::map_index_from_cell(self.half_extent, cell_index)
             .expect("cell_index should be in bounds");
         &self.keys_map[index]
@@ -625,7 +625,7 @@ where
     pub(crate) keys: Option<&'a Vec<K>>,
 
     /// The cell list we are iterating in.
-    pub(crate) cell_list: &'a X, // VecCell<K, D>,
+    pub(crate) cell_list: &'a X,
 
     /// Current location of the iteration in the cell.
     pub(crate) index_in_current_cell: usize,
