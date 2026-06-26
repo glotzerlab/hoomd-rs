@@ -97,7 +97,7 @@ impl<const N: usize> NoséHooverChain<N> {
     }
 
     /// Construct a new `NoséHooverChain` thermostat with random $` \xi_i `$
-    /// drawn from a thermal distribution.
+    /// values drawn from a thermal distribution.
     ///
     /// # Panics
     ///
@@ -214,7 +214,7 @@ impl<const N: usize> NoséHooverChain<N> {
         self.energy
     }
 
-    /// The thermostat's position.
+    /// The chain of thermostat positions.
     ///
     /// # Example
     ///
@@ -233,7 +233,7 @@ impl<const N: usize> NoséHooverChain<N> {
         &self.eta
     }
 
-    /// The thermostat's momentum.
+    /// The chain of thermostat momenta.
     ///
     /// # Example
     ///

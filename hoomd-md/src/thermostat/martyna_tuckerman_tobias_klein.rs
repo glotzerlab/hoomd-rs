@@ -26,11 +26,11 @@ use hoomd_utility::valid::PositiveReal;
 ///         +  \frac{1}{2} N kT \tau^2\xi^2
 /// ```
 /// Where $`K`$ is the kinetic energy of the system, $`U`$ is the potential
-/// energy of the system, $`N`$ is the number of degrees of freedom, $`kT`$ is
-/// the temperature.
+/// energy of the system, $`N`$ is the number of degrees of freedom, and $`kT`$
+/// is the temperature.
 ///
 /// Following the Trotter decomposition of Liouvillian,
-/// [`MartynaTuckermanTobiasKlein`] integrate the $`\eta`$ and $`\xi`$ forward
+/// [`MartynaTuckermanTobiasKlein`] integrates $`\eta`$ and $`\xi`$ forward
 /// by half time step $`\frac{\delta t}{2}`$ via the following procedure:
 ///
 /// ```math
@@ -56,7 +56,8 @@ use hoomd_utility::valid::PositiveReal;
 /// # Warning
 ///
 /// [`MartynaTuckermanTobiasKlein`] fails to sample the correct distribution when there are
-/// strong harmonic interactions in the system. Prefer [`Bussi`] or [`NoséHooverChain`].
+/// strong harmonic interactions in the system. In such situations, use
+/// [`Bussi`] or [`NoséHooverChain`] instead.
 ///
 /// [`Bussi`]: crate::thermostat::Bussi
 /// [`NoséHooverChain`]: crate::thermostat::NoséHooverChain

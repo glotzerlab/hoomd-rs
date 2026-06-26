@@ -136,7 +136,7 @@ pub trait TranslationalMotion<B, S, X, C, M> {
         self.integrate_translation_half_step_two_with_filter(microstate, macrostate, &should_integrate_body);
     }
 
-    /// Integrate selected body translational degrees of freedom forward one step.
+    /// Integrate all body translational degrees of freedom forward one step.
     #[inline]
     fn integrate_translation<E>(
         &mut self,
@@ -222,7 +222,7 @@ pub trait RotationalMotion<B, S, X, C, M> {
         self.integrate_rotation_half_step_two_with_filter(microstate, macrostate, &should_integrate_body);
     }
 
-    /// Integrate selected body translational and rotational degrees of freedom one step.
+    /// Integrate all body translational and rotational degrees of freedom forward one step.
     #[inline]
     fn integrate_translation_and_rotation<E>(
         &mut self,

@@ -48,7 +48,7 @@ pub trait UpdateNetForce<E> {
 /// Compute the net force and torque given by an interaction model and apply them
 /// to each body in the microstate.
 ///
-/// Given an interaction model that implements [`NetBodyForceAndTorque`], [`UpdateNetForce`]
+/// Given an interaction model that implements [`NetBodyForceAndTorque`], [`UpdateNetForceAndTorque`]
 /// sets the [`NetForce`] and [`NetTorque`] properties of each body in the microstate to
 /// the ones computed by the interaction model.
 ///

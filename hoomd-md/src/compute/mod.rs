@@ -10,9 +10,10 @@ mod rotational_kinetic_energy;
 
 /// Compute the translational kinetic energy of bodies in a microstate.
 ///
-/// `TranslationalKineticEnergy` is implemented for `Microstate`. Call
-/// `microstate.translational_kinetic_energy` to compute the total translational
-/// kinetic energy (and degrees of freedom) of all bodies in the microstate.
+/// The total energy is always returned in a tuple with the total number of
+/// degrees of freedom. `TranslationalKineticEnergy` is implemented directly for
+/// `Microstate`, so to calculate the total translational kinetic energy use one
+/// of the methods below on the microstate object.
 ///
 /// # Example
 ///
@@ -73,11 +74,12 @@ pub trait TranslationalKineticEnergy<B, S> {
         should_sum_body: F) -> (f64, usize);
 }
 
-/// Compute the translational kinetic energy of bodies in a microstate.
+/// Compute the rotational kinetic energy of bodies in a microstate.
 ///
-/// `RotationalKineticEnergy` is implemented for `Microstate`. Call
-/// `microstate.rotational_kinetic_energy` to compute the total rotational
-/// kinetic energy (and degrees of freedom) of all bodies in the microstate.
+/// The total energy is always returned in a tuple with the total number of
+/// degrees of freedom. `RotationalKineticEnergy` is implemented directly for
+/// `Microstate`, so to calculate the total rotational kinetic energy use one of
+/// the methods below on the microstate object.
 ///
 /// # Example
 ///
