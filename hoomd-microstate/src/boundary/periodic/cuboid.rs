@@ -110,9 +110,8 @@ where
     /// site near the middle of an `(N - 1)`-face produces one; a
     /// site near an edge (where two boundaries meet) produces three; and so on, up to
     /// `2.pow(N) - 1` ghosts for a site near all `2 * N` boundaries at once.
-    /// The images are emitted in descending order of the set of active directions.
-    /// Images are currently emitted in descending order of the subset bitmask (with
-    /// higher bit positions corresponding to folds across a higher-dimensional facet)
+    /// Images are currently emitted in descending numeric order of the subset bitmask,
+    /// where bit i indicates the image is folded across the facet normal to dimension i
     ///
     /// # Example
     ///
