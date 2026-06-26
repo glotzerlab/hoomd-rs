@@ -5,7 +5,7 @@
 
 use hoomd_microstate::{Body, Tagged};
 
-mod thermalize_angular_nomentum;
+mod thermalize_angular_momentum;
 mod thermalize_momentum;
 mod zero_center_angular_momentum;
 mod zero_center_momentum;
