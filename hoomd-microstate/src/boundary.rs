@@ -24,13 +24,13 @@ use arrayvec::ArrayVec;
 use thiserror::Error;
 
 mod closed;
-mod closed_spherical;
 mod open;
+mod open_spherical;
 mod periodic;
 
 pub use closed::Closed;
-pub use closed_spherical::ClosedSpherical;
 pub use open::Open;
+pub use open_spherical::OpenSpherical;
 pub use periodic::Periodic;
 
 /// Enumerate possible sources of error in fallible boundary methods.

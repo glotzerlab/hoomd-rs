@@ -20,7 +20,7 @@ use std::array;
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_manifold::Spherical;
-use hoomd_microstate::boundary::{Closed, ClosedSpherical, Periodic};
+use hoomd_microstate::boundary::{Closed, OpenSpherical, Periodic};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
@@ -387,7 +387,7 @@ impl<const N: usize> Cover<Cartesian<N>> for Periodic<Hypercuboid<N>> {
     }
 }
 
-impl<const N: usize> Cover<Spherical<N>> for ClosedSpherical<N> {
+impl<const N: usize> Cover<Spherical<N>> for OpenSpherical<N> {
     type Checkerboard = HypercuboidCheckerboard<N>;
     #[inline]
     fn cover<R: Rng + ?Sized>(
