@@ -3031,9 +3031,9 @@ dependencies = [
 
 [[package]]
 name = "faer"
-version = "0.24.1"
+version = "0.24.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6eda5a09c282d3b6f73881446d031a77e36fbf1e3d67bdc5085149b7e6b3f631"
+checksum = "5ab6df3dd147fe8d702a288b95bcd8fcc499ab572fc80da6828f60cd4d524d67"
 dependencies = [
  "bytemuck",
  "dyn-stack",
