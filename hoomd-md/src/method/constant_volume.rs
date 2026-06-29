@@ -188,25 +188,6 @@ impl ConstantVolume<NoThermostat, NoThermostat> {
             translational_thermostat: NoThermostat,
             rotational_thermostat: NoThermostat,
         }
-    } 
-
-    /// Construct a new [`ConstantVolume`] with the given time step size and no thermostats.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_md::method::ConstantVolume;
-    ///
-    /// let delta_t = 0.001;
-    /// let constant_volume = ConstantVolume::new(delta_t);
-    /// ```
-    #[inline]
-    pub fn new(delta_t: f64) -> Self {
-        Self {
-            delta_t,
-            translational_thermostat: NoThermostat,
-            rotational_thermostat: NoThermostat,
-        }
     }
 }
 
@@ -900,7 +881,7 @@ mod tests {
     #[test]
     fn test_constant_volume() {
         let dt = 2.0;
-        let cv = ConstantVolume::new(dt);
+        let cv = ConstantVolume::builder(dt).build();
         assert_eq!(cv.delta_t, dt);
     }
 
@@ -923,7 +904,7 @@ mod tests {
             force: f_dir * f_mag,
             r_0: [0.0, 0.0, 0.0].into(),
         }));
-        let mut method = ConstantVolume::new(dt);
+        let mut method = ConstantVolume::builder(dt).build();
         let macrostate = ();
 
         // Update force first so that the particles can move
@@ -974,7 +955,7 @@ mod tests {
         let torque = Rigid(External(ConstantTorque {
             torque: t_dir * t_mag,
         }));
-        let mut method = ConstantVolume::new(dt);
+        let mut method = ConstantVolume::builder(dt).build();
         let macrostate = ();
 
         // Update torque first so that the particles can move
