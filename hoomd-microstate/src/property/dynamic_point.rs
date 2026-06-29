@@ -9,7 +9,7 @@ use super::{OrientedPoint, Point, Mass, Momentum, NetForce, Position};
 use crate::Transform;
 use hoomd_vector::Vector;
 
-/// A position in space with mass and momentum.
+/// A position in space with the properties necessary for translational motion in MD.
 ///
 /// Use [`DynamicPoint`] as a [`Body`](crate::Body) property type.
 ///

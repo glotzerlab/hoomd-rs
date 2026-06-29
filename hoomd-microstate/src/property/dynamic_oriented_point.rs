@@ -19,11 +19,12 @@ impl RotationalMotionTypes for Versor {
     type AngularMomentum = Cartesian<3>;
 }
 
-/// The position and orientation of an extended body with mass, moment of inertia, and momentum.
+/// A position in space with the properties necessary for translational and
+/// rotational motion in MD.
 ///
 /// Use [`DynamicOrientedPoint`] as a [`Body`](crate::Body) property type.
 ///
-/// A default [`DynamicOrientedPoint`] has a mass of 1.0. Position, momentum,
+/// A default [`DynamicOrientedPoint`] has a mass of 1.0 and position, momentum,
 /// and net force of $` \vec{0} `$. Orientation defaults to the identity.
 /// `DynamicOrientedPoint<_, Angle>` has a default moment of inertia of 1.0.
 /// `DynamicOrientedPoint<_, Versor>` has a default moment of inertia of

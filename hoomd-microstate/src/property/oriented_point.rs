@@ -9,9 +9,11 @@ use super::{Orientation, Point, Position};
 use crate::Transform;
 use hoomd_vector::{Rotate, Rotation, Vector};
 
-/// The position and orientation of an extended body.
+/// A position in space with an orientation.
 ///
-/// Use [`OrientedPoint`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
+/// In general, use `OrientedPoint` as a [`Body`](crate::Body) property type
+/// with [`Point`](crate::Point) as the property type for its sites. Rarely
+/// `OrientedPoint` be used as a [`Site`](crate::Site) property type.
 ///
 /// # Example
 ///
