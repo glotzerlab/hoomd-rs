@@ -727,10 +727,15 @@ where
             if !should_integrate_body(body) {
                 continue
             }
+
             let mut body_properties = body.item.properties;
 
-            let net_torque = *body_properties.net_torque();
             let moment_of_inertia = *body_properties.moment_of_inertia();
+            if moment_of_inertia == 0.0 {
+                continue
+            }
+
+            let net_torque = *body_properties.net_torque();
 
             *body_properties.angular_momentum_mut() *= rescaling_factor;
             *body_properties.angular_momentum_mut() += net_torque * 0.5 * self.delta_t;
@@ -775,7 +780,13 @@ where
             if !should_integrate_body(body) {
                 continue
             }
+
             let mut body_properties = body.item.properties;
+
+            let moment_of_inertia = *body_properties.moment_of_inertia();
+            if moment_of_inertia == 0.0 {
+                continue
+            }
 
             let net_torque = *body_properties.net_torque();
 
