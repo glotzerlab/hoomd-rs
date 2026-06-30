@@ -21,7 +21,7 @@ impl Rotate<Cartesian<5>> for QuadQuaternion {
     /// Rotate a [`Cartesian<5>`] by a [`QuadQuaternion`]
     ///
     /// ```math
-    /// \mathbf{M} \vec{a} \mathbf{M}^\dagger
+    /// \mathbf{Q} \vec{a} \mathbf{Q}^\dagger
     /// ```
     fn rotate(&self, vector: &Cartesian<5>) -> Cartesian<5> {
         todo!()
