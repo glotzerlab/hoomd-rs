@@ -340,7 +340,7 @@ impl Metric for DoubleVersor {
     /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{2\theta_1^2 + 2\theta_2^2}
     /// ```
     ///
-    /// Where the principal planar angles $\theta_1$ and $\theta_2$ are derived
+    /// Where the principal planar angles $`\theta_1`$ and $`\theta_2`$ are derived
     /// from the left and right quaternion arc lengths ($\alpha$ and $\beta$),
     /// accounting double cover of the manifold:
     /// * $`\alpha = \arccos(\vec{u}_L \cdot \vec{v}_L)`$
