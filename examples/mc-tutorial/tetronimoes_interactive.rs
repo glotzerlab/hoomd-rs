@@ -7,7 +7,7 @@ use hoomd_bevy::{
 
 use anyhow::Context;
 use bevy::prelude::*;
-use bevy::render::storage::ShaderStorageBuffer;
+use bevy::render::storage::ShaderBuffer;
 use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 use std::iter;
 
@@ -95,9 +95,9 @@ fn ui_system(
 fn setup_colors(
     disk_representation: ResMut<disk::Representation<A>>,
     mut materials: ResMut<Assets<disk::Material>>,
-    buffers: ResMut<Assets<ShaderStorageBuffer>>,
+    buffers: ResMut<Assets<ShaderBuffer>>,
 ) {
-    let material = materials
+    let mut material = materials
         .get_mut(disk_representation.material())
         .expect("Disk::setup should have added the material");
 
