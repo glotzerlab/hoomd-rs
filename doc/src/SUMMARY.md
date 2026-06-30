@@ -33,6 +33,8 @@
   - [Conclusion](workflow-tutorial/conclusion.md)
 - [Molecular Dynamics Examples](md-examples/index.md)
   - [Lennard-Jones fluid](md-examples/lj-fluid.md)
+  - [Patchy Body (3D)](md-examples/patchy-body-3d.md)
+  - [Patchy Body (2D)](md-examples/patchy-body-2d.md)
 
 # Reference
 

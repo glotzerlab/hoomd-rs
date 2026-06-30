@@ -4,7 +4,7 @@ use itertools::Itertools;
 use strum::VariantNames;
 use strum_macros::VariantNames;
 
-use hoomd_geometry::shape::Cuboid;
+use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff, Rigid, SitePairForce, SitePairForceAndTorque, pairwise::Isotropic, univariate::{LennardJones, WeeksChandlerAnderson}
 };
@@ -16,10 +16,10 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
-use hoomd_vector::{Cartesian, Rotate, Versor};
+use hoomd_vector::{Angle, Cartesian, Rotate};
 
-type PositionVector = Cartesian<3>;
-type BodyProperties = DynamicOrientedPoint<Cartesian<3>, Versor>;
+type PositionVector = Cartesian<2>;
+type BodyProperties = DynamicOrientedPoint<Cartesian<2>, Angle>;
 
 #[derive(Clone, Copy, Default, PartialEq, VariantNames)]
 enum SiteType {
@@ -58,32 +58,32 @@ impl MaximumInteractionRange for SitePairInteraction {
 }
 
 impl SitePairForceAndTorque<SiteProperties> for SitePairInteraction {
-    type Force = Cartesian<3>;
+    type Force = Cartesian<2>;
 
     fn site_pair_force_and_torque(
         &self,
         site_properties_i: &SiteProperties,
         site_properties_j: &SiteProperties,
-    ) -> (Self::Force, Cartesian<3>) {
+    ) -> (Self::Force, f64) {
         let force = match (site_properties_i.site_type, site_properties_j.site_type) {
             (SiteType::A, SiteType::A) => self.wca_aa.site_pair_force(site_properties_i, site_properties_j),
             (SiteType::A, SiteType::B) | (SiteType::B, SiteType::A) => Cartesian::default(),
             (SiteType::B, SiteType::B) => self.lj_bb.site_pair_force(site_properties_i, site_properties_j),
         };
 
-        (force, Cartesian::default())
+        (force, 0.0)
     }
 }
 
 // Remove the cfg_attr(...) line when using this code outside the hoomd-rs/examples directory.
 #[cfg_attr(feature = "bevy", derive(Resource))]
-struct PatchyBody3D {
+struct PatchyBody2D {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<
         BodyProperties,
         SiteProperties,
-        VecCell<SiteKey, 3>,
-        Periodic<Cuboid>,
+        VecCell<SiteKey, 2>,
+        Periodic<Rectangle>,
     >,
     /// How bodies interact with other bodies.
     interaction_model: Rigid<PairwiseCutoff<SitePairInteraction>>,
@@ -93,29 +93,23 @@ struct PatchyBody3D {
     macrostate: Isothermal,
 }
 
-impl PatchyBody3D {
+impl PatchyBody2D {
     /// Construct a new Lennard Jones fluid simulation.
-    fn new() -> anyhow::Result<PatchyBody3D> {
+    fn new() -> anyhow::Result<PatchyBody2D> {
         let temperature = 0.5;
         let density: f64 = 0.01;
         let delta_t = 0.005;
-        let n_bodies = 16;
+        let n_bodies = 256;
         let sites = vec![
-            SiteProperties { position: [-0.3, -0.3, -0.3].into(), site_type: SiteType::A },
-            SiteProperties { position: [-0.3, -0.3, 0.3].into(), site_type: SiteType::A },
-            SiteProperties { position: [-0.3, 0.3, -0.3].into(), site_type: SiteType::A },
-            SiteProperties { position: [-0.3, 0.3, 0.3].into(), site_type: SiteType::A },
-            SiteProperties { position: [0.3, -0.3, -0.3].into(), site_type: SiteType::A },
-            SiteProperties { position: [0.3, -0.3, 0.3].into(), site_type: SiteType::A },
-            SiteProperties { position: [0.3, 0.3, -0.3].into(), site_type: SiteType::A },
-            SiteProperties { position: [0.3, 0.3, 0.3].into(), site_type: SiteType::A },
+            SiteProperties { position: [-0.3, -0.3].into(), site_type: SiteType::A },
+            SiteProperties { position: [-0.3, 0.3].into(), site_type: SiteType::A },
+            SiteProperties { position: [0.3, -0.3].into(), site_type: SiteType::A },
+            SiteProperties { position: [0.3, 0.3].into(), site_type: SiteType::A },
 
-            SiteProperties { position: [-0.3, 0.0, 0.0].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.3, 0.0, 0.0].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.0, 0.3, 0.0].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.0, -0.3, 0.0].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.0, 0.0, 0.3].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.0, 0.0, -0.3].into(), site_type: SiteType::B },
+            SiteProperties { position: [-0.3, 0.0].into(), site_type: SiteType::B },
+            SiteProperties { position: [0.3, 0.0,].into(), site_type: SiteType::B },
+            SiteProperties { position: [0.0, 0.3,].into(), site_type: SiteType::B },
+            SiteProperties { position: [0.0, -0.3].into(), site_type: SiteType::B },
             ];
 
         let box_length = (n_bodies as f64 / density).cbrt();
@@ -129,13 +123,13 @@ impl PatchyBody3D {
             lj_bb: Isotropic { interaction: LennardJones { epsilon: 1.0, sigma: 1.0 },
             r_cut: 3.0 }}));
 
-        let cube = Cuboid::with_equal_edges(box_length.try_into()?);
+        let cube = Rectangle::with_equal_edges(box_length.try_into()?);
         let vec_cell = VecCell::builder()
             .nominal_search_radius(interaction_model.maximum_interaction_range().try_into()?)
             .build();
         let boundary = Periodic::new(interaction_model.maximum_interaction_range(), cube)?;
         let mut microstate = Microstate::builder()
-            .seed(12)
+            .seed(2)
             .spatial_data(vec_cell)
             .boundary(boundary)
             .try_build()?;
@@ -144,7 +138,7 @@ impl PatchyBody3D {
         let spacing = box_length / n_edge;
         let n_edge = n_edge as usize;
 
-        for index in [(0..n_edge), (0..n_edge), (0..n_edge)]
+        for index in [(0..n_edge), (0..n_edge)]
             .into_iter()
             .multi_cartesian_product()
             .take(n_bodies)
@@ -173,7 +167,7 @@ impl PatchyBody3D {
             .thermostat(thermostat)
             .build();
 
-        Ok(PatchyBody3D {
+        Ok(PatchyBody2D {
             microstate,
             interaction_model,
             constant_volume,
@@ -182,7 +176,7 @@ impl PatchyBody3D {
     }
 }
 
-impl Simulation for PatchyBody3D {
+impl Simulation for PatchyBody2D {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         self.constant_volume.integrate_translation_and_rotation(
@@ -201,7 +195,7 @@ impl Simulation for PatchyBody3D {
     }
 }
 
-impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Periodic<Cuboid>>
+impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Periodic<Rectangle>>
     for HoomdGsdFile
 {
     #[inline]
@@ -211,7 +205,7 @@ impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Periodic<Cuboid>>
             BodyProperties,
             SiteProperties,
             X,
-            Periodic<Cuboid>,
+            Periodic<Rectangle>,
         >,
     ) -> Result<hoomd_gsd::hoomd::Frame<'_>, hoomd_gsd::hoomd::AppendError>
     {
@@ -222,6 +216,7 @@ impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Periodic<Cuboid>>
                 microstate
                     .iter_sites_tag_order()
                     .map(|s| s.properties.position)
+                    .map(|p| [p[0], p[1], 0.0].into()),
             )?
             .particles_type_id(
                 microstate
@@ -238,8 +233,8 @@ fn main() -> anyhow::Result<()> {
     use hoomd_gsd::hoomd::HoomdGsdFile;
     use hoomd_microstate::AppendMicrostate;
 
-    let mut simulation = PatchyBody3D::new()?;
-    let mut hoomd_gsd_file = HoomdGsdFile::create("patchy-body-3d.gsd")?;
+    let mut simulation = PatchyBody2D::new()?;
+    let mut hoomd_gsd_file = HoomdGsdFile::create("patchy-body-2d.gsd")?;
 
     for _ in 0..40_000 {
         simulation.advance()?;
@@ -253,8 +248,8 @@ fn main() -> anyhow::Result<()> {
 // ANCHOR_END: all
 
 #[cfg(feature = "bevy")]
-mod patchy_body_3d_interactive;
+mod patchy_body_2d_interactive;
 #[cfg(feature = "bevy")]
 use bevy::prelude::Resource;
 #[cfg(feature = "bevy")]
-use patchy_body_3d_interactive::main;
+use patchy_body_2d_interactive::main;
