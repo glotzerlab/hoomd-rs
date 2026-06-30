@@ -231,19 +231,32 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     TT: Thermostat<M>,
 {
-    /// Integrate selected body positions forward a full step and the momenta forward a half step.
+    /// Integrate selected body positions forward a full step and their momenta forward a half step.
+    /// 
+    /// The first half step of the symplectic integration procedure is given by the equations below, which are
+    /// applied to each selected body *i*. In each step, the marker $`'`$ is used when a variable's value changes
+    /// during a step to distinguish the value before ( $`'`$ is present) from the value after ( $`'`$ is absent).
     ///
-    /// ```math
-    /// \begin{align*}
-    ///
-    /// \vec{p'}_i\left( t \right) &= \vec{p}_i\left( t \right) \cdot \mathrm{thermostat\_half\_step\_one}\left( \sum_{i \in \mathrm{selection}} \frac{\vec{p}_i(t) \cdot \vec{p}_i(t)}{2m_i} \right) \\
-    /// \vec{p}_i\left( t + \frac{\delta t}{2} \right) &= \vec{p'}_i\left( t \right)+ \frac{1}{2} \vec{F}_i(t) \delta t \\
-    /// \vec{r}_i\left( t + \delta t \right) &= \vec{r}_i\left( t \right) + \frac{\vec{p}_i\left( t + \frac{\delta t}{2} \right)}{m_i} \delta t
-    ///         
-    /// \end{align*}
-    /// ```
-    ///
-    /// `thermostat_half_step_one(K)` is the first half step method implemented by `TT`.
+    /// 1. The translational thermostat is integrated forward a half-step and then momentum is rescaled accordingly:
+    ///     
+    ///     ```math
+    ///     \vec{p}_i\left( t \right) = \vec{p'}_i\left( t \right) \cdot \mathrm{translational\_thermostat.integrate\_half\_step\_one}\left( \sum_{j \in \mathrm{selection}} K'_{trans,j} \left( t \right) \right)
+    ///     ```
+    ///     where the summation represents the total [translational kinetic energy](crate::compute::TranslationalKineticEnergy)
+    ///     of the selected bodies at the start of the step, and `translational_thermostat.integrate_half_step_one()` is the
+    ///     first half step method implemented by `TT`.
+    /// 
+    /// 2. Momentum is integrated forward a half step.
+    /// 
+    ///     ```math
+    ///     \vec{p}_i\left( t + \frac{\Delta t}{2} \right) = \vec{p}_i\left( t \right) + \vec{F}_i(t) \frac{\Delta t}{2}
+    ///     ```
+    /// 
+    /// 3. Position is integrated forward a full step using the new momentum.
+    /// 
+    ///     ```math
+    ///     \vec{r}_i\left( t + \Delta t \right) = \vec{r}_i\left( t \right) + \frac{\vec{p}_i\left( t + \frac{\Delta t}{2} \right)}{m_i} \Delta t
+    ///     ```
     #[inline]
     fn integrate_translation_half_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
@@ -287,16 +300,26 @@ where
     }
 
     /// Integrate selected body momenta forward a half step.
-    /// ```math
-    /// \begin{align*}
-    ///
-    /// \vec{p'}\left( t + \delta t \right) &= \vec{p}\left( t + \frac{1}{2} \delta t \right) + \frac{1}{2} \vec{F}(t + \delta t) \delta t \\
-    /// \vec{p}\left( t + \delta t \right) &= \vec{p'}\left( t + \delta t \right) \cdot \mathrm{thermostat\_half\_step\_two}\left( \sum_{i \in \mathrm{selection}} \frac{\vec{p'}\left( t + \delta t \right) \cdot \vec{p'}\left( t + \delta t \right)}{2m_i} \right) \\
-    ///         
-    /// \end{align*}
-    /// ```
-    ///
-    /// `thermostat_half_step_two(K)` is the second half step method implemented by `TT`.
+    /// 
+    /// The second half step of the symplectic integration procedure is given by the equations below, which are
+    /// applied to each selected body *i*. In each step, the marker $`'`$ is used when a variable's value changes
+    /// during a step to distinguish the value before ( $`'`$ is present) from the value after ( $`'`$ is absent).
+    /// 
+    /// 1. Momentum is integrated forward a half step.
+    /// 
+    ///     ```math
+    ///     \vec{p}_i\left( t + \Delta t \right) = \vec{p}_i\left( t + \frac{\Delta t}{2} \right) + \vec{F}_i\left( t + \frac{\Delta t}{2} \right) \frac{\Delta t}{2}
+    ///     ```
+    /// 
+    /// 2. The translational thermostat is integrated forward a half step and then momentum is rescaled accordingly.
+    /// 
+    ///     ```math
+    ///     \vec{p}_i\left( t + \Delta t \right) = \vec{p'}_i\left( t + \Delta t \right) \cdot \mathrm{translational\_thermostat.integrate\_half\_step\_two}\left( \sum_{j \in \mathrm{selection}} K'_{trans,j} \left( t + \Delta t \right) \right)
+    ///     ```
+    /// 
+    ///     where the summation represents the total [translational kinetic energy](crate::compute::TranslationalKineticEnergy)
+    ///     of the selected bodies at the start of the step, and `translational_thermostat.integrate_half_step_two()` is the
+    ///     second half step method implemented by `TT`.
     #[inline]
     fn integrate_translation_half_step_two_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
@@ -390,16 +413,19 @@ where
     /// Rotational degrees of freedom with a moment of inertia component of zero are skipped.
     /// 
     /// 1. The rotational thermostat is integrated forward a half-step and then angular momentum is rescaled
-    /// accordingly. (Note: `rotational_thermostat.integrate_half_step_one()` is the first half step method
-    /// implemented by `TR`.)
+    /// accordingly:
     /// 
     ///     ```math
-    ///     \vec{L}_i(t) = \vec{L}'_i(t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_one}\left(\sum_{i \in \mathrm{selection}}\frac{L_{x,i}(t)^2}{2I_{xx,i}} + \frac{L_{y,i}(t)^2}{2I_{yy,i}} + \frac{L_{z,i}(t)^2}{2I_{zz,i}} \right)
+    ///     \vec{L}_i(t) = \vec{L}'_i(t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_one}\left(\sum_{j \in \mathrm{selection}} K'_{rot,j}(t) \right)
     ///     ```
+    /// 
+    ///     where the summation represents the total [rotational kinetic energy](crate::compute::RotationalKineticEnergy)
+    ///     of the selected bodies at the start of the step, and `rotational_thermostat.integrate_half_step_one()` is the
+    ///     first half step method implemented by `TR`.
     ///
-    /// 2. Angular momentum $`\vec{L}'`$ and orientation $`\mathbf{q}`$ are integrated forward. These integrations
+    /// 2. Angular momentum $`\vec{L}`$ and orientation $`\mathbf{q}`$ are integrated forward. These integrations
     /// follow a complex, multistep process, so a fuller explanation is provided below. In each step, the body
-    /// index *i* is implicit on every variable.
+    /// index *i* and time *t* are implicit on every variable unless otherwise specified.
     /// 
     ///     1. Angular momentum and net torque are converted to quaternions $`\mathbf{p}`$ and
     ///     $`\mathbf{f}`$, respectively:
@@ -407,8 +433,8 @@ where
     ///         ```math
     ///         \begin{align*}
     ///         
-    ///         \mathbf{p} &= 2S(\mathbf{q}) \mathbf{L} \\
-    ///         \mathbf{f} &= 2S(\mathbf{q}) \boldsymbol{\tau} \\
+    ///         \mathbf{p} &= 2\mathbf{S}(\mathbf{q}) \mathbf{L} \\
+    ///         \mathbf{f} &= 2\mathbf{S}(\mathbf{q}) \boldsymbol{\tau} \\
     ///             
     ///         \end{align*}
     ///         ```
@@ -440,7 +466,7 @@ where
     ///         1. $`\mathbf{p}`$ is partially integrated forward a half step.
     /// 
     ///             ```math
-    ///             \mathbf{p} = \mathbf{p}' + \frac{\delta t}{2} \mathbf{f}
+    ///             \mathbf{p} = \mathbf{p}' + \frac{\Delta t}{2} \mathbf{f}
     ///             ```
     /// 
     ///         2. $`\mathbf{p}`$ is integrated forward the remainder of the half step and $`\mathbf{q}`$ is integrated
@@ -452,24 +478,24 @@ where
     ///             \begin{align*}
     ///             
     ///             \phi_3 &= \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}, P_3 \mathbf{q} \right) \\
-    ///             \mathbf{q} &= \cos{(\phi_3 \frac{\delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_3 \frac{\delta t}{2})} P_3 \mathbf{q}^{'} \nonumber \\
-    ///             \mathbf{p} &= \cos{(\phi_3 \frac{\delta t}{2})} \mathbf{p}' +  \sin{(\phi_3 \frac{\delta t}{2})} P_3 \mathbf{p}' \nonumber \\ \nonumber \\
+    ///             \mathbf{q} &= \cos{(\phi_3 \frac{\Delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_3 \frac{\Delta t}{2})} P_3 \mathbf{q}^{'} \nonumber \\
+    ///             \mathbf{p} &= \cos{(\phi_3 \frac{\Delta t}{2})} \mathbf{p}' +  \sin{(\phi_3 \frac{\Delta t}{2})} P_3 \mathbf{p}' \nonumber \\ \nonumber \\
     ///             
     ///             \phi_2 &= \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}, P_2 \mathbf{q} \right) \\
-    ///             \mathbf{q} &= \cos{(\phi_2 \frac{\delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_2 \frac{\delta t}{2})} P_2 \mathbf{q}^{'} \nonumber \\
-    ///             \mathbf{p} &= \cos{(\phi_2 \frac{\delta t}{2})} \mathbf{p}' +  \sin{(\phi_2 \frac{\delta t}{2})} P_2 \mathbf{p}' \nonumber \\ \nonumber \\
+    ///             \mathbf{q} &= \cos{(\phi_2 \frac{\Delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_2 \frac{\Delta t}{2})} P_2 \mathbf{q}^{'} \nonumber \\
+    ///             \mathbf{p} &= \cos{(\phi_2 \frac{\Delta t}{2})} \mathbf{p}' +  \sin{(\phi_2 \frac{\Delta t}{2})} P_2 \mathbf{p}' \nonumber \\ \nonumber \\
     ///             
     ///             \phi_1 &= \frac{1}{4 I_{11}} \mathrm{dot} \left( \mathbf{p}, P_1 \mathbf{q} \right) \\
-    ///             \mathbf{q} &= \cos{(\phi_1 \delta t)} \mathbf{q}^{'} +  \sin{(\phi_1 \delta t)} P_1 \mathbf{q}^{'} \nonumber \\
-    ///             \mathbf{p} &= \cos{(\phi_1 \delta t)} \mathbf{p}' +  \sin{(\phi_1 \delta t)} P_1 \mathbf{p}' \nonumber  \nonumber \\ \nonumber \\
+    ///             \mathbf{q} &= \cos{(\phi_1 \Delta t)} \mathbf{q}^{'} +  \sin{(\phi_1 \Delta t)} P_1 \mathbf{q}^{'} \nonumber \\
+    ///             \mathbf{p} &= \cos{(\phi_1 \Delta t)} \mathbf{p}' +  \sin{(\phi_1 \Delta t)} P_1 \mathbf{p}' \nonumber  \nonumber \\ \nonumber \\
     ///             
     ///             \phi_2 &= \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}, P_2 \mathbf{q} \right) \\
-    ///             \mathbf{q} &= \cos{(\phi_2 \frac{\delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_2 \frac{\delta t}{2})} P_2 \mathbf{q}^{'} \nonumber \\
-    ///             \mathbf{p} &= \cos{(\phi_2 \frac{\delta t}{2})} \mathbf{p}' +  \sin{(\phi_2 \frac{\delta t}{2})} P_2 \mathbf{p}' \nonumber  \nonumber \\ \nonumber \\
+    ///             \mathbf{q} &= \cos{(\phi_2 \frac{\Delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_2 \frac{\Delta t}{2})} P_2 \mathbf{q}^{'} \nonumber \\
+    ///             \mathbf{p} &= \cos{(\phi_2 \frac{\Delta t}{2})} \mathbf{p}' +  \sin{(\phi_2 \frac{\Delta t}{2})} P_2 \mathbf{p}' \nonumber  \nonumber \\ \nonumber \\
     ///             
     ///             \phi_3 &= \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}, P_3 \mathbf{q} \right) \\
-    ///             \mathbf{q} \left( t + \delta t \right) &= \cos{(\phi_3 \frac{\delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_3 \frac{\delta t}{2})} P_3 \mathbf{q}^{'} \nonumber \\
-    ///             \mathbf{p} \left( t + \frac{\delta t}{2} \right) &= \cos{(\phi_3 \frac{\delta t}{2})} \mathbf{p}' +  \sin{(\phi_3 \frac{\delta t}{2})} P_3 \mathbf{p}' \nonumber    \nonumber \\ \nonumber \\
+    ///             \mathbf{q} \left( t + \Delta t \right) &= \cos{(\phi_3 \frac{\Delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_3 \frac{\Delta t}{2})} P_3 \mathbf{q}^{'} \nonumber \\
+    ///             \mathbf{p} \left( t + \frac{\Delta t}{2} \right) &= \cos{(\phi_3 \frac{\Delta t}{2})} \mathbf{p}' +  \sin{(\phi_3 \frac{\Delta t}{2})} P_3 \mathbf{p}' \nonumber    \nonumber \\ \nonumber \\
     ///             
     ///             \end{align*} 
     ///             ```
@@ -492,7 +518,7 @@ where
     ///     3. $`\mathbf{p}`$ is converted back into vector-form angular momentum:
     /// 
     ///         ```math
-    ///         \mathbf{L} = \frac{1}{2} \mathbf{S}(\mathbf{q})^T \mathbf{p}
+    ///         \mathbf{L} \left( t + \frac{\Delta t}{2} \right) = \frac{1}{2} \mathbf{S}(\mathbf{q})^T \mathbf{p} \left( t + \frac{\Delta t}{2} \right)
     ///         ```
     /// 
     ///         where
@@ -635,6 +661,7 @@ where
     /// The second half step of the symplectic integration procedure is given by the equations below, which are
     /// applied to each selected body *i*. In each step, the marker $`'`$ is used when a variable's value changes
     /// during a step to distinguish the value before ( $`'`$ is present) from the value after ( $`'`$ is absent).
+    /// The time $`t + \frac{\Delta t}{2}`$ is implicit on every variable unless otherwise specified.
     /// Rotational degrees of freedom with a moment of inertia component of zero are skipped.
     ///
     /// 1. Angular momentum and net torque are converted to quaternions $`\mathbf{p}`$ and
@@ -643,8 +670,8 @@ where
     ///     ```math
     ///     \begin{align*}
     ///     
-    ///     \mathbf{p} &= 2S(\mathbf{q}) \mathbf{L} \\
-    ///     \mathbf{f} &= 2S(\mathbf{q}) \boldsymbol{\tau} \\
+    ///     \mathbf{p} &= 2\mathbf{S}(\mathbf{q}) \mathbf{L} \\
+    ///     \mathbf{f} &= 2\mathbf{S}(\mathbf{q}) \boldsymbol{\tau} \\
     ///         
     ///     \end{align*}
     ///     ```
@@ -671,13 +698,13 @@ where
     /// 2. $`\mathbf{p}`$ is integrated forward a half step.
     ///
     ///     ```math
-    ///     \mathbf{p}\left( t + \delta t \right) = \mathbf{p}\left( t + \frac{\delta t}{2} \right) + \frac{\delta t}{2} \mathbf{f}
+    ///     \mathbf{p}\left( t + \Delta t \right) = \mathbf{p}\left( t + \frac{\Delta t}{2} \right) + \frac{\Delta t}{2} \mathbf{f}
     ///     ```
     /// 
     /// 3. $`\mathbf{p}`$ is converted back into vector-form angular momentum:
     ///
     ///     ```math
-    ///     \mathbf{L} = \frac{1}{2} \mathbf{S}(\mathbf{q})^T \mathbf{p}
+    ///     \mathbf{L} \left( t + \Delta t \right) = \frac{1}{2} \mathbf{S}(\mathbf{q})^T \mathbf{p} \left( t + \Delta t \right)
     ///     ```
     ///
     ///     where
@@ -694,8 +721,12 @@ where
     /// implemented by `TR`.)
     /// 
     ///     ```math
-    ///     \vec{L}_i(t + \delta t) = \vec{L}'_i(t + \delta t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_two}\left(\sum_{i \in \mathrm{selection}}\frac{L_{x,i}(t + \delta t)^2}{2I_{xx,i}} + \frac{L_{y,i}(t + \delta t)^2}{2I_{yy,i}} + \frac{L_{z,i}(t + \delta t)^2}{2I_{zz,i}} \right)
+    ///     \vec{L}_i(t + \Delta t) = \vec{L}'_i(t + \Delta t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_two}\left(\sum_{i \in \mathrm{selection}} K'_{rot,j}(t + \Delta t) \right)
     ///     ```
+    /// 
+    ///     where the summation represents the total [rotational kinetic energy](crate::compute::RotationalKineticEnergy)
+    ///     of the selected bodies at the start of the step, and `rotational_thermostat.integrate_half_step_two()` is the
+    ///     second half step method implemented by `TR`.
     #[inline]
     fn integrate_rotation_half_step_two_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
         &mut self,
@@ -774,24 +805,27 @@ where
     /// Selected bodies which have ``moment_of_inertia = 0.0`` are skipped.
     /// 
     /// 1. The rotational thermostat is integrated forward a half-step and then angular momentum is rescaled
-    /// accordingly. (Note: `rotational_thermostat.integrate_half_step_one()` is the first half step method
-    /// implemented by `TR`.)
+    /// accordingly:
     ///
-    /// ```math
-    /// L'_i(t) = L_i(t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_one}\left(\sum_{i \in \mathrm{selection}}\frac{L_i(t)^2}{2I_i} \right)
-    /// ```
+    ///     ```math
+    ///     L_i(t) = L'_i(t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_one}\left(\sum_{j \in \mathrm{selection}} K'_{rot,j}(t) \right)
+    ///     ```
+    /// 
+    ///     where the summation represents the total [rotational kinetic energy](crate::compute::RotationalKineticEnergy)
+    ///     of the selected bodies at the start of the step, and `rotational_thermostat.integrate_half_step_one()` is the
+    ///     first half step method implemented by `TR`.
     /// 
     /// 2. Angular momentum is integrated forward a half step.
     /// 
-    /// ```math
-    /// L_i\left(t + \frac{\delta t}{2}\right) = L'_i(t) + \frac{1}{2} \tau_i(t) \delta t
-    /// ```
+    ///     ```math
+    ///     L_i\left(t + \frac{\Delta t}{2} \right) = L_i(t) + \tau_i(t) \frac{\Delta t}{2}
+    ///     ```
     /// 
     /// 3. Orientation is integrated forward a full step using the new angular momentum.
     /// 
-    /// ```math
-    /// \theta_i(t + \delta t) = \theta_i(t) + \frac{L_i\left( t + \frac{\delta t}{2} \right)}{I} \delta t
-    /// ```
+    ///     ```math
+    ///     \theta_i(t + \Delta t) = \theta_i(t) + \frac{L_i\left( t + \frac{\Delta t}{2} \right)}{I_i} \Delta t
+    ///     ```
     #[inline]
     fn integrate_rotation_half_step_one_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
         &mut self,
@@ -849,17 +883,20 @@ where
     /// 
     /// 1. Angular momentum is integrated forward a half step.
     /// 
-    /// ```math
-    /// L_i(t + \delta t) = L'_i\left( t + \frac{1}{2} \delta t \right) + \frac{1}{2} \tau_i(t + \delta_t) \delta t
-    /// ```
+    ///     ```math
+    ///     L_i(t + \Delta t) = L_i\left( t + \frac{\Delta t}{2} \right) + \tau_i \left(t + \frac{\Delta t}{2} \right) \frac{\Delta t}{2}
+    ///     ```
     /// 
     /// 2. The rotational thermostat is integrated forward a half step and then angular momentum
-    /// is rescaled accordingly. (Note: `rotational_thermostat.integrate_half_step_two()`
-    /// is the second half step method implemented by `TR`.)
+    /// is rescaled accordingly.
     /// 
-    /// ```math
-    /// L_i(t + \delta t) = L'_i(t + \delta t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_two}\left(\sum_{i \in \mathrm{selection}}\frac{L'_i(t + \delta t)^2}{2I_i} \right)
-    /// ``` 
+    ///     ```math
+    ///     L_i(t + \Delta t) = L'_i(t + \Delta t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_two}\left(\sum_{j \in \mathrm{selection}}K'_{rot,j}(t + \Delta t) \right)
+    ///     ```
+    /// 
+    ///     where the summation represents the total [rotational kinetic energy](crate::compute::RotationalKineticEnergy)
+    ///     of the selected bodies at the start of the step, and `rotational_thermostat.integrate_half_step_two()` is the
+    ///     second half step method implemented by `TR`.
 
     #[inline]
     fn integrate_rotation_half_step_two_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
