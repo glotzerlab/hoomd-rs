@@ -924,27 +924,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use hoomd_interaction::{External, MaximumInteractionRange, external::{ConstantForce, ConstantTorque}, Rigid};
-    use hoomd_microstate::{Body, property::{DynamicPoint, DynamicOrientedPoint, Point}};
-
-    use crate::{UpdateNetForce, thermostat::NoThermostat, UpdateNetForceAndTorque};
-
     use super::*;
+    use hoomd_interaction::{External, external::{ConstantForce, ConstantTorque}, Rigid};
+    use hoomd_microstate::{Body, property::{DynamicPoint, DynamicOrientedPoint, Point}};
+    use crate::{UpdateNetForce, UpdateNetForceAndTorque};
 
-    /// A simple 2d dynamics point body
-    fn dynamics_body_2d() -> Body<DynamicPoint<Cartesian<2>>, Point<Cartesian<2>>> {
-        Body {
-            properties: DynamicPoint {
-                position: Cartesian::<2>::default(),
-                momentum: Cartesian::<2>::default(),
-                net_force: Cartesian::<2>::default(),
-                mass: 1.0,
-            },
-            sites: vec![Point::new(Cartesian::<2>::default())],
-        }
-    }
+    use approxim::assert_relative_eq;
 
-    /// A simple 3d dynamics point body
     fn dynamics_body_3d(mass: f64) -> Body<DynamicPoint<Cartesian<3>>, Point<Cartesian<3>>> {
         Body {
             properties: DynamicPoint {
@@ -957,7 +943,6 @@ mod tests {
         }
     }
 
-    /// A simple 2d oriented dynamics point body
     fn oriented_dynamics_body_2d(mass: f64, moment_of_inertia: f64) -> Body<DynamicOrientedPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>> {
         Body {
             properties: DynamicOrientedPoint {
@@ -974,24 +959,6 @@ mod tests {
         }
     }
 
-    /// A simple 2d oriented dynamics point body
-    // fn oriented_dynamics_body_3d(mass: f64, moi: [f64; 3]) -> Body<DynamicOrientedPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
-    //     Body {
-    //         properties: DynamicOrientedPoint {
-    //             position: Cartesian::<3>::default(),
-    //             orientation: Versor::default(),
-    //             momentum: Cartesian::<3>::default(),
-    //             net_force: Cartesian::<3>::default(),
-    //             moment_of_inertia: moi,
-    //             angular_momentum: Cartesian::<3>::default(),
-    //             net_torque: Cartesian::<3>::default(),
-    //             mass,
-    //         },
-    //         sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
-    //     }
-    // }
-
-
     #[test]
     fn test_constant_volume() {
         let dt = 2.0;
@@ -1002,52 +969,51 @@ mod tests {
     #[test]
     fn test_translational_integration() -> anyhow::Result<()> {
         // Ensure translational integration of a simple external force in 3D
-        // yields the correct position and momentum at the halfstep and the
-        // fullstep.
+        // yields the correct position and momentum at the half step and the
+        // full step.
         let mass = 1.0;
         let dt = 0.1;
-        let f_mag = 1.0;
-        let f_dir = Cartesian::<3>::from(
+        let force = Cartesian::<3>::from(
             [1.0 / 3.0_f64.sqrt(), 1.0 / 3.0_f64.sqrt(), 1.0 / 3.0_f64.sqrt()]
         );
 
         let mut microstate = Microstate::builder()
             .bodies([dynamics_body_3d(mass)])
             .try_build()?;
-        let force = Rigid(External(ConstantForce {
-            force: f_dir * f_mag,
+        let rigid = Rigid(External(ConstantForce {
+            force,
             r_0: [0.0, 0.0, 0.0].into(),
         }));
         let mut method = ConstantVolume::builder(dt).build();
         let macrostate = ();
 
         // Update force first so that the particles can move
-        microstate.update_net_force(&force);
+        microstate.update_net_force(&rigid);
         
-        // Check the first halfstep
+        // Check the first half step
         method.integrate_translation_half_step_one(
             &mut microstate,
             &macrostate
         );
         let mut expected_momentum = Cartesian::<3>::default()
-            + (f_dir * f_mag * dt * 0.5 * -1.0);
+            + (force * dt * 0.5);
         let expected_position = Cartesian::<3>::default()
             + expected_momentum * dt / mass;
 
-        assert_eq!(expected_momentum, microstate.bodies()[0].item.properties.momentum);
-        assert_eq!(expected_position, microstate.bodies()[0].item.properties.position);
+        assert_relative_eq!(expected_momentum, microstate.bodies()[0].item.properties.momentum);
+        assert_relative_eq!(expected_position, microstate.bodies()[0].item.properties.position);
 
         // Update force again
-        microstate.update_net_force(&force);
+        microstate.update_net_force(&rigid);
 
-        // Check the second halfstep
+        // Check the second half step
          method.integrate_translation_half_step_two(
             &mut microstate,
             &macrostate
         );
-        expected_momentum += f_dir * f_mag * dt * 0.5 * -1.0;
-        assert_eq!(expected_momentum, microstate.bodies()[0].item.properties.momentum);
-        assert_eq!(expected_position, microstate.bodies()[0].item.properties.position);
+        expected_momentum += force * dt * 0.5;
+        assert_relative_eq!(expected_momentum, microstate.bodies()[0].item.properties.momentum);
+        assert_relative_eq!(expected_position, microstate.bodies()[0].item.properties.position);
 
         Ok(())
     }
@@ -1055,8 +1021,8 @@ mod tests {
     #[test]
     fn test_rotational_integration_2d() -> anyhow::Result<()> {
         // Ensure rotational integration of a simple external torque in 2D
-        // yields the correct orientation and angular momentum at the halfstep
-        // and the fullstep
+        // yields the correct orientation and angular momentum at the half step
+        // and the full step
         let mass = 1.0;
         let moi = 1.0;
         let dt = 0.1;
@@ -1075,7 +1041,7 @@ mod tests {
         // Update torque first so that the particles can move
         microstate.update_net_force_and_torque(&torque);
         
-        // Check the first halfstep
+        // Check the first half step
         method.integrate_rotation_half_step_one(
             &mut microstate,
             &macrostate
@@ -1090,7 +1056,7 @@ mod tests {
         // Update torque again
         microstate.update_net_force_and_torque(&torque);
 
-        // Check the second halfstep
+        // Check the second half step
          method.integrate_rotation_half_step_two(
             &mut microstate,
             &macrostate
@@ -1101,64 +1067,4 @@ mod tests {
 
         Ok(())
     }
-
-    // TODO: uncomment and fix tests
-    // #[test]
-    // fn test_rotational_integration_3d() -> anyhow::Result<()> {
-    //     // Ensure rotational integration of a simple external torque in 3D
-    //     // yields the correct orientation and angular momentum at the halfstep
-    //     // and the fullstep
-    //     let mass = 1.0;
-    //     let moi = [1.0, 1.0, 1.0];
-    //     let dt = 0.1;
-    //     let t_mag = 1.0;
-    //     let t_dir = Cartesian::<3>::from([0.0, 0.0, 1.0]);
-
-    //     let mut microstate = Microstate::builder()
-    //         .bodies([oriented_dynamics_body_3d(mass, moi)])
-    //         .try_build()?;
-
-    //     let torque = Rigid(External(ConstantTorque::<Cartesian<3>> {    // TODO: why does this not permit a Unit vector?
-    //         torque: t_dir * t_mag,
-    //     }));
-    //     let mut method = ConstantVolume::new(dt);
-    //     let macrostate = ();
-    //     let mut thermostat = NoThermostat;  // TODO: use an actual thermostat
-
-    //     // Update torque first so that the particles can move
-    //     method.update_force_and_torque(&mut microstate, &torque);
-        
-    //     // Check the first halfstep
-    //     method.integrate_rotation_half_step_one(
-    //         &mut microstate,
-    //         &mut thermostat,
-    //         &macrostate
-    //     );
-
-    //     // TODO: return here
-    //     // Calculate expected angular momentum
-
-    //     // // Calculate expected orientation
-    //     // let mut expected_angular_momentum = t_dir * t_mag * 0.5 * dt;
-    //     // let expected_orientation = Angle::default().theta
-    //     //     + expected_angular_momentum / moi * dt;
-
-    //     // assert_eq!(expected_angular_momentum, microstate.bodies()[0].item.properties.angular_momentum);
-    //     // assert_eq!(expected_orientation, microstate.bodies()[0].item.properties.orientation.theta);
-
-    //     // // Update torque again
-    //     // method.update_force_and_torque(&mut microstate, &torque);
-
-    //     // // Check the second halfstep
-    //     //  method.integrate_rotation_half_step_two(
-    //     //     &mut microstate,
-    //     //     &mut thermostat,
-    //     //     &macrostate
-    //     // );
-    //     // expected_angular_momentum += t_dir * t_mag * 0.5 * dt;
-    //     // assert_eq!(expected_angular_momentum, microstate.bodies()[0].item.properties.angular_momentum);
-    //     // assert_eq!(expected_orientation, microstate.bodies()[0].item.properties.orientation.theta);
-
-    //     Ok(())
-    // }
 }

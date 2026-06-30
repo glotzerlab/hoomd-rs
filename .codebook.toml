@@ -23,6 +23,7 @@ words = [
     "implementors",
     "katex",
     "lennard",
+    "liouvillian",
     "macrostate",
     "macrostates",
     "mathrm",
@@ -41,6 +42,7 @@ words = [
     "nonperiodic",
     "nosé",
     "nve",
+    "nvt",
     "orientable",
     "ovito",
     "polydisperse",
@@ -55,6 +57,7 @@ words = [
     "sps",
     "substep",
     "substeps",
+    "symplectic",
     "tetrahedra",
     "tetronimo",
     "tetronimoes",
@@ -62,6 +65,7 @@ words = [
     "thermalized",
     "timestep",
     "trackpad",
+    "tuckerman",
     "ulps",
     "unitless",
     "versor",
@@ -71,3 +75,4 @@ words = [
     "wsl",
     "xenocollide",
 ]
+ignore_patterns = ['\\[\w{}]+']

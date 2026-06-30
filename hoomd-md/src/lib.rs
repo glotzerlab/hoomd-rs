@@ -109,7 +109,7 @@ pub trait TranslationalMotion<B, S, X, C, M> {
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
     ) {
-        self.integrate_translation_half_step_one_with_filter(microstate, macrostate, |_| true);
+        self.integrate_translation_half_step_two_with_filter(microstate, macrostate, |_| true);
     }
 
     /// Integrate selected body momenta forward a half step.
