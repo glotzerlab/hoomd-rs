@@ -2,18 +2,19 @@
 //! Similar to [`Versor`] in 3D and [`DoubleVersor`] in 4D, this approach is more
 //! numerically stable and space efficient than a 5x5 matrix representation.
 
+use serde_with::{DeserializeAs, SerializeAs, serde_as};
+
 use crate::{Cartesian, Quaternion, Rotate, RotationMatrix, Vector};
 
-/// A Hermitian, traceless quaternion-valued matrix representing a rotation in five dimensions.
+/// A unitary quaternion-valued matrix representing a rotation in SO(5).
 ///
 /// Note that, in contrast to [`DoubleVersor`], the elements of this rotation may not
 /// be unit quaternions. That said, the matrix is represented in such a way that all
 /// valid [`QuadQuaternion`] structs are valid rotations in SO(5).
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct QuadQuaternion {
-    /// The real components of the constrained quaternions making up the matrix diagonal.
-    diagonal: [f64; 2],
-    /// The (fully unconstrained) quaternions making up the upper right and lower left entries.
-    antidiagonal: [Quaternion; 2],
+    /// Rows of the quad-quaternion matrix.
+    rows: [[Quaternion; 2]; 2],
 }
 
 impl Rotate<Cartesian<5>> for QuadQuaternion {
