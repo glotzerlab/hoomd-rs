@@ -26,7 +26,7 @@ where
                 let moment_of_inertia = body.item.properties.moment_of_inertia;
                 let angular_momentum = body.item.properties.angular_momentum;
 
-                if moment_of_inertia > 0.0 {
+                if moment_of_inertia != 0.0 {
                     (
                         total + angular_momentum.powi(2) / (2.0 * moment_of_inertia),
                         count + 1,
@@ -58,7 +58,7 @@ where
                 let angular_momentum = body.item.properties.angular_momentum;
 
                 for (momentum, inertia) in angular_momentum.coordinates.iter().zip(moment_of_inertia) {
-                    if inertia > 0.0 {
+                    if inertia != 0.0 {
                         total += momentum.powi(2) / (2.0 * inertia);
                         count += 1;
                     }
