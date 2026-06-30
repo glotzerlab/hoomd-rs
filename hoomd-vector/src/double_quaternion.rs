@@ -361,7 +361,7 @@ mod tests {
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
 
-    use crate::{Cartesian, DoubleVersor, Rotate, Rotation, RotationMatrix, Versor};
+    use crate::{Cartesian, DoubleVersor, Rotate, Rotation, RotationMatrix};
 
     #[rstest]
     fn random_rotations_match_matrix(
