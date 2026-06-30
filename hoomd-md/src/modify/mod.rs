@@ -182,13 +182,15 @@ pub trait ZeroCenterMomentum<B, S> {
 /// # }
 /// ```
 pub trait ZeroCenterAngularMomentum<B, S> {
-    /// Adjust each body's angular momentum in order to zero the system's overall angular momentum.
+    /// Adjust each body's angular translational momentum in order to zero the system's overall
+    /// angular momentum about the center of mass.
     #[inline]
     fn zero_center_angular_momentum(&mut self) {
         self.zero_center_angular_momentum_with_filter(|_| true);
     }
 
-    /// Adjust each selected body's angular momentum in order to zero the system's overall angular momentum.
+    /// Adjust each selected body's translational momentum in order to zero the system's overall
+    /// angular momentum about the center of mass..
     fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero_body: F);
 }
 
