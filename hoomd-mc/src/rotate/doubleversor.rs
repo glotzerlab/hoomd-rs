@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+//! Implement [`DoubleVersor`] trial moves for 4-dimensional orientable bodies.
+
 use std::f64::consts::PI;
 
 use hoomd_microstate::property::Orientation;
