@@ -444,7 +444,7 @@ where
     ///             ```
     /// 
     ///         2. $`\mathbf{p}`$ is integrated forward the remainder of the half step and $`\mathbf{q}`$ is integrated
-    ///         forward a full step. Properties of quaternion algebra are used to decompose the Liovillian into a
+    ///         forward a full step. Properties of quaternion algebra are used to decompose the Liouvillian into a
     ///         sum over permutation matrices applied to $`\mathbf{q}`$ and $`\mathbf{p}`$. There are five steps
     ///         to this decomposition:
     /// 
