@@ -53,6 +53,7 @@ impl Rotate<Cartesian<5>> for QuadQuaternion {
             vector[0],
             Quaternion::from([vector[1], vector[2], vector[3], vector[4]]),
         );
+        let q_conj = q.conjugate();
         todo!()
     }
 }
