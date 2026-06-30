@@ -133,3 +133,17 @@ path = "md-examples/lj-fluid.rs"
 
 [package.metadata.example.lj-fluid]
 path = "md-examples"
+
+[[example]]
+name = "patchy-body-3d"
+path = "md-examples/patchy-body-3d.rs"
+
+[package.metadata.example.patchy-body-3d]
+path = "md-examples"
+
+[[example]]
+name = "patchy-body-2d"
+path = "md-examples/patchy-body-2d.rs"
+
+[package.metadata.example.patchy-body-2d]
+path = "md-examples"

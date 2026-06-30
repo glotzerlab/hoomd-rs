@@ -7,11 +7,10 @@ use std::ops::{Add, AddAssign};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    NetBodyForce, NetBodyForceAndTorque, NetSiteForce, NetSiteForceAndTorque
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetBodyForce, NetBodyForceAndTorque, NetSiteForce, NetSiteForceAndTorque, TotalEnergy
 };
 use hoomd_microstate::{
-    Microstate, Transform,
-    property::{Orientation, Position},
+    Body, Microstate, Transform, property::{Orientation, Position}
 };
 use hoomd_vector::{Rotate, Vector, Wedge};
 
@@ -240,3 +239,65 @@ where
     }
 }
 
+impl<F> MaximumInteractionRange for Rigid<F>
+where F: MaximumInteractionRange
+{
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        self.0.maximum_interaction_range()
+    }
+}
+
+impl<M, F> TotalEnergy<M> for Rigid<F>
+where F: TotalEnergy<M>
+{
+    #[inline]
+    fn total_energy(&self, microstate: &M) -> f64 {
+        self.0.total_energy(microstate)
+    }
+
+    #[inline]
+    fn delta_energy_total(&self, initial_microstate: &M,
+        final_microstate: &M,
+    ) -> f64 { self.0.delta_energy_total(initial_microstate, final_microstate) }
+}
+
+impl <B, S, X, C, F> DeltaEnergyOne<B, S, X, C> for Rigid<F>
+where F: DeltaEnergyOne<B, S, X, C>
+{
+    #[inline]
+    fn delta_energy_one(
+        &self,
+        initial_microstate: &Microstate<B, S, X, C>,
+        body_index: usize,
+        final_body: &Body<B, S>,
+    ) -> f64 {
+    self.0.delta_energy_one(initial_microstate, body_index, final_body)
+    }
+}
+
+impl <B, S, X, C, F> DeltaEnergyInsert<B, S, X, C> for Rigid<F>
+where F: DeltaEnergyInsert<B, S, X, C>
+{
+    #[inline]
+    fn delta_energy_insert(
+        &self,
+        initial_microstate: &Microstate<B, S, X, C>,
+        new_body: &Body<B, S>,
+    ) -> f64 {
+    self.0.delta_energy_insert(initial_microstate, new_body)
+    }
+}
+
+impl <B, S, X, C, F> DeltaEnergyRemove<B, S, X, C> for Rigid<F>
+where F: DeltaEnergyRemove<B, S, X, C>
+{
+    #[inline]
+    fn delta_energy_remove(
+        &self,
+        initial_microstate: &Microstate<B, S, X, C>,
+        body_index: usize,
+    ) -> f64 {
+    self.0.delta_energy_remove(initial_microstate, body_index)
+    }
+}
