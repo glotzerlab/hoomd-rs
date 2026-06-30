@@ -1,9 +1,9 @@
 // ANCHOR: all
 use itertools::Itertools;
 
-use hoomd_geometry::shape::Hypercuboid;
+use hoomd_geometry::shape::Cuboid;
 use hoomd_interaction::{
-    PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::LennardJones,
+    MaximumInteractionRange, PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::LennardJones
 };
 use hoomd_md::{
     ThermalizeMomentum, TranslationalMotion, ZeroCenterAngularMomentum,
@@ -26,7 +26,7 @@ struct LennardJonesFluid {
         DynamicPoint<Cartesian<3>>,
         Point<Cartesian<3>>,
         VecCell<SiteKey, 3>,
-        Periodic<Hypercuboid<3>>,
+        Periodic<Cuboid>,
     >,
     /// How bodies interact with other bodies.
     interaction_model: Rigid<PairwiseCutoff<Isotropic<LennardJones>>>,
@@ -50,11 +50,16 @@ impl LennardJonesFluid {
         let box_length = (n_bodies as f64 / density).cbrt();
         let macrostate = Isothermal { temperature };
 
-        let cube = Hypercuboid::<3>::with_equal_edges(box_length.try_into()?);
+        let interaction_model = Rigid(PairwiseCutoff(Isotropic {
+            interaction: LennardJones::<12, 6> { epsilon, sigma },
+            r_cut,
+        }));
+
+        let cube = Cuboid::with_equal_edges(box_length.try_into()?);
         let vec_cell = VecCell::builder()
-            .nominal_search_radius(r_cut.try_into()?)
+            .nominal_search_radius(interaction_model.maximum_interaction_range().try_into()?)
             .build();
-        let boundary = Periodic::new(r_cut, cube)?;
+        let boundary = Periodic::new(interaction_model.maximum_interaction_range(), cube)?;
         let mut microstate = Microstate::builder()
             .spatial_data(vec_cell)
             .boundary(boundary)
@@ -82,11 +87,6 @@ impl LennardJonesFluid {
                 Point::default(),
             ))?;
         }
-
-        let interaction_model = Rigid(PairwiseCutoff(Isotropic {
-            interaction: LennardJones::<12, 6> { epsilon, sigma },
-            r_cut,
-        }));
 
         microstate.thermalize_momentum(temperature);
         microstate.zero_center_angular_momentum();

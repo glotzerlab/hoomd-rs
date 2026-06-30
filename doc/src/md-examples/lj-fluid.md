@@ -8,7 +8,7 @@ import init from 'https://glotzerlab.github.io/hoomd-rs/md-examples/lj-fluid.js'
 
 ## Overview
 
-* Objective: Perform a molecular
+* Objective: Perform a molecular dynamics simulation of a Lennard-Jones fluid.
 * File: `hoomd-rs/examples/md-examples/lj-fluid.rs`
 * Run (interactively):
   ```shell
