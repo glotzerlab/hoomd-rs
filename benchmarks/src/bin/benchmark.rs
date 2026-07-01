@@ -15,7 +15,7 @@ use parquet::{
 };
 use parquet_derive::ParquetRecordWriter;
 
-use benchmarks::{Benchmark, Effort, mc};
+use benchmarks::{Benchmark, Effort, mc, md};
 use hoomd_microstate::SiteKey;
 use hoomd_simulation::Simulation;
 use hoomd_spatial::VecCell;
@@ -143,6 +143,13 @@ fn execute_matching(
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 
+    let name = "md_2d_lennard_jones";
+    if benchmark_matcher.matches(name) {
+        let mut simulation = md::LennardJones::<2, VecCell<SiteKey, 2>>::new(
+            n)?;
+        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
+    }
+
     let name = "mc_2d_hexagon";
     if benchmark_matcher.matches(name) {
         let mut simulation = mc::RegularPolygon::<VecCell<SiteKey, 2>>::new(
@@ -166,6 +173,14 @@ fn execute_matching(
         let mut simulation = mc::LennardJones::<3, VecCell<SiteKey, 3>>::new(
             n,
             options.parallel_sweep || threads > 1,
+        )?;
+        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
+    }
+
+    let name = "md_3d_lennard_jones";
+    if benchmark_matcher.matches(name) {
+        let mut simulation = md::LennardJones::<3, VecCell<SiteKey, 3>>::new(
+            n
         )?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }

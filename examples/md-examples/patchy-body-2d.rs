@@ -1,4 +1,3 @@
-use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 // ANCHOR: all
 use itertools::Itertools;
 use strum::VariantNames;
@@ -17,6 +16,7 @@ use hoomd_microstate::{
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
 use hoomd_vector::{Angle, Cartesian, Rotate};
+use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 
 type PositionVector = Cartesian<2>;
 type BodyProperties = DynamicOrientedPoint<Cartesian<2>, Angle>;
@@ -96,20 +96,20 @@ struct PatchyBody2D {
 impl PatchyBody2D {
     /// Construct a new Lennard Jones fluid simulation.
     fn new() -> anyhow::Result<PatchyBody2D> {
-        let temperature = 0.5;
+        let temperature = 0.4;
         let density: f64 = 0.01;
         let delta_t = 0.005;
         let n_bodies = 256;
         let sites = vec![
-            SiteProperties { position: [-0.3, -0.3].into(), site_type: SiteType::A },
-            SiteProperties { position: [-0.3, 0.3].into(), site_type: SiteType::A },
-            SiteProperties { position: [0.3, -0.3].into(), site_type: SiteType::A },
-            SiteProperties { position: [0.3, 0.3].into(), site_type: SiteType::A },
+            SiteProperties { position: [-0.4, -0.4].into(), site_type: SiteType::A },
+            SiteProperties { position: [-0.4, 0.4].into(), site_type: SiteType::A },
+            SiteProperties { position: [0.4, -0.4].into(), site_type: SiteType::A },
+            SiteProperties { position: [0.4, 0.4].into(), site_type: SiteType::A },
 
-            SiteProperties { position: [-0.3, 0.0].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.3, 0.0,].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.0, 0.3,].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.0, -0.3].into(), site_type: SiteType::B },
+            SiteProperties { position: [-0.4, 0.0].into(), site_type: SiteType::B },
+            SiteProperties { position: [0.4, 0.0,].into(), site_type: SiteType::B },
+            SiteProperties { position: [0.0, 0.4,].into(), site_type: SiteType::B },
+            SiteProperties { position: [0.0, -0.4].into(), site_type: SiteType::B },
             ];
 
         let box_length = (n_bodies as f64 / density).cbrt();

@@ -26,13 +26,13 @@ where
                 let moment_of_inertia = body.item.properties.moment_of_inertia;
                 let angular_momentum = body.item.properties.angular_momentum;
 
-                if moment_of_inertia != 0.0 {
+                if moment_of_inertia == 0.0 {
+                    (total, count)
+                } else {
                     (
                         total + angular_momentum.powi(2) / (2.0 * moment_of_inertia),
                         count + 1,
                     )
-                } else {
-                    (total, count)
                 }
             })
     }

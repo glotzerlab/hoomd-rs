@@ -1,4 +1,3 @@
-use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 // ANCHOR: all
 use itertools::Itertools;
 use strum::VariantNames;
@@ -17,6 +16,7 @@ use hoomd_microstate::{
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
 use hoomd_vector::{Cartesian, Rotate, Versor};
+use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 
 type PositionVector = Cartesian<3>;
 type BodyProperties = DynamicOrientedPoint<Cartesian<3>, Versor>;

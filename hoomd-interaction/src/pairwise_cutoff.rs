@@ -510,7 +510,13 @@ where
             .iter_sites_near(site.properties.position(), self.maximum_interaction_range())
             .filter(|s| site.body_tag != s.body_tag)
         {
-            total_force += self.0.site_pair_force(&site.properties, &other_site.properties);
+            // nominally, `site_pair_force` should handle the cutoff. However, then this loop
+            // must += (0,0,0) many times. Perform the check here also boosts performance by
+            // 10%.
+            let distance_squared = (*site.properties.position() - *other_site.properties.position()).norm_squared();
+            if distance_squared < self.0.maximum_interaction_range().powi(2) {
+                total_force += self.0.site_pair_force(&site.properties, &other_site.properties);
+            }
         }
 
         total_force
@@ -554,9 +560,15 @@ where
             .iter_sites_near(site.properties.position(), self.maximum_interaction_range())
             .filter(|s| site.body_tag != s.body_tag)
         {
-            let (force, torque) = self.0.site_pair_force_and_torque(&site.properties, &other_site.properties);
-            total_force += force;
-            total_torque += torque;
+            // nominally, `site_pair_force` should handle the cutoff. However, then this loop
+            // must += (0,0,0) many times. Perform the check here also boosts performance by
+            // 10%.
+            let distance_squared = (*site.properties.position() - *other_site.properties.position()).norm_squared();
+            if distance_squared < self.0.maximum_interaction_range().powi(2) {
+                let (force, torque) = self.0.site_pair_force_and_torque(&site.properties, &other_site.properties);
+                total_force += force;
+                total_torque += torque;
+            }
         }
 
         (total_force, total_torque)

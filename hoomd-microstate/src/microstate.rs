@@ -1849,7 +1849,6 @@ mod tests {
 
     mod open {
         use super::*;
-        use assert2::{assert, check};
         use rand::RngExt;
 
         fn create_body<R: Rng>(rng: &mut R) -> Body<Point<Cartesian<2>>> {
@@ -1908,39 +1907,39 @@ mod tests {
                 }
             }
 
-            check!(microstate.bodies.len() == reference_bodies.len());
-            check!(
-                microstate.sites.len()
-                    == reference_bodies.values().map(|body| body.sites.len()).sum()
+            assert_eq!(microstate.bodies.len(), reference_bodies.len());
+            assert_eq!(
+                microstate.sites.len(),
+                reference_bodies.values().map(|body| body.sites.len()).sum()
             );
 
             for (tag, optional_index) in microstate.bodies.indices.iter().enumerate() {
                 if let Some(index) = optional_index {
-                    check!(microstate.bodies()[*index].tag == tag);
-                    check!(reference_bodies.contains_key(&tag));
+                    assert_eq!(microstate.bodies()[*index].tag, tag);
+                    assert!(reference_bodies.contains_key(&tag));
                 } else {
-                    check!(!reference_bodies.contains_key(&tag));
+                    assert!(!reference_bodies.contains_key(&tag));
                 }
             }
 
             for (tag, body) in &reference_bodies {
                 let body_index = microstate.body_indices()[*tag]
                     .expect("tags in the reference should also be present in the microstate");
-                check!(microstate.bodies()[body_index].item == *body);
+                assert_eq!(microstate.bodies()[body_index].item, *body);
             }
 
             for (tag, optional_index) in microstate.sites.indices.iter().enumerate() {
                 if let Some(index) = optional_index {
-                    check!(microstate.sites()[*index].site_tag == tag);
+                    assert_eq!(microstate.sites()[*index].site_tag, tag);
                 }
             }
 
-            check!(microstate.spatial_data().len() == microstate.sites.len());
+            assert_eq!(microstate.spatial_data().len(), microstate.sites.len());
             for site in microstate.sites() {
                 let body_index = microstate.body_indices()[site.body_tag]
                     .expect("tags in the microstate should also be in the reference");
-                check!(microstate.bodies_sites[body_index].contains(&site.site_tag));
-                check!(
+                assert!(microstate.bodies_sites[body_index].contains(&site.site_tag));
+                assert!(
                     microstate
                         .spatial_data()
                         .contains_key(&SiteKey::Primary(site.site_tag))
@@ -1957,7 +1956,7 @@ mod tests {
                 for site_tag in body_sites {
                     let site_index = microstate.site_indices()[*site_tag]
                         .expect("body_sites should be consistent with site_indices");
-                    check!(microstate.sites()[site_index].body_tag == body.tag);
+                    assert!(microstate.sites()[site_index].body_tag == body.tag);
                 }
             }
 
@@ -1966,8 +1965,8 @@ mod tests {
                     .iter_body_sites(body_index)
                     .zip(body.item.sites.iter())
                 {
-                    check!(system_site.body_tag == microstate.bodies()[body_index].tag);
-                    check!(system_site.properties == body.item.properties.transform(local_site));
+                    assert_eq!(system_site.body_tag, microstate.bodies()[body_index].tag);
+                    assert_eq!(system_site.properties, body.item.properties.transform(local_site));
                 }
             }
         }
@@ -2008,15 +2007,14 @@ mod tests {
                 microstate.remove_body(body_index);
             }
 
-            check!(microstate.bodies().is_empty());
-            check!(microstate.bodies_sites.is_empty());
-            check!(microstate.sites().is_empty());
+            assert!(microstate.bodies().is_empty());
+            assert!(microstate.bodies_sites.is_empty());
+            assert!(microstate.sites().is_empty());
         }
     }
 
     mod closed {
         use super::*;
-        use assert2::check;
 
         #[fixture]
         fn square() -> Closed<Hypercuboid<2>> {
@@ -2038,9 +2036,9 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            check!(
-                microstate.add_body(Body::point(Cartesian::from([2.0, 0.0])))
-                    == Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
+            assert_eq!(
+                microstate.add_body(Body::point(Cartesian::from([2.0, 0.0]))),
+                Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
             );
         }
 
@@ -2052,13 +2050,13 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            check!(
+            assert_eq!(
                 microstate.update_body_properties(
                     0,
                     Point {
                         position: [2.0, 0.0].into()
                     }
-                ) == Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
+                ), Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
             );
         }
 
@@ -2074,9 +2072,9 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            check!(
-                microstate.add_body(body)
-                    == Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
+            assert_eq!(
+                microstate.add_body(body),
+                Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
             );
         }
 
@@ -2093,20 +2091,19 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            check!(
+            assert_eq!(
                 microstate.update_body_properties(
                     0,
                     Point {
                         position: [1.0, 0.0].into()
                     }
-                ) == Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
+                ), Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
             );
         }
     }
 
     mod periodic {
         use super::*;
-        use assert2::{assert, check};
         use rand::RngExt;
 
         fn create_body<R: Rng>(
@@ -2148,7 +2145,7 @@ mod tests {
 
             let body = &microstate.bodies()[0].item;
             assert_relative_eq!(body.properties.position, [1.0, -1.0].into(), epsilon = 1e-6);
-            check!(microstate.ghosts().len() == 0);
+            assert_eq!(microstate.ghosts().len(), 0);
         }
 
         #[rstest]
@@ -2171,7 +2168,7 @@ mod tests {
 
             let body = &microstate.bodies()[0].item;
             assert_relative_eq!(body.properties.position, [1.0, -1.0].into(), epsilon = 1e-6);
-            check!(microstate.ghosts().len() == 0);
+            assert_eq!(microstate.ghosts().len(), 0);
         }
 
         #[rstest]
@@ -2186,7 +2183,7 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            check!(microstate.add_body(body) == Ok(0));
+            assert_eq!(microstate.add_body(body), Ok(0));
 
             let body = &microstate.bodies()[0].item;
             assert_relative_eq!(body.properties.position, [4.5, 1.0].into(), epsilon = 1e-6);
@@ -2198,8 +2195,8 @@ mod tests {
             let ghost = &microstate.ghosts()[0];
             assert_relative_eq!(ghost.properties.position, [5.5, 1.0].into(), epsilon = 1e-6);
 
-            check!(ghost.site_tag == site.site_tag);
-            check!(ghost.body_tag == site.body_tag);
+            assert_eq!(ghost.site_tag, site.site_tag);
+            assert_eq!(ghost.body_tag, site.body_tag);
         }
 
         #[rstest]
@@ -2234,8 +2231,8 @@ mod tests {
             let ghost = &microstate.ghosts()[0];
             assert_relative_eq!(ghost.properties.position, [5.5, 1.0].into(), epsilon = 1e-6);
 
-            check!(ghost.site_tag == site.site_tag);
-            check!(ghost.body_tag == site.body_tag);
+            assert!(ghost.site_tag == site.site_tag);
+            assert!(ghost.body_tag == site.body_tag);
 
             assert!(
                 microstate.update_body_properties(
@@ -2246,7 +2243,7 @@ mod tests {
                 ) == Ok(())
             );
 
-            check!(microstate.ghosts().len() == 0);
+            assert_eq!(microstate.ghosts().len(), 0);
         }
 
         fn test_consistency<X>(seed: u64, rectangle: Periodic<Hypercuboid<2>>)
@@ -2294,8 +2291,8 @@ mod tests {
             let mut sites_with_ghosts = HashSet::new();
 
             assert!(!microstate.ghosts().is_empty());
-            check!(
-                microstate.spatial_data().len() == microstate.sites.len() + microstate.ghosts.len()
+            assert_eq!(
+                microstate.spatial_data().len(), microstate.sites.len() + microstate.ghosts.len()
             );
             for (ghost, ghost_tag) in microstate.ghosts().iter().zip(&microstate.ghosts.tags) {
                 let parent_site_index = microstate.site_indices()[ghost.site_tag]
@@ -2303,9 +2300,9 @@ mod tests {
                 sites_with_ghosts.insert(parent_site_index);
                 let parent = &microstate.sites()[parent_site_index];
 
-                check!(parent.site_tag == ghost.site_tag);
-                check!(parent.body_tag == ghost.body_tag);
-                check!(
+                assert_eq!(parent.site_tag, ghost.site_tag);
+                assert_eq!(parent.body_tag, ghost.body_tag);
+                assert!(
                     microstate
                         .spatial_data()
                         .contains_key(&SiteKey::Ghost(*ghost_tag))
@@ -2319,11 +2316,11 @@ mod tests {
                             .expect("ghost tag in sites_ghosts should be present");
                         let ghost = &microstate.ghosts()[ghost_index];
                         let site = &microstate.sites()[site_index];
-                        check!(site.site_tag == ghost.site_tag);
-                        check!(site.body_tag == ghost.body_tag);
+                        assert_eq!(site.site_tag, ghost.site_tag);
+                        assert_eq!(site.body_tag, ghost.body_tag);
                     }
                 } else {
-                    check!(site_ghosts.is_empty());
+                    assert!(site_ghosts.is_empty());
                 }
             }
         }
@@ -2376,10 +2373,10 @@ mod tests {
                 microstate.remove_body(body_index);
             }
 
-            check!(microstate.bodies().is_empty());
-            check!(microstate.bodies_sites.is_empty());
-            check!(microstate.sites().is_empty());
-            check!(microstate.ghosts().is_empty());
+            assert!(microstate.bodies().is_empty());
+            assert!(microstate.bodies_sites.is_empty());
+            assert!(microstate.sites().is_empty());
+            assert!(microstate.ghosts().is_empty());
         }
     }
 

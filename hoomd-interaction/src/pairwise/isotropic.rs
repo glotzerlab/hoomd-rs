@@ -245,7 +245,8 @@ where
         if distance >= self.r_cut {
             V::default()
         } else {
-            r_ji * self.interaction.force(distance) / distance
+            let distance_inverse = 1.0 / distance;
+            r_ji * self.interaction.force(distance) * distance_inverse
         }
     }
 }
@@ -281,7 +282,8 @@ where
         let force = if distance >= self.r_cut {
             V::default()
         } else {
-            r_ji * self.interaction.force(distance) / distance
+            let distance_inverse = 1.0 / distance;
+            r_ji * self.interaction.force(distance) * distance_inverse
         };
         
         let torque = V::Bivector::default();
