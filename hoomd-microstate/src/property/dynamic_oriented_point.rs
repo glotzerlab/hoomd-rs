@@ -360,7 +360,6 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use assert2::check;
 
     use hoomd_vector::Cartesian;
 
@@ -369,8 +368,8 @@ mod test {
         let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
 
         *dynamic_point.position_mut() = [1.0, 2.0].into();
-        check!(dynamic_point.position == [1.0, 2.0].into());
-        check!(dynamic_point.position() == &[1.0, 2.0].into());
+        assert_eq!(dynamic_point.position, [1.0, 2.0].into());
+        assert_eq!(dynamic_point.position(), &[1.0, 2.0].into());
     }
 
     #[test]
@@ -378,8 +377,8 @@ mod test {
         let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
 
         *dynamic_point.orientation_mut() = 1.0.into();
-        check!(dynamic_point.orientation == 1.0.into());
-        check!(dynamic_point.orientation() == &1.0.into());
+        assert_eq!(dynamic_point.orientation, 1.0.into());
+        assert_eq!(dynamic_point.orientation(), &1.0.into());
     }
 
     #[test]
@@ -389,7 +388,7 @@ mod test {
             .. Default::default()
         };
         
-        check!(dynamic_point.mass() == 3.0);
+        assert_eq!(dynamic_point.mass(), 3.0);
     }
 
     #[test]
@@ -397,8 +396,8 @@ mod test {
         let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
 
         *dynamic_point.momentum_mut() = [1.0, 2.0].into();
-        check!(dynamic_point.momentum == [1.0, 2.0].into());
-        check!(dynamic_point.momentum() == &[1.0, 2.0].into());
+        assert_eq!(dynamic_point.momentum, [1.0, 2.0].into());
+        assert_eq!(dynamic_point.momentum(), &[1.0, 2.0].into());
     }
 
     #[test]
@@ -406,8 +405,8 @@ mod test {
         let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
 
         *dynamic_point.net_force_mut() = [1.0, 2.0].into();
-        check!(dynamic_point.net_force == [1.0, 2.0].into());
-        check!(dynamic_point.net_force() == &[1.0, 2.0].into());
+        assert_eq!(dynamic_point.net_force, [1.0, 2.0].into());
+        assert_eq!(dynamic_point.net_force(), &[1.0, 2.0].into());
     }
 
     #[test]
@@ -415,8 +414,8 @@ mod test {
         let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
 
         *dynamic_point.moment_of_inertia_mut() = 2.0;
-        check!(dynamic_point.moment_of_inertia == 2.0);
-        check!(dynamic_point.moment_of_inertia() == &2.0);
+        assert_eq!(dynamic_point.moment_of_inertia, 2.0);
+        assert_eq!(dynamic_point.moment_of_inertia(), &2.0);
     }
 
     #[test]
@@ -424,8 +423,8 @@ mod test {
         let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
 
         *dynamic_point.angular_momentum_mut() = 2.0;
-        check!(dynamic_point.angular_momentum == 2.0);
-        check!(dynamic_point.angular_momentum() == &2.0);
+        assert_eq!(dynamic_point.angular_momentum, 2.0);
+        assert_eq!(dynamic_point.angular_momentum(), &2.0);
     }
 
     #[test]
@@ -433,7 +432,7 @@ mod test {
         let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
 
         *dynamic_point.net_torque_mut() = 2.0;
-        check!(dynamic_point.net_torque == 2.0);
-        check!(dynamic_point.net_torque() == &2.0);
+        assert_eq!(dynamic_point.net_torque, 2.0);
+        assert_eq!(dynamic_point.net_torque(), &2.0);
     }
 }
