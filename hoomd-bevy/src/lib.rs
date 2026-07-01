@@ -715,48 +715,38 @@ where
         // absolute window coordinates and a state machine to provide consistent
         // panning behavior across all platforms.
 
-        let (camera, global_transform, mut transform, projection) = camera.into_inner();
+        let (camera, global_transform, mut transform, _) = camera.into_inner();
 
-        let viewport_size = camera
-            .logical_viewport_size()
-            .unwrap_or(Vec2::new(1280.0, 720.0));
+        if buttons.just_pressed(MouseButton::Left)
+            && let Some(world_position) = window
+                .cursor_position()
+                .and_then(|cursor| camera.viewport_to_world(global_transform, cursor).ok())
+        {
+            control.initial_ray = world_position;
+            control.dragging = true;
+            return;
+        }
 
-        if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
-            if buttons.just_pressed(MouseButton::Left)
-                && let Some(world_position) = window
-                    .cursor_position()
-                    .and_then(|cursor| camera.viewport_to_world(global_transform, cursor).ok())
-            {
-                control.initial_ray = world_position;
-                control.dragging = true;
-                return;
-            }
+        if !buttons.pressed(MouseButton::Left) {
+            control.dragging = false;
+            return;
+        }
 
-            if !buttons.pressed(MouseButton::Left)
-                && let Some(world_position) = window
-                    .cursor_position()
-                    .and_then(|cursor| camera.viewport_to_world(global_transform, cursor).ok())
-            {
-                // Rotate about the origin
-                let pivot = Vec3::ZERO;
-                let a = (control.initial_ray.origin - pivot).normalize_or_zero();
-                let b = (world_position.origin - pivot).normalize_or_zero();
-                let rotation = Quat::from_rotation_arc(b, a);
-                let offset = transform.translation - pivot;
+        if control.dragging
+            && let Some(world_position) = window
+                .cursor_position()
+                .and_then(|cursor| camera.viewport_to_world(global_transform, cursor).ok())
+        {
+            let pivot = Vec3::ZERO;
+            let a = (control.initial_ray.origin - pivot).normalize_or_zero();
+            let b = (world_position.origin - pivot).normalize_or_zero();
+            let rotation = Quat::from_rotation_arc(a, b);
 
-                // Jump to the endpoint rotation
-                transform.translation = pivot + rotation * offset;
-                transform.rotation = rotation * transform.rotation;
+            transform.translation = pivot + rotation * (transform.translation - pivot);
+            transform.rotation = rotation * transform.rotation;
 
-                control.dragging = false;
-                return;
-            }
-
-            // if control.dragging
-            //     && let Some(current_cursor_position) = window.cursor_position()
-            // {
-            //     todo!("Rotate as we drag")
-            // }
+            // Remember where we are so next frame's delta is small.
+            control.initial_ray = world_position;
         }
     }
 
