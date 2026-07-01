@@ -50,7 +50,7 @@ a complete list of all methods, and example code.
 
 ## Monte Carlo Simulations
 
-[hoomd-md] implements typical Monte Carlo trial moves used in soft matter
+[hoomd-mc] implements typical Monte Carlo trial moves used in soft matter
 research, such as local translation and rotation moves. Each trial move is
 applied to a `Microstate` ([hoomd-microstate]) and accepted or rejected based on
 the given interaction model ([hoomd-interaction]). When you need a different type
