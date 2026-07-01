@@ -114,8 +114,11 @@ pub const MUTED_COLOR: Color = Color::srgb(0.75, 0.75, 0.75);
 /// The default color for the boundary representation.
 pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
 
-/// Camera zoom speed multiplier
-const CAMERA_ZOOM_SPEED: f32 = 50.0;
+/// Camera zoom speed multiplier for 2d
+const CAMERA_ZOOM_SPEED_2D: f32 = 50.0;
+
+/// Camera zoom speed multiplier for 3d
+const CAMERA_ZOOM_SPEED_3D: f32 = 10.0;
 
 /// Interface *hoomd-rs* simulations with the Bevy game engine.
 ///
@@ -205,7 +208,7 @@ pub enum InitialCamera {
     /// automatically based on the window dimensions.
     ///
     /// Controls:
-    /// * TODO
+    /// * Scroll to zoom.
     Orthographic3d(f32),
 }
 
@@ -655,7 +658,7 @@ where
             // and from browser to browser (a factor of 100 from the smallest to
             // the largest). Therefore, the best we can do is check the sign of the
             // scroll event and act scale the camera in the appropriate direction.
-            let zoom_speed = settings.camera_sensitivity * CAMERA_ZOOM_SPEED * time.delta_secs();
+            let zoom_speed = settings.camera_sensitivity * CAMERA_ZOOM_SPEED_2D * time.delta_secs();
             let delta_zoom = -zoom_speed.copysign(scroll);
             let new_scale = (orthographic.scale * (1.0 + delta_zoom)).clamp(
                 1.0 / settings.zoom_range.end,
@@ -676,6 +679,40 @@ where
 
             orthographic.scale = new_scale;
             transform.translation += Vec3::from((delta_translation, 0.0));
+        }
+    }
+
+    /// TODO
+    fn camera_mouse_zoom_control_3d(
+        time: Res<Time>,
+        camera: Single<
+            (&Camera, &GlobalTransform, &mut Transform, &mut Projection),
+            With<Camera3d>,
+        >,
+        settings: Res<Settings>,
+        mut scroll: MessageReader<MouseWheel>,
+    ) {
+        let (_, _, _, projection) = camera.into_inner();
+
+        if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
+            let scroll = scroll.read().map(|e| e.y).fold(0.0, |total, y| total + y);
+
+            // The scroll events distinguish between line (mouse wheel) and pixel
+            // (trackpad) events. However, In wasm builds all major browsers report
+            // only pixel events. Tested on macOS, scrolling with the trackpad gave
+            // consistent values across all browsers and native. However, scrolling
+            // with the mouse wheel gave different scales between native and browser
+            // and from browser to browser (a factor of 100 from the smallest to
+            // the largest). Therefore, the best we can do is check the sign of the
+            // scroll event and act scale the camera in the appropriate direction.
+            let zoom_speed = settings.camera_sensitivity * CAMERA_ZOOM_SPEED_3D * time.delta_secs();
+            let delta_zoom = -zoom_speed.copysign(scroll);
+            let new_scale = (orthographic.scale * (1.0 + delta_zoom)).clamp(
+                1.0 / settings.zoom_range.end,
+                1.0 / settings.zoom_range.start,
+            );
+
+            orthographic.scale = new_scale;
         }
     }
 
@@ -760,6 +797,12 @@ where
                 app.add_systems(Startup, move |commands: Commands| {
                     Self::setup_camera_3d(commands, initial_viewport_height);
                 })
+                .add_systems(
+                    Update,
+                    Self::camera_mouse_zoom_control_3d
+                        .run_if(on_message::<MouseWheel>)
+                        .in_set(MouseInputSet),
+                )
                 .add_systems(Startup, Self::setup_ambient_light);
             }
         }
@@ -862,7 +905,7 @@ where
                         ui.label("Scroll to zoom.");
                     }
                     InitialCamera::Orthographic3d(_) => {
-                        ui.label("TODO.");
+                        ui.label("Scroll to zoom.");
                         ui.label("TODO.");
                     }
                 }
