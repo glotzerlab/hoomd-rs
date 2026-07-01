@@ -39,7 +39,7 @@
 //!
 //! [`Sweep`] implements [`Trial`] by applying the given [`LocalTrial`] to every
 //! body in the microstate. [`ParallelSweep`] does the same, but it executes many
-//! trial moves in parallel to increase performance. [`Sweep`] is very general
+//! trial moves in parallel to increase performance. [`Sweep`] is very general and
 //! will work with any boundary condition and local trial move, even when the move
 //! is not actually confined to a small region in space and when all bodies interact
 //! with all other bodies. [`ParallelSweep`] works only with boundaries that can be
