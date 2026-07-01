@@ -8,7 +8,7 @@
     html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
 
-//! Apply the molecular dynamics simulation method to systems of bodies.
+//! Apply molecular dynamics simulation methods to systems of bodies.
 //! TODO: User guide
 
 use rand::Rng;
