@@ -120,6 +120,9 @@ const CAMERA_ZOOM_SPEED_2D: f32 = 50.0;
 /// Camera zoom speed multiplier for 3d
 const CAMERA_ZOOM_SPEED_3D: f32 = 10.0;
 
+/// Camera rotation speed multiplier for 3d
+pub const ROTATION_SPEED_SCALE: f32 = 0.01;
+
 /// Interface *hoomd-rs* simulations with the Bevy game engine.
 ///
 /// [`HoomdBevyPlugin`] is used by all the *hoomd-rs* examples that create
@@ -260,8 +263,9 @@ pub struct CameraControl2d {
 /// Settings used by the 3d camera controls.
 #[derive(Debug, Resource)]
 pub struct CameraControl3d {
-    /// Coordinates clicked in the world frame.
-    initial_ray: Ray3d,
+    /// Previous cursor position (in window logical pixels) used to compute the
+    /// per-frame rotation delta while dragging.
+    previous_cursor: Vec2,
 
     /// Track whether the user is dragging the view.
     dragging: bool,
@@ -270,7 +274,7 @@ pub struct CameraControl3d {
 impl Default for CameraControl3d {
     fn default() -> Self {
         Self {
-            initial_ray: Ray3d::new(Vec3::default(), Dir3::Z),
+            previous_cursor: Vec2::default(),
             dragging: false,
         }
     }
@@ -701,7 +705,7 @@ where
         }
     }
 
-    /// TODO
+    /// Left click and drag to orbit the 3D camera around the origin.
     fn camera_mouse_rotate_control_3d(
         camera: Single<
             (&Camera, &GlobalTransform, &mut Transform, &mut Projection),
@@ -709,44 +713,46 @@ where
         >,
         mut control: ResMut<CameraControl3d>,
         buttons: Res<ButtonInput<MouseButton>>,
+        settings: Res<Settings>,
         window: Single<&Window, With<PrimaryWindow>>,
     ) {
-        // Firefox wasm builds do not behave well using AccumulatedMouseMotion. Use
-        // absolute window coordinates and a state machine to provide consistent
-        // panning behavior across all platforms.
+        let (_, _, mut transform, _) = camera.into_inner();
 
-        let (camera, global_transform, mut transform, _) = camera.into_inner();
-
-        if buttons.just_pressed(MouseButton::Left)
-            && let Some(world_position) = window
-                .cursor_position()
-                .and_then(|cursor| camera.viewport_to_world(global_transform, cursor).ok())
-        {
-            control.initial_ray = world_position;
+        // Enter drag and start rotating
+        if buttons.just_pressed(MouseButton::Left) {
+            control.previous_cursor = window.cursor_position().unwrap_or(control.previous_cursor);
             control.dragging = true;
             return;
         }
 
+        // End drag and exit
         if !buttons.pressed(MouseButton::Left) {
             control.dragging = false;
             return;
         }
 
+        // Apply a rotation based on the cursor movement
         if control.dragging
-            && let Some(world_position) = window
-                .cursor_position()
-                .and_then(|cursor| camera.viewport_to_world(global_transform, cursor).ok())
+            && let Some(current) = window.cursor_position()
         {
-            let pivot = Vec3::ZERO;
-            let a = (control.initial_ray.origin - pivot).normalize_or_zero();
-            let b = (world_position.origin - pivot).normalize_or_zero();
-            let rotation = Quat::from_rotation_arc(a, b);
+            let delta = current - control.previous_cursor;
 
+            // Radians of rotation per pixel of cursor movement
+            let radians_per_pixel = settings.camera_sensitivity * ROTATION_SPEED_SCALE;
+
+            let up = Vec3::Y; // Y is up in Bevy it seems
+            // Rightward vector *in our global frame*
+            let right = transform.rotation * Vec3::X;
+            let rotation = Quat::from_axis_angle(up, -delta.x * radians_per_pixel)
+                * Quat::from_axis_angle(right, -delta.y * radians_per_pixel);
+
+            // Orbiting around a fixed point requires translation to keep the view
+            // distance constant
+            let pivot = Vec3::ZERO;
             transform.translation = pivot + rotation * (transform.translation - pivot);
             transform.rotation = rotation * transform.rotation;
 
-            // Remember where we are so next frame's delta is small.
-            control.initial_ray = world_position;
+            control.previous_cursor = current;
         }
     }
 
