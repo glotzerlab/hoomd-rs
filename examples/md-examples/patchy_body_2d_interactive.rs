@@ -126,7 +126,7 @@ fn sync_b_sites(
                     Vec3::new(
                         site.properties.position[0] as f32,
                         site.properties.position[1] as f32,
-                        0.0,
+                        -0.001,
                     ),
                     1.0_f32,
                 )
