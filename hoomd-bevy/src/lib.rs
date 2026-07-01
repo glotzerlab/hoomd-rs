@@ -258,13 +258,22 @@ pub struct CameraControl2d {
 }
 
 /// Settings used by the 3d camera controls.
-#[derive(Debug, Default, Resource)]
+#[derive(Debug, Resource)]
 pub struct CameraControl3d {
     /// Coordinates clicked in the world frame.
     initial_ray: Ray3d,
 
     /// Track whether the user is dragging the view.
     dragging: bool,
+}
+
+impl Default for CameraControl3d {
+    fn default() -> Self {
+        Self {
+            initial_ray: Ray3d::new(Vec3::default(), Dir3::Z),
+            dragging: false,
+        }
+    }
 }
 
 /// The overlay UI root node.
@@ -728,16 +737,26 @@ where
                     .cursor_position()
                     .and_then(|cursor| camera.viewport_to_world(global_transform, cursor).ok())
             {
-                println!("{:?} -> {world_position:?}", control.initial_ray);
+                // Rotate about the origin
+                let pivot = Vec3::ZERO;
+                let a = (control.initial_ray.origin - pivot).normalize_or_zero();
+                let b = (world_position.origin - pivot).normalize_or_zero();
+                let rotation = Quat::from_rotation_arc(b, a);
+                let offset = transform.translation - pivot;
+
+                // Jump to the endpoint rotation
+                transform.translation = pivot + rotation * offset;
+                transform.rotation = rotation * transform.rotation;
+
                 control.dragging = false;
                 return;
             }
 
-            if control.dragging
-                && let Some(current_cursor_position) = window.cursor_position()
-            {
-                todo!("Rotate as we drag")
-            }
+            // if control.dragging
+            //     && let Some(current_cursor_position) = window.cursor_position()
+            // {
+            //     todo!("Rotate as we drag")
+            // }
         }
     }
 
@@ -856,6 +875,7 @@ where
                 app.add_systems(Startup, move |commands: Commands| {
                     Self::setup_camera_3d(commands, initial_viewport_height);
                 })
+                .insert_resource(CameraControl3d::default())
                 .add_systems(
                     Update,
                     Self::camera_mouse_rotate_control_3d
