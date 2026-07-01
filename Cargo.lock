@@ -465,6 +465,7 @@ dependencies = [
  "hoomd-geometry",
  "hoomd-interaction",
  "hoomd-mc",
+ "hoomd-md",
  "hoomd-microstate",
  "hoomd-rand",
  "hoomd-simulation",
