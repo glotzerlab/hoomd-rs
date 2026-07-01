@@ -257,6 +257,16 @@ pub struct CameraControl2d {
     dragging: bool,
 }
 
+/// Settings used by the 3d camera controls.
+#[derive(Debug, Default, Resource)]
+pub struct CameraControl3d {
+    /// Coordinates clicked in the world frame.
+    initial_ray: Ray3d,
+
+    /// Track whether the user is dragging the view.
+    dragging: bool,
+}
+
 /// The overlay UI root node.
 #[derive(Component)]
 struct OverlayRoot;
@@ -683,6 +693,55 @@ where
     }
 
     /// TODO
+    fn camera_mouse_rotate_control_3d(
+        camera: Single<
+            (&Camera, &GlobalTransform, &mut Transform, &mut Projection),
+            With<Camera3d>,
+        >,
+        mut control: ResMut<CameraControl3d>,
+        buttons: Res<ButtonInput<MouseButton>>,
+        window: Single<&Window, With<PrimaryWindow>>,
+    ) {
+        // Firefox wasm builds do not behave well using AccumulatedMouseMotion. Use
+        // absolute window coordinates and a state machine to provide consistent
+        // panning behavior across all platforms.
+
+        let (camera, global_transform, mut transform, projection) = camera.into_inner();
+
+        let viewport_size = camera
+            .logical_viewport_size()
+            .unwrap_or(Vec2::new(1280.0, 720.0));
+
+        if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
+            if buttons.just_pressed(MouseButton::Left)
+                && let Some(world_position) = window
+                    .cursor_position()
+                    .and_then(|cursor| camera.viewport_to_world(global_transform, cursor).ok())
+            {
+                control.initial_ray = world_position;
+                control.dragging = true;
+                return;
+            }
+
+            if !buttons.pressed(MouseButton::Left)
+                && let Some(world_position) = window
+                    .cursor_position()
+                    .and_then(|cursor| camera.viewport_to_world(global_transform, cursor).ok())
+            {
+                println!("{:?} -> {world_position:?}", control.initial_ray);
+                control.dragging = false;
+                return;
+            }
+
+            if control.dragging
+                && let Some(current_cursor_position) = window.cursor_position()
+            {
+                todo!("Rotate as we drag")
+            }
+        }
+    }
+
+    /// TODO
     fn camera_mouse_zoom_control_3d(
         time: Res<Time>,
         camera: Single<
@@ -799,6 +858,15 @@ where
                 })
                 .add_systems(
                     Update,
+                    Self::camera_mouse_rotate_control_3d
+                        .run_if(
+                            input_pressed(MouseButton::Left)
+                                .or_else(input_just_released(MouseButton::Left)),
+                        )
+                        .in_set(MouseInputSet),
+                )
+                .add_systems(
+                    Update,
                     Self::camera_mouse_zoom_control_3d
                         .run_if(on_message::<MouseWheel>)
                         .in_set(MouseInputSet),
@@ -905,8 +973,8 @@ where
                         ui.label("Scroll to zoom.");
                     }
                     InitialCamera::Orthographic3d(_) => {
+                        ui.label("Click and drag to rotate.");
                         ui.label("Scroll to zoom.");
-                        ui.label("TODO.");
                     }
                 }
 
