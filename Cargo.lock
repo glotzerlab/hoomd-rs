@@ -3859,6 +3859,7 @@ dependencies = [
  "hoomd-vector",
  "rand",
  "rand_distr",
+ "rayon",
  "rstest",
  "serde",
  "serde_with",

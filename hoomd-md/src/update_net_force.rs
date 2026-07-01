@@ -1,5 +1,7 @@
 //! Define `UpdateNetForce`
 
+use rayon::prelude::*;
+
 use hoomd_interaction::{NetBodyForce, NetBodyForceAndTorque};
 use hoomd_microstate::{Microstate, property::{NetForce, NetTorque}};
 use hoomd_vector::{Vector, Wedge};
@@ -89,31 +91,48 @@ pub trait UpdateNetForceAndTorque<E> {
 
 impl<V, B, S, X, C, E> UpdateNetForce<E> for Microstate<B, S, X, C>
 where
-    V: Default + Vector,
-    B: NetForce<NetForce = V>,
-    E: NetBodyForce<B, S, X, C, Force=V>
+    V: Default + Vector + Send,
+    B: NetForce<NetForce = V> + Sync,
+    S: Sync,
+    X: Sync,
+    C: Sync,
+    E: NetBodyForce<B, S, X, C, Force=V> + Sync,
 {
     #[inline]
     fn update_net_force(&mut self, interaction_model: &E) {
-        for body_index in 0..self.bodies().len() {
-            let net_force = interaction_model.net_body_force(self, body_index);
-            self.set_body_net_force(body_index, net_force);
+        let mut net_force_tmp = Vec::new();
+    
+        (0..self.bodies().len()).into_par_iter()
+            .map(|body_index| interaction_model.net_body_force(self, body_index))
+            .collect_into_vec(&mut net_force_tmp);
+
+        for (body_index, net_force) in net_force_tmp.iter().enumerate() {
+            self.set_body_net_force(body_index, *net_force);
         }
     }
 }
 
 impl<V, B, S, X, C, E> UpdateNetForceAndTorque<E> for Microstate<B, S, X, C>
 where
-    V: Default + Vector + Wedge,
-    B: NetForce<NetForce = V> + NetTorque<NetTorque = V::Bivector>,
-    E: NetBodyForceAndTorque<B, S, X, C, Force=V>
+    V: Default + Vector + Wedge + Send,
+    V::Bivector: Copy + Send,
+    B: NetForce<NetForce = V> + NetTorque<NetTorque = V::Bivector> + Sync,
+    S: Sync,
+    X: Sync,
+    C: Sync,
+    E: NetBodyForceAndTorque<B, S, X, C, Force=V> + Sync,
 {
     #[inline]
     fn update_net_force_and_torque(&mut self, interaction_model: &E) {
-        for body_index in 0..self.bodies().len() {
-            let (net_force, net_torque) = interaction_model.net_body_force_and_torque(self, body_index);
-            self.set_body_net_force(body_index, net_force);
-            self.set_body_net_torque(body_index, net_torque);
+        let mut net_force_torque_tmp = Vec::new();
+    
+        (0..self.bodies().len()).into_par_iter()
+            .map(|body_index| interaction_model.net_body_force_and_torque(self, body_index))
+            .collect_into_vec(&mut net_force_torque_tmp);
+
+        for (body_index, (net_force, net_torque)) in net_force_torque_tmp.iter().enumerate() {
+            self.set_body_net_force(body_index, *net_force);
+            self.set_body_net_torque(body_index, *net_torque);
         }
     }
 }

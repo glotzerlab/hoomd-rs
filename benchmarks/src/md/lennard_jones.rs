@@ -176,7 +176,6 @@ where
         )?;
             
         microstate.thermalize_momentum(temperature);
-        // microstate.zero_center_angular_momentum();
         microstate.zero_center_momentum();
 
         let thermostat = Bussi::new(0.0);

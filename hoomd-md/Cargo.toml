@@ -19,6 +19,7 @@ workspace = true
 [dependencies]
 rand.workspace = true
 rand_distr.workspace = true
+rayon.workspace = true
 serde.workspace = true
 serde_with.workspace = true
 
