@@ -23,6 +23,16 @@ pub(crate) struct QuadQuaternion {
     rows: [[Quaternion; 2]; 2],
 }
 
+impl Default for QuadQuaternion {
+    fn default() -> Self {
+        let one = Quaternion::from([1.0, 0.0, 0.0, 0.0]);
+        let zero = Quaternion::from([0.0; 4]);
+        QuadQuaternion {
+            rows: [[one, zero], [zero, one]],
+        }
+    }
+}
+
 impl QuadQuaternion {
     /// Promote a [`Cartesian<5>`] to a hermitian traceless
     fn promote_vec5(v: Cartesian<5>) -> Self {
@@ -30,6 +40,7 @@ impl QuadQuaternion {
             scalar: v[0] * if i == 0 { 1.0 } else { -1.0 },
             vector: [0.0; 3].into(),
         });
+        let q = Quaternion::from([v[1], v[2], v[3], v[4]]);
         Self {
             rows: [[p, q], [q.conjugate(), np]],
         }
@@ -87,5 +98,18 @@ impl Rotate<Cartesian<5>> for QuadQuaternion {
 
         let (w, [x, y, z]) = (quaternion_part.scalar, quaternion_part.vector.coordinates);
         Cartesian::from([scalar_part.scalar, w, x, y, z])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approxim::assert_relative_eq;
+
+    #[test]
+    fn identity_rotation_is_noop() {
+        let identity = QuadQuaternion::default();
+        let vector = Cartesian::from([1.0, 2.0, -3.0, 4.0, -5.0]);
+        assert_relative_eq!(identity.rotate(&vector), vector);
     }
 }
