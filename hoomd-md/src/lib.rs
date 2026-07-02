@@ -184,8 +184,116 @@ pub trait Thermostat<M> {
 /// Integrate translational degrees of freedom.
 ///
 /// [`TranslationalMotion`] integrates the [`Position`] and [`Momentum`] degrees of
-/// freedom for selected bodies. 
-/// 
+/// freedom for selected bodies.
+///
+/// To integrate the whole system forward one step, call [`integrate_translation`]:
+/// ```
+/// # use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
+/// # use hoomd_vector::Cartesian;
+/// # use hoomd_md::{ThermalizeMomentum, TranslationalMotion, method::ConstantVolume};
+/// # use hoomd_interaction::{Rigid, Zero};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let mut microstate = Microstate::builder()
+/// #     .bodies([
+/// #         Body::single_site(DynamicPoint {
+/// #           position: Cartesian::from([1.0, 2.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #         Body::single_site(DynamicPoint {
+/// #           position: Cartesian::from([-2.0, 3.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #     ])
+/// #     .try_build()?;
+/// # microstate.thermalize_momentum(1.5);
+/// # let mut integration_method = ConstantVolume::builder(0.001).build();
+/// # let interaction_model = Rigid(Zero);
+/// # let macrostate = ();
+/// integration_method.integrate_translation(&mut microstate, &macrostate, &interaction_model);
+/// microstate.increment_step();
+/// # Ok(())
+/// # }
+/// ```
+///
+/// To integrate only some bodies, call [`integrate_translation_with_filter`]:
+/// ```
+/// # use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
+/// # use hoomd_vector::Cartesian;
+/// # use hoomd_md::{ThermalizeMomentum, TranslationalMotion, method::ConstantVolume};
+/// # use hoomd_interaction::{Rigid, Zero};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let mut microstate = Microstate::builder()
+/// #     .bodies([
+/// #         Body::single_site(DynamicPoint {
+/// #           position: Cartesian::from([1.0, 2.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #         Body::single_site(DynamicPoint {
+/// #           position: Cartesian::from([-2.0, 3.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #     ])
+/// #     .try_build()?;
+/// # microstate.thermalize_momentum(1.5);
+/// # let mut integration_method = ConstantVolume::builder(0.001).build();
+/// # let interaction_model = Rigid(Zero);
+/// # let macrostate = ();
+/// integration_method.integrate_translation_with_filter(&mut microstate, &macrostate, &interaction_model, |b| b.tag < 2);
+/// microstate.increment_step();
+/// # Ok(())
+/// # }
+/// ```
+///
+/// To integrate some bodies with one integration method and other bodies with another,
+/// call [`integrate_translation_half_step_one_with_filter`] for all methods, then call
+/// `update_net_force`, and finish with [`integrate_translation_half_step_one_with_filter`].
+/// The filters must select distinct subsets of bodies. The filters must also select
+/// the same bodies in half step one and half step two.
+/// ```
+/// # use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
+/// # use hoomd_vector::Cartesian;
+/// # use hoomd_md::{UpdateNetForce, ThermalizeMomentum, TranslationalMotion, method::ConstantVolume};
+/// # use hoomd_interaction::{Rigid, Zero};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let mut microstate = Microstate::builder()
+/// #     .bodies([
+/// #         Body::single_site(DynamicPoint {
+/// #           position: Cartesian::from([1.0, 2.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #         Body::single_site(DynamicPoint {
+/// #           position: Cartesian::from([-2.0, 3.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #     ])
+/// #     .try_build()?;
+/// # microstate.thermalize_momentum(1.5);
+/// # let mut integration_method_1 = ConstantVolume::builder(0.001).build();
+/// # let mut integration_method_2 = ConstantVolume::builder(0.001).build();
+/// # let interaction_model = Rigid(Zero);
+/// # let macrostate = ();
+/// integration_method_1.integrate_translation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
+/// integration_method_2.integrate_translation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);
+/// microstate.update_net_force(&interaction_model);
+/// integration_method_1.integrate_translation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
+/// integration_method_2.integrate_translation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);
+/// microstate.increment_step();
+/// # Ok(())
+/// # }
+/// ```
+///
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
@@ -193,6 +301,10 @@ pub trait Thermostat<M> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 /// * `M`: The [`macrostate`](hoomd_simulation::macrostate) type.
 ///
+/// [`integrate_translation`]: Self::integrate_translation
+/// [`integrate_translation_with_filter`]: Self::integrate_translation_with_filter
+/// [`integrate_translation_half_step_one_with_filter`]: Self::integrate_translation_half_step_one_with_filter
+/// [`integrate_translation_half_step_two_with_filter`]: Self::integrate_translation_half_step_two_with_filter
 /// [`Position`]: hoomd_microstate::property::Position
 /// [`Momentum`]: hoomd_microstate::property::Momentum
 pub trait TranslationalMotion<B, S, X, C, M> {
@@ -275,6 +387,125 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 /// * `M`: The [`macrostate`](hoomd_simulation::macrostate) type.
 ///
+/// To integrate the whole system forward one step, call [`integrate_translation_and_rotation`]:
+/// ```
+/// # use hoomd_microstate::{Body, Microstate, property::{DynamicOrientedPoint, Point}};
+/// # use hoomd_vector::Cartesian;
+/// # use hoomd_md::{ThermalizeMomentum, RotationalMotion, TranslationalMotion, method::ConstantVolume};
+/// # use hoomd_interaction::{Rigid, Zero};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let mut microstate = Microstate::builder()
+/// #     .bodies([
+/// #         Body::single_site(DynamicOrientedPoint {
+/// #           position: Cartesian::from([1.0, 2.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #         Body::single_site(DynamicOrientedPoint {
+/// #           position: Cartesian::from([-2.0, 3.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #     ])
+/// #     .try_build()?;
+/// # microstate.thermalize_momentum(1.5);
+/// # let mut integration_method = ConstantVolume::builder(0.001).build();
+/// # let interaction_model = Rigid(Zero);
+/// # let macrostate = ();
+/// integration_method.integrate_translation_and_rotation(&mut microstate, &macrostate, &interaction_model);
+/// microstate.increment_step();
+/// # Ok(())
+/// # }
+/// ```
+///
+/// To integrate only some bodies, call [`integrate_translation_and_rotation_with_filter`]:
+/// ```
+/// # use hoomd_microstate::{Body, Microstate, property::{DynamicOrientedPoint, Point}};
+/// # use hoomd_vector::{Angle, Cartesian};
+/// # use hoomd_md::{ThermalizeMomentum, RotationalMotion, TranslationalMotion, method::ConstantVolume};
+/// # use hoomd_interaction::{Rigid, Zero};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let mut microstate = Microstate::builder()
+/// #     .bodies([
+/// #         Body::single_site(DynamicOrientedPoint {
+/// #           position: Cartesian::from([1.0, 2.0]),
+/// #           orientation: Angle::default(),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #         Body::single_site(DynamicOrientedPoint {
+/// #           position: Cartesian::from([-2.0, 3.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #     ])
+/// #     .try_build()?;
+/// # microstate.thermalize_momentum(1.5);
+/// # let mut integration_method = ConstantVolume::builder(0.001).build();
+/// # let interaction_model = Rigid(Zero);
+/// # let macrostate = ();
+/// integration_method.integrate_translation_with_filter(&mut microstate, &macrostate, &interaction_model, |b| b.tag < 2);
+/// microstate.increment_step();
+/// # Ok(())
+/// # }
+/// ```
+///
+/// To integrate some bodies with one integration method and other bodies with another,
+/// call `integrate_translation_half_step_one_with_filter`
+/// [`integrate_rotation_half_step_one_with_filter`] for all methods, then call
+/// `update_net_force_and_torque`, and finish with `integrate_translation_half_step_one_with_filter`
+/// [`integrate_rotation_half_step_one_with_filter`].
+/// The filters must select distinct subsets of bodies. The filters must also select
+/// the same bodies in half step one and half step two.
+/// ```
+/// # use hoomd_microstate::{Body, Microstate, property::{DynamicOrientedPoint, Point}};
+/// # use hoomd_vector::Cartesian;
+/// # use hoomd_md::{UpdateNetForce, ThermalizeMomentum, RotationalMotion, TranslationalMotion, method::ConstantVolume};
+/// # use hoomd_interaction::{Rigid, Zero};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let mut microstate = Microstate::builder()
+/// #     .bodies([
+/// #         Body::single_site(DynamicOrientedPoint {
+/// #           position: Cartesian::from([1.0, 2.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #         Body::single_site(DynamicOrientedPoint {
+/// #           position: Cartesian::from([-2.0, 3.0]),
+/// #           ..Default::default()
+/// #           },
+/// #           Point::default(),
+/// #           ),
+/// #     ])
+/// #     .try_build()?;
+/// # microstate.thermalize_momentum(1.5);
+/// # let mut integration_method_1 = ConstantVolume::builder(0.001).build();
+/// # let mut integration_method_2 = ConstantVolume::builder(0.001).build();
+/// # let interaction_model = Rigid(Zero);
+/// # let macrostate = ();
+/// integration_method_1.integrate_translation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
+/// integration_method_1.integrate_rotation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
+/// integration_method_2.integrate_translation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);
+/// integration_method_2.integrate_rotation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);
+/// microstate.update_net_force(&interaction_model);
+/// integration_method_1.integrate_translation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
+/// integration_method_1.integrate_rotation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
+/// integration_method_2.integrate_translation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);
+/// integration_method_2.integrate_rotation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);
+/// microstate.increment_step();
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`integrate_translation_and_rotation`]: Self::integrate_translation_and_rotation
+/// [`integrate_translation_and_rotation_with_filter`]: Self::integrate_translation_and_rotation_with_filter
+/// [`integrate_rotation_half_step_one_with_filter`]: Self::integrate_rotation_half_step_one_with_filter
+/// [`integrate_rotation_half_step_two_with_filter`]: Self::integrate_rotation_half_step_two_with_filter
 /// [`Orientation`]: hoomd_microstate::property::Orientation
 /// [`AngularMomentum`]: hoomd_microstate::property::AngularMomentum
 pub trait RotationalMotion<B, S, X, C, M> {
