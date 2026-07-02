@@ -2,7 +2,6 @@
 //! Similar to [`Versor`] in 3D and [`DoubleVersor`] in 4D, this approach is more
 //! numerically stable and space efficient than a 5x5 matrix representation.
 
-
 use crate::{Cartesian, Quaternion, Rotate, RotationMatrix};
 
 /// A unitary quaternion-valued matrix representing a rotation in SO(5).
