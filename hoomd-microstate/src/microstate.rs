@@ -217,6 +217,10 @@ pub struct Microstate<B, S = B, X = AllPairs<SiteKey>, C = Open> {
 
     /// Spatial data structure.
     spatial_data: X,
+
+    /// Number of conserved translational degrees of freedom.
+    #[serde(default)]
+    conserved_degrees_of_freedom: usize,
 }
 
 impl<B, S> Default for Microstate<B, S, AllPairs<SiteKey>, Open> {
@@ -264,6 +268,7 @@ impl<B, S> Microstate<B, S, AllPairs<SiteKey>, Open> {
             sites_ghosts: Vec::new(),
             boundary: Open,
             spatial_data: AllPairs::default(),
+            conserved_degrees_of_freedom: 0,
         }
     }
 
@@ -521,6 +526,48 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     #[inline]
     pub fn counter(&self) -> Counter {
         Counter::new(self.step, self.substep, self.seed)
+    }
+
+    /// The number of conserved degrees of freedom.
+    ///
+    /// Molecular dynamics integration methods that conserve the total system
+    /// momentum effectively remove *D* degrees of freedom from the system.
+    /// Those removed degrees of freedom must be accounted for to accurately
+    /// compute the kinetic temperature.
+    ///
+    /// Integration methods like `ConstantVolume` automatically set the number of
+    /// conserved degrees of freedom when they are applied to all bodies in the system
+    /// (momentum is not conserved when some bodies are motionless or are integrated
+    /// by other methods). As a consequence, the kinetic temperature will be computed
+    /// correctly only after the first step in the simulation.
+    ///
+    /// Use `conserved_degrees_of_freedom` to access it.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::Microstate;
+    /// # use hoomd_microstate::{Body, property::Point};
+    /// # use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let microstate = Microstate::builder()
+    /// # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+    ///     .try_build()?;
+    ///
+    /// let conserved_degrees_of_freedom = microstate.conserved_degrees_of_freedom();
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn conserved_degrees_of_freedom(&self) -> usize {
+        self.conserved_degrees_of_freedom
+    }
+
+    /// The number of conserved degrees of freedom (mutable).
+    #[inline]
+    pub fn conserved_degrees_of_freedom_mut(&mut self) -> &mut usize {
+        &mut self.conserved_degrees_of_freedom
     }
 }
 
@@ -1736,6 +1783,7 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
             ghosts: VecWithTags::new(),
             sites_ghosts: Vec::new(),
             spatial_data: self.spatial_data,
+            conserved_degrees_of_freedom: 0,
         };
 
         microstate.spatial_data.clear();
