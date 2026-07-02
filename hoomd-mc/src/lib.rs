@@ -11,12 +11,13 @@
 //! Apply the Metropolis Monte Carlo simulation method to systems of bodies.
 //!
 //! `hoomd-mc` provides building blocks that you can use to create a Monte Carlo
-//! simulation model. Start with a [`hoomd_microstate::Microstate`] to represent
+//! simulation model. Start with a [`Microstate`] to represent
 //! the properties of all the bodies and sites. Form a Hamiltonian using
 //! types from [`hoomd_interaction`] that implement [`TotalEnergy`], [`DeltaEnergyOne`],
 //! [`DeltaEnergyInsert`], and/or [`DeltaEnergyRemove`] and set the macrostate
 //! using one of the types from [`hoomd_simulation`].
 //!
+//! [`Microstate`]: hoomd_microstate::Microstate
 //! [`DeltaEnergyOne`]: hoomd_interaction::DeltaEnergyOne
 //! [`DeltaEnergyInsert`]: hoomd_interaction::DeltaEnergyInsert
 //! [`DeltaEnergyRemove`]: hoomd_interaction::DeltaEnergyRemove

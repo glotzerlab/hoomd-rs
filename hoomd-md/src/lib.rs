@@ -9,7 +9,119 @@
 )]
 
 //! Apply the molecular dynamics simulation method to systems of bodies.
-//! TODO: User guide
+//!
+//! `hoomd-md` provides building blocks that you can use to create a molecular dynamics
+//! simulation model. Start with a [`Microstate`] to represent the properties of all the
+//! bodies and sites. Form an interaction model using types from [`hoomd_interaction`]
+//! that implement [`NetBodyForce`] or [`NetBodyForceAndTorque`] and set the macrostate
+//! using one of the types from [`hoomd_simulation`].
+//!
+//! [`Microstate`]: hoomd_microstate::Microstate
+//! [`NetBodyForce`]: hoomd_interaction::NetBodyForce
+//! [`NetBodyForceAndTorque`]: hoomd_interaction::NetBodyForceAndTorque
+//! [`DeltaEnergyRemove`]: hoomd_interaction::DeltaEnergyRemove
+//! [`TotalEnergy`]: hoomd_interaction::TotalEnergy
+//!
+//! # Integration methods
+//!
+//! The [`TranslationalMotion`] and [`RotationalMotion`] traits describe types that
+//! can integrate the translational and/or rotational degrees of freedom in the
+//! microstate, respectively. Most users will call [`integrate_translation`]
+//! or [`integrate_translation_and_rotation`] to advance all bodies in the microstate
+//! forward one time step. See the trait documentation for details on how to pin some bodies
+//! in place and/or apply different integration methods to different bodies.
+//!
+//! [`integrate_translation`]: TranslationalMotion::integrate_translation
+//! [`integrate_translation_and_rotation`]: RotationalMotion::integrate_translation_and_rotation
+//!
+//! The [`ConstantVolume`] method integrates the equations of motion for the model
+//! while keeping the volume of the simulation boundary fixed. [`ConstantVolume`]
+//! can sample the microcanonical (NVE) or canonical (NVT) ensembles based on the
+//! choice of thermostat (see below).
+//!
+//! [`ConstantVolume`]: crate::method::ConstantVolume
+//!
+//! ## Body and site properties
+//!
+//! Currently, *hoomd-rs* implements [`TranslationalMotion`] for any [`InnerProduct`] vector
+//! space for bodies with [`Mass`], [`Momentum`], and [`NetForce`] properties in the same
+//! vector space as [`Position`]. For systems with only translational degrees of freedom,
+//! most users will choose [`DynamicPoint<Cartesian<N>>`] body properties and
+//! [`Point<Cartesian<N>>`] site properties.
+//!
+//! [`InnerProduct`]: hoomd_vector::InnerProduct
+//! [`Mass`]: hoomd_microstate::property::Mass
+//! [`Momentum`]: hoomd_microstate::property::Momentum
+//! [`NetForce`]: hoomd_microstate::property::NetForce
+//! [`Position`]: hoomd_microstate::property::Position
+//! [`DynamicPoint<Cartesian<N>>`]: hoomd_microstate::property::DynamicPoint
+//! [`Point<Cartesian<N>>`]: hoomd_microstate::property::Point
+//!
+//! Due to the mathematical nature of rotational degrees of freedom, *hoomd-rs* implements
+//! [`RotationalMotion`] specifically for [`DynamicOrientedPoint<Cartesian<2>, Angle>`] for
+//! 2D simulations and [`DynamicOrientedPoint<Cartesian<3>, Versor>`] for 3D. You must use
+//! one of these two types for body properties to integrate rotational degrees of freedom.
+//! There are fewer restrictions on the site properties type. Most users will choose
+//! [`Point<Cartesian<N>>`] or [`OrientedPoint<Cartesian<N>>`] site properties for
+//! models with rotational degrees of freedom, while some will need custom types.
+//! The choice for site properties is driven by the interaction model, not the integration
+//! method.
+//!
+//! [`DynamicOrientedPoint<Cartesian<2>, Angle>`]: hoomd_microstate::property::DynamicOrientedPoint
+//! [`DynamicOrientedPoint<Cartesian<3>, Versor>`]: hoomd_microstate::property::DynamicOrientedPoint
+//! [`OrientedPoint<Cartesian<N>>`]: hoomd_microstate::property::OrientedPoint
+//!
+//! ## Thermostats
+//!
+//! Some of the integration methods sample constant temperature ensembles using velocity
+//! rescaling thermostats. There are many algorithms to choose from. Find them in the
+//! [`thermostat`] module. Use [`NoThermostat`] to sample constant energy (or enthalpy)
+//! ensembles.
+//!
+//! [`NoThermostat`]: thermostat::NoThermostat
+//! 
+//! # The `Rigid` interaction model
+//!
+//! All integration methods in *hoomd-rs* model bodies as rigid bodies. The net force and
+//! torque on each body results from the forces and torques applied to its sites.
+//! The [`Rigid`] type implements [`NetBodyForce`] and [`NetBodyForceAndTorque`] when
+//! it wraps a type that computes forces ([`NetSiteForce`]) and torques
+//! ([`NetSiteForceAndTorque`]) on sites. For example:
+//! `Rigid<PairwiseCutoff<Isotropic<LennardJones>>>` is a valid interaction model
+//! for use with molecular dynamics integration methods.
+//!
+//! [`Rigid`]: hoomd_interaction::Rigid
+//! [`NetSiteForce`]: hoomd_interaction::NetSiteForce
+//! [`NetSiteForceAndTorque`]: hoomd_interaction::NetSiteForceAndTorque
+//!
+//! Most differentiable interaction models implement both [`NetSiteForce`] and all the
+//! Hamiltonian traits needed for Monte Carlo simulations in *hoomd-mc*. With these
+//! interaction models, you can freely swap between MD and MC simulation steps.
+//! Non-differentiable energies, such as [`Boxcar`] implement energy traits,
+//! but not forces and can therefore only be used with MC. Others, like active forces,
+//! might implement the force traits but not energy and can only be used with MD.
+//! Rust will validate the trait bounds and issue a compile error for invalid
+//! combinations.
+//!
+//! [`Boxcar`]: hoomd_interaction::univariate::Boxcar
+//!
+//! # Microstate modifiers
+//!
+//! Use [`ThermalizeMomentum`] and [`ThermalizeAngularMomentum`] to sample random
+//! momenta from a thermal distribution. Use [`ZeroCenterMomentum`] and
+//! [`ZeroCenterAngularMomentum`] to remove motion of the center of mass.
+//!
+//! All of these modifier traits are implemented for [`Microstate`] itself:
+//! e.g. `microstate.zero_center_momentum()`.
+//!
+//! # Compute properties of the microstate
+//!
+//! Use [`TranslationalKineticEnergy`] to compute the translational kinetic
+//! energy and count the corresponding translational degrees of freedom
+//! in the microstate. [`RotationalKineticEnergy`] does the same for
+//! rotational degrees of freedom.
+//!
+//! As with the modifies, the compute traits are implemented for [`Microstate`].
 
 use rand::Rng;
 
