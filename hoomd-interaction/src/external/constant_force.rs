@@ -6,9 +6,9 @@
 use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::property::Position;
-use hoomd_vector::{InnerProduct, Wedge};
+use hoomd_vector::{InnerProduct, Outer, Wedge};
 
-use crate::{SiteForce, SiteForceAndTorque};
+use crate::{SiteForceAndVirial, SiteForceVirialAndTorque};
 
 use super::super::SiteEnergy;
 
@@ -149,17 +149,18 @@ where
     }
 }
 
-impl<S, V> SiteForce<S> for ConstantForce<V> where
-V: InnerProduct,
+impl<S, V> SiteForceAndVirial<S> for ConstantForce<V> where
+V: InnerProduct + Outer,
+S: Position<Position = V>,
 {
     type Force = V;
 
-    /// Evaluate the force as a function of a single site's properties.
+    /// Evaluate the force and virial as a function of a single site's properties.
     ///
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::{external::ConstantForce, SiteForce};
+    /// use hoomd_interaction::{external::ConstantForce, SiteForceAndVirial};
     /// use hoomd_vector::Cartesian;
     /// use hoomd_microstate::property::Point;
     ///
@@ -172,32 +173,40 @@ V: InnerProduct,
     /// let a = Point { position: Cartesian::from([0.0, 0.0]) };
     /// let b = Point { position: Cartesian::from([0.0, 3.0]) };
     ///
-    /// let force_0 = constant_force.site_force(&a);
+    /// let (force_0, virial_0) = constant_force.site_force_and_virial(&a);
     /// assert_eq!(force_0, [0.0, -2.0].into());
+    /// todo!() // add virial check
     ///
-    /// let force_1 = constant_force.site_force(&b);
+    /// let (force_1, virial_1) = constant_force.site_force_and_virial(&b);
     /// assert_eq!(force_1, [0.0, -2.0].into());
+    /// todo!() // add virial check
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn site_force(&self, _site_properties: &S) -> Self::Force {
-        self.force()
+    fn site_force_and_virial(
+        &self,
+        site_properties: &S
+    ) -> (Self::Force, <Self::Force as Outer>::Output) {
+        let force = self.force();
+        let virial = force.outer(site_properties.position());
+        (force, virial)
     }
 }
 
-impl<S, V> SiteForceAndTorque<S> for ConstantForce<V> where
-V: InnerProduct + Wedge,
+impl<S, V> SiteForceVirialAndTorque<S> for ConstantForce<V> where
+V: InnerProduct + Wedge + Outer,
 V::Bivector: Default,
+S: Position<Position = V>,
 {
     type Force = V;
 
-    /// Evaluate the force and/or torque as a function of a single site's properties.
+    /// Evaluate the force, virial, and torque as a function of a single site's properties.
     ///
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::{external::ConstantForce, SiteForceAndTorque};
+    /// use hoomd_interaction::{external::ConstantForce, SiteForceVirialAndTorque};
     /// use hoomd_vector::Cartesian;
     /// use hoomd_microstate::property::Point;
     ///
@@ -210,18 +219,25 @@ V::Bivector: Default,
     /// let a = Point { position: Cartesian::from([0.0, 0.0]) };
     /// let b = Point { position: Cartesian::from([0.0, 3.0]) };
     ///
-    /// let (force_0, torque_0) = constant_force.site_force_and_torque(&a);
+    /// let (force_0, virial_0, torque_0) = constant_force.site_force_virial_and_torque(&a);
     /// assert_eq!(force_0, [0.0, -2.0].into());
     /// assert_eq!(torque_0, 0.0);
+    /// todo!() // add virial check
     ///
-    /// let (force_1, torque_1) = constant_force.site_force_and_torque(&b);
+    /// let (force_1, virial_1, torque_1) = constant_force.site_force_virial_and_torque(&b);
     /// assert_eq!(force_1, [0.0, -2.0].into());
     /// assert_eq!(torque_1, 0.0);
+    /// todo!() // add virial check
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn site_force_and_torque(&self, _site_properties: &S) -> (V, V::Bivector) {
-        (self.force(), V::Bivector::default())
+    fn site_force_virial_and_torque(
+        &self,
+        site_properties: &S
+    ) -> (V, <Self::Force as Outer>::Output, V::Bivector) {
+        let force = self.force();
+        let virial = force.outer(site_properties.position());
+        (force, virial, V::Bivector::default())
     }
 }

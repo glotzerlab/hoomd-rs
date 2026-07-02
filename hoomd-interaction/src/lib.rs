@@ -131,7 +131,7 @@ mod zero;
 pub use external_type::External;
 
 use hoomd_microstate::{Body, Microstate};
-use hoomd_vector::Wedge;
+use hoomd_vector::{Outer, Wedge};
 pub use hoomd_derive::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForce, NetSiteForceAndTorque, SitePairEnergy,
     TotalEnergy,
@@ -898,7 +898,7 @@ pub trait DeltaEnergyRemove<B, S, X, C> {
     ) -> f64;
 }
 
-/// Sum all the forces that act on a given body in a microstate.
+/// Sum all the forces and virials that act on a given body in a microstate.
 ///
 /// See [`Rigid`] for an example.
 ///
@@ -906,20 +906,26 @@ pub trait DeltaEnergyRemove<B, S, X, C> {
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-pub trait NetBodyForce<B, S, X, C> {
+pub trait NetBodyForceAndVirial<B, S, X, C> {
     /// The type of the result force. 
-    type Force;
+    type Force: Outer;
 
-    /// Compute the net force on a body in the microstate.
+    /// Compute the net force and virial on a body in the microstate.
     ///
-    /// # Return value
+    /// `microstate` describes the configuration and `body_index` is the index
+    /// of the body to compute.
     ///
-    /// `net_body_force` returns the force vector.
+    /// Returns:
+    ///     TODO
     #[must_use]
-    fn net_body_force(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> Self::Force;
+    fn net_body_force_and_virial(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        body_index: usize
+    ) -> (Self::Force, <Self::Force as Outer>::Output);
 }
 
-/// Sum all the forces and torques that act on a given body in a microstate.
+/// Sum all the forces, virials, and torques that act on a given body in a microstate.
 ///
 /// See [`Rigid`] for an example.
 ///
@@ -928,21 +934,26 @@ pub trait NetBodyForce<B, S, X, C> {
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `X`: The spatial data structure type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-pub trait NetBodyForceAndTorque<B, S, X, C> {
+pub trait NetBodyForceVirialAndTorque<B, S, X, C> {
     /// The type of the result force. 
-    type Force: Wedge;
+    type Force: Wedge + Outer;
     
-    /// Compute the net force and torque on a body in the microstate.
+    /// Compute the net force, virial, and torque on a body in the microstate.
     ///
-    /// # Return value
+    /// `microstate` describes the configuration and `body_index` is the index
+    /// of the body to compute.
     ///
-    /// `net_body_force_and_torque` returns the force and torque in a tuple:
-    /// `(force, torque)`.
+    /// Returns:
+    ///     TODO
     #[must_use]
-    fn net_body_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> (Self::Force, <Self::Force as Wedge>::Bivector);
+    fn net_body_force_virial_and_torque(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        body_index: usize
+    ) -> (Self::Force, <Self::Force as Outer>::Output, <Self::Force as Wedge>::Bivector);
 }
 
-/// Sum all the forces and torques that act on a given site in a microstate.
+/// Sum all the forces, virials, and torques that act on a given site in a microstate.
 /// 
 /// In molecular dynamics simulations, bodies move in response to the net force
 /// and torque applied to all sites in the body. As an intermediate step in that
@@ -978,32 +989,33 @@ pub trait NetBodyForceAndTorque<B, S, X, C> {
 ///     pairwise_cutoff: PairwiseCutoff<Isotropic<LennardJones>>,
 /// }
 /// ```
-pub trait NetSiteForceAndTorque<B, S, X, C> {
+pub trait NetSiteForceVirialAndTorque<B, S, X, C> {
     /// The type of the result force. 
-    type Force: Wedge;
+    type Force: Wedge + Outer;
 
-    /// Compute the net force and torque on a given site.
+    /// Compute the net force, virial, and torque on a given site.
     ///
-    /// `self` describes the force interaction model.
-    /// `net_site_force_and_torque` computes the total force and torque on
-    /// a site in `microstate` (identified by `site_index`) due to all other
-    /// sites.
+    /// `microstate` describes the configuration and `site_index` is the index
+    /// of the site to compute.
     ///
-    /// # Return value
+    /// Returns:
     ///
-    /// `net_site_force_and_torque` returns the force and torque in a tuple:
-    /// `(force, torque)`.
+    /// TODO
     #[must_use]
-    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> (Self::Force, <Self::Force as Wedge>::Bivector);
+    fn net_site_force_virial_and_torque(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        site_index: usize
+    ) -> (Self::Force, <Self::Force as Outer>::Output, <Self::Force as Wedge>::Bivector);
 }
 
-/// Sum all the forces that act on a given site in a microstate.
+/// Sum all the forces and virials that act on a given site in a microstate.
 /// 
 /// In molecular dynamics simulations, bodies move in response to the net
 /// force applied to all sites in the body. As an intermediate step in that
 /// calculation, a type that describes a *force interaction model* must
-/// implement [`NetSiteForce`] and compute the net force on a given *site* in
-/// the [`Microstate`].
+/// implement [`NetSiteForceAndVirial`] and compute the net force and virial on
+/// a given *site* in the [`Microstate`].
 ///
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
@@ -1033,26 +1045,29 @@ pub trait NetSiteForceAndTorque<B, S, X, C> {
 ///     pairwise_cutoff: PairwiseCutoff<Isotropic<LennardJones>>,
 /// }
 /// ```
-pub trait NetSiteForce<B, S, X, C> {
+pub trait NetSiteForceAndVirial<B, S, X, C> {
     /// The type of the result force. 
-    type Force;
+    type Force: Outer;
 
-    /// Compute the net force and torque on a given site.
+    /// Compute the net force and virial on a given site.
+    /// 
+    /// `microstate` describes the configuration and `site_index` is the index
+    /// of the site to compute.
+    /// 
+    /// Returns:
     ///
-    /// `self` describes the force interaction model. `net_site_force` computes
-    /// the total force on a site in `microstate` (identified by `site_index`)
-    /// due to all other sites.
-    ///
-    /// # Return value
-    ///
-    /// `net_site_force` returns the force vector.
+    /// TODO
     #[must_use]
-    fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> Self::Force;
+    fn net_site_force_and_virial(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        site_index: usize
+    ) -> (Self::Force, <Self::Force as Outer>::Output);
 }
 
-/// Compute the force on a single site as a function of its properties.
+/// Compute the force and virial on a single site as a function of its properties.
 ///
-/// The `SiteForce` trait describes a type that can compute the force on a
+/// The `SiteForceAndVirial` trait describes a type that can compute the force and virial on a
 /// site *as a function only of that site's properties*.
 ///
 /// The [`external`] module provides a number of commonly used implementations.
@@ -1060,17 +1075,17 @@ pub trait NetSiteForce<B, S, X, C> {
 ///
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait SiteForce<S> {
+pub trait SiteForceAndVirial<S> {
     /// The type of the result force. 
-    type Force;
+    type Force: Outer;
 
-    /// Evaluate the force as a function of a single site's properties.
-    fn site_force(&self, site_properties: &S) -> Self::Force;
+    /// Evaluate the force and virial as a function of a single site's properties.
+    fn site_force_and_virial(&self, site_properties: &S) -> (Self::Force, <Self::Force as Outer>::Output);
 }
 
-/// Compute the force and torque on a single site as a function of its properties.
+/// Compute the force, virial, and torque on a single site as a function of its properties.
 ///
-/// The `SiteForceAndTorque` trait describes a type that can compute the force and torque
+/// The `SiteForceVirialAndTorque` trait describes a type that can compute the force, virial, and torque
 /// on a site *as a function only of that site's properties*.
 ///
 /// The [`external`] module provides a number of commonly used implementations.
@@ -1078,46 +1093,59 @@ pub trait SiteForce<S> {
 ///
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait SiteForceAndTorque<S> {
+pub trait SiteForceVirialAndTorque<S> {
     /// The type of the result force. 
-    type Force: Wedge;
+    type Force: Wedge + Outer;
 
-    /// Evaluate the force and/or torque as a function of a single site's properties.
-    fn site_force_and_torque(&self, site_properties: &S) -> (Self::Force, <Self::Force as Wedge>::Bivector);
+    /// Evaluate the force, virial, and torque as a function of a single site's properties.
+    fn site_force_virial_and_torque(
+        &self,
+        site_properties: &S
+    ) -> (Self::Force, <Self::Force as Outer>::Output, <Self::Force as Wedge>::Bivector);
 }
 
-/// Compute the pairwise force on one site from another site.
+/// Compute the pairwise force and virial on one site from another site.
 ///
-/// The `SitePairForce` trait describes a type that can compute the force on a
-/// site by another site *as a function of the two site's properties*.
+/// The `SitePairForceAndVirial` trait describes a type that can compute the
+/// force and virial on a site by another site *as a function of the two sites'
+/// properties*.
 ///
 /// The [`pairwise`] module provides a number of commonly used implementations.
 /// Combine them with [`PairwiseCutoff`] newtype for use with MD simulations.
 ///
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait SitePairForce<S> {
+pub trait SitePairForceAndVirial<S> {
     /// The type of the result force. 
-    type Force;
+    type Force: Outer;
 
-    /// Evaluate the force on site `i` caused by site `j`.
-    fn site_pair_force(&self, site_properties_i: &S, site_properties_j: &S) -> Self::Force;
+    /// Evaluate the force  and virial on site `i` caused by site `j`.
+    fn site_pair_force_and_virial(
+        &self,
+        site_properties_i: &S,
+        site_properties_j: &S
+    ) -> (Self::Force, <Self::Force as Outer>::Output);
 }
 
-/// Compute the pairwise force and torque on one site from another site.
+/// Compute the pairwise force, virial, and torque on one site from another site.
 ///
-/// The `SitePairForceAndTorque` trait describes a type that can compute the force
-/// and torque on a site by another site *as a function of the two site's properties*.
+/// The `SitePairForceTorqueAndVirial` trait describes a type that can compute
+/// the force, virial, and torque on a site by another site *as a function of
+/// the two sites' properties*.
 ///
 /// The [`pairwise`] module provides a number of commonly used implementations.
 /// Combine them with [`PairwiseCutoff`] newtype for use with MD simulations.
 ///
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait SitePairForceAndTorque<S> {
+pub trait SitePairForceVirialAndTorque<S> {
     /// The type of the result force. 
-    type Force: Wedge;
+    type Force: Wedge + Outer;
 
-    /// Evaluate the force and torque on site `i` caused by site `j`.
-    fn site_pair_force_and_torque(&self, site_properties_i: &S, site_properties_j: &S) -> (Self::Force, <Self::Force as Wedge>::Bivector);
+    /// Evaluate the force, torque, and virial on site `i` caused by site `j`.
+    fn site_pair_force_virial_and_torque(
+        &self,
+        site_properties_i: &S,
+        site_properties_j: &S
+    ) -> (Self::Force, <Self::Force as Outer>::Output, <Self::Force as Wedge>::Bivector);
 }

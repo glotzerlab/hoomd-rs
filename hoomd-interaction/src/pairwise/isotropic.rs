@@ -5,9 +5,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForce, SitePairForceAndTorque, univariate::{UnivariateEnergy, UnivariateForce}};
+use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForceAndVirial, SitePairForceVirialAndTorque, univariate::{UnivariateEnergy, UnivariateForce}};
 use hoomd_microstate::property::Position;
-use hoomd_vector::{InnerProduct, Metric, Wedge};
+use hoomd_vector::{InnerProduct, Metric, Outer, Wedge};
 
 /// Compute isotropic interactions between a pair of sites.
 ///
@@ -180,15 +180,16 @@ impl<E> MaximumInteractionRange for Isotropic<E> {
     }
 }
 
-impl<V, S, E> SitePairForce<S> for Isotropic<E>
+impl<V, S, E> SitePairForceAndVirial<S> for Isotropic<E>
 where
-    V: Default + InnerProduct,
+    V: Default + InnerProduct + Outer,
     S: Position<Position = V>,
     E: UnivariateForce,
+    <V as Outer>::Output: Default
 {
     type Force = V;
 
-    /// Evaluate the force on site `i` caused by site `j`.
+    /// Evaluate the force and virial on site `i` caused by site `j`.
     ///
     /// Isotropic forces always act along the radial direction:
     /// ```math
@@ -228,39 +229,46 @@ where
     ///     r_cut: 2.5,
     /// };
     ///
-    /// let force_ab = lennard_jones.site_pair_force(&a, &b);
-    /// let force_ba = lennard_jones.site_pair_force(&b, &a);
+    /// let (force_ab, virial_ab) = lennard_jones.site_pair_force_and_virial(&a, &b);
+    /// let (force_ba, virial_ba) = lennard_jones.site_pair_force_and_virial(&b, &a);
     /// 
     /// assert_eq!(force_ab, -force_ba);
     /// assert_relative_eq!(force_ab, Cartesian::from([0.0, 0.0]), epsilon = 1e-14);
-    /// 
+    /// todo!() // add virial check
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn site_pair_force(&self, site_properties_i: &S, site_properties_j: &S) -> Self::Force {
+    fn site_pair_force_and_virial(
+        &self,
+        site_properties_i: &S,
+        site_properties_j: &S
+    ) -> (Self::Force, <Self::Force as Outer>::Output) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();
         let distance = r_ji.norm();
 
         if distance >= self.r_cut {
-            V::default()
+            (V::default(), <V as Outer>::Output::default())
         } else {
-            let distance_inverse = 1.0 / distance;
-            r_ji * self.interaction.force(distance) * distance_inverse
+            let force = (r_ji / distance) * self.interaction.force(distance);
+            let virial = force.outer(&r_ji);
+            (force, virial)
         }
+
     }
 }
 
-impl<V, S, E> SitePairForceAndTorque<S> for Isotropic<E>
+impl<V, S, E> SitePairForceVirialAndTorque<S> for Isotropic<E>
 where
-    V: Default + InnerProduct + Wedge,
+    V: Default + InnerProduct + Wedge + Outer,
     V::Bivector: Default,
     S: Position<Position = V>,
     E: UnivariateForce,
+    <V as Outer>::Output: Default,
 {
     type Force = V;
 
-    /// Evaluate the force and torque on site `i` caused by site `j`.
+    /// Evaluate the force, virial, and torque on site `i` caused by site `j`.
     ///
     /// Isotropic forces always act along the radial direction:
     /// ```math
@@ -273,21 +281,23 @@ where
     /// where $` -\frac{\mathrm{d} U}{\mathrm{d} r} `$ is given by `E`'s [`UnivariateForce`]
     /// implementation. 
     ///
-    /// Radial forces produce 0 torque.
+    /// Radial forces produce zero torque.
     #[inline]
-    fn site_pair_force_and_torque(&self, site_properties_i: &S, site_properties_j: &S) -> (V, V::Bivector) {
+    fn site_pair_force_virial_and_torque(
+        &self,
+        site_properties_i: &S,
+        site_properties_j: &S
+    ) -> (V, <Self::Force as Outer>::Output, V::Bivector) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();
         let distance = r_ji.norm();
 
-        let force = if distance >= self.r_cut {
-            V::default()
+        if distance >= self.r_cut {
+            (V::default(), <V as Outer>::Output::default(), V::Bivector::default())
         } else {
-            let distance_inverse = 1.0 / distance;
-            r_ji * self.interaction.force(distance) * distance_inverse
-        };
-        
-        let torque = V::Bivector::default();
-
-        (force, torque)
+            let force = (r_ji / distance) * self.interaction.force(distance);
+            let virial = force.outer(&r_ji);
+            let torque = V::Bivector::default();
+            (force, virial, torque)
+        }
     }
 }

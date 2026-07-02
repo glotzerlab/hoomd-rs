@@ -5,10 +5,19 @@
 
 use serde::{Deserialize, Serialize};
 use crate::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForce, NetSiteForceAndTorque, SiteEnergy, SiteForce, SiteForceAndTorque, TotalEnergy
+    DeltaEnergyInsert,
+    DeltaEnergyOne,
+    DeltaEnergyRemove,
+    MaximumInteractionRange,
+    NetSiteForceAndVirial,
+    NetSiteForceVirialAndTorque,
+    SiteEnergy,
+    SiteForceAndVirial,
+    SiteForceVirialAndTorque,
+    TotalEnergy
 };
 use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Transform};
-use hoomd_vector::Wedge;
+use hoomd_vector::{Outer, Wedge};
 
 /// Interactions between sites and external fields.
 ///
@@ -553,18 +562,20 @@ where
     }
 }
 
-impl<V, B, S, X, C, E> NetSiteForce<B, S, X, C> for External<E>
+impl<V, B, S, X, C, E> NetSiteForceAndVirial<B, S, X, C> for External<E>
 where
-    E: SiteForce<S, Force = V>
+    V: Outer,
+    S: Position<Position = V>,
+    E: SiteForceAndVirial<S, Force = V>,
 {
     type Force = V;
 
-    /// Compute the net force on a given site.
+    /// Compute the net force and virial on a given site.
     ///
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::{NetSiteForce, External, external::ConstantForce};
+    /// use hoomd_interaction::{NetSiteForceAndVirial, External, external::ConstantForce};
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
@@ -577,28 +588,34 @@ where
     ///     r_0: Cartesian::default(),
     /// });
     ///
-    /// let force = constant_force.net_site_force(
+    /// let (force, virial) = constant_force.net_site_force_and_virial(
     ///     &microstate,
     ///     0);
     /// assert_eq!(force, [0.0, -1.0].into());
+    /// todo!();    // TODO: add virial check
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn net_site_force(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> V {
+    fn net_site_force_and_virial(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        site_index: usize
+    ) -> (V, <V as Outer>::Output) {
         let site = &microstate.sites()[site_index];
-        self.0.site_force(&site.properties)
+        self.0.site_force_and_virial(&site.properties)
     }
 }
 
-impl<V, B, S, X, C, E> NetSiteForceAndTorque<B, S, X, C> for External<E>
+impl<V, B, S, X, C, E> NetSiteForceVirialAndTorque<B, S, X, C> for External<E>
 where
-    V: Wedge,
-    E: SiteForceAndTorque<S, Force = V>
+    V: Wedge + Outer,
+    S: Position<Position = V>,
+    E: SiteForceVirialAndTorque<S, Force = V>,
 {
     type Force = V;
     
-    /// Compute the net force and torque on a given site.
+    /// Compute the net force, virial, and torque on a given site.
     /// 
     /// # Example
     ///
@@ -616,18 +633,24 @@ where
     ///     r_0: Cartesian::default(),
     /// });
     ///
-    /// let (force, torque) = constant_force.net_site_force_and_torque(
+    /// let (force, virial, torque) = constant_force.net_site_force_virial_and_torque(
     ///     &microstate,
     ///     0);
     /// assert_eq!(force, [0.0, -1.0].into());
+    /// todo!();    // TODO: add virial check
     /// assert_eq!(torque, 0.0);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn net_site_force_and_torque(&self, microstate: &Microstate<B, S, X, C>, site_index: usize) -> (V, V::Bivector) {
+    fn net_site_force_virial_and_torque(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        site_index: usize
+    ) -> (V, <V as Outer>::Output, V::Bivector) {
         let site = &microstate.sites()[site_index];
-        self.0.site_force_and_torque(&site.properties)
+        let (force, virial, torque) = self.0.site_force_virial_and_torque(&site.properties);
+        (force, virial, torque)
     }
 }
 

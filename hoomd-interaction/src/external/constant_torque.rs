@@ -4,9 +4,9 @@
 //! Implement [`ConstantTorque`]
 use serde::{Deserialize, Serialize};
 
-use hoomd_vector::Wedge;
+use hoomd_vector::{Outer, Wedge};
 
-use crate::SiteForceAndTorque;
+use crate::SiteForceVirialAndTorque;
 
 /// Apply the same torque to every site, independent of the site's properties.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -15,14 +15,18 @@ pub struct ConstantTorque<V: Wedge> {
     pub torque: V::Bivector,
 }
 
-impl<S, V> SiteForceAndTorque<S> for ConstantTorque<V> where
-V: Default + Wedge,
+impl<S, V> SiteForceVirialAndTorque<S> for ConstantTorque<V> where
+V: Default + Wedge + Outer,
 V::Bivector: Copy + Default,
+<V as Outer>::Output: Default,
 {
     type Force = V;
 
     #[inline]
-    fn site_force_and_torque(&self, _site_properties: &S) -> (V, V::Bivector) {
-        (V::default(), self.torque)
+    fn site_force_virial_and_torque(
+        &self,
+        _site_properties: &S
+    ) -> (V, <V as Outer>::Output, V::Bivector) {
+        (V::default(), <V as Outer>::Output::default(), self.torque)
     }
 }
