@@ -39,6 +39,7 @@ Symbol definitions:
 | $`\rho`$                                  | Number density. |
 | $`\vec{a}_1`$, $`\vec{a}_2`$, $`\vec{a}_3`$   | Box unit cell vectors. |
 | $`\vec{F}`$                               | Force. |
+| $ `\mathbf{W}`$                           | Virial. |
 | $`\vec{\tau}`$                            | Torque. |
 | $`U`$                                     | Potential energy. |
 | $`K`$                                     | Kinetic energy. |
