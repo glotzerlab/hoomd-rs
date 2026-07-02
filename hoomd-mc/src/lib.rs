@@ -91,6 +91,7 @@ use std::ops::{Add, AddAssign};
 use hoomd_microstate::Microstate;
 use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
 
+mod grand_canonical;
 mod hypercuboid;
 mod parallel_sweep;
 mod quick_compress;
