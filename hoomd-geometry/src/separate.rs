@@ -17,7 +17,7 @@ pub trait ShapePenetration<const N: usize, V: Vector + InnerProduct> {
     /// .
     ///
     /// Sep function will come up with an initial guess
-    fn penetration_vector<A, B>(a: &A, v: &B) -> Result<V, PenetrationError>;
+    fn penetration_vector<A, B>(a: &A, b: &B) -> Result<V, PenetrationError>;
 
     /// .
     fn penetration_vector_from_guess<A, B>(a: &A, b: &B, guess: &V) -> Result<V, PenetrationError>;
