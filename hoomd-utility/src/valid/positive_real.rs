@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
     fmt,
-    ops::{Div, DivAssign, Mul, MulAssign},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign},
 };
 
 use super::Error;
@@ -152,6 +152,20 @@ impl DivAssign<PositiveReal> for PositiveReal {
     #[inline]
     fn div_assign(&mut self, rhs: PositiveReal) {
         self.0 /= rhs.0;
+    }
+}
+
+impl Add for PositiveReal {
+    type Output = Self;
+    #[inline]
+    fn add(self, rhs: Self) -> Self {
+        Self(self.0 + rhs.0)
+    }
+}
+impl AddAssign<PositiveReal> for PositiveReal {
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0;
     }
 }
 
