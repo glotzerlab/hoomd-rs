@@ -59,6 +59,7 @@ impl<const N: usize, R: Rotate<Cartesian<N>>> ShapePenetration<N, Hypersphere<N>
 #[cfg(test)]
 mod tests {
     use hoomd_vector::{Cartesian, Versor};
+    use std::assert_matches;
 
     use crate::{
         separate::{PenetrationError, ShapePenetration},
@@ -73,10 +74,10 @@ mod tests {
         let q = Versor::default();
 
         let displacement = [0.0, 0.0, 3.001].into();
-        match ShapePenetration::penetration_vector(&a, &b, origin, q, displacement, q) {
-            Err(PenetrationError::DoesNotIntersect) => true,
-            _ => false,
-        };
+        assert_matches!(
+            ShapePenetration::penetration_vector(&a, &b, origin, q, displacement, q),
+            Err(PenetrationError::DoesNotIntersect)
+        );
 
         Ok(())
     }
