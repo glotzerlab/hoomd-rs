@@ -41,11 +41,11 @@ impl<const N: usize, R: Rotate<Cartesian<N>>> ShapePenetration<N, Cartesian<N>, 
         v_b: Cartesian<N>,
         _o_b: R,
     ) -> Result<Cartesian<N>, PenetrationError> {
-        let v_center_center = (v_b - v_a);
-        if v_center_center <= (a.radius + b.radius).get() {
+        let v_center_center = v_b - v_a;
+        if v_center_center.norm_squared() <= (a.radius + b.radius).get().powi(2) {
             return Ok(v_center_center);
         }
-        Error::DoesNotIntersect;
+        Err(PenetrationError::DoesNotIntersect)
     }
     // fn penetration_vector_from_guess<A, B>(
     //     a: &A,
