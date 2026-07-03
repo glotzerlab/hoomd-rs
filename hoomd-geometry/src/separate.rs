@@ -33,15 +33,19 @@ pub trait ShapePenetration<const N: usize, V: Vector + InnerProduct, R: Rotate<V
 impl<const N: usize, R: Rotate<Cartesian<N>>> ShapePenetration<N, Cartesian<N>, R>
     for Hypersphere<N>
 {
-    fn penetration_vector<A, B>(
-        a: &A,
-        b: &B,
+    fn penetration_vector(
+        a: &Hypersphere<N>,
+        b: &Hypersphere<N>,
         v_a: Cartesian<N>,
-        o_a: R,
+        _o_a: R,
         v_b: Cartesian<N>,
-        o_b: R,
+        _o_b: R,
     ) -> Result<Cartesian<N>, PenetrationError> {
-        todo!()
+        let v_center_center = (v_b - v_a);
+        if v_center_center <= (a.radius + b.radius).get() {
+            return Ok(v_center_center);
+        }
+        Error::DoesNotIntersect;
     }
     // fn penetration_vector_from_guess<A, B>(
     //     a: &A,
