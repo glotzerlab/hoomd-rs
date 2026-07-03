@@ -10,7 +10,7 @@ pub enum PenetrationError {
     DoesNotIntersect,
 }
 
-pub trait ShapePenetration<const N: usize, V: Vector + InnerProduct, R: Rotate<V>> {
+pub trait ShapePenetration<const N: usize, P: Vector + InnerProduct, R: Rotate<P>> {
     /// .
     const TOLERANCE: f64 = 1e-12;
 
@@ -20,11 +20,11 @@ pub trait ShapePenetration<const N: usize, V: Vector + InnerProduct, R: Rotate<V
     fn penetration_vector<A, B>(
         a: &A,
         b: &B,
-        v_a: V,
+        v_a: P,
         o_a: R,
-        v_b: V,
+        v_b: P,
         o_b: R,
-    ) -> Result<V, PenetrationError>;
+    ) -> Result<P, PenetrationError>;
 
     // /// .
     // fn penetration_vector_from_guess<A, B>(a: &A, b: &B, guess: &V) -> Result<V, PenetrationError>;
@@ -33,8 +33,8 @@ pub trait ShapePenetration<const N: usize, V: Vector + InnerProduct, R: Rotate<V
 impl<const N: usize, R: Rotate<Cartesian<N>>> ShapePenetration<N, Cartesian<N>, R>
     for Hypersphere<N>
 {
-    fn penetration_vector(
-        a: &Hypersphere<N>,
+    fn penetration_vector<Hypersphere<N>, Hypersphere<N>>(
+        a: &Hypesphere<N>,
         b: &Hypersphere<N>,
         v_a: Cartesian<N>,
         _o_a: R,
@@ -54,4 +54,27 @@ impl<const N: usize, R: Rotate<Cartesian<N>>> ShapePenetration<N, Cartesian<N>, 
     // ) -> Result<Cartesian<N>, PenetrationError> {
     //     todo!()
     // }
+}
+
+#[cfg(test)]
+mod tests {
+    use hoomd_vector::{Cartesian, Versor};
+
+    use crate::{separate::ShapePenetration, shape::Hypersphere};
+
+    #[test]
+    fn spheres_penetrate() -> anyhow::Result<()> {
+        let a = Hypersphere::<3>::with_radius(0.5.try_into()?);
+        let b = Hypersphere::<3>::with_radius(2.5.try_into()?);
+        let origin = Cartesian::<3>::default();
+        let q = Versor::default();
+
+        let displacement = [0.0, 0.0, 3.001].into();
+        assert!(
+            ShapePenetration::<3, _, _>::penetration_vector(&a, &b, origin, q, displacement, q)
+                .is_err()
+        );
+
+        Ok(())
+    }
 }
