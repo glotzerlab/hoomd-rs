@@ -14,7 +14,7 @@ pub trait ShapePenetration<const N: usize, S, P: Vector + InnerProduct, R: Rotat
     /// .
     const TOLERANCE: f64 = 1e-12;
 
-    /// .
+    /// Return the vector that translates A such that it no longer overlaps B.
     ///
     /// Sep function will come up with an initial guess
     fn penetration_vector(
@@ -42,22 +42,18 @@ impl<const N: usize, R: Rotate<Cartesian<N>>> ShapePenetration<N, Hypersphere<N>
         _o_b: R,
     ) -> Result<Cartesian<N>, PenetrationError> {
         let v_center_center = v_b - v_a;
-        if v_center_center.norm_squared() <= (self.radius + other.radius).get().powi(2) {
-            return Ok(v_center_center);
+        let d_center_center = v_center_center.norm();
+        let radii_sum = (self.radius + other.radius).get();
+        if d_center_center <= radii_sum {
+            return Ok(v_center_center * (d_center_center.recip() * (d_center_center - radii_sum)));
         }
         Err(PenetrationError::DoesNotIntersect)
     }
-    // fn penetration_vector_from_guess<A, B>(
-    //     a: &A,
-    //     b: &B,
-    //     guess: &Cartesian<N>,
-    // ) -> Result<Cartesian<N>, PenetrationError> {
-    //     todo!()
-    // }
 }
 
 #[cfg(test)]
 mod tests {
+    use approxim::assert_relative_eq;
     use hoomd_vector::{Cartesian, Versor};
     use std::assert_matches;
 
@@ -67,7 +63,7 @@ mod tests {
     };
 
     #[test]
-    fn spheres_penetrate() -> anyhow::Result<()> {
+    fn spheres_penetrate_along_z() -> anyhow::Result<()> {
         let a = Hypersphere::<3>::with_radius(0.5.try_into()?);
         let b = Hypersphere::<3>::with_radius(2.5.try_into()?);
         let origin = Cartesian::<3>::default();
@@ -79,6 +75,10 @@ mod tests {
             Err(PenetrationError::DoesNotIntersect)
         );
 
+        let displacement = [0.0, 0.0, 2.999].into();
+        let penetration = ShapePenetration::penetration_vector(&a, &b, origin, q, displacement, q)
+            .expect("Should overlap.");
+        assert_relative_eq!(penetration, Cartesian::from([0.0, 0.0, -0.001]));
         Ok(())
     }
 }
