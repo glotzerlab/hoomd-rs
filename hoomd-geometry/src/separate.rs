@@ -10,16 +10,16 @@ pub enum PenetrationError {
     DoesNotIntersect,
 }
 
-pub trait ShapePenetration<const N: usize, P: Vector + InnerProduct, R: Rotate<P>> {
+pub trait ShapePenetration<const N: usize, S, P: Vector + InnerProduct, R: Rotate<P>> {
     /// .
     const TOLERANCE: f64 = 1e-12;
 
     /// .
     ///
     /// Sep function will come up with an initial guess
-    fn penetration_vector<A, B>(
-        a: &A,
-        b: &B,
+    fn penetration_vector(
+        &self,
+        other: &S,
         v_a: P,
         o_a: R,
         v_b: P,
@@ -30,19 +30,19 @@ pub trait ShapePenetration<const N: usize, P: Vector + InnerProduct, R: Rotate<P
     // fn penetration_vector_from_guess<A, B>(a: &A, b: &B, guess: &V) -> Result<V, PenetrationError>;
 }
 
-impl<const N: usize, R: Rotate<Cartesian<N>>> ShapePenetration<N, Cartesian<N>, R>
+impl<const N: usize, R: Rotate<Cartesian<N>>> ShapePenetration<N, Hypersphere<N>, Cartesian<N>, R>
     for Hypersphere<N>
 {
-    fn penetration_vector<Hypersphere<N>, Hypersphere<N>>(
-        a: &Hypesphere<N>,
-        b: &Hypersphere<N>,
+    fn penetration_vector(
+        &self,
+        other: &Hypersphere<N>,
         v_a: Cartesian<N>,
         _o_a: R,
         v_b: Cartesian<N>,
         _o_b: R,
     ) -> Result<Cartesian<N>, PenetrationError> {
         let v_center_center = v_b - v_a;
-        if v_center_center.norm_squared() <= (a.radius + b.radius).get().powi(2) {
+        if v_center_center.norm_squared() <= (self.radius + other.radius).get().powi(2) {
             return Ok(v_center_center);
         }
         Err(PenetrationError::DoesNotIntersect)
@@ -70,10 +70,7 @@ mod tests {
         let q = Versor::default();
 
         let displacement = [0.0, 0.0, 3.001].into();
-        assert!(
-            ShapePenetration::<3, _, _>::penetration_vector(&a, &b, origin, q, displacement, q)
-                .is_err()
-        );
+        assert!(ShapePenetration::penetration_vector(&a, &b, origin, q, displacement, q).is_err());
 
         Ok(())
     }
