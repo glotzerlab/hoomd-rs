@@ -186,7 +186,7 @@ impl<E> PairwiseCutoff<E> {
     ///
     /// assert_relative_eq!(force_0, Cartesian::from([-24.0, 0.0, 0.0]));
     /// assert_relative_eq!(force_1, Cartesian::from([24.0, 0.0, 0.0]));
-    /// todo!() // add virial check
+    /// todo!("add virial check");
     /// # Ok(())
     /// # }
     /// ```
@@ -529,7 +529,7 @@ where
     ///
     /// assert_relative_eq!(force_0, Cartesian::from([-24.0, 0.0, 0.0]));
     /// assert_relative_eq!(force_1, Cartesian::from([24.0, 0.0, 0.0]));
-    /// todo!() // add virial check
+    /// todo!("add virial check");
     /// # Ok(())
     /// # }
     /// ```

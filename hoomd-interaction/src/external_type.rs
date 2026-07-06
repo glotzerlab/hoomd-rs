@@ -592,7 +592,7 @@ where
     ///     &microstate,
     ///     0);
     /// assert_eq!(force, [0.0, -1.0].into());
-    /// todo!();    // TODO: add virial check
+    /// todo!("add virial check");
     /// # Ok(())
     /// # }
     /// ```
@@ -620,7 +620,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::{NetSiteForceAndTorque, External, external::ConstantForce};
+    /// use hoomd_interaction::{NetSiteForceVirialAndTorque, External, external::ConstantForce};
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
@@ -637,7 +637,7 @@ where
     ///     &microstate,
     ///     0);
     /// assert_eq!(force, [0.0, -1.0].into());
-    /// todo!();    // TODO: add virial check
+    /// todo!("add virial check");
     /// assert_eq!(torque, 0.0);
     /// # Ok(())
     /// # }

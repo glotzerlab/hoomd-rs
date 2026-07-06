@@ -37,23 +37,24 @@
 //! # Force interaction models
 //!
 //! Molecular dynamics simulations are driven by the forces and torques that act
-//! on the *bodies* in the simulation ([`NetBodyForce`], [`NetBodyForceAndTorque`]).
+//! on the *bodies* in the simulation ([`NetBodyForceAndVirial`], [`NetBodyForceVirialAndTorque`]).
 //! The *body* forces and torques result from forces and torques on the *sites*
-//! [`NetSiteForce`], [`NetSiteForceAndTorque`]). When an MD model is Hamiltonian,
+//! [`NetSiteForceAndVirial`], [`NetSiteForceVirialAndTorque`]). When an MD model is Hamiltonian,
 //! the same types that implement [`DeltaEnergyOne`] (and related traits) also
-//! implement [`NetSiteForce`] and/or [`NetSiteForceAndTorque`].
+//! implement [`NetSiteForceAndVirial`] and/or [`NetSiteForceVirialAndTorque`].
+//! Virials are always calculated alongside forces.
 //!
 //! Given a microstate and the index of a site in that microstate,
-//! [`NetSiteForce`] and/or [`NetSiteForceAndTorque`] compute the net force
+//! [`NetSiteForceAndVirial`] and/or [`NetSiteForceVirialAndTorque`] compute the net force and virial
 //! (and torque) acting on that site. Thus, you can use your `hamiltonian`
 //! variable to compute both energy and force properties on the system.
 //! Use `Rigid(hamiltonian)` with MD integration methods. The [`Rigid`]
-//! type implements [`NetBodyForce`] and/or [`NetBodyForceAndTorque`] for types
-//! that implement [`NetSiteForce`] or [`NetSiteForceAndTorque`] respectively.
+//! type implements [`NetBodyForceAndVirial`] and/or [`NetBodyForceVirialAndTorque`] for types
+//! that implement [`NetSiteForceAndVirial`] or [`NetSiteForceVirialAndTorque`] respectively.
 //!
-//! Not all MD models are Hamiltonian, so types may implement [`NetSiteForce`]
+//! Not all MD models are Hamiltonian, so types may implement [`NetSiteForceAndVirial`]
 //! but but not [`TotalEnergy`]. Similarly, not all Hamiltonian types are
-//! differentiable and may implement [`DeltaEnergyOne`] but not [`NetSiteForce`].
+//! differentiable and may implement [`DeltaEnergyOne`] but not [`NetSiteForceAndVirial`].
 //! 
 //! All the force interaction model traits can be automatically derived using a
 //! `#[derive()]` macro of the same name. The derived implementation sums over
@@ -79,27 +80,27 @@
 //!
 //! The [`SiteEnergy`] trait describes a type that computes the contribution
 //! of a single site to the total energy as a function only of that site's
-//! properties along with fixed external parameters. [`SiteForce`] and
-//! [`SiteForceAndTorque`] describe the force (and torque) on the site commensurate
+//! properties along with fixed external parameters. [`SiteForceAndVirial`] and
+//! [`SiteForceVirialAndTorque`] describe the force (and torque) on the site commensurate
 //! with that energy. The [`External`] type implements all the Hamiltonian and force
-//! interaction model traits. It applies the wrapped type's [`SiteEnergy`], [`SiteForce`],
-//! and/or [`SiteForceAndTorque`] implementations to all the sites in the microstate.
-//! See [`external`] for a list of built-in [`SiteEnergy`], [`SiteForce`] and
-//! [`SiteForceAndTorque`] implementations.
+//! interaction model traits. It applies the wrapped type's [`SiteEnergy`], [`SiteForceAndVirial`],
+//! and/or [`SiteForceVirialAndTorque`] implementations to all the sites in the microstate.
+//! See [`external`] for a list of built-in [`SiteEnergy`], [`SiteForceAndVirial`] and
+//! [`SiteForceVirialAndTorque`] implementations.
 //!
 //! # Interactions between all pairs of sites
 //!
 //! The [`SitePairEnergy`] trait describes a type that computes the energy
 //! that a pair of sites contributes to the Hamiltonian as a function of
-//! the properties of the two sites. Similarly, [`SitePairForce`] and
-//! [`SitePairForceAndTorque`] describe the force (and torque) between
+//! the properties of the two sites. Similarly, [`SitePairForceAndVirial`] and
+//! [`SitePairForceVirialAndTorque`] describe the force (and torque) between
 //! the pair commensurate with that energy. The [`PairwiseCutoff`] type implements
 //! all the Hamiltonian and force interaction model traits. It applies the wrapped
-//! type's [`SitePairEnergy`], [`SitePairForce`], and/or [`SitePairForceAndTorque`]
+//! type's [`SitePairEnergy`], [`SitePairForceAndVirial`], and/or [`SitePairForceVirialAndTorque`]
 //! to all pairs of sites that are within the maximum interaction range.
 //!
 //! The [`pairwise`] module provides numerous types that implement
-//! [`SitePairEnergy`], [`SitePairForce`], and [`SitePairForceAndTorque`]
+//! [`SitePairEnergy`], [`SitePairForceAndVirial`], and [`SitePairForceVirialAndTorque`]
 //! including [`Isotropic`] (which wraps any univariate potential), [`HardShape`]
 //! (which wraps a shape from [`hoomd_geometry`], and many others.
 //!
@@ -977,19 +978,19 @@ pub trait NetBodyForceVirialAndTorque<B, S, X, C> {
 ///
 /// # Derive macro
 ///
-/// Use the [`NetSiteForceAndTorque`](macro@NetSiteForceAndTorque) derive macro to
-/// automatically implement the `NetSiteForceAndTorque` trait on a type. The derived
+/// Use the [`NetSiteForceVirialAndTorque`](macro@NetSiteForceVirialAndTorque) derive macro to
+/// automatically implement the `NetSiteForceVirialAndTorque` trait on a type. The derived
 /// implementation sums the result of `net_site_force_and_torque` over all fields in
 /// the struct (in the order in which fields are named in the struct definition).
 /// ```
 /// use hoomd_interaction::{
-///     NetSiteForceAndTorque, External, PairwiseCutoff, external::ConstantForce,
+///     NetSiteForceVirialAndTorque, External, PairwiseCutoff, external::ConstantForce,
 ///     pairwise::Isotropic, univariate::LennardJones,
 /// };
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
 ///
-/// #[derive(NetSiteForceAndTorque)]
+/// #[derive(NetSiteForceVirialAndTorque)]
 /// struct Hamiltonian {
 ///     linear: External<ConstantForce<Cartesian<2>>>,
 ///     pairwise_cutoff: PairwiseCutoff<Isotropic<LennardJones>>,
@@ -1033,19 +1034,19 @@ pub trait NetSiteForceVirialAndTorque<B, S, X, C> {
 ///
 /// # Derive macro
 ///
-/// Use the [`NetSiteForce`](macro@NetSiteForce) derive macro to automatically
-/// implement the `NetSiteForce` trait on a type. The derived implementation
+/// Use the [`NetSiteForceAndVirial`](macro@NetSiteForceAndVirial) derive macro to automatically
+/// implement the `NetSiteForceAndVirial` trait on a type. The derived implementation
 /// sums the result of `net_site_force` over all fields in the struct (in the
 /// order in which fields are named in the struct definition).
 /// ```
 /// use hoomd_interaction::{
-///     NetSiteForce, External, PairwiseCutoff, external::ConstantForce,
+///     NetSiteForceAndVirial, External, PairwiseCutoff, external::ConstantForce,
 ///     pairwise::Isotropic, univariate::LennardJones,
 /// };
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
 ///
-/// #[derive(NetSiteForce)]
+/// #[derive(NetSiteForceAndVirial)]
 /// struct Hamiltonian {
 ///     linear: External<ConstantForce<Cartesian<2>>>,
 ///     pairwise_cutoff: PairwiseCutoff<Isotropic<LennardJones>>,

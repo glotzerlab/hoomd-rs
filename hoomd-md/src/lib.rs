@@ -260,7 +260,7 @@ pub trait Thermostat<M> {
 /// ```
 /// # use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
 /// # use hoomd_vector::Cartesian;
-/// # use hoomd_md::{UpdateNetForce, ThermalizeMomentum, TranslationalMotion, method::ConstantVolume};
+/// # use hoomd_md::{UpdateNetForceAndVirial, ThermalizeMomentum, TranslationalMotion, method::ConstantVolume};
 /// # use hoomd_interaction::{Rigid, Zero};
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # let mut microstate = Microstate::builder()
@@ -286,7 +286,7 @@ pub trait Thermostat<M> {
 /// # let macrostate = ();
 /// integration_method_1.integrate_translation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
 /// integration_method_2.integrate_translation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);
-/// microstate.update_net_force(&interaction_model);
+/// microstate.update_net_force_and_virial(&interaction_model);
 /// integration_method_1.integrate_translation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
 /// integration_method_2.integrate_translation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);
 /// microstate.increment_step();
@@ -464,7 +464,7 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 /// ```
 /// # use hoomd_microstate::{Body, Microstate, property::{DynamicOrientedPoint, Point}};
 /// # use hoomd_vector::Cartesian;
-/// # use hoomd_md::{UpdateNetForce, ThermalizeMomentum, RotationalMotion, TranslationalMotion, method::ConstantVolume};
+/// # use hoomd_md::{UpdateNetForceVirialAndTorque, ThermalizeMomentum, RotationalMotion, TranslationalMotion, method::ConstantVolume};
 /// # use hoomd_interaction::{Rigid, Zero};
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # let mut microstate = Microstate::builder()
@@ -492,7 +492,7 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 /// integration_method_1.integrate_rotation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
 /// integration_method_2.integrate_translation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);
 /// integration_method_2.integrate_rotation_half_step_one_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);
-/// microstate.update_net_force(&interaction_model);
+/// microstate.update_net_force_virial_and_torque(&interaction_model);
 /// integration_method_1.integrate_translation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
 /// integration_method_1.integrate_rotation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag < 2);
 /// integration_method_2.integrate_translation_half_step_two_with_filter(&mut microstate, &macrostate, |b| b.tag >= 2);

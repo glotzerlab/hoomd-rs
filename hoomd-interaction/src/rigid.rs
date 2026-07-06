@@ -134,7 +134,7 @@ where
     ///
     /// assert_relative_eq!(body_force_0, Cartesian::from([-24.0, 0.0, 0.0]));
     /// assert_relative_eq!(body_force_1, Cartesian::from([24.0, 0.0, 0.0]));
-    /// todo!() // add virial check
+    /// todo!("add virial check");
     /// # Ok(())
     /// # }
     /// ```
@@ -267,7 +267,7 @@ where
     ///
     /// assert_relative_eq!(body_force, Cartesian::from([-24.0, 0.0, 0.0]));
     /// assert_relative_eq!(body_torque, Cartesian::from([0.0, 0.0, -48.0]));
-    /// todo!() // add virial check
+    /// todo!("add virial check");
     /// # Ok(())
     /// # }
     /// ```

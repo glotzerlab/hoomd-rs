@@ -175,11 +175,11 @@ S: Position<Position = V>,
     ///
     /// let (force_0, virial_0) = constant_force.site_force_and_virial(&a);
     /// assert_eq!(force_0, [0.0, -2.0].into());
-    /// todo!() // add virial check
+    /// todo!("add virial check");
     ///
     /// let (force_1, virial_1) = constant_force.site_force_and_virial(&b);
     /// assert_eq!(force_1, [0.0, -2.0].into());
-    /// todo!() // add virial check
+    /// todo!("add virial check");
     /// # Ok(())
     /// # }
     /// ```
@@ -222,12 +222,12 @@ S: Position<Position = V>,
     /// let (force_0, virial_0, torque_0) = constant_force.site_force_virial_and_torque(&a);
     /// assert_eq!(force_0, [0.0, -2.0].into());
     /// assert_eq!(torque_0, 0.0);
-    /// todo!() // add virial check
+    /// todo!("add virial check");
     ///
     /// let (force_1, virial_1, torque_1) = constant_force.site_force_virial_and_torque(&b);
     /// assert_eq!(force_1, [0.0, -2.0].into());
     /// assert_eq!(torque_1, 0.0);
-    /// todo!() // add virial check
+    /// todo!("add virial check");
     /// # Ok(())
     /// # }
     /// ```
