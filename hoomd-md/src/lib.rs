@@ -30,8 +30,8 @@ pub use modify::ZeroCenterMomentum;
 pub use modify::ZeroCenterAngularMomentum;
 
 mod update_net_force;
-pub use update_net_force::UpdateNetForce;
-pub use update_net_force::UpdateNetForceAndTorque;
+pub use update_net_force::UpdateNetForceAndVirial;
+pub use update_net_force::UpdateNetForceVirialAndTorque;
 
 /// Scale momenta to hold the system at constant temperature.
 ///
@@ -130,9 +130,9 @@ pub trait TranslationalMotion<B, S, X, C, M> {
         should_integrate_body: F,
     ) where
     F: Fn(&Tagged<Body<B, S>>) -> bool,
-    Microstate<B, S, X, C>: UpdateNetForce<E> {
+    Microstate<B, S, X, C>: UpdateNetForceAndVirial<E> {
         self.integrate_translation_half_step_one_with_filter(microstate, macrostate, &should_integrate_body);
-        microstate.update_net_force(interaction_model);
+        microstate.update_net_force_and_virial(interaction_model);
         self.integrate_translation_half_step_two_with_filter(microstate, macrostate, &should_integrate_body);
     }
 
@@ -144,9 +144,9 @@ pub trait TranslationalMotion<B, S, X, C, M> {
         macrostate: &M,
         interaction_model: &E,
     ) where
-    Microstate<B, S, X, C>: UpdateNetForce<E> {
+    Microstate<B, S, X, C>: UpdateNetForceAndVirial<E> {
         self.integrate_translation_half_step_one_with_filter(microstate, macrostate, |_| true);
-        microstate.update_net_force(interaction_model);
+        microstate.update_net_force_and_virial(interaction_model);
         self.integrate_translation_half_step_two_with_filter(microstate, macrostate, |_| true);
     }
 }
@@ -212,12 +212,12 @@ pub trait RotationalMotion<B, S, X, C, M> {
         should_integrate_body: F,
     ) where
     F: Fn(&Tagged<Body<B, S>>) -> bool,
-    Microstate<B, S, X, C>: UpdateNetForceAndTorque<E>,
+    Microstate<B, S, X, C>: UpdateNetForceVirialAndTorque<E>,
     Self: TranslationalMotion<B, S, X, C, M> 
     {
         self.integrate_translation_half_step_one_with_filter(microstate, macrostate, &should_integrate_body);
         self.integrate_rotation_half_step_one_with_filter(microstate, macrostate, &should_integrate_body);
-        microstate.update_net_force_and_torque(interaction_model);
+        microstate.update_net_force_virial_and_torque(interaction_model);
         self.integrate_translation_half_step_two_with_filter(microstate, macrostate, &should_integrate_body);
         self.integrate_rotation_half_step_two_with_filter(microstate, macrostate, &should_integrate_body);
     }
@@ -230,12 +230,12 @@ pub trait RotationalMotion<B, S, X, C, M> {
         macrostate: &M,
         interaction_model: &E,
     ) where
-    Microstate<B, S, X, C>: UpdateNetForceAndTorque<E>,
+    Microstate<B, S, X, C>: UpdateNetForceVirialAndTorque<E>,
     Self: TranslationalMotion<B, S, X, C, M> 
     {
         self.integrate_translation_half_step_one_with_filter(microstate, macrostate, |_| true);
         self.integrate_rotation_half_step_one_with_filter(microstate, macrostate, |_| true);
-        microstate.update_net_force_and_torque(interaction_model);
+        microstate.update_net_force_virial_and_torque(interaction_model);
         self.integrate_translation_half_step_two_with_filter(microstate, macrostate, |_| true);
         self.integrate_rotation_half_step_two_with_filter(microstate, macrostate, |_| true);
     }

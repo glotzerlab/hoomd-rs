@@ -6,8 +6,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::{OrientedPoint, Point, RotationalMotionTypes, AngularMomentum, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Position, Orientation};
-use crate::Transform;
-use hoomd_vector::{Cartesian, Rotate, Rotation, Angle, Vector, Versor, Wedge};
+use crate::{Transform, property::NetVirial};
+use hoomd_vector::{Angle, Cartesian, Outer, Rotate, Rotation, Vector, Versor, Wedge};
 
 impl RotationalMotionTypes for Angle {
     type MomentOfInertia = f64;
@@ -25,10 +25,10 @@ impl RotationalMotionTypes for Versor {
 /// Use [`DynamicOrientedPoint`] as a [`Body`](crate::Body) property type.
 ///
 /// A default [`DynamicOrientedPoint`] has a mass of 1.0 and position, momentum,
-/// and net force of $` \vec{0} `$. Orientation defaults to the identity.
-/// `DynamicOrientedPoint<_, Angle>` has a default moment of inertia of 1.0.
-/// `DynamicOrientedPoint<_, Versor>` has a default moment of inertia of
-/// `[1.0, 1.0, 1.0]`.
+/// and net force of $` \vec{0} `$, and a zero-tensor for net virial.
+/// Orientation defaults to the identity. `DynamicOrientedPoint<_, Angle>` has a
+/// default moment of inertia of 1.0. `DynamicOrientedPoint<_, Versor>` has a
+/// default moment of inertia of `[1.0, 1.0, 1.0]`.
 ///
 /// # Example
 ///
@@ -44,7 +44,11 @@ impl RotationalMotionTypes for Versor {
 /// };
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct DynamicOrientedPoint<V: Wedge, R: RotationalMotionTypes> {
+pub struct DynamicOrientedPoint<V, R>
+where
+    V: Wedge + Outer,
+    R: RotationalMotionTypes
+{
     /// The location of the extended body in space $`[\mathrm{length}]`$.
     pub position: V,
 
@@ -60,6 +64,9 @@ pub struct DynamicOrientedPoint<V: Wedge, R: RotationalMotionTypes> {
     /// The net force applied to the body in a [`Microstate`](crate::Microstate) $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
     pub net_force: V,
 
+    /// The net virial applied to the body in a [`Microstate`](crate::Microstate) $`[\mathrm{energy}]`$.
+    pub net_virial: V::Tensor,
+
     /// The moment of inertia of the extended body $` [\mathrm{mass} \cdot \mathrm{length}^2] `$.
     pub moment_of_inertia: R::MomentOfInertia,
 
@@ -71,11 +78,12 @@ pub struct DynamicOrientedPoint<V: Wedge, R: RotationalMotionTypes> {
 }
 
 impl<V> Default for DynamicOrientedPoint<V, Angle> where
-V: Default + Wedge,
+V: Default + Wedge + Outer,
+V::Tensor: Default,
 V::Bivector: Default,
 {
     /// Construct a [`DynamicOrientedPoint`] with mass 1.0 and moment of inertia 1.0.
-    /// Position, orientation, momentum, angular momentum, net force, and net torque are set to 0.
+    /// Position, orientation, momentum, angular momentum, net force, net virial, and net torque are set to 0.
     ///
     /// # Example
     ///
@@ -91,16 +99,27 @@ V::Bivector: Default,
     /// assert_eq!(dynamic_point.momentum, [0.0, 0.0].into());
     /// assert_eq!(dynamic_point.angular_momentum, 0.0.into());
     /// assert_eq!(dynamic_point.net_force, [0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.net_virial, dynamic_point.net_force.outer(dynamic_point.position));
     /// assert_eq!(dynamic_point.net_torque, 0.0);
     /// ```
     #[inline]
     fn default() -> Self {
-        Self { position: Default::default(), orientation: Angle::default(), mass: 1.0, moment_of_inertia: 1.0, momentum: Default::default(), angular_momentum: Default::default(), net_force: Default::default(), net_torque: Default::default() }
+        Self {
+            position: Default::default(),
+            orientation: Angle::default(),
+            mass: 1.0,
+            moment_of_inertia: 1.0,
+            momentum: Default::default(),
+            angular_momentum: Default::default(),
+            net_force: Default::default(),
+            net_virial: V::Tensor::default(),
+            net_torque: Default::default()
+        }
     }
 }
 
 impl<V> Default for DynamicOrientedPoint<V, Versor> where
-V: Default + Wedge,
+V: Default + Wedge + Outer,
 V::Bivector: Default,
 {
     /// Construct a [`DynamicOrientedPoint`] with mass 1.0 and moment of inertia 1.0 on all axes.
@@ -125,13 +144,23 @@ V::Bivector: Default,
     /// ```
     #[inline]
     fn default() -> Self {
-        Self { position: Default::default(), orientation: Versor::default(), mass: 1.0, moment_of_inertia: [1.0, 1.0, 1.0], momentum: Default::default(), angular_momentum: Cartesian::default(), net_force: Default::default(), net_torque: Default::default() }
+        Self {
+            position: Default::default(),
+            orientation: Versor::default(),
+            mass: 1.0,
+            moment_of_inertia: [1.0, 1.0, 1.0],
+            momentum: Default::default(),
+            angular_momentum: Cartesian::default(),
+            net_force: Default::default(),
+            net_virial: V::default().outer(&V::default()),
+            net_torque: Default::default()
+        }
     }
 }
 
 impl<V, R> Transform<Point<V>> for DynamicOrientedPoint<V, R>
 where
-    V: Vector + Wedge,
+    V: Vector + Wedge + Outer,
     R: Rotate<V> + RotationalMotionTypes,
 {
     /// Move [`Point`] properties from the local body frame to the system frame.
@@ -169,7 +198,7 @@ where
 
 impl<V, R> Transform<OrientedPoint<V, R>> for DynamicOrientedPoint<V, R>
 where
-    V: Vector + Wedge,
+    V: Vector + Wedge + Outer,
     R: Rotate<V> + Rotation + RotationalMotionTypes,
 {
     /// Move [`OrientedPoint`] site properties from the local body frame to the system frame.
@@ -212,7 +241,7 @@ where
 
 impl<V, R> Position for DynamicOrientedPoint<V, R>
 where
-    V: Wedge,
+    V: Wedge + Outer,
     R: RotationalMotionTypes,
 {
     type Position = V;
@@ -230,7 +259,7 @@ where
 
 impl<V, R> Orientation for DynamicOrientedPoint<V, R>
 where
-    V: Wedge,
+    V: Wedge + Outer,
     R: RotationalMotionTypes,
 {
     type Rotation = R;
@@ -248,7 +277,7 @@ where
 
 impl<V, R> Momentum for DynamicOrientedPoint<V, R>
 where
-    V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy + Wedge,
+    V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy + Wedge + Outer,
     R: RotationalMotionTypes,
 {
     type Momentum = V;
@@ -276,7 +305,7 @@ where
 
 impl<V, R> Mass for DynamicOrientedPoint<V, R>
 where
-    V: Wedge,
+    V: Wedge + Outer,
     R: RotationalMotionTypes,
 {
     #[inline]
@@ -287,7 +316,7 @@ where
 
 impl<V, R> NetForce for DynamicOrientedPoint<V, R>
 where
-    V: Wedge,
+    V: Wedge + Outer,
     R: RotationalMotionTypes,
 {
     type NetForce = V;
@@ -303,9 +332,27 @@ where
     }
 }
 
+impl<V, R> NetVirial for DynamicOrientedPoint<V, R>
+where
+    V: Wedge + Outer,
+    R: RotationalMotionTypes,
+{
+    type NetVirial = V::Tensor;
+
+    #[inline]
+    fn net_virial(&self) -> &Self::NetVirial {
+        &self.net_virial
+    }
+
+    #[inline]
+    fn net_virial_mut(&mut self) -> &mut Self::NetVirial {
+        &mut self.net_virial
+    }
+}
+
 impl<V, R> MomentOfInertia for DynamicOrientedPoint<V, R>
 where
-    V: Wedge,
+    V: Wedge + Outer,
     R: RotationalMotionTypes,
 {
     type MomentOfInertia = R::MomentOfInertia;
@@ -323,7 +370,7 @@ where
 
 impl<V, R> AngularMomentum for DynamicOrientedPoint<V, R>
 where
-    V: Wedge,
+    V: Wedge + Outer,
     R: RotationalMotionTypes,
 {
     type AngularMomentum = R::AngularMomentum;
@@ -341,7 +388,7 @@ where
 
 impl<V, R> NetTorque for DynamicOrientedPoint<V, R>
 where
-    V: Wedge,
+    V: Wedge + Outer,
     R: RotationalMotionTypes,
 {
     type NetTorque = V::Bivector;

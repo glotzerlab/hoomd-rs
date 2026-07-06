@@ -133,7 +133,13 @@ pub use external_type::External;
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::{Outer, Wedge};
 pub use hoomd_derive::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, NetSiteForce, NetSiteForceAndTorque, SitePairEnergy,
+    DeltaEnergyInsert,
+    DeltaEnergyOne,
+    DeltaEnergyRemove,
+    MaximumInteractionRange,
+    NetSiteForceAndVirial,
+    NetSiteForceVirialAndTorque,
+    SitePairEnergy,
     TotalEnergy,
 };
 pub use rigid::Rigid;
@@ -922,7 +928,7 @@ pub trait NetBodyForceAndVirial<B, S, X, C> {
         &self,
         microstate: &Microstate<B, S, X, C>,
         body_index: usize
-    ) -> (Self::Force, <Self::Force as Outer>::Output);
+    ) -> (Self::Force, <Self::Force as Outer>::Tensor);
 }
 
 /// Sum all the forces, virials, and torques that act on a given body in a microstate.
@@ -950,7 +956,7 @@ pub trait NetBodyForceVirialAndTorque<B, S, X, C> {
         &self,
         microstate: &Microstate<B, S, X, C>,
         body_index: usize
-    ) -> (Self::Force, <Self::Force as Outer>::Output, <Self::Force as Wedge>::Bivector);
+    ) -> (Self::Force, <Self::Force as Outer>::Tensor, <Self::Force as Wedge>::Bivector);
 }
 
 /// Sum all the forces, virials, and torques that act on a given site in a microstate.
@@ -1006,7 +1012,7 @@ pub trait NetSiteForceVirialAndTorque<B, S, X, C> {
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_index: usize
-    ) -> (Self::Force, <Self::Force as Outer>::Output, <Self::Force as Wedge>::Bivector);
+    ) -> (Self::Force, <Self::Force as Outer>::Tensor, <Self::Force as Wedge>::Bivector);
 }
 
 /// Sum all the forces and virials that act on a given site in a microstate.
@@ -1062,7 +1068,7 @@ pub trait NetSiteForceAndVirial<B, S, X, C> {
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_index: usize
-    ) -> (Self::Force, <Self::Force as Outer>::Output);
+    ) -> (Self::Force, <Self::Force as Outer>::Tensor);
 }
 
 /// Compute the force and virial on a single site as a function of its properties.
@@ -1080,7 +1086,7 @@ pub trait SiteForceAndVirial<S> {
     type Force: Outer;
 
     /// Evaluate the force and virial as a function of a single site's properties.
-    fn site_force_and_virial(&self, site_properties: &S) -> (Self::Force, <Self::Force as Outer>::Output);
+    fn site_force_and_virial(&self, site_properties: &S) -> (Self::Force, <Self::Force as Outer>::Tensor);
 }
 
 /// Compute the force, virial, and torque on a single site as a function of its properties.
@@ -1101,7 +1107,7 @@ pub trait SiteForceVirialAndTorque<S> {
     fn site_force_virial_and_torque(
         &self,
         site_properties: &S
-    ) -> (Self::Force, <Self::Force as Outer>::Output, <Self::Force as Wedge>::Bivector);
+    ) -> (Self::Force, <Self::Force as Outer>::Tensor, <Self::Force as Wedge>::Bivector);
 }
 
 /// Compute the pairwise force and virial on one site from another site.
@@ -1124,7 +1130,7 @@ pub trait SitePairForceAndVirial<S> {
         &self,
         site_properties_i: &S,
         site_properties_j: &S
-    ) -> (Self::Force, <Self::Force as Outer>::Output);
+    ) -> (Self::Force, <Self::Force as Outer>::Tensor);
 }
 
 /// Compute the pairwise force, virial, and torque on one site from another site.
@@ -1147,5 +1153,5 @@ pub trait SitePairForceVirialAndTorque<S> {
         &self,
         site_properties_i: &S,
         site_properties_j: &S
-    ) -> (Self::Force, <Self::Force as Outer>::Output, <Self::Force as Wedge>::Bivector);
+    ) -> (Self::Force, <Self::Force as Outer>::Tensor, <Self::Force as Wedge>::Bivector);
 }

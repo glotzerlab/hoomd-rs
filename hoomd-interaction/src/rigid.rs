@@ -52,11 +52,11 @@ pub struct Rigid<F>(pub F);
 
 impl<V, B, S, X, C, F> NetBodyForceAndVirial<B, S, X, C> for Rigid<F>
 where
-    V: Vector + Default + Outer + Sub<<V as Outer>::Output, Output = <V as Outer>::Output>,
+    V: Vector + Default + Outer,
     B: Transform<S> + Position<Position = V>,
     S: Position<Position = V>,
     F: NetSiteForceAndVirial<B, S, X, C, Force = V>,
-    <V as Outer>::Output: Default + AddAssign + Sub<Output = <V as Outer>::Output>,
+    V::Tensor: Default + AddAssign + Sub<Output = V::Tensor>,
 
 {
     type Force = V;
@@ -143,14 +143,14 @@ where
         &self,
         microstate: &Microstate<B, S, X, C>,
         body_index: usize
-    ) -> (V, <V as Outer>::Output) {
+    ) -> (V, V::Tensor) {
         let body_position_global = microstate.bodies()[body_index]
             .item
             .properties
             .position();
         
         let mut total_force = V::default();
-        let mut total_virial = <V as Outer>::Output::default();
+        let mut total_virial = V::Tensor::default();
 
         for site_index in microstate.iter_body_site_indices(body_index) {
             let (site_force, site_virial) = self.0.net_site_force_and_virial(microstate, site_index);
@@ -176,13 +176,13 @@ where
 
 impl<V, B, S, X, C, F, R> NetBodyForceVirialAndTorque<B, S, X, C> for Rigid<F>
 where
-    V: Vector + Wedge + Default + Outer + Sub<<V as Outer>::Output, Output = <V as Outer>::Output>,
+    V: Vector + Wedge + Default + Outer,
     B: Transform<S> + Orientation<Rotation = R> + Position<Position = V>,
     S: Position<Position = V>,
     F: NetSiteForceVirialAndTorque<B, S, X, C, Force = V>,
     R: Rotate<V>,
     V::Bivector: Default + Add<Output = V::Bivector> + AddAssign,
-    <V as Outer>::Output: Default + AddAssign + Sub<Output = <V as Outer>::Output>,
+    V::Tensor: Default + AddAssign + Sub<Output = V::Tensor>,
 {
     type Force = V;
     
@@ -276,14 +276,14 @@ where
         &self,
         microstate: &Microstate<B, S, X, C>,
         body_index: usize,
-    ) -> (V, <V as Outer>::Output, V::Bivector) {
+    ) -> (V, V::Tensor, V::Bivector) {
         let body_position_global = microstate.bodies()[body_index]
             .item
             .properties
             .position();
 
         let mut total_force = V::default();
-        let mut total_virial = <V as Outer>::Output::default();
+        let mut total_virial = V::Tensor::default();
         let mut total_torque = V::Bivector::default();
 
         let q = microstate.bodies()[body_index]

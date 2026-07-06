@@ -8,12 +8,12 @@ use hoomd_microstate::{
     Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, DynamicOrientedPoint, MomentOfInertia, Position}
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Angle, Cartesian, Versor, Wedge};
+use hoomd_vector::{Angle, Cartesian, Outer, Versor, Wedge};
 use rand_distr::{Distribution, Normal};
 
 impl<P, S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<P, Angle>, S> for Microstate<DynamicOrientedPoint<P, Angle>, S, X, C>
 where
-    P: Copy + Wedge,
+    P: Copy + Wedge + Outer,
     DynamicOrientedPoint<P, Angle>: Clone + Transform<S>,
     S: Position<Position = P> + Default,
     X: PointUpdate<P, SiteKey>,
@@ -49,7 +49,7 @@ where
 
 impl<P, S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<P, Versor>, S> for Microstate<DynamicOrientedPoint<P, Versor>, S, X, C>
 where
-    P: Copy + Wedge,
+    P: Copy + Wedge + Outer,
     DynamicOrientedPoint<P, Versor>: Clone + Transform<S>,
     S: Position<Position = P> + Default,
     X: PointUpdate<P, SiteKey>,

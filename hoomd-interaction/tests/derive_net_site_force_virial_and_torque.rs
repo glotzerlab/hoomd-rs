@@ -1,10 +1,10 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Test derive(NetSiteForceAndTorque)
+//! Test derive(NetSiteForceVirialAndTorque)
 
 use hoomd_interaction::{
-    External, NetSiteForceAndTorque, external::{ConstantForce, ConstantTorque}
+    External, NetSiteForceVirialAndTorque, external::{ConstantForce, ConstantTorque}
 };
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::{Cartesian, Vector};
@@ -12,19 +12,19 @@ use hoomd_vector::{Cartesian, Vector};
 use assert2::check;
 
 // Compile error
-// #[derive(NetSiteForceAndTorque)]
+// #[derive(NetSiteForceVirialAndTorque)]
 // enum Enum {
 //     A,B
 // }
 
 // Compile error
-// #[derive(NetSiteForceAndTorque)]
+// #[derive(NetSiteForceVirialAndTorque)]
 // union Union {
 //     f1: u32,
 //     f2: f32,
 // }
 
-#[derive(NetSiteForceAndTorque)]
+#[derive(NetSiteForceVirialAndTorque)]
 struct Unit;
 
 #[test]
@@ -36,11 +36,11 @@ fn unit_2d() -> anyhow::Result<()> {
     ])?;
 
     let unit = Unit;
-    let (force, torque) = unit.net_site_force_and_torque(&microstate, 0);
+    let (force, virial, torque) = unit.net_site_force_virial_and_torque(&microstate, 0);
     check!(force == [0.0, 0.0].into());
     check!(torque == 0.0);
 
-    let (force, torque) = unit.net_site_force_and_torque(&microstate, 1);
+    let (force, virial, torque) = unit.net_site_force_virial_and_torque(&microstate, 1);
     check!(force == [0.0, 0.0].into());
     check!(torque == 0.0);
 
@@ -56,18 +56,18 @@ fn unit_3d() -> anyhow::Result<()> {
     ])?;
 
     let unit = Unit;
-    let (force, torque) = unit.net_site_force_and_torque(&microstate, 0);
+    let (force, virial, torque) = unit.net_site_force_virial_and_torque(&microstate, 0);
     check!(force == [0.0, 0.0, 0.0].into());
     check!(torque == [0.0, 0.0, 0.0].into());
 
-    let (force, torque) = unit.net_site_force_and_torque(&microstate, 1);
+    let (force, virial, torque) = unit.net_site_force_virial_and_torque(&microstate, 1);
     check!(force == [0.0, 0.0, 0.0].into());
     check!(torque == [0.0, 0.0, 0.0].into());
 
     Ok(())
 }
 
-#[derive(NetSiteForceAndTorque)]
+#[derive(NetSiteForceVirialAndTorque)]
 struct CombinedNamed {
     one: External<ConstantForce<Cartesian<2>>>,
     two: External<ConstantForce<Cartesian<2>>>,
@@ -100,18 +100,18 @@ fn combined_named() -> anyhow::Result<()> {
 
     let combined_named = CombinedNamed { one, two, three, four };
 
-    let (force, torque) = combined_named.net_site_force_and_torque(&microstate, 0);
-    check!(force == [-1.0, 2.0].into());
+    let (force, virial, torque) = combined_named.net_site_force_virial_and_torque(&microstate, 0);
+    check!(force == [-1.0, 2.0].into());    
     check!(torque == -2.0);
 
-    let (force, torque) = combined_named.net_site_force_and_torque(&microstate, 1);
+    let (force, virial, torque) = combined_named.net_site_force_virial_and_torque(&microstate, 1);
     check!(force == [-1.0, 2.0].into());
     check!(torque == -2.0);
 
     Ok(())
 }
 
-#[derive(NetSiteForceAndTorque)]
+#[derive(NetSiteForceVirialAndTorque)]
 struct CombinedUnnamed(
     External<ConstantForce<Cartesian<3>>>,
     External<ConstantForce<Cartesian<3>>>,
@@ -144,18 +144,18 @@ fn combined_unnamed() -> anyhow::Result<()> {
 
     let combined_unnamed = CombinedUnnamed(one, two, three, four);
 
-    let (force, torque) = combined_unnamed.net_site_force_and_torque(&microstate, 0);
+    let (force, virial, torque) = combined_unnamed.net_site_force_virial_and_torque(&microstate, 0);
     check!(force == [-1.0, 2.0, 7.0].into());
     check!(torque == [1.0, 3.0, -5.0].into());
 
-    let (force, torque) = combined_unnamed.net_site_force_and_torque(&microstate, 1);
+    let (force, virial, torque) = combined_unnamed.net_site_force_virial_and_torque(&microstate, 1);
     check!(force == [-1.0, 2.0, 7.0].into());
     check!(torque == [1.0, 3.0, -5.0].into());
 
     Ok(())
 }
 
-#[derive(NetSiteForceAndTorque)]
+#[derive(NetSiteForceVirialAndTorque)]
 struct CombinedNamedGeneric<V: Vector, E> where
 E: Clone,
 {
@@ -190,11 +190,11 @@ fn combined_named_generic() -> anyhow::Result<()> {
 
     let combined_named = CombinedNamedGeneric { one, two, three, four };
 
-    let (force, torque) = combined_named.net_site_force_and_torque(&microstate, 0);
+    let (force, virial, torque) = combined_named.net_site_force_virial_and_torque(&microstate, 0);
     check!(force == [-1.0, 2.0].into());
     check!(torque == -2.0);
 
-    let (force, torque) = combined_named.net_site_force_and_torque(&microstate, 1);
+    let (force, virial, torque) = combined_named.net_site_force_virial_and_torque(&microstate, 1);
     check!(force == [-1.0, 2.0].into());
     check!(torque == -2.0);
 
@@ -203,7 +203,7 @@ fn combined_named_generic() -> anyhow::Result<()> {
 
 // Check that no syntax errors are created when there is no trailing comma.
 #[expect(dead_code, reason = "The implementation is tested above.")]
-#[derive(NetSiteForceAndTorque)]
+#[derive(NetSiteForceVirialAndTorque)]
 struct CombinedNamedGenericNoComma<V: Vector, E> where
 E: Clone
 {

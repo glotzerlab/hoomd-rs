@@ -4,13 +4,12 @@
 //! Implement [`Microstate`] and related types.
 
 use arrayvec::ArrayVec;
+use hoomd_vector::Outer;
 use serde::{Deserialize, Serialize};
 use std::{cmp::Reverse, collections::BinaryHeap, fmt, mem};
 
 use crate::{
-    Body, Error, Site, Transform,
-    boundary::{GenerateGhosts, MAX_GHOSTS, Open, Wrap},
-    property::{NetForce, NetTorque, Position},
+    Body, Error, Site, Transform, boundary::{GenerateGhosts, MAX_GHOSTS, Open, Wrap}, property::{NetForce, NetTorque, NetVirial, Position},
 };
 
 use hoomd_geometry::MapPoint;
@@ -1799,6 +1798,26 @@ where
     #[inline]
     pub fn set_body_net_force(&mut self, body_index: usize, net_force: V) {
         *self.bodies.items[body_index].item.properties.net_force_mut() = net_force;
+    }
+}
+
+impl<V, B, S, X, C> Microstate<B, S, X, C>
+where
+    V: Outer,
+    B: NetForce<NetForce = V> + NetVirial<NetVirial = V::Tensor>
+{
+    /// Set a body's net virial.
+    ///
+    /// [`update_body_properties`] is the normal way to change a body's properties.
+    /// It must assume that the changed properties lead to a change in the transformed
+    /// sites. This is not the case for properties like [`NetVirial`] that exist
+    /// only on the body itself. `set_body_net_virial` provides a safe and performant
+    /// code path to change the net virial on a body without transforming its sites.
+    ///
+    /// [`update_body_properties`]: Self::update_body_properties
+    #[inline]
+    pub fn set_body_net_virial(&mut self, body_index: usize, net_virial: V::Tensor) {
+        *self.bodies.items[body_index].item.properties.net_virial_mut() = net_virial;
     }
 }
 

@@ -1,25 +1,27 @@
 //! Define `UpdateNetForce`
 
-use hoomd_interaction::{NetBodyForce, NetBodyForceAndTorque};
-use hoomd_microstate::{Microstate, property::{NetForce, NetTorque}};
-use hoomd_vector::{Vector, Wedge};
+use hoomd_interaction::{NetBodyForceAndVirial, NetBodyForceVirialAndTorque};
+use hoomd_microstate::{Microstate, property::{NetForce, NetTorque, NetVirial}};
+use hoomd_vector::{Outer, Vector, Wedge};
 
-/// Compute the net force given by an interaction model and apply it to each body in the
-/// microstate.
+/// Compute the net force and virial given by an interaction model and apply it
+/// to each body in the microstate.
 ///
-/// Given an interaction model that implements [`NetBodyForce`], [`UpdateNetForce`]
-/// sets the [`NetForce`] property of each body in the microstate to the one computed
-/// by the interaction model.
+/// Given an interaction model that implements [`NetBodyForceAndVirial`],
+/// [`UpdateNetForceAndVirial`] sets the [`NetForce`] and [`NetVirial`]
+/// properties of each body in the microstate to the one computed by the
+/// interaction model.
 ///
-/// [`NetBodyForce`]: hoomd_interaction::NetBodyForce
+/// [`NetBodyForceAndVirial`]: hoomd_interaction::NetBodyForceAndVirial
 /// [`NetForce`]: hoomd_microstate::property::NetForce
+/// [`NetVirial`]: hoomd_microstate::property::NetVirial
 ///
 /// # Example
 /// ```
 /// use hoomd_interaction::{PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::LennardJones};
 /// use hoomd_microstate::{Microstate, Body, property::{DynamicPoint, Point}};
 /// use hoomd_vector::{Cartesian};
-/// use hoomd_md::UpdateNetForce;
+/// use hoomd_md::UpdateNetForceAndVirial;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let mut microstate = Microstate::builder().
@@ -36,24 +38,26 @@ use hoomd_vector::{Vector, Wedge};
 ///     let rigid = Rigid(pairwise_cutoff);
 ///
 ///
-///     microstate.update_net_force(&rigid);
+///     microstate.update_net_force_and_virial(&rigid);
 /// #   Ok(())
 /// # }
 /// ```
-pub trait UpdateNetForce<E> {
-    /// Compute and set the net force on each body.
-    fn update_net_force(&mut self, interaction_model: &E);
+pub trait UpdateNetForceAndVirial<E> {
+    /// Compute and set the net force and virial on each body.
+    fn update_net_force_and_virial(&mut self, interaction_model: &E);
 }
 
-/// Compute the net force and torque given by an interaction model and apply them
-/// to each body in the microstate.
+/// Compute the net force, virial, and torque given by an interaction model and
+/// apply them to each body in the microstate.
 ///
-/// Given an interaction model that implements [`NetBodyForceAndTorque`], [`UpdateNetForceAndTorque`]
-/// sets the [`NetForce`] and [`NetTorque`] properties of each body in the microstate to
-/// the ones computed by the interaction model.
+/// Given an interaction model that implements [`NetBodyForceVirialAndTorque`],
+/// [`UpdateNetForceVirialAndTorque`] sets the [`NetForce`], [`NetVirial`] and
+/// [`NetTorque`] properties of each body in the microstate to the ones computed
+/// by the interaction model.
 ///
-/// [`NetBodyForceAndTorque`]: hoomd_interaction::NetBodyForceAndTorque
+/// [`NetBodyForceVirialAndTorque`]: hoomd_interaction::NetBodyForceVirialAndTorque
 /// [`NetForce`]: hoomd_microstate::property::NetForce
+/// [`NetVirial`]: hoomd_microstate::property::NetVirial
 /// [`NetTorque`]: hoomd_microstate::property::NetTorque
 ///
 /// # Example
@@ -62,7 +66,7 @@ pub trait UpdateNetForce<E> {
 /// use hoomd_interaction::{PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::LennardJones};
 /// use hoomd_microstate::{Microstate, Body, property::{DynamicOrientedPoint, Point}};
 /// use hoomd_vector::{Angle, Cartesian};
-/// use hoomd_md::UpdateNetForceAndTorque;
+/// use hoomd_md::UpdateNetForceVirialAndTorque;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let mut microstate: Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>, _, _> = Microstate::builder().
@@ -78,41 +82,43 @@ pub trait UpdateNetForce<E> {
 ///     });
 ///     let rigid = Rigid(pairwise_cutoff);
 ///
-///     microstate.update_net_force_and_torque(&rigid);
+///     microstate.update_net_force_virial_and_torque(&rigid);
 /// #   Ok(())
 /// # }
 /// ```
-pub trait UpdateNetForceAndTorque<E> {
-    /// Compute and set the net force and torque on each body.
-    fn update_net_force_and_torque(&mut self, interaction_model: &E);
+pub trait UpdateNetForceVirialAndTorque<E> {
+    /// Compute and set the net force, virial, and torque on each body.
+    fn update_net_force_virial_and_torque(&mut self, interaction_model: &E);
 }
 
-impl<V, B, S, X, C, E> UpdateNetForce<E> for Microstate<B, S, X, C>
+impl<V, B, S, X, C, E> UpdateNetForceAndVirial<E> for Microstate<B, S, X, C>
 where
-    V: Default + Vector,
-    B: NetForce<NetForce = V>,
-    E: NetBodyForce<B, S, X, C, Force=V>
+    V: Default + Vector + Outer,
+    B: NetForce<NetForce = V> + NetVirial<NetVirial = V::Tensor>,
+    E: NetBodyForceAndVirial<B, S, X, C, Force=V>
 {
     #[inline]
-    fn update_net_force(&mut self, interaction_model: &E) {
+    fn update_net_force_and_virial(&mut self, interaction_model: &E) {
         for body_index in 0..self.bodies().len() {
-            let net_force = interaction_model.net_body_force(self, body_index);
+            let (net_force, net_virial) = interaction_model.net_body_force_and_virial(self, body_index);
             self.set_body_net_force(body_index, net_force);
+            self.set_body_net_virial(body_index, net_virial);
         }
     }
 }
 
-impl<V, B, S, X, C, E> UpdateNetForceAndTorque<E> for Microstate<B, S, X, C>
+impl<V, B, S, X, C, E> UpdateNetForceVirialAndTorque<E> for Microstate<B, S, X, C>
 where
-    V: Default + Vector + Wedge,
-    B: NetForce<NetForce = V> + NetTorque<NetTorque = V::Bivector>,
-    E: NetBodyForceAndTorque<B, S, X, C, Force=V>
+    V: Default + Vector + Outer + Wedge,
+    B: NetForce<NetForce = V> + NetVirial<NetVirial = V::Tensor> + NetTorque<NetTorque = V::Bivector>,
+    E: NetBodyForceVirialAndTorque<B, S, X, C, Force=V>
 {
     #[inline]
-    fn update_net_force_and_torque(&mut self, interaction_model: &E) {
+    fn update_net_force_virial_and_torque(&mut self, interaction_model: &E) {
         for body_index in 0..self.bodies().len() {
-            let (net_force, net_torque) = interaction_model.net_body_force_and_torque(self, body_index);
+            let (net_force, net_virial, net_torque) = interaction_model.net_body_force_virial_and_torque(self, body_index);
             self.set_body_net_force(body_index, net_force);
+            self.set_body_net_virial(body_index, net_virial);
             self.set_body_net_torque(body_index, net_torque);
         }
     }
@@ -127,6 +133,8 @@ mod test {
     use hoomd_interaction::{PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::LennardJones};
     use hoomd_microstate::{Body, property::{DynamicOrientedPoint, DynamicPoint, Point}};
     use hoomd_vector::{Angle, Cartesian, Versor};
+
+    // TODO: add virial tests
 
     #[test]
     fn net_force_2d() -> anyhow::Result<()> {
@@ -146,7 +154,7 @@ mod test {
         check!(microstate.bodies()[0].item.properties.net_force == [0.0, 0.0].into());
         check!(microstate.bodies()[1].item.properties.net_force == [0.0, 0.0].into());
 
-        microstate.update_net_force(&rigid);
+        microstate.update_net_force_and_virial(&rigid);
 
         assert_relative_eq!(microstate.bodies()[0].item.properties.net_force, [93.0 / 512.0, 0.0].into());
         assert_relative_eq!(microstate.bodies()[1].item.properties.net_force, [-93.0 / 512.0, 0.0].into());
@@ -172,7 +180,7 @@ mod test {
         check!(microstate.bodies()[0].item.properties.net_force == [0.0, 0.0, 0.0].into());
         check!(microstate.bodies()[1].item.properties.net_force == [0.0, 0.0, 0.0].into());
 
-        microstate.update_net_force(&rigid);
+        microstate.update_net_force_and_virial(&rigid);
 
         assert_relative_eq!(microstate.bodies()[0].item.properties.net_force, [93.0 / 512.0, 0.0, 0.0].into());
         assert_relative_eq!(microstate.bodies()[1].item.properties.net_force, [-93.0 / 512.0, 0.0, 0.0].into());
@@ -200,7 +208,7 @@ mod test {
         check!(microstate.bodies()[0].item.properties.net_torque == 0.0);
         check!(microstate.bodies()[1].item.properties.net_torque == 0.0);
 
-        microstate.update_net_force_and_torque(&rigid);
+        microstate.update_net_force_virial_and_torque(&rigid);
 
         assert_relative_eq!(microstate.bodies()[0].item.properties.net_force, [93.0 / 512.0, 0.0].into());
         assert_relative_eq!(microstate.bodies()[1].item.properties.net_force, [-93.0 / 512.0, 0.0].into());
@@ -231,7 +239,7 @@ mod test {
         check!(microstate.bodies()[0].item.properties.net_torque == [0.0, 0.0, 0.0].into());
         check!(microstate.bodies()[1].item.properties.net_torque == [0.0, 0.0, 0.0].into());
 
-        microstate.update_net_force_and_torque(&rigid);
+        microstate.update_net_force_virial_and_torque(&rigid);
 
         assert_relative_eq!(microstate.bodies()[0].item.properties.net_force, [93.0 / 512.0, 0.0, 0.0].into());
         assert_relative_eq!(microstate.bodies()[1].item.properties.net_force, [-93.0 / 512.0, 0.0, 0.0].into());

@@ -282,6 +282,28 @@ pub trait NetForce {
     fn net_force_mut(&mut self) -> &mut Self::NetForce;
 }
 
+/// The total virial acting on a site or body: $` \mathbf{W} `$
+///
+/// [`NetVirial`] is set only for bodies that belong to a microstate. It is always in the
+/// system frame.
+///
+/// `hoomd_md` does not store the net virial acting on individual sites. Use methods in
+/// `hoomd_interaction` to compute virials on sites when needed.
+///
+/// # Units
+/// 
+/// Net virial matrices have units of $`[\mathrm{energy}`$.
+pub trait NetVirial {
+    /// Virial vector type.
+    type NetVirial;
+
+    /// The net virial on this body $`[\mathrm{energy}]`$.
+    fn net_virial(&self) -> &Self::NetVirial;
+
+    /// The mutable net virial on this body $`[\mathrm{energy}]`$.
+    fn net_virial_mut(&mut self) -> &mut Self::NetVirial;
+}
+
 /// The orientation of a site or body: $` \theta `$ or $` \mathbf{q} `$.
 /// 
 /// When applied to site properties, [`Orientation`] has a context-dependent definition.

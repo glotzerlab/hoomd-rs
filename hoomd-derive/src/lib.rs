@@ -22,8 +22,8 @@ mod delta_energy_insert;
 mod delta_energy_one;
 mod delta_energy_remove;
 mod maximum_interaction_range;
-mod net_site_force;
-mod net_site_force_and_torque;
+mod net_site_force_and_virial;
+mod net_site_force_virial_and_torque;
 mod orientation;
 mod position;
 mod site_pair_energy;
@@ -89,32 +89,32 @@ pub fn maximum_interaction_range_derive(input: TokenStream) -> TokenStream {
     maximum_interaction_range::maximum_interaction_range(input).into()
 }
 
-/// Automatically implement the `hoomd_interaction::NetSiteForce` trait.
+/// Automatically implement the `hoomd_interaction::NetSiteForceAndVirial` trait.
 ///
-/// The implemented `net_site_force` sums the result of `net_site_force`
+/// The implemented `net_site_force_and_virial` sums the result of `net_site_force_and_virial`
 /// over all fields.
 ///
 /// Valid on:
 /// * Structs with named fields.
 /// * Tuple structs.
-#[proc_macro_derive(NetSiteForce)]
+#[proc_macro_derive(NetSiteForceAndVirial)]
 pub fn net_site_force_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    net_site_force::net_site_force(input).into()
+    net_site_force_and_virial::net_site_force_and_virial(input).into()
 }
 
-/// Automatically implement the `hoomd_interaction::NetSiteForceAndTorque` trait.
+/// Automatically implement the `hoomd_interaction::NetSiteForceVirialAndTorque` trait.
 ///
-/// The implemented `net_site_force_and_torque` sums the result of `net_site_force_and_torque`
+/// The implemented `net_site_force_virial_and_torque` sums the result of `net_site_force_virial_and_torque`
 /// over all fields.
 ///
 /// Valid on:
 /// * Structs with named fields.
 /// * Tuple structs.
-#[proc_macro_derive(NetSiteForceAndTorque)]
+#[proc_macro_derive(NetSiteForceVirialAndTorque)]
 pub fn net_site_force_and_torque_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    net_site_force_and_torque::net_site_force_and_torque(input).into()
+    net_site_force_virial_and_torque::net_site_force_virial_and_torque(input).into()
 }
 
 /// Automatically implement the `hoomd_microstate::property::Orientation` trait.

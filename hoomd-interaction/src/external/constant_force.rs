@@ -187,7 +187,7 @@ S: Position<Position = V>,
     fn site_force_and_virial(
         &self,
         site_properties: &S
-    ) -> (Self::Force, <Self::Force as Outer>::Output) {
+    ) -> (Self::Force, <Self::Force as Outer>::Tensor) {
         let force = self.force();
         let virial = force.outer(site_properties.position());
         (force, virial)
@@ -235,7 +235,7 @@ S: Position<Position = V>,
     fn site_force_virial_and_torque(
         &self,
         site_properties: &S
-    ) -> (V, <Self::Force as Outer>::Output, V::Bivector) {
+    ) -> (V, <Self::Force as Outer>::Tensor, V::Bivector) {
         let force = self.force();
         let virial = force.outer(site_properties.position());
         (force, virial, V::Bivector::default())

@@ -621,10 +621,10 @@ impl Wedge for Cartesian<2> {
 }
 
 impl<const N: usize> Outer for Cartesian<N> {
-    type Output = Matrix<N, N>;
+    type Tensor = Matrix<N, N>;
 
     #[inline]
-    fn outer(&self, other: &Self) -> Self::Output {
+    fn outer(&self, other: &Self) -> Self::Tensor {
         self.to_column_matrix().matmul(&other.to_row_matrix())
     }
 }

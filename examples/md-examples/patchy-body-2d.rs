@@ -5,7 +5,7 @@ use strum_macros::VariantNames;
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff, Rigid, SitePairForce, SitePairForceAndTorque, pairwise::Isotropic, univariate::{LennardJones, WeeksChandlerAnderson}
+    MaximumInteractionRange, PairwiseCutoff, Rigid, SitePairForceAndVirial, SitePairForceVirialAndTorque, pairwise::Isotropic, univariate::{LennardJones, WeeksChandlerAnderson}
 };
 use hoomd_md::{
     RotationalMotion, ThermalizeAngularMomentum, ThermalizeMomentum, ZeroCenterAngularMomentum, ZeroCenterMomentum, method::ConstantVolume, thermostat::Bussi
@@ -57,7 +57,7 @@ impl MaximumInteractionRange for SitePairInteraction {
     }
 }
 
-impl SitePairForceAndTorque<SiteProperties> for SitePairInteraction {
+impl SitePairForceVirialAndTorque<SiteProperties> for SitePairInteraction {
     type Force = Cartesian<2>;
 
     fn site_pair_force_and_torque(

@@ -282,8 +282,8 @@ mod tests {
                 properties: DynamicPoint {
                     position,
                     momentum,
-                    net_force: Cartesian::default(),
                     mass,
+                    ..Default::default()
                 },
                 sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
             }
@@ -408,14 +408,9 @@ mod tests {
         ) -> Body<DynamicOrientedPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>> {
             Body {
                 properties: DynamicOrientedPoint {
-                    position: Cartesian::<3>::default(),
-                    orientation: Versor::default(),
-                    momentum: Cartesian::<3>::default(),
-                    net_force: Cartesian::<3>::default(),
                     moment_of_inertia,
                     angular_momentum,
-                    net_torque: Cartesian::<3>::default(),
-                    mass: 1.0,
+                    ..Default::default()
                 },
                 sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
             }

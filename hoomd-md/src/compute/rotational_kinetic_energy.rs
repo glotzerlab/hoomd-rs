@@ -5,12 +5,12 @@
 
 use super::RotationalKineticEnergy;
 use hoomd_microstate::{Body, Microstate, Tagged, property::DynamicOrientedPoint};
-use hoomd_vector::{Angle, Versor, Wedge};
+use hoomd_vector::{Angle, Outer, Versor, Wedge};
 
 impl<P, S, X, C> RotationalKineticEnergy<DynamicOrientedPoint<P, Angle>, S>
     for Microstate<DynamicOrientedPoint<P, Angle>, S, X, C>
 where
-    P: Wedge,
+    P: Wedge + Outer,
 {
     #[inline]
     fn rotational_kinetic_energy_with_filter<
@@ -41,7 +41,7 @@ where
 impl<P, S, X, C> RotationalKineticEnergy<DynamicOrientedPoint<P, Versor>, S>
     for Microstate<DynamicOrientedPoint<P, Versor>, S, X, C>
 where
-    P: Wedge,
+    P: Wedge + Outer,
 {
     #[inline]
     fn rotational_kinetic_energy_with_filter<

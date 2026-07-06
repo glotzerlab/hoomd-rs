@@ -63,6 +63,21 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
     }
 }
 
+impl<const N: usize, const M: usize> Default for Matrix<N, M> {
+    /// The default matrix is filled with zeros.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix22;
+    ///
+    /// let m = Matrix22::default();
+    /// assert_eq!(m.rows, [[0.0, 0.0], [0.0, 0.0]]);
+    /// ```
+    fn default() -> Self {
+        Self::zeros()
+    }
+}
+
 impl<const N: usize, const M: usize> Full for Matrix<N, M> {
     /// Construct a matrix with the same value in every element.
     ///

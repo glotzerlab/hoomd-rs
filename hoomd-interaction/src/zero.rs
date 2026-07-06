@@ -63,7 +63,7 @@ where
     V: Default + Wedge + Outer,
     V::Bivector: Default,
     S: Position<Position = V>,
-    <V as Outer>::Output: Default
+    V::Tensor: Default
 {
     type Force = V;
 
@@ -72,8 +72,8 @@ where
         &self,
         _microstate: &Microstate<B, S, X, C>,
         _site_index: usize
-    ) -> (V, <V as Outer>::Output, V::Bivector) {
-        (V::default(), <V as Outer>::Output::default(), V::Bivector::default())
+    ) -> (V, V::Tensor, V::Bivector) {
+        (V::default(), V::Tensor::default(), V::Bivector::default())
     }
 }
 
@@ -81,7 +81,7 @@ impl<V, B, S, X, C> NetSiteForceAndVirial<B, S, X, C> for Zero
 where
     V: Default + Outer,
     S: Position<Position = V>,
-    <V as Outer>::Output: Default
+    V::Tensor: Default
 {
     type Force = V;
 
@@ -90,7 +90,7 @@ where
         &self,
         _microstate: &Microstate<B, S, X, C>,
         _site_index: usize
-    ) -> (V, <V as Outer>::Output) {
-        (V::default(), <V as Outer>::Output::default())
+    ) -> (V, V::Tensor) {
+        (V::default(), V::Tensor::default())
     }
 }

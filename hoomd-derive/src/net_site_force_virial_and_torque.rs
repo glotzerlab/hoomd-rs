@@ -1,14 +1,14 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement the derive(NetSiteForce) macro
+//! Implement the derive(NetSiteForceVirialAndTorque) macro
 
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{Data, DeriveInput, Fields, GenericParam, Ident, Index, parse_quote, spanned::Spanned};
 
-/// Implement the derive(NetSiteForce) macro.
-pub(crate) fn net_site_force(input: DeriveInput) -> TokenStream {
+/// Implement the derive(NetSiteForceVirialAndTorque) macro.
+pub(crate) fn net_site_force_virial_and_torque(input: DeriveInput) -> TokenStream {
     let name = &input.ident;
 
     let data = match input.data {
@@ -16,12 +16,12 @@ pub(crate) fn net_site_force(input: DeriveInput) -> TokenStream {
         Data::Enum(_) | Data::Union(_) => {
             return quote_spanned! {
                 name.span() =>
-                compile_error!("derive(NetSiteForce) applies only to struct types.");
+                compile_error!("derive(NetSiteForceVirialAndTorque) applies only to struct types.");
             };
         }
     };
 
-    let sum = net_site_force_sum(&data.fields);
+    let sum = net_site_force_virial_and_torque_sum(&data.fields);
 
     let mut generics = input.generics.clone();
     let v_ident = Ident::new("__V", Span::call_site());
@@ -47,16 +47,20 @@ pub(crate) fn net_site_force(input: DeriveInput) -> TokenStream {
     if let Some(previous_where_clause) = generics.where_clause {
         let predicates = previous_where_clause.predicates;
         generics.where_clause = Some(parse_quote!(where
-        __V: ::std::ops::Add<__V, Output = __V> + ::std::default::Default,
+        __V: ::std::ops::AddAssign<__V> + ::std::default::Default + ::hoomd_vector::Wedge + ::hoomd_vector::Outer,
+        __V::Tensor: ::std::default::Default + ::std::ops::AddAssign<__V::Tensor>,
+        __V::Bivector: ::std::ops::AddAssign<__V::Bivector> + ::std::default::Default,
         __S: ::hoomd_microstate::property::Position<Position = __V>,
-        #(#field_types: ::hoomd_interaction::NetSiteForce<__B, __S, __X, __C, Force = __V>),*,
+        #(#field_types: ::hoomd_interaction::NetSiteForceVirialAndTorque<__B, __S, __X, __C, Force = __V>),*,
         #predicates
         ));
     } else {
         generics.where_clause = Some(parse_quote!(where
-            __V: ::std::ops::Add<__V, Output = __V> + ::std::default::Default,
+            __V: ::std::ops::AddAssign<__V> + ::std::default::Default + ::hoomd_vector::Wedge + ::hoomd_vector::Outer,
+            __V::Tensor: ::std::default::Default + ::std::ops::AddAssign<__V::Tensor>,
+            __V::Bivector: ::std::ops::AddAssign<__V::Bivector> + ::std::default::Default,
             __S: ::hoomd_microstate::property::Position<Position = __V>,
-            #(#field_types: ::hoomd_interaction::NetSiteForce<__B, __S, __X, __C, Force = __V>),*
+            #(#field_types: ::hoomd_interaction::NetSiteForceVirialAndTorque<__B, __S, __X, __C, Force = __V>),*
             ));
     }
 
@@ -65,16 +69,16 @@ pub(crate) fn net_site_force(input: DeriveInput) -> TokenStream {
     let (_, ty_generics, _) = input.generics.split_for_impl();
 
     let generated = quote! {
-        impl #impl_generics ::hoomd_interaction::NetSiteForce<__B, __S, __X, __C> for #name #ty_generics #where_clause
+        impl #impl_generics ::hoomd_interaction::NetSiteForceVirialAndTorque<__B, __S, __X, __C> for #name #ty_generics #where_clause
             {
             type Force = __V;
             
             #[inline]
-            fn net_site_force(
+            fn net_site_force_virial_and_torque(
                 &self,
                 microstate: &::hoomd_microstate::Microstate<__B, __S, __X, __C>,
                 site_index: usize,
-            ) -> __V {
+            ) -> (__V, __V::Tensor, __V::Bivector) {
                 #sum
             }
         }
@@ -83,36 +87,64 @@ pub(crate) fn net_site_force(input: DeriveInput) -> TokenStream {
 }
 
 /// Sum the net force over all terms in the interaction model.
-fn net_site_force_sum(fields: &Fields) -> TokenStream {
+fn net_site_force_virial_and_torque_sum(fields: &Fields) -> TokenStream {
     match fields {
         Fields::Named(fields) => {
             let terms = fields.named.iter().map(|f| {
                 let name = &f.ident;
                 quote_spanned! {f.span()=>
-                    ::hoomd_interaction::NetSiteForce::net_site_force(&self.#name,
-                        microstate, site_index)
+                    ::hoomd_interaction::NetSiteForceVirialAndTorque::net_site_force_virial_and_torque(
+                        &self.#name,
+                        microstate,
+                        site_index
+                    )
                 }
             });
 
             quote! {
-                #(#terms)+*
+                let mut total_force = __V::default();
+                let mut total_virial = __V::Tensor::default();
+                let mut total_torque = __V::Bivector::default();
+
+                #(
+                let (force, virial, torque) = #terms;
+
+                total_force += force;
+                total_virial += virial;
+                total_torque += torque;
+                )*
+                (total_force, total_virial, total_torque)                
             }
         }
         Fields::Unnamed(fields) => {
             let terms = fields.unnamed.iter().enumerate().map(|(i, f)| {
                 let index = Index::from(i);
                 quote_spanned! {f.span()=>
-                    ::hoomd_interaction::NetSiteForce::net_site_force(&self.#index,
-                        microstate, site_index)
+                    ::hoomd_interaction::NetSiteForceVirialAndTorque::net_site_force_virial_and_torque(
+                        &self.#index,
+                        microstate,
+                        site_index
+                    )
                 }
             });
 
             quote! {
-                #(#terms)+*
+                let mut total_force = __V::default();
+                let mut total_virial = __V::Tensor::default();
+                let mut total_torque = __V::Bivector::default();
+
+                #(
+                let (force, virial, torque) = #terms;
+
+                total_force += force;
+                total_virial += virial;
+                total_torque += torque;
+                )*
+                (total_force, total_virial, total_torque)                
             }
         }
         Fields::Unit => {
-            quote!(__V::default())
+            quote!((__V::default(), __V::Tensor::default(), __V::Bivector::default()))
         }
     }
 }

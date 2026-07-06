@@ -195,14 +195,14 @@ impl<E> PairwiseCutoff<E> {
         &self,
         site_i: &Site<S>,
         site_j: &Site<S>
-    ) -> (V, <V as Outer>::Output)
+    ) -> (V, V::Tensor)
     where
         E: SitePairForceAndVirial<S, Force = V>,
         V: Default + Outer,
-        <V as Outer>::Output: Default,
+        V::Tensor: Default,
     {
         if site_i.body_tag == site_j.body_tag {
-            (V::default(), <V as Outer>::Output::default())
+            (V::default(), V::Tensor::default())
         } else {
             self.0.site_pair_force_and_virial(&site_i.properties, &site_j.properties)
         }
@@ -231,15 +231,15 @@ impl<E> PairwiseCutoff<E> {
         &self,
         site_i: &Site<S>,
         site_j: &Site<S>
-    ) -> (V, <V as Outer>::Output, V::Bivector)
+    ) -> (V, V::Tensor, V::Bivector)
     where
         E: SitePairForceVirialAndTorque<S, Force = V>,
         V: Default + Wedge + Outer,
         V::Bivector: Default,
-        <V as Outer>::Output: Default,
+        V::Tensor: Default,
     {
         if site_i.body_tag == site_j.body_tag {
-            (V::default(), <V as Outer>::Output::default(), V::Bivector::default())
+            (V::default(), V::Tensor::default(), V::Bivector::default())
         } else {
             self.0.site_pair_force_virial_and_torque(&site_i.properties, &site_j.properties)
         }
@@ -475,7 +475,7 @@ where
     S: Position<Position = V>,
     E: MaximumInteractionRange + SitePairForceAndVirial<S, Force = V>,
     X: PointsNearBall<V, SiteKey>,
-    <V as Outer>::Output: Default + AddAssign,
+    V::Tensor: Default + AddAssign,
 {
     type Force = V;
     
@@ -538,10 +538,10 @@ where
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_index: usize
-    ) -> (V, <V as Outer>::Output) {
+    ) -> (V, V::Tensor) {
         let site = &microstate.sites()[site_index];
         let mut total_force = V::default();
-        let mut total_virial = <V as Outer>::Output::default();
+        let mut total_virial = V::Tensor::default();
         
         for other_site in microstate
             .iter_sites_near(site.properties.position(), self.maximum_interaction_range())
@@ -572,7 +572,7 @@ where
     E: MaximumInteractionRange + SitePairForceVirialAndTorque<S, Force = V>,
     V::Bivector: AddAssign + Default,
     X: PointsNearBall<V, SiteKey>,
-    <V as Outer>::Output: Default + AddAssign,
+    V::Tensor: Default + AddAssign,
 {
     type Force = V;
     
@@ -597,10 +597,10 @@ where
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_index: usize
-    ) -> (V, <V as Outer>::Output, V::Bivector) {
+    ) -> (V, V::Tensor, V::Bivector) {
         let site = &microstate.sites()[site_index];
         let mut total_force = V::default();
-        let mut total_virial = <V as Outer>::Output::default();
+        let mut total_virial = V::Tensor::default();
         let mut total_torque = V::Bivector::default();
         
         

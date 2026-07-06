@@ -601,7 +601,7 @@ where
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_index: usize
-    ) -> (V, <V as Outer>::Output) {
+    ) -> (V, V::Tensor) {
         let site = &microstate.sites()[site_index];
         self.0.site_force_and_virial(&site.properties)
     }
@@ -647,7 +647,7 @@ where
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_index: usize
-    ) -> (V, <V as Outer>::Output, V::Bivector) {
+    ) -> (V, V::Tensor, V::Bivector) {
         let site = &microstate.sites()[site_index];
         let (force, virial, torque) = self.0.site_force_virial_and_torque(&site.properties);
         (force, virial, torque)

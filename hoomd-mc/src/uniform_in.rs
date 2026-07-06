@@ -3,7 +3,7 @@
 
 //! Implement `UniformIn`
 
-use hoomd_vector::Wedge;
+use hoomd_vector::{Outer, Wedge};
 use rand::{
     Rng, RngExt,
     distr::{Distribution, StandardUniform},
@@ -135,7 +135,8 @@ impl<V, S, C> BodyDistribution<Body<DynamicPoint<V>, S>> for UniformIn<S, C>
 where
     S: Clone,
     C: Distribution<V>,
-    V: Default,
+    V: Default + Outer,
+    V::Tensor: Default,
 {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, _index: usize, rng: &mut R) -> Body<DynamicPoint<V>, S> {
@@ -185,7 +186,7 @@ where
     S: Clone,
     C: Distribution<V>,
     StandardUniform: Distribution<O>,
-    V: Default + Wedge,
+    V: Default + Wedge + Outer,
     O: RotationalMotionTypes,
     DynamicOrientedPoint<V, O>: Default,
 {

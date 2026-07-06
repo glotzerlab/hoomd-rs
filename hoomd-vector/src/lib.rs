@@ -424,7 +424,7 @@ pub trait Wedge {
 /// The vector outer product.
 pub trait Outer {
     /// Result type.
-    type Output;
+    type Tensor;
     
     /// Compute the outer product of two vectors.
     /// 
@@ -459,7 +459,7 @@ pub trait Outer {
     /// };
     /// assert_eq!(a.outer(&b), m);
     /// ```
-    fn outer(&self, other: &Self) -> Self::Output;
+    fn outer(&self, other: &Self) -> Self::Tensor;
 }
 
 /// Operates on elements of a metric space.

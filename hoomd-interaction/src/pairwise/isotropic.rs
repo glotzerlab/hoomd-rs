@@ -185,7 +185,7 @@ where
     V: Default + InnerProduct + Outer,
     S: Position<Position = V>,
     E: UnivariateForce,
-    <V as Outer>::Output: Default
+    V::Tensor: Default
 {
     type Force = V;
 
@@ -243,12 +243,12 @@ where
         &self,
         site_properties_i: &S,
         site_properties_j: &S
-    ) -> (Self::Force, <Self::Force as Outer>::Output) {
+    ) -> (Self::Force, <Self::Force as Outer>::Tensor) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();
         let distance = r_ji.norm();
 
         if distance >= self.r_cut {
-            (V::default(), <V as Outer>::Output::default())
+            (V::default(), V::Tensor::default())
         } else {
             let force = (r_ji / distance) * self.interaction.force(distance);
             let virial = force.outer(&r_ji);
@@ -264,7 +264,7 @@ where
     V::Bivector: Default,
     S: Position<Position = V>,
     E: UnivariateForce,
-    <V as Outer>::Output: Default,
+    V::Tensor: Default,
 {
     type Force = V;
 
@@ -287,12 +287,12 @@ where
         &self,
         site_properties_i: &S,
         site_properties_j: &S
-    ) -> (V, <Self::Force as Outer>::Output, V::Bivector) {
+    ) -> (V, <Self::Force as Outer>::Tensor, V::Bivector) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();
         let distance = r_ji.norm();
 
         if distance >= self.r_cut {
-            (V::default(), <V as Outer>::Output::default(), V::Bivector::default())
+            (V::default(), V::Tensor::default(), V::Bivector::default())
         } else {
             let force = (r_ji / distance) * self.interaction.force(distance);
             let virial = force.outer(&r_ji);

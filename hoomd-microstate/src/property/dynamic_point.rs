@@ -6,15 +6,15 @@
 use serde::{Deserialize, Serialize};
 
 use super::{OrientedPoint, Point, Mass, Momentum, NetForce, Position};
-use crate::Transform;
-use hoomd_vector::Vector;
+use crate::{Transform, property::NetVirial};
+use hoomd_vector::{Outer, Vector};
 
 /// A position in space with the properties necessary for translational motion in MD.
 ///
 /// Use [`DynamicPoint`] as a [`Body`](crate::Body) property type.
 ///
 /// A default [`DynamicPoint`] has a mass of 1.0. Position, momentum, and net force
-/// of $` \vec{0} `$.
+/// of $` \vec{0} `$, and a zero-tensor for net virial.
 ///
 /// # Example
 ///
@@ -29,22 +29,30 @@ use hoomd_vector::Vector;
 /// };
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct DynamicPoint<V> {
+pub struct DynamicPoint<V>
+where
+    V: Outer,
+{
     /// The location of the extended body in space $`[\mathrm{length}]`$.
     pub position: V,
 
     /// The mass of the extended body $` [\mathrm{mass}] `$.
     pub mass: f64,
 
-    /// The translational momentum of the extended body $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
+    /// The translational momentum of the extended body $`[\mathrm{mass} \cdot \mathrm{length}] \cdot \mathrm{time}^{-1}]`$.
     pub momentum: V,
 
-    /// The net force applied to the body in a [`Microstate`](crate::Microstate) $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
+    /// The net force applied to the body in a [`Microstate`](crate::Microstate) $`[\mathrm{mass} \cdot \mathrm{length}] \cdot \mathrm{time}^{-2}]`$.
     pub net_force: V,
+
+    /// The net virial applied to the body in a [`Microstate`](crate::Microstate) $`[\mathrm{energy}]`$.
+    pub net_virial: V::Tensor,
 }
 
-impl<V> Default for DynamicPoint<V> where
-V: Default
+impl<V> Default for DynamicPoint<V>
+where
+    V: Default + Outer,
+    V::Tensor: Default,
 {
     /// Construct a [`DynamicPoint`] with mass 1.0. Position, momentum, and net force are set
     /// to the 0 vector.
@@ -60,17 +68,21 @@ V: Default
     /// assert_eq!(dynamic_point.position, [0.0, 0.0, 0.0].into());
     /// assert_eq!(dynamic_point.momentum, [0.0, 0.0, 0.0].into());
     /// assert_eq!(dynamic_point.net_force, [0.0, 0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.net_virial, dynamic_point.net_force.outer(dynamic_point.position));
     /// ```
     #[inline]
     fn default() -> Self {
-        Self { position: Default::default(), mass: 1.0, momentum: Default::default(), net_force: Default::default() }
+        Self {
+            position: Default::default(),
+            mass: 1.0,
+            momentum: Default::default(),
+            net_force: Default::default(),
+            net_virial: V::Tensor::default()
+        }
     }
 }
 
-impl<V> Transform<Point<V>> for DynamicPoint<V>
-where
-    V: Vector,
-{
+impl<V: Vector + Outer> Transform<Point<V>> for DynamicPoint<V> {
     /// [`DynamicPoint`] transforms [`Point`] by vector addition.
     ///
     /// ```math
@@ -103,7 +115,7 @@ where
 
 impl<V, R> Transform<OrientedPoint<V, R>> for DynamicPoint<V>
 where
-    V: Vector,
+    V: Vector + Outer,
     R: Copy,
 {
     /// [`DynamicPoint`] transforms [`OrientedPoint`] by vector addition.
@@ -140,7 +152,7 @@ where
     }
 }
 
-impl<P> Position for DynamicPoint<P> {
+impl<P: Outer> Position for DynamicPoint<P> {
     type Position = P;
 
     #[inline]
@@ -156,7 +168,7 @@ impl<P> Position for DynamicPoint<P> {
 
 impl<V> Momentum for DynamicPoint<V>
 where
-    V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy,
+    V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy + Outer,
 {
     type Momentum = V;
 
@@ -181,14 +193,14 @@ where
     }
 }
 
-impl<V> Mass for DynamicPoint<V> {
+impl<V: Outer> Mass for DynamicPoint<V> {
     #[inline]
     fn mass(&self) -> f64 {
         self.mass
     }
 }
 
-impl<V> NetForce for DynamicPoint<V> {
+impl<V: Outer> NetForce for DynamicPoint<V> {
     type NetForce = V;
 
     #[inline]
@@ -199,6 +211,20 @@ impl<V> NetForce for DynamicPoint<V> {
     #[inline]
     fn net_force_mut(&mut self) -> &mut Self::NetForce {
         &mut self.net_force
+    }
+}
+
+impl<V: Outer> NetVirial for DynamicPoint<V> {
+    type NetVirial = V::Tensor;
+
+    #[inline]
+    fn net_virial(&self) -> &Self::NetVirial {
+        &self.net_virial
+    }
+
+    #[inline]
+    fn net_virial_mut(&mut self) -> &mut Self::NetVirial {
+        &mut self.net_virial
     }
 }
 

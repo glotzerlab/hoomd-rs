@@ -963,7 +963,8 @@ mod tests {
     use super::*;
     use hoomd_interaction::{External, external::{ConstantForce, ConstantTorque}, Rigid};
     use hoomd_microstate::{Body, property::{DynamicPoint, DynamicOrientedPoint, Point}};
-    use crate::{UpdateNetForce, UpdateNetForceAndTorque};
+    use crate::{UpdateNetForceAndVirial, UpdateNetForceVirialAndTorque};
+    use hoomd_vector::Outer;
 
     use approxim::assert_relative_eq;
 
@@ -973,6 +974,7 @@ mod tests {
                 position: Cartesian::<3>::default(),
                 momentum: Cartesian::<3>::default(),
                 net_force: Cartesian::<3>::default(),
+                net_virial: Cartesian::<3>::default().outer(&Cartesian::<3>::default()),
                 mass,
             },
             sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
@@ -986,6 +988,7 @@ mod tests {
                 orientation: Angle::default(),
                 momentum: Cartesian::<2>::default(),
                 net_force: Cartesian::<2>::default(),
+                net_virial: Cartesian::<2>::default().outer(&Cartesian::<2>::default()),
                 moment_of_inertia,
                 angular_momentum: 0.0,
                 net_torque: 0.0,
@@ -1024,7 +1027,7 @@ mod tests {
         let macrostate = ();
 
         // Update force first so that the particles can move
-        microstate.update_net_force(&rigid);
+        microstate.update_net_force_and_virial(&rigid);
         
         // Check the first half step
         method.integrate_translation_half_step_one(
@@ -1040,7 +1043,7 @@ mod tests {
         assert_relative_eq!(expected_position, microstate.bodies()[0].item.properties.position);
 
         // Update force again
-        microstate.update_net_force(&rigid);
+        microstate.update_net_force_and_virial(&rigid);
 
         // Check the second half step
          method.integrate_translation_half_step_two(
@@ -1075,7 +1078,7 @@ mod tests {
         let macrostate = ();
 
         // Update torque first so that the particles can move
-        microstate.update_net_force_and_torque(&torque);
+        microstate.update_net_force_virial_and_torque(&torque);
         
         // Check the first half step
         method.integrate_rotation_half_step_one(
@@ -1090,7 +1093,7 @@ mod tests {
         assert_eq!(expected_orientation, microstate.bodies()[0].item.properties.orientation.theta);
 
         // Update torque again
-        microstate.update_net_force_and_torque(&torque);
+        microstate.update_net_force_virial_and_torque(&torque);
 
         // Check the second half step
          method.integrate_rotation_half_step_two(
