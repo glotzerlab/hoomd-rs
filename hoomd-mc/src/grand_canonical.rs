@@ -28,6 +28,7 @@ use hoomd_spatial::PointUpdate;
 /// use hoomd_geometry::shape::Rectangle;
 /// use hoomd_mc::{UniformIn, GrandCanonical};
 /// use hoomd_vector::Cartesian;
+/// use hoomd_microstate::{property::Point};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let rectangle = Rectangle::with_equal_edges(10.0.try_into()?);
@@ -115,7 +116,7 @@ where
     ///     boundary: rectangle.clone(),
     ///     template_sites: vec![Point::default()],
     /// };
-    /// let gcmc = GrandCanonical(distribution);
+    /// let mut gcmc = GrandCanonical(distribution);
     ///
     /// let translate = Translate::with_maximum_distance(0.1.try_into()?);
     /// let mut translate_sweep = Sweep(translate);
@@ -134,7 +135,7 @@ where
     ///     .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     ///     .try_build()?;
     ///
-    /// gcmc.apply(&mut microstate, &pairwise_cutoff);
+    /// gcmc.apply(&mut microstate, &pairwise_cutoff, &macrostate);
     ///
     /// translate_sweep.apply(&mut microstate, &pairwise_cutoff, &macrostate);
     ///
@@ -149,8 +150,8 @@ where
         hamiltonian: &H,
         macrostate: &MA,
     ) -> Self::Count {
-        let kt = macrostate.temperature();
-        let fugacity = macrostate.fugacity();
+        let kt = *macrostate.temperature();
+        let fugacity = *macrostate.fugacity();
         let n = microstate.bodies().len();
         let vol = microstate.boundary().volume();
         let mut rng = microstate.counter().make_rng();
@@ -162,6 +163,12 @@ where
         };
 
         let move_type_r: f64 = rng.random();
+
+        // in case n is zero and f is zero, no moves can be attempted
+        if n == 0 && fugacity <= 0.0 {
+            microstate.increment_substep();
+            return count;
+        }
 
         // insert
         if move_type_r > 0.5 || microstate.bodies().is_empty() {
@@ -187,7 +194,7 @@ where
             let index = rng.random_range(..n);
             let delta_energy = hamiltonian.delta_energy_remove(microstate, index);
 
-            let p_remove = (n as f64 * (-delta_energy / kt).exp()) / (vol * fugacity);
+            let p_remove = if fugacity <= 0.0 { 1.0 } else { (n as f64 * (-delta_energy / kt).exp()) / (vol * fugacity) };
 
             if p_remove > rng.random() {
                 microstate.remove_body(index);
@@ -198,5 +205,84 @@ where
         }
         microstate.increment_substep();
         count
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{QuickInsert, Sweep, Translate, Trial, UniformIn};
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic, univariate::Boxcar, TotalEnergy};
+    use hoomd_microstate::{Microstate, boundary::Closed, property::Point};
+    use hoomd_simulation::macrostate::IsothermalIsofugacity;
+    use hoomd_vector::Cartesian;
+
+    #[test]
+    fn hard_spheres() {
+        let sigma = 1.0;
+        let epsilon = f64::INFINITY;
+        let kt = 1.0;
+
+        let hamiltonian = PairwiseCutoff(Isotropic {
+            interaction: Boxcar {
+                left: 0.0,
+                right: sigma,
+                epsilon,
+            },
+            r_cut: sigma,
+        });
+
+        let translate =
+            Translate::with_maximum_distance(0.1.try_into().expect("hard-coded value is non-zero"));
+        let mut translate_sweep = Sweep(translate);
+
+        let rectangle = Closed(Rectangle::with_equal_edges(
+            6.0.try_into().expect("hard-coded value is non-zero"),
+        ));
+
+        let mut microstate = Microstate::builder()
+            .boundary(rectangle.clone())
+            .bodies(vec![Body::point(Cartesian::from([0.0, 0.0]))])
+            .try_build()
+            .expect("hard-coded point is in the boundary");
+        let macrostate = IsothermalIsofugacity { temperature: kt, fugacity:0.0 };
+
+        let distribution = UniformIn {
+            boundary: rectangle,
+            template_sites: vec![Point::new([0.0, 0.0].into())],
+        };
+        let mut quick_insert = QuickInsert::new(distribution, 10);
+
+        for _ in 0..100 {
+            quick_insert.apply(&mut microstate, &hamiltonian);
+            if quick_insert.is_complete() {
+                break;
+            }
+        }
+
+        translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
+
+        assert!(quick_insert.is_complete());
+        assert_eq!(microstate.bodies().len(), 11);
+        assert_eq!(hamiltonian.total_energy(&microstate), 0.0);
+
+        let rectangle = Closed(Rectangle::with_equal_edges(
+            6.0.try_into().expect("hard-coded value is non-zero"),
+        ));
+        
+        let distribution = UniformIn {
+            boundary: rectangle.clone(),
+            template_sites: vec![Point::default()],
+        };
+        let mut gcmc = GrandCanonical(distribution);
+        gcmc.apply(&mut microstate, &hamiltonian, &macrostate);
+
+        for _ in 0..100 {
+            gcmc.apply(&mut microstate, &hamiltonian, &macrostate);
+        }
+
+        assert_eq!(microstate.bodies().len(), 0);
+
     }
 }
