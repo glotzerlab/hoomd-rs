@@ -105,7 +105,7 @@ serde = { version = "1.0.228", features = ["derive"]}
 thiserror = "2.0.12"
 
 # Bevy and bevy-adjacent dependencies
-bevy_egui = "0.40.0"
+bevy_egui = "0.41.0"
 wayland-sys = "0.31.8"
 
 [workspace.dependencies.bevy]
