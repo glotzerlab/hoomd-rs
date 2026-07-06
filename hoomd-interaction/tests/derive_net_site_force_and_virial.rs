@@ -8,6 +8,7 @@ use hoomd_interaction::{
 };
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::{Cartesian, Vector};
+use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix};
 
 use assert2::check;
 
@@ -39,9 +40,11 @@ fn unit() -> anyhow::Result<()> {
 
     let (force, virial) = unit.net_site_force_and_virial(&microstate, 0);
     check!(force == [0.0, 0.0].into());
+    check!(virial == Matrix::zeros());
 
     let (force, virial) = unit.net_site_force_and_virial(&microstate, 1);
     check!(force == [0.0, 0.0].into());
+    check!(virial == Matrix::zeros());
 
     Ok(())
 }
@@ -78,9 +81,11 @@ fn combined_named() -> anyhow::Result<()> {
 
     let (force, virial) = combined_named.net_site_force_and_virial(&microstate, 0);
     check!(force == [-4.0, 2.0].into());
+    check!(virial == Matrix { rows: [ [-12.0, 0.0], [6.0, 0.0]] });
 
     let (force, virial) = combined_named.net_site_force_and_virial(&microstate, 1);
     check!(force == [-4.0, 2.0].into());
+    check!(virial == Matrix { rows: [ [0.0, -4.0], [0.0, 2.0]] });
 
     Ok(())
 }
@@ -117,9 +122,11 @@ fn combined_unnamed() -> anyhow::Result<()> {
 
     let (force, virial) = combined_unnamed.net_site_force_and_virial(&microstate, 0);
     check!(force == [-4.0, 2.0].into());
+    check!(virial == Matrix { rows: [ [-12.0, 0.0], [6.0, 0.0]] });
 
     let (force, virial) = combined_unnamed.net_site_force_and_virial(&microstate, 1);
     check!(force == [-4.0, 2.0].into());
+    check!(virial == Matrix { rows: [ [0.0, -4.0], [0.0, 2.0]] });
 
     Ok(())
 }
@@ -158,9 +165,11 @@ fn combined_named_generic() -> anyhow::Result<()> {
 
     let (force, virial) = combined_named_generic.net_site_force_and_virial(&microstate, 0);
     check!(force == [-4.0, 2.0].into());
+    check!(virial == Matrix { rows: [ [-12.0, 0.0], [6.0, 0.0]] });
 
     let (force, virial) = combined_named_generic.net_site_force_and_virial(&microstate, 1);
     check!(force == [-4.0, 2.0].into());
+    check!(virial == Matrix { rows: [ [0.0, -4.0], [0.0, 2.0]] });
 
     Ok(())
 }

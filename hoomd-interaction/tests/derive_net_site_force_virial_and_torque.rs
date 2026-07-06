@@ -8,6 +8,7 @@ use hoomd_interaction::{
 };
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::{Cartesian, Vector};
+use hoomd_linear_algebra::matrix::Matrix;
 
 use assert2::check;
 
@@ -39,10 +40,12 @@ fn unit_2d() -> anyhow::Result<()> {
     let (force, virial, torque) = unit.net_site_force_virial_and_torque(&microstate, 0);
     check!(force == [0.0, 0.0].into());
     check!(torque == 0.0);
+    check!(virial == Matrix { rows: [ [0.0, 0.0], [0.0, 0.0]] });
 
     let (force, virial, torque) = unit.net_site_force_virial_and_torque(&microstate, 1);
     check!(force == [0.0, 0.0].into());
     check!(torque == 0.0);
+    check!(virial == Matrix { rows: [ [0.0, 0.0], [0.0, 0.0]] });
 
     Ok(())
 }
@@ -59,10 +62,12 @@ fn unit_3d() -> anyhow::Result<()> {
     let (force, virial, torque) = unit.net_site_force_virial_and_torque(&microstate, 0);
     check!(force == [0.0, 0.0, 0.0].into());
     check!(torque == [0.0, 0.0, 0.0].into());
+    check!(virial == Matrix { rows: [ [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] });
 
     let (force, virial, torque) = unit.net_site_force_virial_and_torque(&microstate, 1);
     check!(force == [0.0, 0.0, 0.0].into());
     check!(torque == [0.0, 0.0, 0.0].into());
+    check!(virial == Matrix { rows: [ [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] });
 
     Ok(())
 }
@@ -103,10 +108,12 @@ fn combined_named() -> anyhow::Result<()> {
     let (force, virial, torque) = combined_named.net_site_force_virial_and_torque(&microstate, 0);
     check!(force == [-1.0, 2.0].into());    
     check!(torque == -2.0);
+    check!(virial == Matrix { rows: [ [-3.0, 0.0], [6.0, 0.0]] });
 
     let (force, virial, torque) = combined_named.net_site_force_virial_and_torque(&microstate, 1);
     check!(force == [-1.0, 2.0].into());
     check!(torque == -2.0);
+    check!(virial == Matrix { rows: [ [0.0, -1.0], [0.0, 2.0]] });
 
     Ok(())
 }
@@ -147,10 +154,12 @@ fn combined_unnamed() -> anyhow::Result<()> {
     let (force, virial, torque) = combined_unnamed.net_site_force_virial_and_torque(&microstate, 0);
     check!(force == [-1.0, 2.0, 7.0].into());
     check!(torque == [1.0, 3.0, -5.0].into());
+    check!(virial == Matrix { rows: [ [-3.0, 0.0, 0.0], [6.0, 0.0, 0.0], [21.0, 0.0, 0.0], ] });
 
     let (force, virial, torque) = combined_unnamed.net_site_force_virial_and_torque(&microstate, 1);
     check!(force == [-1.0, 2.0, 7.0].into());
     check!(torque == [1.0, 3.0, -5.0].into());
+    check!(virial == Matrix { rows: [ [0.0, -1.0, 0.0], [0.0, 2.0, 0.0], [0.0, 7.0, 0.0], ] });
 
     Ok(())
 }
@@ -193,10 +202,12 @@ fn combined_named_generic() -> anyhow::Result<()> {
     let (force, virial, torque) = combined_named.net_site_force_virial_and_torque(&microstate, 0);
     check!(force == [-1.0, 2.0].into());
     check!(torque == -2.0);
+    check!(virial == Matrix { rows: [ [-3.0, 0.0], [6.0, 0.0]] });
 
     let (force, virial, torque) = combined_named.net_site_force_virial_and_torque(&microstate, 1);
     check!(force == [-1.0, 2.0].into());
     check!(torque == -2.0);
+    check!(virial == Matrix { rows: [ [0.0, -1.0], [0.0, 2.0]] });
 
     Ok(())
 }
