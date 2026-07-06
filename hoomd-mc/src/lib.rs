@@ -102,6 +102,7 @@ mod translate;
 pub(crate) mod tune_local;
 mod uniform_in;
 
+pub use grand_canonical::{GrandCanonical, InsertRemoveCount};
 pub use hypercuboid::HypercuboidCheckerboard;
 pub use parallel_sweep::ParallelSweep;
 pub use quick_compress::QuickCompress;
@@ -110,8 +111,6 @@ pub use rotate::Rotate;
 pub use sweep::Sweep;
 pub use translate::Translate;
 pub use uniform_in::UniformIn;
-pub use grand_canonical::{GrandCanonical, InsertRemoveCount};
-
 
 /// Propose trial moves in the microstate, evaluate the changes in energy and accept or reject accordingly.
 ///

@@ -80,7 +80,10 @@ pub trait Pressure {
 /// ```
 /// use hoomd_simulation::macrostate::IsothermalIsofugacity;
 ///
-/// let macrostate = IsothermalIsofugacity { temperature: 1.2, fugacity: 0.0 };
+/// let macrostate = IsothermalIsofugacity {
+///     temperature: 1.2,
+///     fugacity: 0.0,
+/// };
 /// ```
 pub trait Fugacity {
     /// The system's pressure $` ([\mathrm{energy}] \cdot [\mathrm{length}]^{-D}) `$.
@@ -199,7 +202,10 @@ impl Pressure for IsothermalIsobaric {
 /// ```
 /// use hoomd_simulation::macrostate::IsothermalIsofugacity;
 ///
-/// let macrostate = IsothermalIsofugacity { temperature: 1.2, fugacity: 1.0 };
+/// let macrostate = IsothermalIsofugacity {
+///     temperature: 1.2,
+///     fugacity: 1.0,
+/// };
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct IsothermalIsofugacity {
