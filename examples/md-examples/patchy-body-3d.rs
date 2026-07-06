@@ -1,3 +1,4 @@
+use hoomd_linear_algebra::matrix::Matrix;
 // ANCHOR: all
 use itertools::Itertools;
 use strum::VariantNames;
@@ -60,18 +61,18 @@ impl MaximumInteractionRange for SitePairInteraction {
 impl SitePairForceVirialAndTorque<SiteProperties> for SitePairInteraction {
     type Force = Cartesian<3>;
 
-    fn site_pair_force_and_torque(
+    fn site_pair_force_virial_and_torque(
         &self,
         site_properties_i: &SiteProperties,
         site_properties_j: &SiteProperties,
-    ) -> (Self::Force, Cartesian<3>) {
-        let force = match (site_properties_i.site_type, site_properties_j.site_type) {
-            (SiteType::A, SiteType::A) => self.wca_aa.site_pair_force(site_properties_i, site_properties_j),
-            (SiteType::A, SiteType::B) | (SiteType::B, SiteType::A) => Cartesian::default(),
-            (SiteType::B, SiteType::B) => self.lj_bb.site_pair_force(site_properties_i, site_properties_j),
+    ) -> (Self::Force, Matrix<3,3>, Cartesian<3>) {
+        let (force, virial) = match (site_properties_i.site_type, site_properties_j.site_type) {
+            (SiteType::A, SiteType::A) => self.wca_aa.site_pair_force_and_virial(site_properties_i, site_properties_j),
+            (SiteType::A, SiteType::B) | (SiteType::B, SiteType::A) => (Cartesian::default(), Matrix::<3,3>::default()),
+            (SiteType::B, SiteType::B) => self.lj_bb.site_pair_force_and_virial(site_properties_i, site_properties_j),
         };
 
-        (force, Cartesian::default())
+        (force, virial, Cartesian::default())
     }
 }
 

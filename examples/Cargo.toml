@@ -29,6 +29,7 @@ hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
 hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true
+hoomd-linear-algebra.workspace = true
 hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
 hoomd-md.workspace = true

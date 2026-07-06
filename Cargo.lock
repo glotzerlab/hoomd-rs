@@ -3015,6 +3015,7 @@ dependencies = [
  "hoomd-geometry",
  "hoomd-gsd",
  "hoomd-interaction",
+ "hoomd-linear-algebra",
  "hoomd-manifold",
  "hoomd-mc",
  "hoomd-md",
