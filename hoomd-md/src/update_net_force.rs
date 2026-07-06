@@ -1,5 +1,7 @@
 //! Define `UpdateNetForce`
 
+use rayon::prelude::*;
+
 use hoomd_interaction::{NetBodyForceAndVirial, NetBodyForceVirialAndTorque};
 use hoomd_microstate::{Microstate, property::{NetForce, NetTorque, NetVirial}};
 use hoomd_vector::{Outer, Vector, Wedge};
@@ -93,33 +95,52 @@ pub trait UpdateNetForceVirialAndTorque<E> {
 
 impl<V, B, S, X, C, E> UpdateNetForceAndVirial<E> for Microstate<B, S, X, C>
 where
-    V: Default + Vector + Outer,
-    B: NetForce<NetForce = V> + NetVirial<NetVirial = V::Tensor>,
-    E: NetBodyForceAndVirial<B, S, X, C, Force=V>
+    V: Default + Vector + Outer + Send,
+    V::Tensor: Copy + Send,
+    B: NetForce<NetForce = V> + NetVirial<NetVirial = V::Tensor> + Sync,
+    S: Sync,
+    X: Sync,
+    C: Sync,
+    E: NetBodyForceAndVirial<B, S, X, C, Force=V> + Sync,
 {
     #[inline]
     fn update_net_force_and_virial(&mut self, interaction_model: &E) {
-        for body_index in 0..self.bodies().len() {
-            let (net_force, net_virial) = interaction_model.net_body_force_and_virial(self, body_index);
-            self.set_body_net_force(body_index, net_force);
-            self.set_body_net_virial(body_index, net_virial);
+        let mut net_force_and_virial_tmp = Vec::new();
+    
+        (0..self.bodies().len()).into_par_iter()
+            .map(|body_index| interaction_model.net_body_force_and_virial(self, body_index))
+            .collect_into_vec(&mut net_force_and_virial_tmp);
+
+        for (body_index, (net_force, net_virial)) in net_force_and_virial_tmp.iter().enumerate() {
+            self.set_body_net_force(body_index, *net_force);
+            self.set_body_net_virial(body_index, *net_virial);
         }
     }
 }
 
 impl<V, B, S, X, C, E> UpdateNetForceVirialAndTorque<E> for Microstate<B, S, X, C>
 where
-    V: Default + Vector + Outer + Wedge,
-    B: NetForce<NetForce = V> + NetVirial<NetVirial = V::Tensor> + NetTorque<NetTorque = V::Bivector>,
-    E: NetBodyForceVirialAndTorque<B, S, X, C, Force=V>
+    V: Default + Vector + Wedge + Outer + Send,
+    V::Tensor: Copy + Send,
+    V::Bivector: Copy + Send,
+    B: NetForce<NetForce = V> + NetVirial<NetVirial = V::Tensor> + NetTorque<NetTorque = V::Bivector> + Sync,
+    S: Sync,
+    X: Sync,
+    C: Sync,
+    E: NetBodyForceVirialAndTorque<B, S, X, C, Force=V> + Sync,
 {
     #[inline]
     fn update_net_force_virial_and_torque(&mut self, interaction_model: &E) {
-        for body_index in 0..self.bodies().len() {
-            let (net_force, net_virial, net_torque) = interaction_model.net_body_force_virial_and_torque(self, body_index);
-            self.set_body_net_force(body_index, net_force);
-            self.set_body_net_virial(body_index, net_virial);
-            self.set_body_net_torque(body_index, net_torque);
+        let mut net_force_virial_and_torque_tmp = Vec::new();
+    
+        (0..self.bodies().len()).into_par_iter()
+            .map(|body_index| interaction_model.net_body_force_virial_and_torque(self, body_index))
+            .collect_into_vec(&mut net_force_virial_and_torque_tmp);
+
+        for (body_index, (net_force, net_virial, net_torque)) in net_force_virial_and_torque_tmp.iter().enumerate() {
+            self.set_body_net_force(body_index, *net_force);
+            self.set_body_net_virial(body_index, *net_virial);
+            self.set_body_net_torque(body_index, *net_torque);
         }
     }
 }

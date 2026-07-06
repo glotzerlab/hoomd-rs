@@ -13,7 +13,7 @@ mod rotational_kinetic_energy;
 /// `TranslationalKineticEnergy` is implemented for `Microstate`. Call
 /// `microstate.translational_kinetic_energy` to compute the total translational
 /// kinetic energy (and degrees of freedom) of all bodies in the microstate.
-/// Energy can be calcualted for a subset of bodies using the companion method
+/// Energy can be calculated for a subset of bodies using the companion method
 /// `translational_kinetic_energy_with_filter`.
 ///
 /// Sum the per-body kinetic energies:
@@ -91,7 +91,7 @@ pub trait TranslationalKineticEnergy<B, S> {
 /// `RotationalKineticEnergy` is implemented for `Microstate`. Call
 /// `microstate.rotational_kinetic_energy` to compute the total rotational
 /// kinetic energy (and degrees of freedom) of all bodies in the microstate.
-/// Energy can be calcualted for a subset of bodies using the companion method
+/// Energy can be calculated for a subset of bodies using the companion method
 /// `rotational_kinetic_energy_with_filter`.
 ///
 /// # 2D

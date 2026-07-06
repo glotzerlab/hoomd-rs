@@ -27,7 +27,7 @@ where
                 let p = body.item.properties.momentum();
                 (
                     total + p.norm_squared() / (2.0 * body.item.properties.mass()),
-                    count + p.n_dimensions(),
+                    count + V::n_dimensions(),
                 )
             })
     }

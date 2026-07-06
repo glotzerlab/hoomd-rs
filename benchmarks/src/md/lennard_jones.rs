@@ -15,7 +15,7 @@ use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::{self, Expanded, OverlapPenalty}
 };
 use hoomd_mc::{Sweep, Translate};
-use hoomd_md::{ThermalizeMomentum, TranslationalMotion, ZeroCenterAngularMomentum, ZeroCenterMomentum, method::ConstantVolume, thermostat::Bussi};
+use hoomd_md::{ThermalizeMomentum, TranslationalMotion, ZeroCenterMomentum, method::ConstantVolume, thermostat::Bussi};
 use hoomd_microstate::{
     Microstate, SiteKey, boundary::{GenerateGhosts, Periodic}, property::{DynamicPoint, Point}
 };
@@ -176,7 +176,6 @@ where
         )?;
             
         microstate.thermalize_momentum(temperature);
-        // microstate.zero_center_angular_momentum();
         microstate.zero_center_momentum();
 
         let thermostat = Bussi::new(0.0);

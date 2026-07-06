@@ -266,12 +266,16 @@ where
     ) {
         let mut rng = microstate.counter().make_rng();
         let (kinetic_energy, degrees_of_freedom) = microstate.translational_kinetic_energy_with_filter(&should_integrate_body);
+
+        let conserved_degrees_of_freedom = if degrees_of_freedom == V::n_dimensions() * microstate.bodies().len() { V::n_dimensions() } else { 0 };
+        *microstate.conserved_degrees_of_freedom_mut() = conserved_degrees_of_freedom;
+        
         let rescaling_factor = self.translational_thermostat.integrate_half_step_one(
             &mut rng,
             macrostate,
             self.delta_t,
             kinetic_energy,
-            degrees_of_freedom,
+            degrees_of_freedom - conserved_degrees_of_freedom,
         );
 
         for body_index in 0..microstate.bodies().len() {
@@ -351,22 +355,24 @@ where
             macrostate,
             self.delta_t,
             kinetic_energy,
-            degrees_of_freedom,
+            degrees_of_freedom - microstate.conserved_degrees_of_freedom(),
         );
 
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
-                continue
+        if rescaling_factor != 1.0 {
+            for body_index in 0..microstate.bodies().len() {
+                let body = &microstate.bodies()[body_index];
+                if !should_integrate_body(body) {
+                    continue
+                }
+                let mut body_properties = body.item.properties.clone();
+
+                *body_properties.momentum_mut() *= rescaling_factor;
+
+                microstate
+                    .update_body_properties(body_index, body_properties)
+                    .expect("Bodies and sites should remain in simulation boundary.\n
+                    Add interactions that prevent sites from moving outside the boundary.");
             }
-            let mut body_properties = body.item.properties.clone();
-
-            *body_properties.momentum_mut() *= rescaling_factor;
-
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.\n
-                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         microstate.increment_substep();
@@ -768,20 +774,21 @@ where
             degrees_of_freedom,
         );
 
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
-                continue
+        if rescaling_factor != 1.0 {
+            for body_index in 0..microstate.bodies().len() {
+                let body = &microstate.bodies()[body_index];
+                if !should_integrate_body(body) {
+                    continue
+                }
+                let mut body_properties = body.item.properties;
+
+                *body_properties.angular_momentum_mut() *= rescaling_factor;
+
+                microstate
+                    .update_body_properties(body_index, body_properties)
+                    .expect("Bodies and sites should remain in simulation boundary.\n
+                    Add interactions that prevent sites from moving outside the boundary.");
             }
-            let mut body_properties = body.item.properties;
-
-
-            *body_properties.angular_momentum_mut() *= rescaling_factor;
-
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.\n
-                Add interactions that prevent sites from moving outside the boundary.");
         }
 
         microstate.increment_substep();
@@ -961,23 +968,20 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hoomd_interaction::{External, external::{ConstantForce, ConstantTorque}, Rigid};
+    use hoomd_interaction::{External, Rigid, Zero, external::{ConstantForce, ConstantTorque}};
     use hoomd_microstate::{Body, property::{DynamicPoint, DynamicOrientedPoint, Point}};
     use crate::{UpdateNetForceAndVirial, UpdateNetForceVirialAndTorque};
     use hoomd_vector::Outer;
 
     use approxim::assert_relative_eq;
 
-    fn dynamics_body_3d(mass: f64) -> Body<DynamicPoint<Cartesian<3>>, Point<Cartesian<3>>> {
+    fn dynamics_body<const N: usize>(mass: f64) -> Body<DynamicPoint<Cartesian<N>>, Point<Cartesian<N>>> {
         Body {
             properties: DynamicPoint {
-                position: Cartesian::<3>::default(),
-                momentum: Cartesian::<3>::default(),
-                net_force: Cartesian::<3>::default(),
-                net_virial: Cartesian::<3>::default().outer(&Cartesian::<3>::default()),
                 mass,
+                .. Default::default()
             },
-            sites: vec![Point::new(Cartesian::from([0.0, 0.0, 0.0]))],
+            sites: vec![Point::new(Cartesian::default())],
         }
     }
 
@@ -1017,7 +1021,7 @@ mod tests {
         );
 
         let mut microstate = Microstate::builder()
-            .bodies([dynamics_body_3d(mass)])
+            .bodies([dynamics_body(mass)])
             .try_build()?;
         let rigid = Rigid(External(ConstantForce {
             force,
@@ -1053,6 +1057,44 @@ mod tests {
         expected_momentum += force * dt * 0.5;
         assert_relative_eq!(expected_momentum, microstate.bodies()[0].item.properties.momentum);
         assert_relative_eq!(expected_position, microstate.bodies()[0].item.properties.position);
+
+        assert_eq!(microstate.conserved_degrees_of_freedom(), 3);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_conserved_degrees_of_freedom() -> anyhow::Result<()> {
+        let mass = 1.0;
+        let dt = 0.1;
+
+        let mut microstate = Microstate::builder()
+            .bodies([dynamics_body::<4>(mass),
+                dynamics_body(mass),
+                dynamics_body(mass)])
+            .try_build()?;
+
+        let mut method = ConstantVolume::builder(dt).build();
+        let macrostate = ();
+        let rigid = Rigid(Zero);
+
+        assert_eq!(microstate.conserved_degrees_of_freedom(), 0);
+
+        method.integrate_translation_with_filter(
+            &mut microstate,
+            &macrostate,
+            &rigid,
+            |b| b.tag < 2);
+            
+        assert_eq!(microstate.conserved_degrees_of_freedom(), 0);
+
+        method.integrate_translation_with_filter(
+            &mut microstate,
+            &macrostate,
+            &rigid,
+            |b| b.tag < 3);
+            
+        assert_eq!(microstate.conserved_degrees_of_freedom(), 4);
 
         Ok(())
     }
