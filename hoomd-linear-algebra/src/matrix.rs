@@ -23,7 +23,7 @@ pub use crate::diagonal::DiagonalMatrix;
 /// };
 /// ```
 #[serde_as]
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Matrix<const N: usize, const M: usize> {
     /// The elements of the matrix
     #[serde_as(as = "[[_; M]; N]")]
@@ -73,6 +73,7 @@ impl<const N: usize, const M: usize> Default for Matrix<N, M> {
     /// let m = Matrix22::default();
     /// assert_eq!(m.rows, [[0.0, 0.0], [0.0, 0.0]]);
     /// ```
+    #[inline]
     fn default() -> Self {
         Self::zeros()
     }
@@ -978,16 +979,6 @@ impl Matrix<3, 3> {
         (u, sigma, v.transpose())
     }
 }
-/// Macro to generate impls for a given row size `N` and multiple column sizes `M`.
-macro_rules! impl_copy_for_m {
-    ($N:literal, $($M:literal),+) => { $(impl Copy for Matrix<$N, $M> {})+ };
-}
-/// Implement Copy for matrices of an input size `N`, `M`
-macro_rules! impl_copy_for_n_m {
-    ($($N:literal),+) => { $(impl_copy_for_m!($N, 1, 2, 3, 4);)+ };
-}
-
-impl_copy_for_n_m!(1, 2, 3, 4);
 
 #[cfg(test)]
 mod tests {
