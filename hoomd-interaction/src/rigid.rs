@@ -68,13 +68,13 @@ where
     /// 
     /// ```math
     /// \begin{align*}
-    /// \vec{F}_\mathrm{body} &= \sum_{\mathrm{site} \in \mathrm{body}} \vec{F}_{site} \\
-    /// \mathbf{W}_\mathrm{body} &= \sum_{\mathrm{site} \in \mathrm{body}} \mathbf{W}_{site} - \mathbf{F}_{site} \otimes \left( \vec{r}_{site}^{global} - \vec{r}_{body}^{global} \right) \\
+    /// \vec{F}_\mathrm{body} &= \sum_{\mathrm{site} \in \mathrm{body}} \vec{F}_\mathrm{site} \\
+    /// \mathbf{W}_\mathrm{body} &= \sum_{\mathrm{site} \in \mathrm{body}} \mathbf{W}_\mathrm{site} - \mathbf{F}_\mathrm{site} \otimes \left( \vec{r}_\mathrm{site}^\mathrm{global} - \vec{r}_{body}^\mathrm{global} \right) \\
     /// \end{align*}
     /// ```
     /// 
     /// where the net site forces and virials are given by `F`'s implementation of
-    /// [`NetSiteForceAndVirial`], and $`\vec{r}_{site}^{global}`$ and \vec{r}_{body}^{global}
+    /// [`NetSiteForceAndVirial`], and $`\vec{r}_\mathrm{site}^\mathrm{global}`$ and $`\vec{r}_\mathrm{body}^\mathrm{global}`$
     /// are the positions in the global frame of the site and body, respectively.
     /// 
     /// The second term in the virial summation is required to correct for
@@ -195,9 +195,9 @@ where
     /// 
     /// ```math
     /// \begin{align*}
-    /// \vec{F}_\mathrm{body} &= \sum_{\mathrm{site} \in \mathrm{body}} \vec{F}_{site} \\
-    /// \mathbf{W}_\mathrm{body} &= \sum_{\mathrm{site} \in \mathrm{body}} \mathbf{W}_{site} - \mathbf{F}_{site} \otimes \left( \vec{r}_{site}^{global} - \vec{r}_{body}^{global} \right) \\
-    /// \vec{\tau}_\mathrm{body} &= \sum_{\mathrm{site} \in \mathrm{body}} (\mathbf{q}_{body} \cdot \vec{r}_{body,site} \cdot \mathbf{q}_{body}^*) \wedge \vec{F}_site + \vec{\tau}_{site} \\
+    /// \vec{F}_\mathrm{body} &= \sum_{\mathrm{site} \in \mathrm{body}} \vec{F}_\mathrm{site} \\
+    /// \mathbf{W}_\mathrm{body} &= \sum_{\mathrm{site} \in \mathrm{body}} \mathbf{W}_\mathrm{site} - \mathbf{F}_\mathrm{site} \otimes \left( \vec{r}_\mathrm{site}^\mathrm{global} - \vec{r}_\mathrm{body}^\mathrm{global} \right) \\
+    /// \vec{\tau}_\mathrm{body} &= \sum_{\mathrm{site} \in \mathrm{body}} (\mathbf{q}_{body} \cdot \vec{r}_{body,site} \cdot \mathbf{q}_{body}^*) \wedge \vec{F}_\mathrm{site} + \vec{\tau}_\mathrm{site} \\
     /// \end{align*}
     /// ```
     /// 

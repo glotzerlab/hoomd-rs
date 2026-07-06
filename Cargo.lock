@@ -3777,6 +3777,7 @@ dependencies = [
  "divan",
  "hoomd-derive",
  "hoomd-geometry",
+ "hoomd-linear-algebra",
  "hoomd-microstate",
  "hoomd-spatial",
  "hoomd-utility",

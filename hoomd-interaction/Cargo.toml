@@ -28,6 +28,7 @@ hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 
 [dev-dependencies]
+hoomd-linear-algebra.workspace = true
 anyhow.workspace = true
 assert2.workspace = true
 approxim.workspace = true

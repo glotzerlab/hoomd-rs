@@ -69,6 +69,8 @@ words = [
     "ulps",
     "unitless",
     "versor",
+    "virial",
+    "virials",
     "webgl",
     "webgpu",
     "winit",
