@@ -100,8 +100,8 @@ where
     X: fmt::Display,
 {
     #[inline]
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Ok(())
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.microstate.fmt(f)
     }
 }
 
