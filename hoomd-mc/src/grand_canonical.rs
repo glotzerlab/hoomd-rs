@@ -2,6 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement Grand Canonical ensemble simulation
+use serde::{Deserialize, Serialize};
 
 use hoomd_interaction::{DeltaEnergyInsert, DeltaEnergyRemove};
 use hoomd_microstate::{
@@ -43,6 +44,7 @@ use hoomd_spatial::PointUpdate;
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GrandCanonical<D>(pub D);
 
 /// Accepted and rejected counts of insert and remove moves
