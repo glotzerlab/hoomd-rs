@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `ConstantVolume`.
@@ -248,7 +248,7 @@ where
     /// during a step to distinguish the value before ( $`'`$ is present) from the value after ( $`'`$ is absent).
     ///
     /// 1. The translational thermostat is integrated forward a half-step and then momentum is rescaled accordingly:
-    ///     
+    ///
     ///    ```math
     ///    \vec{p}_i\left( t \right) = \vec{p'}_i\left( t \right) \cdot \mathrm{translational\_thermostat.integrate\_half\_step\_one}\left( \sum_{j \in \mathrm{selection}} K'_{trans,j} \left( t \right) \right)
     ///    ```
@@ -462,21 +462,21 @@ where
     ///
     ///       ```math
     ///       \begin{align*}
-    ///       
+    ///
     ///       \mathbf{p} &= 2\mathbf{S}(\mathbf{q}) \mathbf{L} \\
     ///       \mathbf{f} &= 2\mathbf{S}(\mathbf{q}) \boldsymbol{\tau} \\
-    ///           
+    ///
     ///       \end{align*}
     ///       ```
-    ///       
+    ///
     ///       where
-    ///       
+    ///
     ///       ```math
     ///       \begin{align*}
-    ///       
+    ///
     ///       \mathbf{L} &= (0, L_x, L_y, L_z) \\
     ///       \boldsymbol{\tau} &= (0, \tau_x, \tau_y, \tau_z) \\
-    ///       
+    ///
     ///       \mathbf{S}(\mathbf{q}) &=
     ///       \begin{pmatrix}
     ///       q_0 & -q_1 & -q_2 & -q_3\\
@@ -484,7 +484,7 @@ where
     ///       q_2 & q_3 & q_0 & -q_1\\
     ///       q_3 & -q_2 & q_1 & q_0
     ///       \end{pmatrix}
-    ///           
+    ///
     ///       \end{align*}
     ///       ```
     ///
@@ -506,27 +506,27 @@ where
     ///
     ///           ```math
     ///           \begin{align*}
-    ///           
+    ///
     ///           \phi_3 &= \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}, P_3 \mathbf{q} \right) \\
     ///           \mathbf{q} &= \cos{(\phi_3 \frac{\Delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_3 \frac{\Delta t}{2})} P_3 \mathbf{q}^{'} \nonumber \\
     ///           \mathbf{p} &= \cos{(\phi_3 \frac{\Delta t}{2})} \mathbf{p}' +  \sin{(\phi_3 \frac{\Delta t}{2})} P_3 \mathbf{p}' \nonumber \\ \nonumber \\
-    ///           
+    ///
     ///           \phi_2 &= \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}, P_2 \mathbf{q} \right) \\
     ///           \mathbf{q} &= \cos{(\phi_2 \frac{\Delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_2 \frac{\Delta t}{2})} P_2 \mathbf{q}^{'} \nonumber \\
     ///           \mathbf{p} &= \cos{(\phi_2 \frac{\Delta t}{2})} \mathbf{p}' +  \sin{(\phi_2 \frac{\Delta t}{2})} P_2 \mathbf{p}' \nonumber \\ \nonumber \\
-    ///           
+    ///
     ///           \phi_1 &= \frac{1}{4 I_{11}} \mathrm{dot} \left( \mathbf{p}, P_1 \mathbf{q} \right) \\
     ///           \mathbf{q} &= \cos{(\phi_1 \Delta t)} \mathbf{q}^{'} +  \sin{(\phi_1 \Delta t)} P_1 \mathbf{q}^{'} \nonumber \\
     ///           \mathbf{p} &= \cos{(\phi_1 \Delta t)} \mathbf{p}' +  \sin{(\phi_1 \Delta t)} P_1 \mathbf{p}' \nonumber  \nonumber \\ \nonumber \\
-    ///           
+    ///
     ///           \phi_2 &= \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}, P_2 \mathbf{q} \right) \\
     ///           \mathbf{q} &= \cos{(\phi_2 \frac{\Delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_2 \frac{\Delta t}{2})} P_2 \mathbf{q}^{'} \nonumber \\
     ///           \mathbf{p} &= \cos{(\phi_2 \frac{\Delta t}{2})} \mathbf{p}' +  \sin{(\phi_2 \frac{\Delta t}{2})} P_2 \mathbf{p}' \nonumber  \nonumber \\ \nonumber \\
-    ///           
+    ///
     ///           \phi_3 &= \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}, P_3 \mathbf{q} \right) \\
     ///           \mathbf{q} \left( t + \Delta t \right) &= \cos{(\phi_3 \frac{\Delta t}{2})} \mathbf{q}^{'} +  \sin{(\phi_3 \frac{\Delta t}{2})} P_3 \mathbf{q}^{'} \nonumber \\
     ///           \mathbf{p} \left( t + \frac{\Delta t}{2} \right) &= \cos{(\phi_3 \frac{\Delta t}{2})} \mathbf{p}' +  \sin{(\phi_3 \frac{\Delta t}{2})} P_3 \mathbf{p}' \nonumber    \nonumber \\ \nonumber \\
-    ///           
+    ///
     ///           \end{align*}
     ///           ```
     ///
@@ -535,13 +535,13 @@ where
     ///
     ///           ```math
     ///           \begin{align*}
-    ///           
+    ///
     ///           P_0\mathbf{q} &= (q_0, q_1, q_2, q_3) \\
     ///           P_1\mathbf{q} &= (-q_1, q_0, q_3, -q_2) \\
     ///           P_2\mathbf{q} &= (-q_2, -q_3, q_0, q_1) \\
     ///           P_3\mathbf{q} &= (-q_3, q_2, -q_1, q_0) \\
     ///           (PP^T)_{\alpha \beta} &= \delta_{\alpha \beta} \\
-    ///           
+    ///
     ///           \end{align*}
     ///            ```
     ///
@@ -552,7 +552,7 @@ where
     ///        ```
     ///
     ///        where
-    ///        
+    ///
     ///        ```math
     ///        \begin{align*}
     ///        \mathbf{L} &= (0, L_x, L_y, L_z) \\
@@ -686,21 +686,21 @@ where
     ///
     ///    ```math
     ///    \begin{align*}
-    ///    
+    ///
     ///    \mathbf{p} &= 2\mathbf{S}(\mathbf{q}) \mathbf{L} \\
     ///    \mathbf{f} &= 2\mathbf{S}(\mathbf{q}) \boldsymbol{\tau} \\
-    ///        
+    ///
     ///    \end{align*}
     ///    ```
-    ///    
+    ///
     ///    where
-    ///    
+    ///
     ///    ```math
     ///    \begin{align*}
-    ///    
+    ///
     ///    \mathbf{L} &= (0, L_x, L_y, L_z) \\
     ///    \boldsymbol{\tau} &= (0, \tau_x, \tau_y, \tau_z) \\
-    ///    
+    ///
     ///    \mathbf{S}(\mathbf{q}) &=
     ///    \begin{pmatrix}
     ///    q_0 & -q_1 & -q_2 & -q_3\\
@@ -708,7 +708,7 @@ where
     ///    q_2 & q_3 & q_0 & -q_1\\
     ///    q_3 & -q_2 & q_1 & q_0
     ///    \end{pmatrix}
-    ///        
+    ///
     ///    \end{align*}
     ///     ```
     ///
@@ -725,7 +725,7 @@ where
     ///    ```
     ///
     ///    where
-    ///    
+    ///
     ///    ```math
     ///    \begin{align*}
     ///    \mathbf{L} &= (0, L_x, L_y, L_z) \\

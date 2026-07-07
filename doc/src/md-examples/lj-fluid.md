@@ -22,4 +22,3 @@ import init from 'https://glotzerlab.github.io/hoomd-rs/md-examples/lj-fluid.js'
 ## Complete Code
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-examples/lj-fluid.rs:all}}
-

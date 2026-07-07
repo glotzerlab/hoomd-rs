@@ -22,4 +22,3 @@ import init from 'https://glotzerlab.github.io/hoomd-rs/md-examples/patchy-body-
 ## Complete Code
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-examples/patchy-body-2d.rs:all}}
-
