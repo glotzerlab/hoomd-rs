@@ -3878,6 +3878,7 @@ dependencies = [
  "hoomd-derive",
  "hoomd-geometry",
  "hoomd-gsd",
+ "hoomd-linear-algebra",
  "hoomd-manifold",
  "hoomd-rand",
  "hoomd-spatial",

@@ -60,6 +60,7 @@ where
     /// # Example
     ///
     /// ```
+    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix};
     /// use hoomd_microstate::property::DynamicPoint;
     /// use hoomd_vector::Cartesian;
     ///
@@ -68,10 +69,7 @@ where
     /// assert_eq!(dynamic_point.position, [0.0, 0.0, 0.0].into());
     /// assert_eq!(dynamic_point.momentum, [0.0, 0.0, 0.0].into());
     /// assert_eq!(dynamic_point.net_force, [0.0, 0.0, 0.0].into());
-    /// assert_eq!(
-    ///     dynamic_point.net_virial,
-    ///     dynamic_point.net_force.outer(dynamic_point.position)
-    /// );
+    /// assert_eq!(dynamic_point.net_virial, Matrix::zeros());
     /// ```
     #[inline]
     fn default() -> Self {
@@ -102,9 +100,7 @@ impl<V: Vector + Outer> Transform<Point<V>> for DynamicPoint<V> {
     ///
     /// let body_properties = DynamicPoint {
     ///     position: Cartesian::from([1.0, -2.0, 3.0]),
-    ///     mass: 1.0,
-    ///     momentum: Cartesian::<3>::default(),
-    ///     net_force: Cartesian::<3>::default(),
+    ///     ..Default::default()
     /// };
     /// let site_properties = Point::new(Cartesian::from([-3.0, 2.0, 1.0]));
     ///
@@ -140,9 +136,7 @@ where
     ///
     /// let body_properties = DynamicPoint {
     ///     position: Cartesian::from([1.0, -2.0, 3.0]),
-    ///     mass: 1.0,
-    ///     momentum: Cartesian::<3>::default(),
-    ///     net_force: Cartesian::<3>::default(),
+    ///     ..Default::default()
     /// };
     /// let site_properties = OrientedPoint {
     ///     position: Cartesian::from([-3.0, 2.0, 1.0]),

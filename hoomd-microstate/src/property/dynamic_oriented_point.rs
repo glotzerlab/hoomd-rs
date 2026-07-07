@@ -92,6 +92,7 @@ where
     /// # Example
     ///
     /// ```
+    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix};
     /// use hoomd_microstate::property::DynamicOrientedPoint;
     /// use hoomd_vector::{Angle, Cartesian};
     ///
@@ -103,10 +104,7 @@ where
     /// assert_eq!(dynamic_point.momentum, [0.0, 0.0].into());
     /// assert_eq!(dynamic_point.angular_momentum, 0.0.into());
     /// assert_eq!(dynamic_point.net_force, [0.0, 0.0].into());
-    /// assert_eq!(
-    ///     dynamic_point.net_virial,
-    ///     dynamic_point.net_force.outer(dynamic_point.position)
-    /// );
+    /// assert_eq!(dynamic_point.net_virial, Matrix::zeros());
     /// assert_eq!(dynamic_point.net_torque, 0.0);
     /// ```
     #[inline]
