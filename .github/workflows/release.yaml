@@ -138,20 +138,6 @@ jobs:
       id: auth
     - name: Publish to crates.io
       run: >
-        cargo publish
-        -p hoomd-derive
-        -p hoomd-linear-algebra
-        -p hoomd-simulation
-        -p hoomd-utility
-        -p hoomd-rand
-        -p hoomd-vector
-        -p hoomd-gsd
-        -p hoomd-manifold
-        -p hoomd-spatial
-        -p hoomd-geometry
-        -p hoomd-microstate
-        -p hoomd-interaction
-        -p hoomd-mc
-        -p hoomd-bevy
+        cargo publish -p "hoomd-*"
       env:
         CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
