@@ -456,7 +456,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "benchmarks"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2017,7 +2017,7 @@ dependencies = [
 
 [[package]]
 name = "build-wasm-doc-examples"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -3008,7 +3008,7 @@ dependencies = [
 
 [[package]]
 name = "examples"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "bevy",
@@ -3745,7 +3745,7 @@ checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
 
 [[package]]
 name = "hoomd-bevy"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "bevy",
@@ -3762,7 +3762,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-derive"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3771,7 +3771,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-geometry"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "approxim",
@@ -3793,7 +3793,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-gsd"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "assert2",
@@ -3807,7 +3807,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-interaction"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "approxim",
@@ -3827,7 +3827,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-linear-algebra"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "approxim",
  "divan",
@@ -3841,7 +3841,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-manifold"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "approxim",
  "divan",
@@ -3858,7 +3858,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-mc"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "approxim",
@@ -3884,7 +3884,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-md"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "approxim",
@@ -3906,7 +3906,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-microstate"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "approxim",
@@ -3933,7 +3933,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-rand"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "approxim",
  "assert2",
@@ -3948,7 +3948,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-simulation"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -3956,7 +3956,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-spatial"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "assert2",
  "hoomd-utility",
@@ -3971,7 +3971,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-utility"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "assert2",
@@ -3984,7 +3984,7 @@ dependencies = [
 
 [[package]]
 name = "hoomd-vector"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "approxim",
