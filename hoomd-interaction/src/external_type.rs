@@ -28,25 +28,25 @@ use hoomd_vector::{Outer, Wedge};
 /// ```
 /// where $`s_i`$ is the full set of site properties for site i.
 ///
-/// An [`External`] newtype wrapping a type that implements [`SiteForce`] and/or
-/// [`SiteForceAndTorque`] represents:
+/// An [`External`] newtype wrapping a type that implements [`SiteForceAndVirial`] and/or
+/// [`SiteForceVirialAndTorque`] represents:
 /// ```math
 /// \vec{F}_i = \vec{F}\left(s_i\right)
 /// ```
 /// ```math
 /// \vec{\tau}_i = \vec{\tau}\left(s_i\right)
 /// ```
-/// where $`\vec{F}(s_i)`$ is the force computed by [`SiteForce`]
-/// (or [`SiteForceAndTorque`]) and $`\vec{\tau}(s_i)`$ is the torque computed by
-/// [`SiteForceAndTorque`].
+/// where $`\vec{F}(s_i)`$ is the force computed by [`SiteForceAndVirial`]
+/// (or [`SiteForceVirialAndTorque`]) and $`\vec{\tau}(s_i)`$ is the torque computed by
+/// [`SiteForceVirialAndTorque`].
 ///
-/// A type that implements *both* [`SiteEnergy`] and [`SiteForce`]
-/// (or [`SiteForceAndTorque`]) *must* compute forces and torques that are
+/// A type that implements *both* [`SiteEnergy`] and [`SiteForceAndVirial`]
+/// (or [`SiteForceVirialAndTorque`]) *must* compute forces and torques that are
 /// derivatives of the energy.
 ///
 /// Use [`External`] with [`ConstantForce`] or your own custom type that
-/// implements [`SiteEnergy`], [`SiteForce`] and/or
-/// [`SiteForceAndTorque`].
+/// implements [`SiteEnergy`], [`SiteForceAndVirial`] and/or
+/// [`SiteForceVirialAndTorque`].
 ///
 /// [`ConstantForce`]: crate::external::ConstantForce
 ///
@@ -578,10 +578,11 @@ where
     /// use hoomd_interaction::{NetSiteForceAndVirial, External, external::ConstantForce};
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
+    /// use hoomd_linear_algebra::matrix::Matrix;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
-    /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
+    /// microstate.add_body(Body::point(Cartesian::from([2.0, 0.0])))?;
     ///
     /// let constant_force = External(ConstantForce {
     ///     force: Cartesian::from([0.0, -1.0]),
@@ -592,7 +593,7 @@ where
     ///     &microstate,
     ///     0);
     /// assert_eq!(force, [0.0, -1.0].into());
-    /// todo!("add virial check");
+    /// assert_eq!(virial, Matrix { rows: [ [0.0, 0.0], [-2.0, 0.0]] });
     /// # Ok(())
     /// # }
     /// ```
@@ -623,10 +624,11 @@ where
     /// use hoomd_interaction::{NetSiteForceVirialAndTorque, External, external::ConstantForce};
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
+    /// use hoomd_linear_algebra::matrix::Matrix;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
-    /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
+    /// microstate.add_body(Body::point(Cartesian::from([2.0, 0.0])))?;
     ///
     /// let constant_force = External(ConstantForce {
     ///     force: Cartesian::from([0.0, -1.0]),
@@ -637,7 +639,7 @@ where
     ///     &microstate,
     ///     0);
     /// assert_eq!(force, [0.0, -1.0].into());
-    /// todo!("add virial check");
+    /// assert_eq!(virial, Matrix { rows: [ [0.0, 0.0], [-2.0, 0.0]] });
     /// assert_eq!(torque, 0.0);
     /// # Ok(())
     /// # }

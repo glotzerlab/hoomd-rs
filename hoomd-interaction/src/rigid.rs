@@ -16,10 +16,10 @@ use hoomd_vector::{Outer, Rotate, Vector, Wedge};
 
 /// Rigid body interactions.
 ///
-/// The [`Rigid`] newtype implements [`NetBodyForce`]  for wrapped force
-/// interaction model types that implement [`NetSiteForce`]. It also implements
-/// [`NetBodyForceAndTorque`] for interaction model types that implement
-/// [`NetSiteForceAndTorque`].
+/// The [`Rigid`] newtype implements [`NetBodyForceAndVirial`]  for wrapped force
+/// interaction model types that implement [`NetSiteForceAndVirial`]. It also implements
+/// [`NetBodyForceVirialAndTorque`] for interaction model types that implement
+/// [`NetSiteForceVirialAndTorque`].
 ///
 /// [`Rigid`] computes the net force and torque on a rigid body that results
 /// from the forces/torques on all of its sites:
@@ -31,7 +31,7 @@ use hoomd_vector::{Outer, Rotate, Vector, Wedge};
 /// ```
 ///
 /// The generic type names are:
-/// * `F`: The evaluator that implements [`NetSiteForce`] and/or [`NetSiteForceAndTorque`].
+/// * `F`: The evaluator that implements [`NetSiteForceAndVirial`] and/or [`NetSiteForceVirialAndTorque`].
 ///
 /// # Example
 ///
@@ -99,7 +99,7 @@ where
     ///     property::{OrientedPoint, Point},
     /// };
     /// use hoomd_vector::{Cartesian, Versor};
-    ///
+    /// use hoomd_linear_algebra::matrix::Matrix;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
@@ -129,12 +129,14 @@ where
     /// });
     /// let rigid = Rigid(force_interaction_model);
     ///
-    /// let (body_force_0, _) = rigid.net_body_force_and_virial(&microstate, 0);
-    /// let (body_force_1, _) = rigid.net_body_force_and_virial(&microstate, 1);
+    /// let (body_force_0, body_virial_0) = rigid.net_body_force_and_virial(&microstate, 0);
+    /// let (body_force_1, body_virial_1) = rigid.net_body_force_and_virial(&microstate, 1);
     ///
     /// assert_relative_eq!(body_force_0, Cartesian::from([-24.0, 0.0, 0.0]));
+    /// assert_eq!(body_virial_0, Matrix { rows: [ [12.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ]});
+    ///
     /// assert_relative_eq!(body_force_1, Cartesian::from([24.0, 0.0, 0.0]));
-    /// todo!("add virial check");
+    /// assert_eq!(body_virial_1, Matrix { rows: [ [12.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ]});
     /// # Ok(())
     /// # }
     /// ```
@@ -152,17 +154,18 @@ where
         let mut total_force = V::default();
         let mut total_virial = V::Tensor::default();
 
-        for site_index in microstate.iter_body_site_indices(body_index) {
-            let (site_force, site_virial) = self.0.net_site_force_and_virial(microstate, site_index);
+        for (body_site_index, microstate_site_index) in microstate.iter_body_site_indices(body_index).enumerate() {
+            let (site_force, site_virial) = self.0.net_site_force_and_virial(microstate, microstate_site_index);
             
-            // NOTE: transform() involves more operations than is usually
-            // necessary, but is still used for greatest generality
-            let site_position_global = microstate.bodies()[body_index]
+            // NetBodyForceAndVirial is implemented with as few assumptions as possible.
+            // Use Transform to discover the relative position of the site in the global
+            // frame and then subtract to find it relative to the body.
+            let body = &microstate.bodies()[body_index];
+            let site_position_global = *body
                 .item
                 .properties
-                .transform(&microstate.sites()[site_index].properties) 
-                .position()
-                .clone();
+                .transform(&body.item.sites[body_site_index]) 
+                .position();
 
             let virial_correction = site_force.outer(&(site_position_global - *body_position_global));
             
@@ -206,14 +209,13 @@ where
     /// frame, and the net site forces, virials, and torques are given by `F`'s
     /// implementation of [`NetSiteForceVirialAndTorque`].
     ///
+    /// The symbol $` \wedge `$ denotes the [`Wedge`] product. The resulting torque
+    /// $` \vec{\tau}_{body} `$ is in the system frame.
+    ///
     /// The second term in the virial summation is required to correct for
     /// the centripetal forces implicit in the rigid body constraint. For more
     /// information, see [Glaser et al. 2020](https://doi.org/10.1016/j.commatsci.2019.109430),
     /// especially equations 23 and 24 and algorithm 2.
-    /// 
-    /// 
-    /// The symbol $` \wedge `$ denotes the [`Wedge`] product. The resulting torque
-    /// $` \vec{\tau}_{body} `$ is in the system frame.
     ///
     /// # Example
     /// ```
@@ -231,6 +233,7 @@ where
     ///     property::{OrientedPoint, Point},
     /// };
     /// use hoomd_vector::{Cartesian, Versor};
+    /// use hoomd_linear_algebra::matrix::Matrix;
     ///
     /// use approxim::assert_relative_eq;
     ///
@@ -263,11 +266,17 @@ where
     /// });
     /// let rigid = Rigid(force_interaction_model);
     ///
-    /// let (body_force, _, body_torque) = rigid.net_body_force_virial_and_torque(&microstate, 0);
+    /// let (body_force, body_virial, body_torque) = rigid.net_body_force_virial_and_torque(&microstate, 0);
     ///
     /// assert_relative_eq!(body_force, Cartesian::from([-24.0, 0.0, 0.0]));
     /// assert_relative_eq!(body_torque, Cartesian::from([0.0, 0.0, -48.0]));
-    /// todo!("add virial check");
+    /// assert_eq!(body_virial, Matrix { rows: [ [12.0, -48.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ]});
+    ///
+    /// let (body_force, body_virial, body_torque) = rigid.net_body_force_virial_and_torque(&microstate, 1);
+    ///
+    /// assert_relative_eq!(body_force, Cartesian::from([24.0, 0.0, 0.0]));
+    /// assert_relative_eq!(body_torque, Cartesian::from([0.0, 0.0, 0.0]));
+    /// assert_eq!(body_virial, Matrix { rows: [ [12.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ]});
     /// # Ok(())
     /// # }
     /// ```
@@ -277,11 +286,6 @@ where
         microstate: &Microstate<B, S, X, C>,
         body_index: usize,
     ) -> (V, V::Tensor, V::Bivector) {
-        let body_position_global = microstate.bodies()[body_index]
-            .item
-            .properties
-            .position();
-
         let mut total_force = V::default();
         let mut total_virial = V::Tensor::default();
         let mut total_torque = V::Bivector::default();
@@ -297,14 +301,7 @@ where
             let r = q.rotate(r_body_frame);
             let (site_force, site_virial, site_torque) = self.0.net_site_force_virial_and_torque(microstate, microstate_site_index);
 
-            let site_position_global = microstate.bodies()[body_index]
-                .item
-                .properties
-                .transform(&microstate.sites()[microstate_site_index].properties) 
-                .position()
-                .clone();
-
-            let virial_correction = site_force.outer(&(site_position_global - *body_position_global));
+            let virial_correction = site_force.outer(&r);
 
             total_force += site_force;
             total_virial += site_virial - virial_correction;

@@ -163,6 +163,7 @@ S: Position<Position = V>,
     /// use hoomd_interaction::{external::ConstantForce, SiteForceAndVirial};
     /// use hoomd_vector::Cartesian;
     /// use hoomd_microstate::property::Point;
+    /// use hoomd_linear_algebra::matrix::Matrix;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let constant_force = ConstantForce {
@@ -175,11 +176,11 @@ S: Position<Position = V>,
     ///
     /// let (force_0, virial_0) = constant_force.site_force_and_virial(&a);
     /// assert_eq!(force_0, [0.0, -2.0].into());
-    /// todo!("add virial check");
+    /// assert_eq!(virial_0, Matrix { rows: [ [0.0, 0.0], [0.0, 0.0]] });
     ///
     /// let (force_1, virial_1) = constant_force.site_force_and_virial(&b);
     /// assert_eq!(force_1, [0.0, -2.0].into());
-    /// todo!("add virial check");
+    /// assert_eq!(virial_1, Matrix { rows: [ [0.0, 0.0], [0.0, -6.0]] });
     /// # Ok(())
     /// # }
     /// ```
@@ -209,6 +210,7 @@ S: Position<Position = V>,
     /// use hoomd_interaction::{external::ConstantForce, SiteForceVirialAndTorque};
     /// use hoomd_vector::Cartesian;
     /// use hoomd_microstate::property::Point;
+    /// use hoomd_linear_algebra::matrix::Matrix;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let constant_force = ConstantForce {
@@ -222,12 +224,12 @@ S: Position<Position = V>,
     /// let (force_0, virial_0, torque_0) = constant_force.site_force_virial_and_torque(&a);
     /// assert_eq!(force_0, [0.0, -2.0].into());
     /// assert_eq!(torque_0, 0.0);
-    /// todo!("add virial check");
+    /// assert_eq!(virial_0, Matrix { rows: [ [0.0, 0.0], [0.0, 0.0]] });
     ///
     /// let (force_1, virial_1, torque_1) = constant_force.site_force_virial_and_torque(&b);
     /// assert_eq!(force_1, [0.0, -2.0].into());
     /// assert_eq!(torque_1, 0.0);
-    /// todo!("add virial check");
+    /// assert_eq!(virial_1, Matrix { rows: [ [0.0, 0.0], [0.0, -6.0]] });
     /// # Ok(())
     /// # }
     /// ```

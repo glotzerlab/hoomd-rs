@@ -176,40 +176,40 @@ cutoff to 0 at a given distance `r_cut`.
 
 Design goal: When possible, allow the same model to be used for both MD and MC
 simulation. Types that implement the MC traits `TotalEnergy`, `DeltaEnergyOne`,
-etc.. should also (when possible) implement the `NetSiteForce` and
-`NetSiteForceAndTorque` traits.
+etc.. should also (when possible) implement the `NetSiteForceAndVirial` and
+`NetSiteForceVirialAndTorque` traits.
 
 #### Rigid bodies
 
-`NetSiteForce`/`NetSiteForceAndTorque` compute the net force/torque on a
+`NetSiteForceAndVirial`/`NetSiteForceVirialAndTorque` compute the net force/torque on a
 given *site* in the microstate. This is different from the MC traits like
 `DeltaEnergyOne` that operate on *bodies*.
 
 In MD, going from net forces/torques on sites to bodies is always the
 same process for rigid bodies. To reduce code duplication, the `Rigid`
 newtype computes the forces and torques on bodies via the result of
-`NetSiteForce`/`NetSiteForceAndTorque`. Say the force/torque interaction
-model type will implement `NetSiteForceAndTorque`, `TotalEnergy`, and other MC
+`NetSiteForceAndVirial`/`NetSiteForceVirialAndTorque`. Say the force/torque interaction
+model type will implement `NetSiteForceVirialAndTorque`, `TotalEnergy`, and other MC
 traits like `DeltaEnergyOne` when possible. `Rigid(model)` will then implement
-`NetBodyForce`/`NetBodyForceAndTorque` which can be used by an MD integration
+`NetBodyForceAndVirial`/`NetBodyForceVirialAndTorque` which can be used by an MD integration
 method.
 
 #### External forces/torques
 
-The `External` newtype implements `NetSiteForce` and/or `NetSiteForceAndTorque` for
-any wrapped type that implements `NetSiteForce` and/or `SiteForceAndTorque`.
+The `External` newtype implements `NetSiteForceAndVirial` and/or `NetSiteForceVirialAndTorque` for
+any wrapped type that implements `SiteForceAndVirial` and/or `SiteForceVirialAndTorque`.
 
 #### Cutoff pairwise forces/torques
 
-The `PairwiseCutoff` newtype implements `NetSiteForce` and/or
-`NetSiteForceAndTorque` for any wrapped type that implements `SitePairForce`
-and/or `SitePairForceAndTorque`.
+The `PairwiseCutoff` newtype implements `NetSiteForceAndVirial` and/or
+`NetSiteForceVirialAndTorque` for any wrapped type that implements `SitePairForceAndVirial`
+and/or `SitePairForceVirialAndTorque`.
 
-`Isotropic` implements `SitePairForce` and `SitePairForceAndTorque` for any
+`Isotropic` implements `SitePairForceAndVirial` and `SitePairForceVirialAndTorque` for any
 wrapped type that implements `UnivariateForce`.
 
 At this time there are no simple entry points for custom anisotropic forces.
-Users should implement `SitePairForceAndTorque` directly to achieve anisotropic
+Users should implement `SitePairForceVirialAndTorque` directly to achieve anisotropic
 interactions. Future releases of `hoomd-rs` may add `AnisotropicForceAndTorque`
 to compliment `AnisotropicEnergy`.
 

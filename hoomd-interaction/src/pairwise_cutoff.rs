@@ -33,24 +33,24 @@ use crate::{
 /// belong to different bodies.
 ///
 /// A [`PairwiseCutoff`] newtype wrapping a type that implements
-/// [`SitePairForce`] and/or [`SitePairForceAndTorque`] represents:
+/// [`SitePairForceAndVirial`] and/or [`SitePairForceVirialAndTorque`] represents:
 /// ```math
 /// \vec{F}_i = \sum_{j \ne i} \vec{F}\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
 /// ```
 /// ```math
 /// \vec{\tau}_i = \sum_{j \ne i} \vec{\tau}\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
 /// ```
-/// where $`\vec{F}(s_i, s_j)`$ is the force computed by [`SitePairForce`]
-/// (or [`SitePairForceAndTorque`]) and $`\vec{\tau}(s_i, s_j)`$ is the torque computed by
-/// [`SitePairForceAndTorque`].
+/// where $`\vec{F}(s_i, s_j)`$ is the force computed by [`SitePairForceAndVirial`]
+/// (or [`SitePairForceVirialAndTorque`]) and $`\vec{\tau}(s_i, s_j)`$ is the torque computed by
+/// [`SitePairForceVirialAndTorque`].
 ///
-/// A type that implements *both* [`SitePairEnergy`] and [`SitePairForce`]
-/// (or [`SitePairForceAndTorque`]) *must* compute forces and torques that are
+/// A type that implements *both* [`SitePairEnergy`] and [`SitePairForceAndVirial`]
+/// (or [`SitePairForceVirialAndTorque`]) *must* compute forces and torques that are
 /// derivatives of the energy.
 ///
 /// Use [`PairwiseCutoff`] with [`Anisotropic`], [`Isotropic`], [`HardShape`], or
-/// your own custom type that implements [`SitePairEnergy`], [`SitePairForce`] and/or
-/// [`SitePairForceAndTorque`].
+/// your own custom type that implements [`SitePairEnergy`], [`SitePairForceAndVirial`] and/or
+/// [`SitePairForceVirialAndTorque`].
 ///
 /// [`Anisotropic`]: crate::pairwise::Anisotropic
 /// [`Isotropic`]: crate::pairwise::Isotropic
@@ -162,6 +162,7 @@ impl<E> PairwiseCutoff<E> {
     ///     Body, Microstate, Site, property::Point
     /// };
     /// use hoomd_vector::Cartesian;
+    /// use hoomd_linear_algebra::matrix::Matrix;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
@@ -185,8 +186,10 @@ impl<E> PairwiseCutoff<E> {
     /// let (force_1, virial_1) = force.site_pair_force_and_virial(&sites[1], &sites[0]);
     ///
     /// assert_relative_eq!(force_0, Cartesian::from([-24.0, 0.0, 0.0]));
+    /// assert_eq!(virial_0, Matrix { rows: [ [12.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ]});
+    ///
     /// assert_relative_eq!(force_1, Cartesian::from([24.0, 0.0, 0.0]));
-    /// todo!("add virial check");
+    /// assert_eq!(virial_1, Matrix { rows: [ [12.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ]});
     /// # Ok(())
     /// # }
     /// ```
@@ -224,8 +227,6 @@ impl<E> PairwiseCutoff<E> {
     /// where $`N_s`$ is the set of neighboring sites in other bodies
     /// for which $`\left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut}`$ and
     /// the subscript $`ji`$ means "from *j* on *i*".
-    /// 
-    /// TODO: add example
     #[inline]
     pub fn site_pair_force_virial_and_torque<V, S>(
         &self,
@@ -529,7 +530,6 @@ where
     ///
     /// assert_relative_eq!(force_0, Cartesian::from([-24.0, 0.0, 0.0]));
     /// assert_relative_eq!(force_1, Cartesian::from([24.0, 0.0, 0.0]));
-    /// todo!("add virial check");
     /// # Ok(())
     /// # }
     /// ```
@@ -590,8 +590,6 @@ where
     /// for which $`\left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut}`$ and
     /// the subscript $`ji`$ means "from *j* on *i*". The pairwise forces,
     /// virials, and torques are given by `E`'s implementation of [`SitePairForceVirialAndTorque`].
-    /// 
-    /// TODO: add example
     #[inline]
     fn net_site_force_virial_and_torque(
         &self,

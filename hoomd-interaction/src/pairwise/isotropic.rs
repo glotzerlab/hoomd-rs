@@ -13,7 +13,7 @@ use hoomd_vector::{InnerProduct, Metric, Outer, Wedge};
 ///
 /// [`Isotropic`] provides a single implementation that computes pairwise
 /// interactions that are a function only of the distance between sites. It
-/// fills the gap between traits like [`SitePairEnergy`] / [`SitePairForce`]
+/// fills the gap between traits like [`SitePairEnergy`] / [`SitePairForceAndVirial`]
 /// which operate on site properties and [`UnivariateEnergy`] /
 /// [`UnivariateForce`] which is a function only of the separation distance.
 ///
@@ -77,7 +77,6 @@ use hoomd_vector::{InnerProduct, Metric, Outer, Wedge};
 /// assert_eq!(energy, -1.5);
 /// assert_eq!(force_ab, -force_ba);
 /// assert_relative_eq!(force_ab, Cartesian::from([0.0, 0.0]), epsilon = 1e-14);
-/// todo!("add virial check");
 /// 
 /// # Ok(())
 /// # }
@@ -240,7 +239,6 @@ where
     /// 
     /// assert_eq!(force_ab, -force_ba);
     /// assert_relative_eq!(force_ab, Cartesian::from([0.0, 0.0]), epsilon = 1e-14);
-    /// todo!("add virial check");
     /// # Ok(())
     /// # }
     /// ```
@@ -257,7 +255,7 @@ where
             (V::default(), V::Tensor::default())
         } else {
             let force = (r_ji / distance) * self.interaction.force(distance);
-            let virial = force.outer(&r_ji);
+            let virial = (force / 2.0).outer(&r_ji);
             (force, virial)
         }
 
@@ -301,7 +299,7 @@ where
             (V::default(), V::Tensor::default(), V::Bivector::default())
         } else {
             let force = (r_ji / distance) * self.interaction.force(distance);
-            let virial = force.outer(&r_ji);
+            let virial = (force / 2.0).outer(&r_ji);
             let torque = V::Bivector::default();
             (force, virial, torque)
         }

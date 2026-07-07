@@ -13,12 +13,12 @@
 //! `hoomd-md` provides building blocks that you can use to create a molecular dynamics
 //! simulation model. Start with a [`Microstate`] to represent the properties of all the
 //! bodies and sites. Form an interaction model using types from [`hoomd_interaction`]
-//! that implement [`NetBodyForce`] or [`NetBodyForceAndTorque`] and set the macrostate
+//! that implement [`NetBodyForceAndVirial`] or [`NetBodyForceVirialAndTorque`] and set the macrostate
 //! using one of the types from [`hoomd_simulation`].
 //!
 //! [`Microstate`]: hoomd_microstate::Microstate
-//! [`NetBodyForce`]: hoomd_interaction::NetBodyForce
-//! [`NetBodyForceAndTorque`]: hoomd_interaction::NetBodyForceAndTorque
+//! [`NetBodyForceAndVirial`]: hoomd_interaction::NetBodyForceAndVirial
+//! [`NetBodyForceVirialAndTorque`]: hoomd_interaction::NetBodyForceVirialAndTorque
 //! [`DeltaEnergyRemove`]: hoomd_interaction::DeltaEnergyRemove
 //! [`TotalEnergy`]: hoomd_interaction::TotalEnergy
 //!
@@ -84,17 +84,17 @@
 //!
 //! All integration methods in *hoomd-rs* model bodies as rigid bodies. The net force and
 //! torque on each body results from the forces and torques applied to its sites.
-//! The [`Rigid`] type implements [`NetBodyForce`] and [`NetBodyForceAndTorque`] when
-//! it wraps a type that computes forces ([`NetSiteForce`]) and torques
-//! ([`NetSiteForceAndTorque`]) on sites. For example:
+//! The [`Rigid`] type implements [`NetBodyForceAndVirial`] and [`NetBodyForceVirialAndTorque`] when
+//! it wraps a type that computes forces ([`NetSiteForceAndVirial`]) and torques
+//! ([`NetSiteForceVirialAndTorque`]) on sites. For example:
 //! `Rigid<PairwiseCutoff<Isotropic<LennardJones>>>` is a valid interaction model
 //! for use with molecular dynamics integration methods.
 //!
 //! [`Rigid`]: hoomd_interaction::Rigid
-//! [`NetSiteForce`]: hoomd_interaction::NetSiteForce
-//! [`NetSiteForceAndTorque`]: hoomd_interaction::NetSiteForceAndTorque
+//! [`NetSiteForceAndVirial`]: hoomd_interaction::NetSiteForceAndVirial
+//! [`NetSiteForceVirialAndTorque`]: hoomd_interaction::NetSiteForceVirialAndTorque
 //!
-//! Most differentiable interaction models implement both [`NetSiteForce`] and all the
+//! Most differentiable interaction models implement both [`NetSiteForceAndVirial`] and all the
 //! Hamiltonian traits needed for Monte Carlo simulations in *hoomd-mc*. With these
 //! interaction models, you can freely swap between MD and MC simulation steps.
 //! Non-differentiable energies, such as [`Boxcar`] implement energy traits,

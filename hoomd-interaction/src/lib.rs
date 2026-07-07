@@ -965,7 +965,7 @@ pub trait NetBodyForceVirialAndTorque<B, S, X, C> {
 /// In molecular dynamics simulations, bodies move in response to the net force
 /// and torque applied to all sites in the body. As an intermediate step in that
 /// calculation, a type that describes a *force interaction model* must implement
-/// [`NetSiteForceAndTorque`] and compute the net force and torque on a given
+/// [`NetSiteForceVirialAndTorque`] and compute the net force and torque on a given
 /// *site* in the [`Microstate`].
 ///
 /// The generic type names are:
@@ -1136,7 +1136,7 @@ pub trait SitePairForceAndVirial<S> {
 
 /// Compute the pairwise force, virial, and torque on one site from another site.
 ///
-/// The `SitePairForceTorqueAndVirial` trait describes a type that can compute
+/// The `SitePairForceVirialAndTorque` trait describes a type that can compute
 /// the force, virial, and torque on a site by another site *as a function of
 /// the two sites' properties*.
 ///

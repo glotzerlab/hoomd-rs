@@ -4,10 +4,10 @@
 
 *Added:*
 
-* `[hoomd-derive`]: Derive macros for `NetSiteForce` and `NetSiteTorque` (#222).
+* `[hoomd-derive`]: Derive macros for `NetSiteForceAndVirial` and `NetSiteForceVirialAndTorque` (#222).
 * `[hoomd-geometry]`: Add `TwelveTwelve` hyperbolic space boundary condition (#296).
-* `[hoomd-interaction]`: Add `SiteForce`, `SiteForceAndTorque`, `NetSiteForce`, and `NetSiteForceAndTorque` traits. Implement them for all applicable types (#222).
-* `[hoomd-interaction]`: Add `NetBodyForce` and `NetBodyForceAndTorque` traits. Implement them for the new `Rigid` force interaction model type (#222).
+* `[hoomd-interaction]`: Add `SiteForceAndVirial`, `SiteForceVirialAndTorque`, `NetSiteForceAndVirial`, and `NetSiteForceVirialAndTorque` traits. Implement them for all applicable types (#222).
+* `[hoomd-interaction]`: Add `NetBodyForceAndVirial` and `NetBodyForceVirialAndTorque` traits. Implement them for the new `Rigid` force interaction model type (#222).
 * `[hoomd-interaction]`: Add `ConstantForce` and `ConstantTorque` types that apply a constant force or torque to all sites (#222).
 * `[hoomd-manifold]`: Add `Spherical<4>::from_versor` and the corresponding `::to_versor` (#285).
 * `[hoomd-mc]`: Implement translation moves for `Point<Spherical<4>>` (#287).
