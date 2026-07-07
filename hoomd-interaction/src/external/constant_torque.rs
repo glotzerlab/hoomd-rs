@@ -15,18 +15,16 @@ pub struct ConstantTorque<V: Wedge> {
     pub torque: V::Bivector,
 }
 
-impl<S, V> SiteForceVirialAndTorque<S> for ConstantTorque<V> where
-V: Default + Wedge + Outer,
-V::Bivector: Copy + Default,
-V::Tensor: Default,
+impl<S, V> SiteForceVirialAndTorque<S> for ConstantTorque<V>
+where
+    V: Default + Wedge + Outer,
+    V::Bivector: Copy + Default,
+    V::Tensor: Default,
 {
     type Force = V;
 
     #[inline]
-    fn site_force_virial_and_torque(
-        &self,
-        _site_properties: &S
-    ) -> (V, V::Tensor, V::Bivector) {
+    fn site_force_virial_and_torque(&self, _site_properties: &S) -> (V, V::Tensor, V::Bivector) {
         (V::default(), V::Tensor::default(), self.torque)
     }
 }

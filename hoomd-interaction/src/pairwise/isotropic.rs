@@ -5,7 +5,10 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForceAndVirial, SitePairForceVirialAndTorque, univariate::{UnivariateEnergy, UnivariateForce}};
+use crate::{
+    MaximumInteractionRange, SitePairEnergy, SitePairForceAndVirial, SitePairForceVirialAndTorque,
+    univariate::{UnivariateEnergy, UnivariateForce},
+};
 use hoomd_microstate::property::Position;
 use hoomd_vector::{InnerProduct, Metric, Outer, Wedge};
 
@@ -33,9 +36,9 @@ use hoomd_vector::{InnerProduct, Metric, Outer, Wedge};
 /// \vec{0} & r_{ij} \ge r_\mathrm{cut}
 /// \end{cases}
 /// ```
-/// where $` U `$ is given by `E`'s [`UnivariateEnergy`] implementation and 
+/// where $` U `$ is given by `E`'s [`UnivariateEnergy`] implementation and
 /// $` -\frac{\mathrm{d} U}{\mathrm{d} r} `$ is given by `E`'s [`UnivariateForce`]
-/// implementation. 
+/// implementation.
 ///
 /// Use [`Isotropic`] with [`PairwiseCutoff`] in MD and MC simulations.
 ///
@@ -45,13 +48,11 @@ use hoomd_vector::{InnerProduct, Metric, Outer, Wedge};
 /// ```
 /// use approxim::assert_relative_eq;
 /// use hoomd_interaction::{
-///     SitePairEnergy,
-///     SitePairForceAndVirial,
-///     pairwise::Isotropic,
+///     SitePairEnergy, SitePairForceAndVirial, pairwise::Isotropic,
 ///     univariate::LennardJones,
 /// };
 /// use hoomd_microstate::property::Point;
-/// use hoomd_vector::Cartesian;    
+/// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let a = Point {
@@ -71,13 +72,15 @@ use hoomd_vector::{InnerProduct, Metric, Outer, Wedge};
 /// };
 ///
 /// let energy = lennard_jones.site_pair_energy(&a, &b);
-/// let (force_ab, virial_ab) = lennard_jones.site_pair_force_and_virial(&a, &b);
-/// let (force_ba, virial_ba) = lennard_jones.site_pair_force_and_virial(&b, &a);
-/// 
+/// let (force_ab, virial_ab) =
+///     lennard_jones.site_pair_force_and_virial(&a, &b);
+/// let (force_ba, virial_ba) =
+///     lennard_jones.site_pair_force_and_virial(&b, &a);
+///
 /// assert_eq!(energy, -1.5);
 /// assert_eq!(force_ab, -force_ba);
 /// assert_relative_eq!(force_ab, Cartesian::from([0.0, 0.0]), epsilon = 1e-14);
-/// 
+///
 /// # Ok(())
 /// # }
 /// ```
@@ -104,7 +107,7 @@ where
     /// 0 & r_{ij} \ge r_\mathrm{cut}
     /// \end{cases}
     /// ```
-    /// where $` U `$ is given by `E`'s [`UnivariateEnergy`] implementation. 
+    /// where $` U `$ is given by `E`'s [`UnivariateEnergy`] implementation.
     ///
     /// # Example
     ///
@@ -114,7 +117,7 @@ where
     ///     SitePairEnergy, pairwise::Isotropic, univariate::LennardJones,
     /// };
     /// use hoomd_microstate::property::Point;
-    /// use hoomd_vector::Cartesian;    
+    /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Point {
@@ -134,9 +137,9 @@ where
     /// };
     ///
     /// let energy = lennard_jones.site_pair_energy(&a, &b);
-    /// 
+    ///
     /// assert_eq!(energy, -1.5);
-    /// 
+    ///
     /// # Ok(())
     /// # }
     /// ```
@@ -159,8 +162,8 @@ impl<E> MaximumInteractionRange for Isotropic<E> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::{MaximumInteractionRange,
-    ///     pairwise::Isotropic, univariate::LennardJones,
+    /// use hoomd_interaction::{
+    ///     MaximumInteractionRange, pairwise::Isotropic, univariate::LennardJones,
     /// };
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -188,7 +191,7 @@ where
     V: Default + InnerProduct + Outer,
     S: Position<Position = V>,
     E: UnivariateForce,
-    V::Tensor: Default
+    V::Tensor: Default,
 {
     type Force = V;
 
@@ -203,19 +206,17 @@ where
     /// \end{cases}
     /// ```
     /// where $` -\frac{\mathrm{d} U}{\mathrm{d} r} `$ is given by `E`'s [`UnivariateForce`]
-    /// implementation. 
+    /// implementation.
     ///
     /// # Example
     ///
     /// ```
     /// use approxim::assert_relative_eq;
     /// use hoomd_interaction::{
-    ///     SitePairForceAndVirial,
-    ///     pairwise::Isotropic,
-    ///     univariate::LennardJones,
+    ///     SitePairForceAndVirial, pairwise::Isotropic, univariate::LennardJones,
     /// };
     /// use hoomd_microstate::property::Point;
-    /// use hoomd_vector::Cartesian;    
+    /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Point {
@@ -234,9 +235,11 @@ where
     ///     r_cut: 2.5,
     /// };
     ///
-    /// let (force_ab, virial_ab) = lennard_jones.site_pair_force_and_virial(&a, &b);
-    /// let (force_ba, virial_ba) = lennard_jones.site_pair_force_and_virial(&b, &a);
-    /// 
+    /// let (force_ab, virial_ab) =
+    ///     lennard_jones.site_pair_force_and_virial(&a, &b);
+    /// let (force_ba, virial_ba) =
+    ///     lennard_jones.site_pair_force_and_virial(&b, &a);
+    ///
     /// assert_eq!(force_ab, -force_ba);
     /// assert_relative_eq!(force_ab, Cartesian::from([0.0, 0.0]), epsilon = 1e-14);
     /// # Ok(())
@@ -246,7 +249,7 @@ where
     fn site_pair_force_and_virial(
         &self,
         site_properties_i: &S,
-        site_properties_j: &S
+        site_properties_j: &S,
     ) -> (Self::Force, <Self::Force as Outer>::Tensor) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();
         let distance = r_ji.norm();
@@ -258,7 +261,6 @@ where
             let virial = (force / 2.0).outer(&r_ji);
             (force, virial)
         }
-
     }
 }
 
@@ -283,14 +285,14 @@ where
     /// \end{cases}
     /// ```
     /// where $` -\frac{\mathrm{d} U}{\mathrm{d} r} `$ is given by `E`'s [`UnivariateForce`]
-    /// implementation. 
+    /// implementation.
     ///
     /// Radial forces produce zero torque.
     #[inline]
     fn site_pair_force_virial_and_torque(
         &self,
         site_properties_i: &S,
-        site_properties_j: &S
+        site_properties_j: &S,
     ) -> (V, <Self::Force as Outer>::Tensor, V::Bivector) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();
         let distance = r_ji.norm();

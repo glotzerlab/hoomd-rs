@@ -5,10 +5,13 @@
 
 use serde::{Deserialize, Serialize};
 
-use hoomd_vector::{Outer, Wedge};
 use hoomd_microstate::{Body, Microstate, property::Position};
+use hoomd_vector::{Outer, Wedge};
 
-use super::{NetSiteForceAndVirial, NetSiteForceVirialAndTorque, DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy};
+use super::{
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, NetSiteForceAndVirial,
+    NetSiteForceVirialAndTorque, TotalEnergy,
+};
 
 /// Hamiltonian with H = 0.
 ///
@@ -63,7 +66,7 @@ where
     V: Default + Wedge + Outer,
     V::Bivector: Default,
     S: Position<Position = V>,
-    V::Tensor: Default
+    V::Tensor: Default,
 {
     type Force = V;
 
@@ -71,7 +74,7 @@ where
     fn net_site_force_virial_and_torque(
         &self,
         _microstate: &Microstate<B, S, X, C>,
-        _site_index: usize
+        _site_index: usize,
     ) -> (V, V::Tensor, V::Bivector) {
         (V::default(), V::Tensor::default(), V::Bivector::default())
     }
@@ -81,7 +84,7 @@ impl<V, B, S, X, C> NetSiteForceAndVirial<B, S, X, C> for Zero
 where
     V: Default + Outer,
     S: Position<Position = V>,
-    V::Tensor: Default
+    V::Tensor: Default,
 {
     type Force = V;
 
@@ -89,7 +92,7 @@ where
     fn net_site_force_and_virial(
         &self,
         _microstate: &Microstate<B, S, X, C>,
-        _site_index: usize
+        _site_index: usize,
     ) -> (V, V::Tensor) {
         (V::default(), V::Tensor::default())
     }

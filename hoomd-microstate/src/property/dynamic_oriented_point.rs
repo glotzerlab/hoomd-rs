@@ -5,7 +5,10 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{OrientedPoint, Point, RotationalMotionTypes, AngularMomentum, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Position, Orientation};
+use super::{
+    AngularMomentum, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Orientation,
+    OrientedPoint, Point, Position, RotationalMotionTypes,
+};
 use crate::{Transform, property::NetVirial};
 use hoomd_vector::{Angle, Cartesian, Outer, Rotate, Rotation, Vector, Versor, Wedge};
 
@@ -34,12 +37,12 @@ impl RotationalMotionTypes for Versor {
 ///
 /// ```
 /// use hoomd_microstate::property::DynamicOrientedPoint;
-/// use hoomd_vector::{Cartesian, Angle};
+/// use hoomd_vector::{Angle, Cartesian};
 /// use std::f64::consts::PI;
 ///
 /// let oriented_dynamic_point = DynamicOrientedPoint {
 ///     position: Cartesian::from([1.0, -3.0]),
-///     orientation: Angle::from(PI/4.0),
+///     orientation: Angle::from(PI / 4.0),
 ///     ..Default::default()
 /// };
 /// ```
@@ -47,7 +50,7 @@ impl RotationalMotionTypes for Versor {
 pub struct DynamicOrientedPoint<V, R>
 where
     V: Wedge + Outer,
-    R: RotationalMotionTypes
+    R: RotationalMotionTypes,
 {
     /// The location of the extended body in space $`[\mathrm{length}]`$.
     pub position: V,
@@ -77,10 +80,11 @@ where
     pub net_torque: V::Bivector,
 }
 
-impl<V> Default for DynamicOrientedPoint<V, Angle> where
-V: Default + Wedge + Outer,
-V::Tensor: Default,
-V::Bivector: Default,
+impl<V> Default for DynamicOrientedPoint<V, Angle>
+where
+    V: Default + Wedge + Outer,
+    V::Tensor: Default,
+    V::Bivector: Default,
 {
     /// Construct a [`DynamicOrientedPoint`] with mass 1.0 and moment of inertia 1.0.
     /// Position, orientation, momentum, angular momentum, net force, net virial, and net torque are set to 0.
@@ -99,7 +103,10 @@ V::Bivector: Default,
     /// assert_eq!(dynamic_point.momentum, [0.0, 0.0].into());
     /// assert_eq!(dynamic_point.angular_momentum, 0.0.into());
     /// assert_eq!(dynamic_point.net_force, [0.0, 0.0].into());
-    /// assert_eq!(dynamic_point.net_virial, dynamic_point.net_force.outer(dynamic_point.position));
+    /// assert_eq!(
+    ///     dynamic_point.net_virial,
+    ///     dynamic_point.net_force.outer(dynamic_point.position)
+    /// );
     /// assert_eq!(dynamic_point.net_torque, 0.0);
     /// ```
     #[inline]
@@ -113,14 +120,15 @@ V::Bivector: Default,
             angular_momentum: Default::default(),
             net_force: Default::default(),
             net_virial: V::Tensor::default(),
-            net_torque: Default::default()
+            net_torque: Default::default(),
         }
     }
 }
 
-impl<V> Default for DynamicOrientedPoint<V, Versor> where
-V: Default + Wedge + Outer,
-V::Bivector: Default,
+impl<V> Default for DynamicOrientedPoint<V, Versor>
+where
+    V: Default + Wedge + Outer,
+    V::Bivector: Default,
 {
     /// Construct a [`DynamicOrientedPoint`] with mass 1.0 and moment of inertia 1.0 on all axes.
     /// Position, momentum, angular momentum, net force, and net torque are set to 0.
@@ -130,7 +138,7 @@ V::Bivector: Default,
     ///
     /// ```
     /// use hoomd_microstate::property::DynamicOrientedPoint;
-    /// use hoomd_vector::{Versor, Cartesian};
+    /// use hoomd_vector::{Cartesian, Versor};
     ///
     /// let dynamic_point = DynamicOrientedPoint::<Cartesian<3>, Versor>::default();
     /// assert_eq!(dynamic_point.mass, 1.0);
@@ -153,7 +161,7 @@ V::Bivector: Default,
             angular_momentum: Cartesian::default(),
             net_force: Default::default(),
             net_virial: V::default().outer(&V::default()),
-            net_torque: Default::default()
+            net_torque: Default::default(),
         }
     }
 }
@@ -212,7 +220,10 @@ where
     ///
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_microstate::{Transform, property::{OrientedPoint, DynamicOrientedPoint}};
+    /// use hoomd_microstate::{
+    ///     Transform,
+    ///     property::{DynamicOrientedPoint, OrientedPoint},
+    /// };
     /// use hoomd_vector::{Angle, Cartesian};
     /// use std::f64::consts::PI;
     ///
@@ -432,9 +443,9 @@ mod test {
     fn mass() {
         let dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle> {
             mass: 3.0,
-            .. Default::default()
+            ..Default::default()
         };
-        
+
         assert_eq!(dynamic_point.mass(), 3.0);
     }
 

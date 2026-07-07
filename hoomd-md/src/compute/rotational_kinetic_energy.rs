@@ -57,7 +57,9 @@ where
                 let moment_of_inertia = body.item.properties.moment_of_inertia;
                 let angular_momentum = body.item.properties.angular_momentum;
 
-                for (momentum, inertia) in angular_momentum.coordinates.iter().zip(moment_of_inertia) {
+                for (momentum, inertia) in
+                    angular_momentum.coordinates.iter().zip(moment_of_inertia)
+                {
                     if inertia != 0.0 {
                         total += momentum.powi(2) / (2.0 * inertia);
                         count += 1;
@@ -186,7 +188,10 @@ mod test {
         let (total_kinetic_energy, total_degrees_of_freedom) =
             microstate.rotational_kinetic_energy();
         check!(total_degrees_of_freedom == 9);
-        assert_relative_eq!(total_kinetic_energy, 64.0 / 4.0 + 9.0 / 12.0 + 16.0 / 6.0 + 9.0 / 4.0 + 4.0 / 8.0 + 16.0 / 12.0);
+        assert_relative_eq!(
+            total_kinetic_energy,
+            64.0 / 4.0 + 9.0 / 12.0 + 16.0 / 6.0 + 9.0 / 4.0 + 4.0 / 8.0 + 16.0 / 12.0
+        );
 
         let (filtered_kinetic_energy, filtered_degrees_of_freedom) =
             microstate.rotational_kinetic_energy_with_filter(|b| b.tag <= 2);
@@ -195,5 +200,4 @@ mod test {
 
         Ok(())
     }
-
 }

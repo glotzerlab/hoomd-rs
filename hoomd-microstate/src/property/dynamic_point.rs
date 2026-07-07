@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{OrientedPoint, Point, Mass, Momentum, NetForce, Position};
+use super::{Mass, Momentum, NetForce, OrientedPoint, Point, Position};
 use crate::{Transform, property::NetVirial};
 use hoomd_vector::{Outer, Vector};
 
@@ -68,7 +68,10 @@ where
     /// assert_eq!(dynamic_point.position, [0.0, 0.0, 0.0].into());
     /// assert_eq!(dynamic_point.momentum, [0.0, 0.0, 0.0].into());
     /// assert_eq!(dynamic_point.net_force, [0.0, 0.0, 0.0].into());
-    /// assert_eq!(dynamic_point.net_virial, dynamic_point.net_force.outer(dynamic_point.position));
+    /// assert_eq!(
+    ///     dynamic_point.net_virial,
+    ///     dynamic_point.net_force.outer(dynamic_point.position)
+    /// );
     /// ```
     #[inline]
     fn default() -> Self {
@@ -77,7 +80,7 @@ where
             mass: 1.0,
             momentum: Default::default(),
             net_force: Default::default(),
-            net_virial: V::Tensor::default()
+            net_virial: V::Tensor::default(),
         }
     }
 }
@@ -91,8 +94,11 @@ impl<V: Vector + Outer> Transform<Point<V>> for DynamicPoint<V> {
     ///
     /// ```
     /// use approxim::assert_relative_eq;
+    /// use hoomd_microstate::{
+    ///     Transform,
+    ///     property::{DynamicPoint, Point},
+    /// };
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_microstate::{property::{DynamicPoint, Point}, Transform};
     ///
     /// let body_properties = DynamicPoint {
     ///     position: Cartesian::from([1.0, -2.0, 3.0]),
@@ -126,8 +132,11 @@ where
     ///
     /// ```
     /// use approxim::assert_relative_eq;
+    /// use hoomd_microstate::{
+    ///     Transform,
+    ///     property::{DynamicPoint, OrientedPoint},
+    /// };
     /// use hoomd_vector::{Cartesian, Versor};
-    /// use hoomd_microstate::{property::{DynamicPoint, OrientedPoint}, Transform};
     ///
     /// let body_properties = DynamicPoint {
     ///     position: Cartesian::from([1.0, -2.0, 3.0]),
@@ -247,9 +256,9 @@ mod test {
     fn mass() {
         let dynamic_point = DynamicPoint::<Cartesian<2>> {
             mass: 3.0,
-            .. Default::default()
+            ..Default::default()
         };
-        
+
         assert_eq!(dynamic_point.mass(), 3.0);
     }
 

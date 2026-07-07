@@ -142,7 +142,7 @@ where
     fn sample<R: Rng + ?Sized>(&self, _index: usize, rng: &mut R) -> Body<DynamicPoint<V>, S> {
         let properties = DynamicPoint {
             position: self.boundary.sample(rng),
-            .. Default::default()
+            ..Default::default()
         };
         let sites = self.template_sites.clone();
         Body { properties, sites }
@@ -191,11 +191,15 @@ where
     DynamicOrientedPoint<V, O>: Default,
 {
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, _index: usize, rng: &mut R) -> Body<DynamicOrientedPoint<V, O>, S> {
+    fn sample<R: Rng + ?Sized>(
+        &self,
+        _index: usize,
+        rng: &mut R,
+    ) -> Body<DynamicOrientedPoint<V, O>, S> {
         let properties = DynamicOrientedPoint {
             position: self.boundary.sample(rng),
             orientation: rng.random(),
-            .. Default::default()
+            ..Default::default()
         };
         let sites = self.template_sites.clone();
         Body { properties, sites }

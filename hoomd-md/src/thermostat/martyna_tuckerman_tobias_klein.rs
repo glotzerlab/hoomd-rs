@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement `MartynaTuckermanTobiasKlein` 
+//! Implement `MartynaTuckermanTobiasKlein`
 
 use rand::Rng;
 use rand_distr::{Distribution, Normal};
@@ -36,17 +36,17 @@ use hoomd_utility::valid::PositiveReal;
 /// ```math
 /// \begin{align*}
 ///
-/// G_\mathrm{old} &= \frac{1}{\tau^2} \left( \frac{2 K}{N kT} - 1 \right) \\ 
+/// G_\mathrm{old} &= \frac{1}{\tau^2} \left( \frac{2 K}{N kT} - 1 \right) \\
 ///
-/// \xi \left\{ t+\frac{\delta t} {4} \right\} &= \xi \{ t \} + G_\mathrm{old}\frac{\delta t}{4} \\ 
+/// \xi \left\{ t+\frac{\delta t} {4} \right\} &= \xi \{ t \} + G_\mathrm{old}\frac{\delta t}{4} \\
 ///
-/// \alpha &= \exp\left[ -\xi \left\{ t+\frac{\delta t} {4} \right\} \frac{dt}{2} \right]  \\ 
+/// \alpha &= \exp\left[ -\xi \left\{ t+\frac{\delta t} {4} \right\} \frac{dt}{2} \right]  \\
 ///
-/// K_{new} &= K \alpha^2 \\ 
+/// K_{new} &= K \alpha^2 \\
 ///
-/// \eta \left\{ t+\frac{\delta t} {2} \right\} &= \eta \{ t \} + \xi \left\{ t+\frac{\delta t} {4} \right\} \frac{\delta t}{2} \\ 
+/// \eta \left\{ t+\frac{\delta t} {2} \right\} &= \eta \{ t \} + \xi \left\{ t+\frac{\delta t} {4} \right\} \frac{\delta t}{2} \\
 ///
-/// G_\mathrm{new} &= \frac{1}{\tau^2} \left( \frac{2 K_\mathrm{new} }{kT} - 1 \right) \\ 
+/// G_\mathrm{new} &= \frac{1}{\tau^2} \left( \frac{2 K_\mathrm{new} }{kT} - 1 \right) \\
 ///
 /// \xi \left\{ t+\frac{\delta t} {2} \right\} &= \xi \left\{ t+\frac{\delta t} {4} \right\} + G_\mathrm{new} \frac{\delta t}{4}
 ///         
@@ -130,31 +130,44 @@ impl MartynaTuckermanTobiasKlein {
     /// # Example
     ///
     /// ```
-    /// use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
-    /// use hoomd_vector::Cartesian;
-    /// use hoomd_md::{TranslationalKineticEnergy, thermostat::MartynaTuckermanTobiasKlein};
+    /// use hoomd_md::{
+    ///     TranslationalKineticEnergy, thermostat::MartynaTuckermanTobiasKlein,
+    /// };
+    /// use hoomd_microstate::{
+    ///     Body, Microstate,
+    ///     property::{DynamicPoint, Point},
+    /// };
     /// use hoomd_simulation::macrostate::Isothermal;
+    /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::builder()
     ///     .bodies([
-    ///         Body::single_site(DynamicPoint {
-    ///           position: Cartesian::from([1.0, 2.0]),
-    ///           ..Default::default()
-    ///           },
-    ///           Point::default()),
-    ///         Body::single_site(DynamicPoint {
-    ///           position: Cartesian::from([-2.0, 3.0]),
-    ///           ..Default::default()
-    ///           },
-    ///           Point::default(),
-    ///           ),
+    ///         Body::single_site(
+    ///             DynamicPoint {
+    ///                 position: Cartesian::from([1.0, 2.0]),
+    ///                 ..Default::default()
+    ///             },
+    ///             Point::default(),
+    ///         ),
+    ///         Body::single_site(
+    ///             DynamicPoint {
+    ///                 position: Cartesian::from([-2.0, 3.0]),
+    ///                 ..Default::default()
+    ///             },
+    ///             Point::default(),
+    ///         ),
     ///     ])
     ///     .try_build()?;
     ///
     /// let macrostate = Isothermal { temperature: 1.5 };
     /// let mut rng = microstate.counter().make_rng();
-    /// let translational_thermostat = MartynaTuckermanTobiasKlein::thermalized(&mut rng, 0.5.try_into()?, &macrostate, microstate.translational_kinetic_energy().1);
+    /// let translational_thermostat = MartynaTuckermanTobiasKlein::thermalized(
+    ///     &mut rng,
+    ///     0.5.try_into()?,
+    ///     &macrostate,
+    ///     microstate.translational_kinetic_energy().1,
+    /// );
     /// microstate.increment_substep();
     /// # Ok(())
     /// # }
@@ -171,7 +184,9 @@ impl MartynaTuckermanTobiasKlein {
     {
         let sigma = 1.0 / (degrees_of_freedom as f64 * tau.get().powi(2));
 
-        let xi = Normal::new(0.0, sigma.sqrt()).expect("Normal distribution should be valid").sample(rng);
+        let xi = Normal::new(0.0, sigma.sqrt())
+            .expect("Normal distribution should be valid")
+            .sample(rng);
 
         let mut result = Self {
             tau,
@@ -188,7 +203,9 @@ impl MartynaTuckermanTobiasKlein {
     /// Calculate the thermostats energy.
     #[inline]
     fn thermostat_energy(&self, temperature_set_point: f64, degrees_of_freedom: usize) -> f64 {
-        (degrees_of_freedom as f64) * temperature_set_point * (self.eta + 0.5 * (self.xi * self.tau.get()).powi(2))
+        (degrees_of_freedom as f64)
+            * temperature_set_point
+            * (self.eta + 0.5 * (self.xi * self.tau.get()).powi(2))
     }
 
     /// The total energy of the thermostat.
@@ -197,7 +214,7 @@ impl MartynaTuckermanTobiasKlein {
     ///
     /// ```
     /// use hoomd_md::thermostat::MartynaTuckermanTobiasKlein;
-    ///    
+    ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let thermostat = MartynaTuckermanTobiasKlein::zero(0.5.try_into()?);
     ///
@@ -216,7 +233,7 @@ impl MartynaTuckermanTobiasKlein {
     ///
     /// ```
     /// use hoomd_md::thermostat::MartynaTuckermanTobiasKlein;
-    ///    
+    ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let thermostat = MartynaTuckermanTobiasKlein::zero(0.5.try_into()?);
     ///
@@ -235,7 +252,7 @@ impl MartynaTuckermanTobiasKlein {
     ///
     /// ```
     /// use hoomd_md::thermostat::MartynaTuckermanTobiasKlein;
-    ///    
+    ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let thermostat = MartynaTuckermanTobiasKlein::zero(0.5.try_into()?);
     ///
@@ -261,8 +278,7 @@ where
         delta_t: f64,
         kinetic_energy: f64,
         degrees_of_freedom: usize,
-    ) -> f64
-    {
+    ) -> f64 {
         // Integrate extra degrees-of-freedom and return the
         // velocity rescaling factor, following Tuckerman's work
         // https://doi.org/10.1088/0305-4470/39/19/S18.
@@ -274,7 +290,8 @@ where
 
         let kinetic_temperature_new = kinetic_temperature * (rescaling_factor).powi(2);
         self.eta += 0.5 * xi_quarter * delta_t;
-        let g_new = (kinetic_temperature_new / *macrostate.temperature() - 1.0) / self.tau.get().powi(2);
+        let g_new =
+            (kinetic_temperature_new / *macrostate.temperature() - 1.0) / self.tau.get().powi(2);
         self.xi = xi_quarter + 0.25 * g_new * delta_t;
 
         // Cache the thermostat energy so that users do not have the opportunity
@@ -292,8 +309,7 @@ where
         delta_t: f64,
         kinetic_energy: f64,
         degrees_of_freedom: usize,
-    ) -> f64
-    {
+    ) -> f64 {
         self.integrate_half_step_one(rng, macrostate, delta_t, kinetic_energy, degrees_of_freedom)
     }
 }
@@ -304,9 +320,12 @@ mod tests {
     use assert2::check;
 
     use crate::TranslationalKineticEnergy;
-    use hoomd_microstate::{Microstate, Body, property::{DynamicPoint, Point}};
-    use hoomd_vector::Cartesian;
+    use hoomd_microstate::{
+        Body, Microstate,
+        property::{DynamicPoint, Point},
+    };
     use hoomd_simulation::macrostate::Isothermal;
+    use hoomd_vector::Cartesian;
 
     #[test]
     fn test_zero() -> anyhow::Result<()> {
@@ -324,24 +343,31 @@ mod tests {
     fn test_thermalized() -> anyhow::Result<()> {
         let microstate = Microstate::builder()
             .bodies([
-                Body { properties: DynamicPoint {
-                  position: Cartesian::from([1.0, 2.0]),
-                  ..Default::default()
-                  },
-                  sites: vec![Point::default()],
-                  },
-                Body { properties: DynamicPoint {
-                  position: Cartesian::from([-2.0, 3.0]),
-                  ..Default::default()
-                  },
-                  sites: vec![Point::default()],
-                  },
+                Body {
+                    properties: DynamicPoint {
+                        position: Cartesian::from([1.0, 2.0]),
+                        ..Default::default()
+                    },
+                    sites: vec![Point::default()],
+                },
+                Body {
+                    properties: DynamicPoint {
+                        position: Cartesian::from([-2.0, 3.0]),
+                        ..Default::default()
+                    },
+                    sites: vec![Point::default()],
+                },
             ])
             .try_build()?;
 
         let macrostate = Isothermal { temperature: 1.5 };
         let mut rng = microstate.counter().make_rng();
-        let thermostat = MartynaTuckermanTobiasKlein::thermalized(&mut rng, 0.5.try_into()?, &macrostate, microstate.translational_kinetic_energy().1);
+        let thermostat = MartynaTuckermanTobiasKlein::thermalized(
+            &mut rng,
+            0.5.try_into()?,
+            &macrostate,
+            microstate.translational_kinetic_energy().1,
+        );
 
         check!(thermostat.tau.get() == 0.5);
         check!(thermostat.xi() != 0.0);
@@ -350,5 +376,4 @@ mod tests {
 
         Ok(())
     }
-
 }

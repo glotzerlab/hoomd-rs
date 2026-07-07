@@ -145,8 +145,7 @@ fn execute_matching(
 
     let name = "md_2d_lennard_jones";
     if benchmark_matcher.matches(name) {
-        let mut simulation = md::LennardJones::<2, VecCell<SiteKey, 2>>::new(
-            n)?;
+        let mut simulation = md::LennardJones::<2, VecCell<SiteKey, 2>>::new(n)?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 
@@ -179,9 +178,7 @@ fn execute_matching(
 
     let name = "md_3d_lennard_jones";
     if benchmark_matcher.matches(name) {
-        let mut simulation = md::LennardJones::<3, VecCell<SiteKey, 3>>::new(
-            n
-        )?;
+        let mut simulation = md::LennardJones::<3, VecCell<SiteKey, 3>>::new(n)?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 

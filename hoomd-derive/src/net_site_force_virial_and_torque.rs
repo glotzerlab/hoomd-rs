@@ -56,12 +56,12 @@ pub(crate) fn net_site_force_virial_and_torque(input: DeriveInput) -> TokenStrea
         ));
     } else {
         generics.where_clause = Some(parse_quote!(where
-            __V: ::std::ops::AddAssign<__V> + ::std::default::Default + ::hoomd_vector::Wedge + ::hoomd_vector::Outer,
-            __V::Tensor: ::std::default::Default + ::std::ops::AddAssign<__V::Tensor>,
-            __V::Bivector: ::std::ops::AddAssign<__V::Bivector> + ::std::default::Default,
-            __S: ::hoomd_microstate::property::Position<Position = __V>,
-            #(#field_types: ::hoomd_interaction::NetSiteForceVirialAndTorque<__B, __S, __X, __C, Force = __V>),*
-            ));
+        __V: ::std::ops::AddAssign<__V> + ::std::default::Default + ::hoomd_vector::Wedge + ::hoomd_vector::Outer,
+        __V::Tensor: ::std::default::Default + ::std::ops::AddAssign<__V::Tensor>,
+        __V::Bivector: ::std::ops::AddAssign<__V::Bivector> + ::std::default::Default,
+        __S: ::hoomd_microstate::property::Position<Position = __V>,
+        #(#field_types: ::hoomd_interaction::NetSiteForceVirialAndTorque<__B, __S, __X, __C, Force = __V>),*
+        ));
     }
 
     let (impl_generics, _, where_clause) = generics.split_for_impl();
@@ -72,7 +72,7 @@ pub(crate) fn net_site_force_virial_and_torque(input: DeriveInput) -> TokenStrea
         impl #impl_generics ::hoomd_interaction::NetSiteForceVirialAndTorque<__B, __S, __X, __C> for #name #ty_generics #where_clause
             {
             type Force = __V;
-            
+
             #[inline]
             fn net_site_force_virial_and_torque(
                 &self,
@@ -113,7 +113,7 @@ fn net_site_force_virial_and_torque_sum(fields: &Fields) -> TokenStream {
                 total_virial += virial;
                 total_torque += torque;
                 )*
-                (total_force, total_virial, total_torque)                
+                (total_force, total_virial, total_torque)
             }
         }
         Fields::Unnamed(fields) => {
@@ -140,11 +140,15 @@ fn net_site_force_virial_and_torque_sum(fields: &Fields) -> TokenStream {
                 total_virial += virial;
                 total_torque += torque;
                 )*
-                (total_force, total_virial, total_torque)                
+                (total_force, total_virial, total_torque)
             }
         }
         Fields::Unit => {
-            quote!((__V::default(), __V::Tensor::default(), __V::Bivector::default()))
+            quote!((
+                __V::default(),
+                __V::Tensor::default(),
+                __V::Bivector::default()
+            ))
         }
     }
 }

@@ -36,13 +36,13 @@
 //! use hoomd_vector::Cartesian;
 //!
 //! let dynamic_point = DynamicPoint {
-//!    position: Cartesian::from([1.0, -3.0]),
-//!    momentum: Cartesian::from([-1.0, 2.0]),
-//!    mass: 0.5,
-//!    ..Default::default()
-//!   };
+//!     position: Cartesian::from([1.0, -3.0]),
+//!     momentum: Cartesian::from([-1.0, 2.0]),
+//!     mass: 0.5,
+//!     ..Default::default()
+//! };
 //! ```
-//! 
+//!
 //! [`DynamicOrientedPoint`] is an extended body with position, orientation, mass, momentum,
 //! a moment of inertia, and angular momentum:
 //! ```
@@ -51,20 +51,20 @@
 //! use std::f64::consts::PI;
 //!
 //! let dynamic_point = DynamicOrientedPoint {
-//!    position: Cartesian::from([1.0, -3.0]),
-//!    orientation: Angle::from(PI/4.0),
-//!    momentum: Cartesian::from([-1.0, 2.0]),
-//!    mass: 0.5,
-//!    moment_of_inertia: 2.0,
-//!    angular_momentum: 1.5,
-//!    ..Default::default()
-//!   };
+//!     position: Cartesian::from([1.0, -3.0]),
+//!     orientation: Angle::from(PI / 4.0),
+//!     momentum: Cartesian::from([-1.0, 2.0]),
+//!     mass: 0.5,
+//!     moment_of_inertia: 2.0,
+//!     angular_momentum: 1.5,
+//!     ..Default::default()
+//! };
 //! ```
 //!
 //! Use the `Point`, `OrientedPoint` or a custom type to represent interaction sites.
 //! `Point` and `OrientedPoint` can also be used for body properties in Monte Carlo simulations.
 //! Use the `Dynamic` variants for body properties in molecular dynamics simulations.
-//! 
+//!
 //! # Custom property types
 //!
 //! When none of the provided types meets your needs, you can define a custom type.
@@ -234,14 +234,14 @@ pub trait Position {
 }
 
 /// The translational motion of a body: $` \vec{p} `$
-/// 
+///
 /// [`Momentum`] describes the translational motion of the body relative to the origin of the
 /// system coordinate system.
 ///
 /// `hoomd_md` does not compute or utilize the momentum of sites.
-/// 
+///
 /// # Units
-/// 
+///
 /// Momentum vectors have units of $`[ \mathrm{energy}^{1/2} \cdot \mathrm{mass}^{1/2}]`$.
 pub trait Momentum {
     /// Type that can express momentum and velocity.
@@ -269,7 +269,7 @@ pub trait Momentum {
 /// `hoomd_interaction` to compute forces on sites when needed.
 ///
 /// # Units
-/// 
+///
 /// Net force vectors have units of $`[\mathrm{energy} \cdot \mathrm{length}^{-1}]`$.
 pub trait NetForce {
     /// Force vector type.
@@ -291,7 +291,7 @@ pub trait NetForce {
 /// `hoomd_interaction` to compute virials on sites when needed.
 ///
 /// # Units
-/// 
+///
 /// Net virial matrices have units of $`[\mathrm{energy}`$.
 pub trait NetVirial {
     /// Virial vector type.
@@ -305,7 +305,7 @@ pub trait NetVirial {
 }
 
 /// The orientation of a site or body: $` \theta `$ or $` \mathbf{q} `$.
-/// 
+///
 /// When applied to site properties, [`Orientation`] has a context-dependent definition.
 /// * Elements in [`Microstate::sites`] describe the rotation from the site's local frame
 ///   to the system frame.
@@ -317,9 +317,9 @@ pub trait NetVirial {
 ///
 /// [`Body::Sites`]: crate::Body::sites
 /// [`Microstate::sites`]: crate::Microstate::sites
-/// 
+///
 /// # Units
-/// 
+///
 /// The units of [`Orientation`] depend on the representation chosen for `Rotation`.
 /// For example, [`hoomd_vector::Angle`] has units of radians while
 /// [`hoomd_vector::Versor`] is unitless.
@@ -349,13 +349,13 @@ pub trait Orientation {
 }
 
 /// A body's resistance to change in translational motion: $` m `$
-/// 
+///
 /// [`Mass`] connects a body's linear momentum to its linear velocity: $` \vec{p} = m \vec{v} `$.
 ///
 /// `hoomd_md` does not compute or utilize the mass of sites.
-/// 
+///
 /// # Units
-/// 
+///
 /// The units of [`Mass`] are $` [\mathrm{mass}] `$.
 pub trait Mass {
     /// The mass of this body $` [\mathrm{mass}] `$.
@@ -363,14 +363,14 @@ pub trait Mass {
 }
 
 /// A body's resistance to a change in rotational motion: $` I `$
-/// 
+///
 /// [`MomentOfInertia`] connects a body's angular momentum to its angular velocity:
 /// $` \vec{L} = I \vec{\omega} `$.
 ///
 /// `hoomd_md` does not compute or utilize the moment of inertia of sites.
-/// 
+///
 /// # Units
-/// 
+///
 /// The units of [`MomentOfInertia`] are $` [\mathrm{mass} \cdot \mathrm{length}^2] `$.
 pub trait MomentOfInertia {
     /// Type that expresses the moment of inertia.
@@ -388,14 +388,14 @@ pub trait MomentOfInertia {
 /// [`AngularMomentum`] describes the rotational motion of the body in the *body* frame.
 ///
 /// `hoomd_md` does not compute or utilize the angular momentum of sites.
-/// 
+///
 /// # Units
-/// 
+///
 /// The units of [`AngularMomentum`] are $` [\mathrm{mass}^{1/2} \cdot \mathrm{length} \cdot \mathrm{energy}^{1/2}] `$.
 pub trait AngularMomentum {
     /// Type that can express the angular momentum of a site or body.
     type AngularMomentum;
-    
+
     /// The angular momentum of this site or body $` [\mathrm{mass}^{1/2} \cdot \mathrm{length} \cdot \mathrm{energy}^{1/2}] `$.
     fn angular_momentum(&self) -> &Self::AngularMomentum;
 
@@ -404,20 +404,20 @@ pub trait AngularMomentum {
 }
 
 /// The total torque acting on a body: $` \vec{\tau} `$
-/// 
+///
 /// [`NetTorque`] is set only for bodies that belong to a microstate. It is always in the
 /// system frame.
 ///
 /// `hoomd_md` does not store the net force acting on individual sites. Use methods in
 /// `hoomd_interaction` to compute torques on sites when needed.
-/// 
+///
 /// # Units
-/// 
+///
 /// The units of [`NetTorque`] are $` [\mathrm{energy}] `$.
 pub trait NetTorque {
     /// Type that can express the net torque on a site or body.
     type NetTorque;
-    
+
     /// The net torque on this site or body $` [\mathrm{energy}] `$.
     fn net_torque(&self) -> &Self::NetTorque;
 

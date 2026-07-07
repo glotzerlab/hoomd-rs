@@ -3,12 +3,10 @@
 
 //! Test derive(NetSiteForceAndVirial)
 
-use hoomd_interaction::{
-    External, NetSiteForceAndVirial, external::ConstantForce
-};
+use hoomd_interaction::{External, NetSiteForceAndVirial, external::ConstantForce};
+use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix};
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::{Cartesian, Vector};
-use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix};
 
 use assert2::check;
 
@@ -81,11 +79,21 @@ fn combined_named() -> anyhow::Result<()> {
 
     let (force, virial) = combined_named.net_site_force_and_virial(&microstate, 0);
     check!(force == [-4.0, 2.0].into());
-    check!(virial == Matrix { rows: [ [-12.0, 0.0], [6.0, 0.0]] });
+    check!(
+        virial
+            == Matrix {
+                rows: [[-12.0, 0.0], [6.0, 0.0]]
+            }
+    );
 
     let (force, virial) = combined_named.net_site_force_and_virial(&microstate, 1);
     check!(force == [-4.0, 2.0].into());
-    check!(virial == Matrix { rows: [ [0.0, -4.0], [0.0, 2.0]] });
+    check!(
+        virial
+            == Matrix {
+                rows: [[0.0, -4.0], [0.0, 2.0]]
+            }
+    );
 
     Ok(())
 }
@@ -122,18 +130,29 @@ fn combined_unnamed() -> anyhow::Result<()> {
 
     let (force, virial) = combined_unnamed.net_site_force_and_virial(&microstate, 0);
     check!(force == [-4.0, 2.0].into());
-    check!(virial == Matrix { rows: [ [-12.0, 0.0], [6.0, 0.0]] });
+    check!(
+        virial
+            == Matrix {
+                rows: [[-12.0, 0.0], [6.0, 0.0]]
+            }
+    );
 
     let (force, virial) = combined_unnamed.net_site_force_and_virial(&microstate, 1);
     check!(force == [-4.0, 2.0].into());
-    check!(virial == Matrix { rows: [ [0.0, -4.0], [0.0, 2.0]] });
+    check!(
+        virial
+            == Matrix {
+                rows: [[0.0, -4.0], [0.0, 2.0]]
+            }
+    );
 
     Ok(())
 }
 
 #[derive(NetSiteForceAndVirial)]
-struct CombinedNamedGeneric<V: Vector, E> where
-E: Clone,
+struct CombinedNamedGeneric<V: Vector, E>
+where
+    E: Clone,
 {
     one: External<ConstantForce<V>>,
     two: External<ConstantForce<V>>,
@@ -165,11 +184,21 @@ fn combined_named_generic() -> anyhow::Result<()> {
 
     let (force, virial) = combined_named_generic.net_site_force_and_virial(&microstate, 0);
     check!(force == [-4.0, 2.0].into());
-    check!(virial == Matrix { rows: [ [-12.0, 0.0], [6.0, 0.0]] });
+    check!(
+        virial
+            == Matrix {
+                rows: [[-12.0, 0.0], [6.0, 0.0]]
+            }
+    );
 
     let (force, virial) = combined_named_generic.net_site_force_and_virial(&microstate, 1);
     check!(force == [-4.0, 2.0].into());
-    check!(virial == Matrix { rows: [ [0.0, -4.0], [0.0, 2.0]] });
+    check!(
+        virial
+            == Matrix {
+                rows: [[0.0, -4.0], [0.0, 2.0]]
+            }
+    );
 
     Ok(())
 }
@@ -177,8 +206,9 @@ fn combined_named_generic() -> anyhow::Result<()> {
 // Check that no syntax errors are created when there is no trailing comma.
 #[expect(dead_code, reason = "The implementation is tested above.")]
 #[derive(NetSiteForceAndVirial)]
-struct CombinedNamedGenericNoComma<V: Vector, E> where
-E: Clone
+struct CombinedNamedGenericNoComma<V: Vector, E>
+where
+    E: Clone,
 {
     one: External<ConstantForce<V>>,
     two: External<ConstantForce<V>>,

@@ -12,12 +12,19 @@ use std::{
 use anyhow::Context;
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::{self, Expanded, OverlapPenalty}
+    MaximumInteractionRange, PairwiseCutoff, Rigid,
+    pairwise::Isotropic,
+    univariate::{self, Expanded, OverlapPenalty},
 };
 use hoomd_mc::{Sweep, Translate};
-use hoomd_md::{ThermalizeMomentum, TranslationalMotion, ZeroCenterMomentum, method::ConstantVolume, thermostat::Bussi};
+use hoomd_md::{
+    ThermalizeMomentum, TranslationalMotion, ZeroCenterMomentum, method::ConstantVolume,
+    thermostat::Bussi,
+};
 use hoomd_microstate::{
-    Microstate, SiteKey, boundary::{GenerateGhosts, Periodic}, property::{DynamicPoint, Point}
+    Microstate, SiteKey,
+    boundary::{GenerateGhosts, Periodic},
+    property::{DynamicPoint, Point},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::{IndexFromPosition, PointUpdate, PointsNearBall, WithSearchRadius};
@@ -34,7 +41,8 @@ const RELAX_STEPS: usize = 1_000;
 #[derive(Serialize, Deserialize)]
 pub struct LennardJones<const D: usize, X> {
     /// Simulation microstate
-    microstate: Microstate<DynamicPoint<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
+    microstate:
+        Microstate<DynamicPoint<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
 
     /// Translate moves (serial)
     translate_sweep: Sweep<Translate<Cartesian<D>>>,
@@ -81,7 +89,8 @@ where
         self.constant_volume.integrate_translation(
             &mut self.microstate,
             &self.macrostate,
-            &self.rigid);
+            &self.rigid,
+        );
 
         self.microstate.increment_step();
         self.steps += 1;
@@ -174,7 +183,7 @@ where
             rigid.maximum_interaction_range(),
             &insert_hamiltonian,
         )?;
-            
+
         microstate.thermalize_momentum(temperature);
         microstate.zero_center_momentum();
 

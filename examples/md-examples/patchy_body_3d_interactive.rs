@@ -1,5 +1,6 @@
 use hoomd_bevy::{
-    AdvanceSet, HIGHLIGHT_COLOR, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings, representation::surface_mesh
+    AdvanceSet, HIGHLIGHT_COLOR, HoomdBevyPlugin, InitialCamera,
+    PRIMARY_COLOR_3D, Settings, representation::surface_mesh,
 };
 
 use anyhow::Context;
@@ -14,8 +15,8 @@ struct A;
 struct B;
 
 pub(crate) fn main() -> anyhow::Result<()> {
-    let simulation = PatchyBody3D::new()
-        .context("failed to setup simulation")?;
+    let simulation =
+        PatchyBody3D::new().context("failed to setup simulation")?;
     let l =
         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
@@ -36,13 +37,8 @@ pub(crate) fn main() -> anyhow::Result<()> {
 
     app.add_systems(
         Startup,
-        (move || {
-            (
-                sphere_mesh.mesh().build(),
-                sphere_material.clone(),
-            )
-        })
-        .pipe(surface_mesh::SurfaceMesh::<A>::setup),
+        (move || (sphere_mesh.mesh().build(), sphere_material.clone()))
+            .pipe(surface_mesh::SurfaceMesh::<A>::setup),
     );
 
     app.add_systems(
@@ -83,18 +79,19 @@ fn sync_a_sites(
         &mut commands,
         site_representation,
         site_query,
-        sites.iter()
-        .filter(|s| s.properties.site_type == SiteType::A)
-        .map(|site| {
-            (
-                Vec3::new(
-                    site.properties.position[0] as f32,
-                    site.properties.position[1] as f32,
-                    site.properties.position[2] as f32,
-                ),
-                Quat::default(),
-            )
-        }),
+        sites
+            .iter()
+            .filter(|s| s.properties.site_type == SiteType::A)
+            .map(|site| {
+                (
+                    Vec3::new(
+                        site.properties.position[0] as f32,
+                        site.properties.position[1] as f32,
+                        site.properties.position[2] as f32,
+                    ),
+                    Quat::default(),
+                )
+            }),
     );
 }
 
@@ -113,17 +110,18 @@ fn sync_b_sites(
         &mut commands,
         site_representation,
         site_query,
-        sites.iter()
-        .filter(|s| s.properties.site_type == SiteType::B)
-        .map(|site| {
-            (
-                Vec3::new(
-                    site.properties.position[0] as f32,
-                    site.properties.position[1] as f32,
-                    site.properties.position[2] as f32,
-                ),
-                Quat::default(),
-            )
-        }),
+        sites
+            .iter()
+            .filter(|s| s.properties.site_type == SiteType::B)
+            .map(|site| {
+                (
+                    Vec3::new(
+                        site.properties.position[0] as f32,
+                        site.properties.position[1] as f32,
+                        site.properties.position[2] as f32,
+                    ),
+                    Quat::default(),
+                )
+            }),
     );
 }

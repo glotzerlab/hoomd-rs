@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::{cmp::Reverse, collections::BinaryHeap, fmt, mem};
 
 use crate::{
-    Body, Error, Site, Transform, boundary::{GenerateGhosts, MAX_GHOSTS, Open, Wrap}, property::{NetForce, NetTorque, NetVirial, Position},
+    Body, Error, Site, Transform,
+    boundary::{GenerateGhosts, MAX_GHOSTS, Open, Wrap},
+    property::{NetForce, NetTorque, NetVirial, Position},
 };
 
 use hoomd_geometry::MapPoint;
@@ -554,7 +556,8 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     ///     .try_build()?;
     ///
-    /// let conserved_degrees_of_freedom = microstate.conserved_degrees_of_freedom();
+    /// let conserved_degrees_of_freedom =
+    ///     microstate.conserved_degrees_of_freedom();
     /// # Ok(())
     /// # }
     /// ```
@@ -1832,7 +1835,7 @@ where
 
 impl<V, B, S, X, C> Microstate<B, S, X, C>
 where
-    B: NetForce<NetForce = V>
+    B: NetForce<NetForce = V>,
 {
     /// Set a body's net force.
     ///
@@ -1845,14 +1848,17 @@ where
     /// [`update_body_properties`]: Self::update_body_properties
     #[inline]
     pub fn set_body_net_force(&mut self, body_index: usize, net_force: V) {
-        *self.bodies.items[body_index].item.properties.net_force_mut() = net_force;
+        *self.bodies.items[body_index]
+            .item
+            .properties
+            .net_force_mut() = net_force;
     }
 }
 
 impl<V, B, S, X, C> Microstate<B, S, X, C>
 where
     V: Outer,
-    B: NetForce<NetForce = V> + NetVirial<NetVirial = V::Tensor>
+    B: NetForce<NetForce = V> + NetVirial<NetVirial = V::Tensor>,
 {
     /// Set a body's net virial.
     ///
@@ -1865,13 +1871,16 @@ where
     /// [`update_body_properties`]: Self::update_body_properties
     #[inline]
     pub fn set_body_net_virial(&mut self, body_index: usize, net_virial: V::Tensor) {
-        *self.bodies.items[body_index].item.properties.net_virial_mut() = net_virial;
+        *self.bodies.items[body_index]
+            .item
+            .properties
+            .net_virial_mut() = net_virial;
     }
 }
 
 impl<V, B, S, X, C> Microstate<B, S, X, C>
 where
-    B: NetTorque<NetTorque = V>
+    B: NetTorque<NetTorque = V>,
 {
     /// Set a body's net torque.
     ///
@@ -1884,7 +1893,10 @@ where
     /// [`update_body_properties`]: Self::update_body_properties
     #[inline]
     pub fn set_body_net_torque(&mut self, body_index: usize, net_torque: V) {
-        *self.bodies.items[body_index].item.properties.net_torque_mut() = net_torque;
+        *self.bodies.items[body_index]
+            .item
+            .properties
+            .net_torque_mut() = net_torque;
     }
 }
 
@@ -2033,7 +2045,10 @@ mod tests {
                     .zip(body.item.sites.iter())
                 {
                     assert_eq!(system_site.body_tag, microstate.bodies()[body_index].tag);
-                    assert_eq!(system_site.properties, body.item.properties.transform(local_site));
+                    assert_eq!(
+                        system_site.properties,
+                        body.item.properties.transform(local_site)
+                    );
                 }
             }
         }
@@ -2123,7 +2138,8 @@ mod tests {
                     Point {
                         position: [2.0, 0.0].into()
                     }
-                ), Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
+                ),
+                Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
             );
         }
 
@@ -2164,7 +2180,8 @@ mod tests {
                     Point {
                         position: [1.0, 0.0].into()
                     }
-                ), Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
+                ),
+                Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
             );
         }
     }
@@ -2359,7 +2376,8 @@ mod tests {
 
             assert!(!microstate.ghosts().is_empty());
             assert_eq!(
-                microstate.spatial_data().len(), microstate.sites.len() + microstate.ghosts.len()
+                microstate.spatial_data().len(),
+                microstate.sites.len() + microstate.ghosts.len()
             );
             for (ghost, ghost_tag) in microstate.ghosts().iter().zip(&microstate.ghosts.tags) {
                 let parent_site_index = microstate.site_indices()[ghost.site_tag]

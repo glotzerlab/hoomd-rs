@@ -401,8 +401,7 @@ impl<B, S> Body<B, S> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn single_site(body_properties: B, site_properties: S) -> Self
-    {
+    pub fn single_site(body_properties: B, site_properties: S) -> Self {
         Self {
             properties: body_properties,
             sites: vec![site_properties],

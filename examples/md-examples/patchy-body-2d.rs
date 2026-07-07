@@ -5,19 +5,26 @@ use strum::VariantNames;
 use strum_macros::VariantNames;
 
 use hoomd_geometry::shape::Rectangle;
+use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff, Rigid, SitePairForceAndVirial, SitePairForceVirialAndTorque, pairwise::Isotropic, univariate::{LennardJones, WeeksChandlerAnderson}
+    MaximumInteractionRange, PairwiseCutoff, Rigid, SitePairForceAndVirial,
+    SitePairForceVirialAndTorque,
+    pairwise::Isotropic,
+    univariate::{LennardJones, WeeksChandlerAnderson},
 };
 use hoomd_md::{
-    RotationalMotion, ThermalizeAngularMomentum, ThermalizeMomentum, ZeroCenterAngularMomentum, ZeroCenterMomentum, method::ConstantVolume, thermostat::Bussi
+    RotationalMotion, ThermalizeAngularMomentum, ThermalizeMomentum,
+    ZeroCenterAngularMomentum, ZeroCenterMomentum, method::ConstantVolume,
+    thermostat::Bussi,
 };
 use hoomd_microstate::{
-    AppendMicrostate, Body, Microstate, SiteKey, Transform, boundary::Periodic, property::{DynamicOrientedPoint, Position}
+    AppendMicrostate, Body, Microstate, SiteKey, Transform,
+    boundary::Periodic,
+    property::{DynamicOrientedPoint, Position},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
 use hoomd_vector::{Angle, Cartesian, Rotate};
-use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 
 type PositionVector = Cartesian<2>;
 type BodyProperties = DynamicOrientedPoint<Cartesian<2>, Angle>;
@@ -54,7 +61,9 @@ struct SitePairInteraction {
 
 impl MaximumInteractionRange for SitePairInteraction {
     fn maximum_interaction_range(&self) -> f64 {
-        self.lj_bb.maximum_interaction_range().max(self.wca_aa.maximum_interaction_range())
+        self.lj_bb
+            .maximum_interaction_range()
+            .max(self.wca_aa.maximum_interaction_range())
     }
 }
 
@@ -65,12 +74,25 @@ impl SitePairForceVirialAndTorque<SiteProperties> for SitePairInteraction {
         &self,
         site_properties_i: &SiteProperties,
         site_properties_j: &SiteProperties,
-    ) -> (Self::Force, Matrix<2,2>, f64) {
-        let (force, virial) = match (site_properties_i.site_type, site_properties_j.site_type) {
-            (SiteType::A, SiteType::A) => self.wca_aa.site_pair_force_and_virial(site_properties_i, site_properties_j),
-            (SiteType::A, SiteType::B) | (SiteType::B, SiteType::A) => (Cartesian::default(), Matrix::<2,2>::default()),
-            (SiteType::B, SiteType::B) => self.lj_bb.site_pair_force_and_virial(site_properties_i, site_properties_j),
-        };
+    ) -> (Self::Force, Matrix<2, 2>, f64) {
+        let (force, virial) =
+            match (site_properties_i.site_type, site_properties_j.site_type) {
+                (SiteType::A, SiteType::A) => {
+                    self.wca_aa.site_pair_force_and_virial(
+                        site_properties_i,
+                        site_properties_j,
+                    )
+                }
+                (SiteType::A, SiteType::B) | (SiteType::B, SiteType::A) => {
+                    (Cartesian::default(), Matrix::<2, 2>::default())
+                }
+                (SiteType::B, SiteType::B) => {
+                    self.lj_bb.site_pair_force_and_virial(
+                        site_properties_i,
+                        site_properties_j,
+                    )
+                }
+            };
 
         (force, virial, 0.0)
     }
@@ -102,33 +124,68 @@ impl PatchyBody2D {
         let delta_t = 0.005;
         let n_bodies = 256;
         let sites = vec![
-            SiteProperties { position: [-0.4, -0.4].into(), site_type: SiteType::A },
-            SiteProperties { position: [-0.4, 0.4].into(), site_type: SiteType::A },
-            SiteProperties { position: [0.4, -0.4].into(), site_type: SiteType::A },
-            SiteProperties { position: [0.4, 0.4].into(), site_type: SiteType::A },
-
-            SiteProperties { position: [-0.4, 0.0].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.4, 0.0,].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.0, 0.4,].into(), site_type: SiteType::B },
-            SiteProperties { position: [0.0, -0.4].into(), site_type: SiteType::B },
-            ];
+            SiteProperties {
+                position: [-0.4, -0.4].into(),
+                site_type: SiteType::A,
+            },
+            SiteProperties {
+                position: [-0.4, 0.4].into(),
+                site_type: SiteType::A,
+            },
+            SiteProperties {
+                position: [0.4, -0.4].into(),
+                site_type: SiteType::A,
+            },
+            SiteProperties {
+                position: [0.4, 0.4].into(),
+                site_type: SiteType::A,
+            },
+            SiteProperties {
+                position: [-0.4, 0.0].into(),
+                site_type: SiteType::B,
+            },
+            SiteProperties {
+                position: [0.4, 0.0].into(),
+                site_type: SiteType::B,
+            },
+            SiteProperties {
+                position: [0.0, 0.4].into(),
+                site_type: SiteType::B,
+            },
+            SiteProperties {
+                position: [0.0, -0.4].into(),
+                site_type: SiteType::B,
+            },
+        ];
 
         let box_length = (n_bodies as f64 / density).cbrt();
         let macrostate = Isothermal { temperature };
 
-        let interaction_model = Rigid(PairwiseCutoff(
-            SitePairInteraction { wca_aa: Isotropic {
-            interaction: WeeksChandlerAnderson { epsilon: 1.0, sigma: 1.0 },
-            r_cut: 2.0_f64.powf(1.0/6.0),
-        },
-            lj_bb: Isotropic { interaction: LennardJones { epsilon: 1.0, sigma: 1.0 },
-            r_cut: 3.0 }}));
+        let interaction_model = Rigid(PairwiseCutoff(SitePairInteraction {
+            wca_aa: Isotropic {
+                interaction: WeeksChandlerAnderson {
+                    epsilon: 1.0,
+                    sigma: 1.0,
+                },
+                r_cut: 2.0_f64.powf(1.0 / 6.0),
+            },
+            lj_bb: Isotropic {
+                interaction: LennardJones {
+                    epsilon: 1.0,
+                    sigma: 1.0,
+                },
+                r_cut: 3.0,
+            },
+        }));
 
         let cube = Rectangle::with_equal_edges(box_length.try_into()?);
         let vec_cell = VecCell::builder()
-            .nominal_search_radius(interaction_model.maximum_interaction_range().try_into()?)
+            .nominal_search_radius(
+                interaction_model.maximum_interaction_range().try_into()?,
+            )
             .build();
-        let boundary = Periodic::new(interaction_model.maximum_interaction_range(), cube)?;
+        let boundary =
+            Periodic::new(interaction_model.maximum_interaction_range(), cube)?;
         let mut microstate = Microstate::builder()
             .seed(2)
             .spatial_data(vec_cell)

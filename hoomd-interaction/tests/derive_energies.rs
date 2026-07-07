@@ -4,7 +4,8 @@
 //! Test derive(DeltaEnergyInsert)
 
 use hoomd_interaction::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, External, TotalEnergy, external::ConstantForce,
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, External, TotalEnergy,
+    external::ConstantForce,
 };
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::{Cartesian, Vector};
@@ -131,8 +132,9 @@ fn combined_unnamed() -> anyhow::Result<()> {
 }
 
 #[derive(DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy)]
-struct CombinedNamedGeneric<V: Vector, E> where
-E: Clone,
+struct CombinedNamedGeneric<V: Vector, E>
+where
+    E: Clone,
 {
     one: External<ConstantForce<V>>,
     two: External<ConstantForce<V>>,
@@ -177,8 +179,9 @@ fn combined_named_generic() -> anyhow::Result<()> {
 // Check that no syntax errors are created when there is no trailing comma.
 #[expect(dead_code, reason = "The implementation is tested above.")]
 #[derive(DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy)]
-struct CombinedNamedGenericNoComma<V: Vector, E> where
-E: Clone
+struct CombinedNamedGenericNoComma<V: Vector, E>
+where
+    E: Clone,
 {
     one: External<ConstantForce<V>>,
     two: External<ConstantForce<V>>,

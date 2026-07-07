@@ -45,14 +45,14 @@ use hoomd_simulation::macrostate::Temperature;
 ///
 /// ```
 /// use hoomd_md::thermostat::Bussi;
-///    
+///
 /// let bussi = Bussi::new(0.5);
 /// ```
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Bussi {
     /// Thermostat time constant $`[ \mathrm{time} ]`$.
     tau: f64,
-    
+
     /// Cumulative energy absorbed by the thermostat $`[ \mathrm{energy} ]`$
     energy: f64,
 }
@@ -64,15 +64,12 @@ impl Bussi {
     ///
     /// ```
     /// use hoomd_md::thermostat::Bussi;
-    ///    
+    ///
     /// let bussi = Bussi::new(0.5);
     /// ```
     #[inline]
     pub fn new(tau: f64) -> Self {
-        Self {
-            tau,
-            energy: 0.0,
-        }
+        Self { tau, energy: 0.0 }
     }
     /// Calculate the energy drift on one time step.
     #[inline]
@@ -85,7 +82,7 @@ impl Bussi {
     ///
     /// ```
     /// use hoomd_md::thermostat::Bussi;
-    ///    
+    ///
     /// let bussi = Bussi::new(0.1);
     /// let energy = bussi.energy();
     /// ```
@@ -107,15 +104,15 @@ where
         delta_t: f64,
         kinetic_energy: f64,
         degrees_of_freedom: usize,
-    ) -> f64
-    {
+    ) -> f64 {
         // Calculate velocity rescaling factor following
         // the Appendix in https://doi.org/10.1063/1.2408420.
         if degrees_of_freedom == 0 {
             return 1.0;
         }
 
-        assert!(kinetic_energy != 0.0,
+        assert!(
+            kinetic_energy != 0.0,
             "The Bussi thermostat requires non-zero kinetic energy."
         );
 
@@ -129,14 +126,13 @@ where
             .expect("normal distribution should be valid")
             .sample(rng);
 
-        let random_gamma = 
-            if degrees_of_freedom > 0 {
-                2.0 * Gamma::new((degrees_of_freedom as f64 - 1.0) / 2.0, 1.0)
-                    .expect("gamma distribution should be valid")
-                    .sample(rng)
-            } else {
-                0.0
-            };
+        let random_gamma = if degrees_of_freedom > 0 {
+            2.0 * Gamma::new((degrees_of_freedom as f64 - 1.0) / 2.0, 1.0)
+                .expect("gamma distribution should be valid")
+                .sample(rng)
+        } else {
+            0.0
+        };
 
         let v = macrostate.temperature() / 2.0 / kinetic_energy;
         let term1 = v * (1.0 - time_decay_factor) * (random_gamma + random_normal_one.powi(2));
@@ -156,8 +152,7 @@ where
         _delta_t: f64,
         _kinetic_energy: f64,
         _degrees_of_freedom: usize,
-    ) -> f64
-    {
+    ) -> f64 {
         1.0
     }
 }

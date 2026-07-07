@@ -20,8 +20,8 @@ struct B;
 struct Ghost;
 
 pub(crate) fn main() -> anyhow::Result<()> {
-    let simulation = PatchyBody2D::new()
-        .context("failed to setup simulation")?;
+    let simulation =
+        PatchyBody2D::new().context("failed to setup simulation")?;
     let l =
         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {

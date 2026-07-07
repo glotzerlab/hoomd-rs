@@ -81,7 +81,7 @@ where
         if magnitude == 0.0 {
             return 0.0;
         }
-        
+
         let direction = self.force / magnitude;
         -magnitude * direction.dot(&(*r - self.r_0))
     }
@@ -149,9 +149,10 @@ where
     }
 }
 
-impl<S, V> SiteForceAndVirial<S> for ConstantForce<V> where
-V: InnerProduct + Outer,
-S: Position<Position = V>,
+impl<S, V> SiteForceAndVirial<S> for ConstantForce<V>
+where
+    V: InnerProduct + Outer,
+    S: Position<Position = V>,
 {
     type Force = V;
 
@@ -160,10 +161,10 @@ S: Position<Position = V>,
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::{external::ConstantForce, SiteForceAndVirial};
-    /// use hoomd_vector::Cartesian;
-    /// use hoomd_microstate::property::Point;
+    /// use hoomd_interaction::{SiteForceAndVirial, external::ConstantForce};
     /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_microstate::property::Point;
+    /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let constant_force = ConstantForce {
@@ -171,23 +172,37 @@ S: Position<Position = V>,
     ///     r_0: Cartesian::from([0.0, -10.0]),
     /// };
     ///
-    /// let a = Point { position: Cartesian::from([0.0, 0.0]) };
-    /// let b = Point { position: Cartesian::from([0.0, 3.0]) };
+    /// let a = Point {
+    ///     position: Cartesian::from([0.0, 0.0]),
+    /// };
+    /// let b = Point {
+    ///     position: Cartesian::from([0.0, 3.0]),
+    /// };
     ///
     /// let (force_0, virial_0) = constant_force.site_force_and_virial(&a);
     /// assert_eq!(force_0, [0.0, -2.0].into());
-    /// assert_eq!(virial_0, Matrix { rows: [ [0.0, 0.0], [0.0, 0.0]] });
+    /// assert_eq!(
+    ///     virial_0,
+    ///     Matrix {
+    ///         rows: [[0.0, 0.0], [0.0, 0.0]]
+    ///     }
+    /// );
     ///
     /// let (force_1, virial_1) = constant_force.site_force_and_virial(&b);
     /// assert_eq!(force_1, [0.0, -2.0].into());
-    /// assert_eq!(virial_1, Matrix { rows: [ [0.0, 0.0], [0.0, -6.0]] });
+    /// assert_eq!(
+    ///     virial_1,
+    ///     Matrix {
+    ///         rows: [[0.0, 0.0], [0.0, -6.0]]
+    ///     }
+    /// );
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     fn site_force_and_virial(
         &self,
-        site_properties: &S
+        site_properties: &S,
     ) -> (Self::Force, <Self::Force as Outer>::Tensor) {
         let force = self.force();
         let virial = force.outer(site_properties.position());
@@ -195,10 +210,11 @@ S: Position<Position = V>,
     }
 }
 
-impl<S, V> SiteForceVirialAndTorque<S> for ConstantForce<V> where
-V: InnerProduct + Wedge + Outer,
-V::Bivector: Default,
-S: Position<Position = V>,
+impl<S, V> SiteForceVirialAndTorque<S> for ConstantForce<V>
+where
+    V: InnerProduct + Wedge + Outer,
+    V::Bivector: Default,
+    S: Position<Position = V>,
 {
     type Force = V;
 
@@ -207,10 +223,12 @@ S: Position<Position = V>,
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::{external::ConstantForce, SiteForceVirialAndTorque};
-    /// use hoomd_vector::Cartesian;
-    /// use hoomd_microstate::property::Point;
+    /// use hoomd_interaction::{
+    ///     SiteForceVirialAndTorque, external::ConstantForce,
+    /// };
     /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_microstate::property::Point;
+    /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let constant_force = ConstantForce {
@@ -218,25 +236,41 @@ S: Position<Position = V>,
     ///     r_0: Cartesian::from([0.0, -10.0]),
     /// };
     ///
-    /// let a = Point { position: Cartesian::from([0.0, 0.0]) };
-    /// let b = Point { position: Cartesian::from([0.0, 3.0]) };
+    /// let a = Point {
+    ///     position: Cartesian::from([0.0, 0.0]),
+    /// };
+    /// let b = Point {
+    ///     position: Cartesian::from([0.0, 3.0]),
+    /// };
     ///
-    /// let (force_0, virial_0, torque_0) = constant_force.site_force_virial_and_torque(&a);
+    /// let (force_0, virial_0, torque_0) =
+    ///     constant_force.site_force_virial_and_torque(&a);
     /// assert_eq!(force_0, [0.0, -2.0].into());
     /// assert_eq!(torque_0, 0.0);
-    /// assert_eq!(virial_0, Matrix { rows: [ [0.0, 0.0], [0.0, 0.0]] });
+    /// assert_eq!(
+    ///     virial_0,
+    ///     Matrix {
+    ///         rows: [[0.0, 0.0], [0.0, 0.0]]
+    ///     }
+    /// );
     ///
-    /// let (force_1, virial_1, torque_1) = constant_force.site_force_virial_and_torque(&b);
+    /// let (force_1, virial_1, torque_1) =
+    ///     constant_force.site_force_virial_and_torque(&b);
     /// assert_eq!(force_1, [0.0, -2.0].into());
     /// assert_eq!(torque_1, 0.0);
-    /// assert_eq!(virial_1, Matrix { rows: [ [0.0, 0.0], [0.0, -6.0]] });
+    /// assert_eq!(
+    ///     virial_1,
+    ///     Matrix {
+    ///         rows: [[0.0, 0.0], [0.0, -6.0]]
+    ///     }
+    /// );
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     fn site_force_virial_and_torque(
         &self,
-        site_properties: &S
+        site_properties: &S,
     ) -> (V, <Self::Force as Outer>::Tensor, V::Bivector) {
         let force = self.force();
         let virial = force.outer(site_properties.position());

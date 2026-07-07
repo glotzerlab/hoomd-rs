@@ -3,7 +3,8 @@ use itertools::Itertools;
 
 use hoomd_geometry::shape::Cuboid;
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::LennardJones
+    MaximumInteractionRange, PairwiseCutoff, Rigid, pairwise::Isotropic,
+    univariate::LennardJones,
 };
 use hoomd_md::{
     ThermalizeMomentum, TranslationalMotion, ZeroCenterAngularMomentum,
@@ -57,9 +58,12 @@ impl LennardJonesFluid {
 
         let cube = Cuboid::with_equal_edges(box_length.try_into()?);
         let vec_cell = VecCell::builder()
-            .nominal_search_radius(interaction_model.maximum_interaction_range().try_into()?)
+            .nominal_search_radius(
+                interaction_model.maximum_interaction_range().try_into()?,
+            )
             .build();
-        let boundary = Periodic::new(interaction_model.maximum_interaction_range(), cube)?;
+        let boundary =
+            Periodic::new(interaction_model.maximum_interaction_range(), cube)?;
         let mut microstate = Microstate::builder()
             .spatial_data(vec_cell)
             .boundary(boundary)

@@ -7,7 +7,9 @@ use std::array;
 
 use super::ThermalizeMomentum;
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{Mass, Momentum, Position}
+    Body, Microstate, SiteKey, Tagged, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{Mass, Momentum, Position},
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::Cartesian;
@@ -25,7 +27,11 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize_body: F) {
+    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &mut self,
+        temperature: f64,
+        should_thermalize_body: F,
+    ) {
         let mut rng = self.counter().make_rng();
 
         for body_index in 0..self.bodies().len() {
@@ -33,7 +39,7 @@ where
             if !should_thermalize_body(body) {
                 continue;
             }
-            
+
             let mut body_properties = body.item.properties.clone();
             let mass = body_properties.mass();
             let sigma = (temperature * mass).sqrt();
@@ -44,8 +50,7 @@ where
                     array::from_fn(|_| normal.sample(&mut rng)).into();
                 *body_properties.momentum_mut() = random_momentum;
 
-                self
-                    .update_body_properties(body_index, body_properties)
+                self.update_body_properties(body_index, body_properties)
                     .expect("Bodies and sites should remain in simulation boundary.");
             }
         }

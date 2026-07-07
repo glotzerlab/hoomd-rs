@@ -47,7 +47,7 @@ use hoomd_utility::valid::PositiveReal;
 pub struct NoséHooverChain<const N: usize> {
     /// Thermostat time constant.
     tau: PositiveReal,
-    
+
     /// Chain of thermostat momenta.
     #[serde_as(as = "[_; N]")]
     xi: [f64; N],
@@ -106,31 +106,42 @@ impl<const N: usize> NoséHooverChain<N> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
-    /// use hoomd_vector::Cartesian;
     /// use hoomd_md::{TranslationalKineticEnergy, thermostat::NoséHooverChain};
+    /// use hoomd_microstate::{
+    ///     Body, Microstate,
+    ///     property::{DynamicPoint, Point},
+    /// };
     /// use hoomd_simulation::macrostate::Isothermal;
+    /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::builder()
     ///     .bodies([
-    ///         Body::single_site(DynamicPoint {
-    ///           position: Cartesian::from([1.0, 2.0]),
-    ///           ..Default::default()
-    ///           },
-    ///           Point::default()),
-    ///         Body::single_site(DynamicPoint {
-    ///           position: Cartesian::from([-2.0, 3.0]),
-    ///           ..Default::default()
-    ///           },
-    ///           Point::default(),
-    ///           ),
+    ///         Body::single_site(
+    ///             DynamicPoint {
+    ///                 position: Cartesian::from([1.0, 2.0]),
+    ///                 ..Default::default()
+    ///             },
+    ///             Point::default(),
+    ///         ),
+    ///         Body::single_site(
+    ///             DynamicPoint {
+    ///                 position: Cartesian::from([-2.0, 3.0]),
+    ///                 ..Default::default()
+    ///             },
+    ///             Point::default(),
+    ///         ),
     ///     ])
     ///     .try_build()?;
     ///
     /// let macrostate = Isothermal { temperature: 1.5 };
     /// let mut rng = microstate.counter().make_rng();
-    /// let translational_thermostat = NoséHooverChain::<3>::thermalized(&mut rng, 0.5.try_into()?, &macrostate, microstate.translational_kinetic_energy().1);
+    /// let translational_thermostat = NoséHooverChain::<3>::thermalized(
+    ///     &mut rng,
+    ///     0.5.try_into()?,
+    ///     &macrostate,
+    ///     microstate.translational_kinetic_energy().1,
+    /// );
     /// microstate.increment_substep();
     /// # Ok(())
     /// # }
@@ -150,10 +161,14 @@ impl<const N: usize> NoséHooverChain<N> {
 
         let mut xi = [0.0; N];
 
-        xi[0] = Normal::new(0.0, sigma_0).expect("Normal distribution should be valid").sample(rng);
-        
+        xi[0] = Normal::new(0.0, sigma_0)
+            .expect("Normal distribution should be valid")
+            .sample(rng);
+
         for xi_i in xi.iter_mut().skip(1) {
-            *xi_i = Normal::new(0.0, sigma_other).expect("Normal distribution should be valid").sample(rng);
+            *xi_i = Normal::new(0.0, sigma_other)
+                .expect("Normal distribution should be valid")
+                .sample(rng);
         }
 
         let mut result = Self {
@@ -175,7 +190,7 @@ impl<const N: usize> NoséHooverChain<N> {
     fn q(&self, temperature: f64, degrees_of_freedom: usize) -> [f64; N] {
         let n_k_t = (degrees_of_freedom as f64) * temperature;
         let mut result = [temperature * self.tau.get().powi(2); N];
-        
+
         result[0] = n_k_t * self.tau.get().powi(2);
 
         result
@@ -183,14 +198,18 @@ impl<const N: usize> NoséHooverChain<N> {
 
     /// Calculate thermostat energy.
     #[inline]
-    fn thermostat_energy(&self, temperature_set_point: f64, degrees_of_freedom: usize, q: &[f64; N]) -> f64 {
+    fn thermostat_energy(
+        &self,
+        temperature_set_point: f64,
+        degrees_of_freedom: usize,
+        q: &[f64; N],
+    ) -> f64 {
         let mut energy = 0.0;
-        energy +=
-            (degrees_of_freedom as f64) * temperature_set_point * self.eta[0] + 0.5 * q[0] * (self.xi[0]).powi(2);
-    
+        energy += (degrees_of_freedom as f64) * temperature_set_point * self.eta[0]
+            + 0.5 * q[0] * (self.xi[0]).powi(2);
+
         for (eta_i, (q_i, xi_i)) in self.eta.iter().zip(q.iter().zip(self.xi)) {
-            energy += temperature_set_point * eta_i
-                + 0.5 * q_i * (xi_i).powi(2);
+            energy += temperature_set_point * eta_i + 0.5 * q_i * (xi_i).powi(2);
         }
         energy
     }
@@ -265,8 +284,7 @@ where
         delta_t: f64,
         kinetic_energy: f64,
         degrees_of_freedom: usize,
-    ) -> f64
-    {
+    ) -> f64 {
         // Integrate extra degrees-of-freedom and
         // return the velocity rescaling factor, following
         // Tuckerman's work <https://doi.org/10.1088/0305-4470/39/19/S18>.
@@ -317,15 +335,15 @@ where
         for idx in 1..N - 1 {
             let xi_rescaling_factor = (-0.125 * delta_t * self.xi[idx + 1]).exp();
             self.xi[idx] *= xi_rescaling_factor;
-            self.g[idx] = (q[idx - 1] * (self.xi[idx - 1]).powi(2) - *macrostate.temperature())
-                / q[idx];
+            self.g[idx] =
+                (q[idx - 1] * (self.xi[idx - 1]).powi(2) - *macrostate.temperature()) / q[idx];
             self.xi[idx] += 0.25 * delta_t * self.g[idx];
             self.xi[idx] *= xi_rescaling_factor;
         }
         // special for the last one
         if N > 1 {
-            self.g[N - 1] = (q[N - 2] * (self.xi[N - 2]).powi(2) - *macrostate.temperature())
-                / q[N - 1];
+            self.g[N - 1] =
+                (q[N - 2] * (self.xi[N - 2]).powi(2) - *macrostate.temperature()) / q[N - 1];
             self.xi[N - 1] += 0.25 * delta_t * self.g[N - 1];
         }
 
@@ -341,8 +359,7 @@ where
         delta_t: f64,
         kinetic_energy: f64,
         degrees_of_freedom: usize,
-    ) -> f64
-    {
+    ) -> f64 {
         self.integrate_half_step_one(rng, macrostate, delta_t, kinetic_energy, degrees_of_freedom)
     }
 }
@@ -353,9 +370,12 @@ mod tests {
     use assert2::check;
 
     use crate::TranslationalKineticEnergy;
-    use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
-    use hoomd_vector::Cartesian;
+    use hoomd_microstate::{
+        Body, Microstate,
+        property::{DynamicPoint, Point},
+    };
     use hoomd_simulation::macrostate::Isothermal;
+    use hoomd_vector::Cartesian;
 
     #[test]
     fn test_zero() -> anyhow::Result<()> {
@@ -373,24 +393,31 @@ mod tests {
     fn test_thermalized() -> anyhow::Result<()> {
         let microstate = Microstate::builder()
             .bodies([
-                Body { properties: DynamicPoint {
-                  position: Cartesian::from([1.0, 2.0]),
-                  ..Default::default()
-                  },
-                  sites: vec![Point::default()],
-                  },
-                Body { properties: DynamicPoint {
-                  position: Cartesian::from([-2.0, 3.0]),
-                  ..Default::default()
-                  },
-                  sites: vec![Point::default()],
-                  },
+                Body {
+                    properties: DynamicPoint {
+                        position: Cartesian::from([1.0, 2.0]),
+                        ..Default::default()
+                    },
+                    sites: vec![Point::default()],
+                },
+                Body {
+                    properties: DynamicPoint {
+                        position: Cartesian::from([-2.0, 3.0]),
+                        ..Default::default()
+                    },
+                    sites: vec![Point::default()],
+                },
             ])
             .try_build()?;
 
         let macrostate = Isothermal { temperature: 1.5 };
         let mut rng = microstate.counter().make_rng();
-        let thermostat = NoséHooverChain::<10>::thermalized(&mut rng, 0.5.try_into()?, &macrostate, microstate.translational_kinetic_energy().1);
+        let thermostat = NoséHooverChain::<10>::thermalized(
+            &mut rng,
+            0.5.try_into()?,
+            &macrostate,
+            microstate.translational_kinetic_energy().1,
+        );
 
         check!(thermostat.tau.get() == 0.5);
         check!(thermostat.xi() != &[0.0; 10]);

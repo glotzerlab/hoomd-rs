@@ -5,8 +5,8 @@
 
 use hoomd_microstate::{Body, Tagged};
 
-mod translational_kinetic_energy;
 mod rotational_kinetic_energy;
+mod translational_kinetic_energy;
 
 /// Compute the translational kinetic energy of bodies in a microstate.
 ///
@@ -30,13 +30,12 @@ mod rotational_kinetic_energy;
 /// # Example
 ///
 /// ```
+/// use hoomd_md::TranslationalKineticEnergy;
 /// use hoomd_microstate::{
-///     Microstate,
-///     Body,
+///     Body, Microstate,
 ///     property::{DynamicPoint, Point},
 /// };
 /// use hoomd_vector::Cartesian;
-/// use hoomd_md::TranslationalKineticEnergy;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let microstate = Microstate::builder()
@@ -82,8 +81,10 @@ pub trait TranslationalKineticEnergy<B, S> {
 
     /// Compute the total translational kinetic energy and degrees of freedom over selected
     /// bodies in the microstate.
-    fn translational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&self,
-        should_sum_body: F) -> (f64, usize);
+    fn translational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &self,
+        should_sum_body: F,
+    ) -> (f64, usize);
 }
 
 /// Compute the rotational kinetic energy of bodies in a microstate.
@@ -127,46 +128,49 @@ pub trait TranslationalKineticEnergy<B, S> {
 /// # Example
 ///
 /// ```
+/// use hoomd_md::RotationalKineticEnergy;
 /// use hoomd_microstate::{
-///     Microstate,
-///     Body,
+///     Body, Microstate,
 ///     property::{DynamicOrientedPoint, Point},
 /// };
 /// use hoomd_vector::{Angle, Cartesian};
-/// use hoomd_md::RotationalKineticEnergy;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let microstate: Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, _, _, _> =
-///     Microstate::builder()
-///         .bodies([
-///             Body::single_site(
-///                 DynamicOrientedPoint {
-///                     moment_of_inertia: 0.0,
-///                     ..Default::default()
-///                 },
-///                 Point::default(),
-///             ),
-///             Body::single_site(
-///                 DynamicOrientedPoint {
-///                     moment_of_inertia: 2.0,
-///                     angular_momentum: 8.0,
-///                     ..Default::default()
-///                 },
-///                 Point::default(),
-///             ),
-///             Body::single_site(
-///                 DynamicOrientedPoint {
-///                     moment_of_inertia: 4.0,
-///                     angular_momentum: 3.0,
-///                     ..Default::default()
-///                 },
-///                 Point::default(),
-///             ),
-///         ])
-///         .try_build()?;
+/// let microstate: Microstate<
+///     DynamicOrientedPoint<Cartesian<2>, Angle>,
+///     _,
+///     _,
+///     _,
+/// > = Microstate::builder()
+///     .bodies([
+///         Body::single_site(
+///             DynamicOrientedPoint {
+///                 moment_of_inertia: 0.0,
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
+///         Body::single_site(
+///             DynamicOrientedPoint {
+///                 moment_of_inertia: 2.0,
+///                 angular_momentum: 8.0,
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
+///         Body::single_site(
+///             DynamicOrientedPoint {
+///                 moment_of_inertia: 4.0,
+///                 angular_momentum: 3.0,
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
+///     ])
+///     .try_build()?;
 ///
-///  let (rotational_kinetic_energy, rotational_degrees_of_freedom) =
-///      microstate.rotational_kinetic_energy();
+/// let (rotational_kinetic_energy, rotational_degrees_of_freedom) =
+///     microstate.rotational_kinetic_energy();
 /// # Ok(())
 /// # }
 /// ```
@@ -180,6 +184,8 @@ pub trait RotationalKineticEnergy<B, S> {
 
     /// Compute the total rotational kinetic energy and degrees of freedom over selected
     /// bodies in the microstate.
-    fn rotational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&self,
-        should_sum_body: F) -> (f64, usize);
+    fn rotational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &self,
+        should_sum_body: F,
+    ) -> (f64, usize);
 }

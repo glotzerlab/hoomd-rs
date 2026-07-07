@@ -1,5 +1,6 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings, representation::surface_mesh,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings,
+    representation::surface_mesh,
 };
 
 use anyhow::Context;
@@ -12,8 +13,8 @@ use super::LennardJonesFluid;
 struct A;
 
 pub(crate) fn main() -> anyhow::Result<()> {
-    let simulation = LennardJonesFluid::new()
-        .context("failed to setup simulation")?;
+    let simulation =
+        LennardJonesFluid::new().context("failed to setup simulation")?;
     let l =
         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
@@ -34,13 +35,8 @@ pub(crate) fn main() -> anyhow::Result<()> {
 
     app.add_systems(
         Startup,
-        (move || {
-            (
-                sphere_mesh.mesh().build(),
-                sphere_material.clone(),
-            )
-        })
-        .pipe(surface_mesh::SurfaceMesh::<A>::setup),
+        (move || (sphere_mesh.mesh().build(), sphere_material.clone()))
+            .pipe(surface_mesh::SurfaceMesh::<A>::setup),
     );
 
     app.add_systems(

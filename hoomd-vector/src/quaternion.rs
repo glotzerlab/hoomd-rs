@@ -184,7 +184,7 @@ impl Quaternion {
             vector,
         }
     }
-    
+
     /// The norm of the quaternion, squared.
     /// ```math
     /// |\mathbf{q}|^2

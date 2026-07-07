@@ -379,7 +379,7 @@ pub trait Vector:
 }
 
 /// The vector wedge product.
-/// 
+///
 /// The result of a vector wedge product is a *[bivector]*. Mathematically,
 /// bivectors are different from vectors. In practice, *hoomd-rs* uses
 /// follows standard physics practices, where torques are bivectors:
@@ -393,17 +393,17 @@ pub trait Wedge {
     type Bivector;
 
     /// Compute the wedge product of two vectors.
-    /// 
+    ///
     /// ```math
     /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
     /// ```
-    /// 
+    ///
     /// # Examples
     ///
     /// 2D:
     /// ```
     /// use hoomd_vector::{Cartesian, Wedge};
-    /// 
+    ///
     /// let a = Cartesian::from([2.0, 1.0]);
     /// let b = Cartesian::from([3.0, 1.0]);
     ///
@@ -425,13 +425,13 @@ pub trait Wedge {
 pub trait Outer {
     /// Result type.
     type Tensor;
-    
+
     /// Compute the outer product of two vectors.
-    /// 
+    ///
     /// ```math
     /// a \otimes b = \begin{bmatrix} a_0
     ///  \\ a_1
-    ///  \\ \vdots 
+    ///  \\ \vdots
     ///  \\ a_{n}
     /// \end{bmatrix}
     /// \begin{bmatrix}
@@ -445,17 +445,17 @@ pub trait Outer {
     /// a_n b_0 & a_n b_1 & \dots & a_n b_n
     /// \end{bmatrix}
     /// ```
-    /// 
+    ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Outer};
     /// use hoomd_linear_algebra::matrix::Matrix;
-    /// 
+    /// use hoomd_vector::{Cartesian, Outer};
+    ///
     /// let a = Cartesian::from([2.0, 1.0]);
     /// let b = Cartesian::from([4.0, 3.0]);
     ///
     /// let m = Matrix {
-    ///     rows: [[8.0, 6.0], [4.0, 3.0]]
+    ///     rows: [[8.0, 6.0], [4.0, 3.0]],
     /// };
     /// assert_eq!(a.outer(&b), m);
     /// ```

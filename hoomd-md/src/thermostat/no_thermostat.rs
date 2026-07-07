@@ -17,7 +17,7 @@ use crate::Thermostat;
 /// # Example
 ///
 /// ```
-/// use hoomd_md::{thermostat::NoThermostat};
+/// use hoomd_md::thermostat::NoThermostat;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let thermostat = NoThermostat;
@@ -36,11 +36,10 @@ impl<M> Thermostat<M> for NoThermostat {
         _delta_t: f64,
         _kinetic_energy: f64,
         _degrees_of_freedom: usize,
-    ) -> f64
-    {
+    ) -> f64 {
         1.0
     }
-    
+
     #[inline]
     fn integrate_half_step_two<R: Rng + ?Sized>(
         &mut self,
@@ -49,16 +48,15 @@ impl<M> Thermostat<M> for NoThermostat {
         _delta_t: f64,
         _kinetic_energy: f64,
         _degrees_of_freedom: usize,
-    ) -> f64
-    {
+    ) -> f64 {
         1.0
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use assert2::check;
     use super::*;
+    use assert2::check;
     use hoomd_microstate::{Body, Microstate};
     use hoomd_vector::Cartesian;
 

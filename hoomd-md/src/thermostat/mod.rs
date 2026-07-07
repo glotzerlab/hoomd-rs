@@ -3,12 +3,12 @@
 
 //! Thermostats.
 
-mod no_thermostat;
-mod martyna_tuckerman_tobias_klein;
 mod bussi;
+mod martyna_tuckerman_tobias_klein;
+mod no_thermostat;
 mod nose_hoover_chain;
 
-pub use no_thermostat::NoThermostat;
-pub use martyna_tuckerman_tobias_klein::MartynaTuckermanTobiasKlein;
 pub use bussi::Bussi;
+pub use martyna_tuckerman_tobias_klein::MartynaTuckermanTobiasKlein;
+pub use no_thermostat::NoThermostat;
 pub use nose_hoover_chain::NoséHooverChain;

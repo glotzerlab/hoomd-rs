@@ -17,7 +17,7 @@ mod zero_center_momentum;
 /// ```math
 ///    f(p_i) = \frac{1}{\sqrt{2 \pi m k T}} \exp{\left( -\frac{p_i^2}{2 m k T} \right)}
 /// ```
-/// 
+///
 /// where $` f `$ is probability, $` m `$ is mass, $` k `$ is the Boltzmann
 /// constant, and $` T `$ is temperature.
 ///
@@ -30,25 +30,30 @@ mod zero_center_momentum;
 /// # Example
 ///
 /// ```
-/// use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
-/// use hoomd_vector::Cartesian;
 /// use hoomd_md::ThermalizeMomentum;
+/// use hoomd_microstate::{
+///     Body, Microstate,
+///     property::{DynamicPoint, Point},
+/// };
+/// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::builder()
 ///     .bodies([
-///         Body::single_site(DynamicPoint {
-///           position: Cartesian::from([1.0, 2.0]),
-///           ..Default::default()
-///           },
-///           Point::default(),
-///           ),
-///         Body::single_site(DynamicPoint {
-///           position: Cartesian::from([-2.0, 3.0]),
-///           ..Default::default()
-///           },
-///           Point::default(),
-///           ),
+///         Body::single_site(
+///             DynamicPoint {
+///                 position: Cartesian::from([1.0, 2.0]),
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
+///         Body::single_site(
+///             DynamicPoint {
+///                 position: Cartesian::from([-2.0, 3.0]),
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
 ///     ])
 ///     .try_build()?;
 ///
@@ -64,7 +69,11 @@ pub trait ThermalizeMomentum<B, S> {
     }
 
     /// Assign thermally distributed random momenta to selected bodies in the microstate.
-    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize_body: F);
+    fn thermalize_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &mut self,
+        temperature: f64,
+        should_thermalize_body: F,
+    );
 }
 
 /// Remove translational motion from the system's center of mass.
@@ -77,27 +86,32 @@ pub trait ThermalizeMomentum<B, S> {
 /// # Example
 ///
 /// ```
-/// use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
-/// use hoomd_vector::Cartesian;
 /// use hoomd_md::ZeroCenterMomentum;
+/// use hoomd_microstate::{
+///     Body, Microstate,
+///     property::{DynamicPoint, Point},
+/// };
+/// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::builder()
 ///     .bodies([
-///         Body::single_site(DynamicPoint {
-///           position: Cartesian::from([1.0, 2.0]),
-///           momentum: Cartesian::from([-2.0, 4.0]),
-///           ..Default::default()
-///           },
-///           Point::default(),
-///           ),
-///         Body::single_site(DynamicPoint {
-///           position: Cartesian::from([-2.0, 3.0]),
-///           momentum: Cartesian::from([3.0, -6.0]),
-///           ..Default::default()
-///           },
-///           Point::default(),
-///           ),
+///         Body::single_site(
+///             DynamicPoint {
+///                 position: Cartesian::from([1.0, 2.0]),
+///                 momentum: Cartesian::from([-2.0, 4.0]),
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
+///         Body::single_site(
+///             DynamicPoint {
+///                 position: Cartesian::from([-2.0, 3.0]),
+///                 momentum: Cartesian::from([3.0, -6.0]),
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
 ///     ])
 ///     .try_build()?;
 ///
@@ -113,7 +127,10 @@ pub trait ZeroCenterMomentum<B, S> {
     }
 
     /// Subtract the average momentum from each selected body's momentum.
-    fn zero_center_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero_body: F);
+    fn zero_center_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &mut self,
+        should_zero_body: F,
+    );
 }
 
 /// Remove angular motion about the system's center of mass.
@@ -153,27 +170,32 @@ pub trait ZeroCenterMomentum<B, S> {
 /// # Example
 ///
 /// ```
-/// use hoomd_microstate::{Body, Microstate, property::{DynamicPoint, Point}};
-/// use hoomd_vector::Cartesian;
 /// use hoomd_md::ZeroCenterAngularMomentum;
+/// use hoomd_microstate::{
+///     Body, Microstate,
+///     property::{DynamicPoint, Point},
+/// };
+/// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::builder()
 ///     .bodies([
-///         Body::single_site(DynamicPoint {
-///           position: Cartesian::from([1.0, 2.0]),
-///           momentum: Cartesian::from([-2.0, 4.0]),
-///           ..Default::default()
-///           },
-///           Point::default(),
-///           ),
-///         Body::single_site(DynamicPoint {
-///           position: Cartesian::from([-2.0, 3.0]),
-///           momentum: Cartesian::from([3.0, -6.0]),
-///           ..Default::default()
-///           },
-///           Point::default(),
-///           ),
+///         Body::single_site(
+///             DynamicPoint {
+///                 position: Cartesian::from([1.0, 2.0]),
+///                 momentum: Cartesian::from([-2.0, 4.0]),
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
+///         Body::single_site(
+///             DynamicPoint {
+///                 position: Cartesian::from([-2.0, 3.0]),
+///                 momentum: Cartesian::from([3.0, -6.0]),
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
 ///     ])
 ///     .try_build()?;
 ///
@@ -191,7 +213,10 @@ pub trait ZeroCenterAngularMomentum<B, S> {
 
     /// Adjust each selected body's translational momentum in order to zero the system's overall
     /// angular momentum about the center of mass..
-    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, should_zero_body: F);
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &mut self,
+        should_zero_body: F,
+    );
 }
 
 /// Draw random angular momenta from a thermal distribution.
@@ -202,34 +227,39 @@ pub trait ZeroCenterAngularMomentum<B, S> {
 /// ```math
 ///    f(L_i) = \frac{1}{\sqrt{2 \pi I_i k T}} \exp{\left( -\frac{L_i^2}{2 I_i k T} \right)}
 /// ```
-/// 
+///
 /// where $` f `$ is probability, $` I_i `$ is i<sup>th</sup> component of the diagonalized
 /// moment of inertia, $` k `$ is the Boltzmann constant, and $` T `$ is temperature.
-/// 
+///
 /// [Maxwell–Boltzmann distribution]: https://en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
 ///
 /// # Example
 ///
 /// ```
-/// use hoomd_microstate::{Body, Microstate, property::{DynamicOrientedPoint, Point}};
-/// use hoomd_vector::{Angle, Cartesian};
 /// use hoomd_md::ThermalizeAngularMomentum;
+/// use hoomd_microstate::{
+///     Body, Microstate,
+///     property::{DynamicOrientedPoint, Point},
+/// };
+/// use hoomd_vector::{Angle, Cartesian};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::builder()
 ///     .bodies([
-///         Body::single_site(DynamicOrientedPoint {
-///           position: Cartesian::from([1.0, 2.0]),
-///           ..Default::default()
-///           },
-///           Point::default(),
-///           ),
-///         Body::single_site(DynamicOrientedPoint {
-///           position: Cartesian::from([-2.0, 3.0]),
-///           ..Default::default()
-///           },
-///           Point::default(),
-///           ),
+///         Body::single_site(
+///             DynamicOrientedPoint {
+///                 position: Cartesian::from([1.0, 2.0]),
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
+///         Body::single_site(
+///             DynamicOrientedPoint {
+///                 position: Cartesian::from([-2.0, 3.0]),
+///                 ..Default::default()
+///             },
+///             Point::default(),
+///         ),
 ///     ])
 ///     .try_build()?;
 ///
@@ -245,7 +275,11 @@ pub trait ThermalizeAngularMomentum<B, S> {
     }
 
     /// Assign thermally distributed random angular momenta to selected bodies in the microstate.
-    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(&mut self, temperature: f64, should_thermalize_body: F);
+    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &mut self,
+        temperature: f64,
+        should_thermalize_body: F,
+    );
 }
 
 #[cfg(test)]
@@ -253,9 +287,8 @@ mod tests {
     use super::*;
     use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use hoomd_microstate::{
-        Body,
-        Microstate,
-        property::{AngularMomentum, DynamicPoint, Momentum, DynamicOrientedPoint, Point},
+        Body, Microstate,
+        property::{AngularMomentum, DynamicOrientedPoint, DynamicPoint, Momentum, Point},
     };
     use hoomd_vector::{Cartesian, Versor, Wedge};
     use rstest::*;
@@ -290,19 +323,20 @@ mod tests {
         }
 
         #[rstest]
-        fn test_distribution(#[values(0.5, 1.0, 2.0)] mass: f64,
+        fn test_distribution(
+            #[values(0.5, 1.0, 2.0)] mass: f64,
             #[values(0.5, 1.5)] temperature: f64,
-            #[values(42, 123, 999)] seed: u32) -> anyhow::Result<()> {
+            #[values(42, 123, 999)] seed: u32,
+        ) -> anyhow::Result<()> {
             let mut microstate = Microstate::builder().seed(seed).try_build()?;
             let expected_variance = temperature * mass;
 
             for _ in 0..N_BODIES {
-                microstate
-                    .add_body(create_point_body_3d(
-                        Cartesian::default(),
-                        mass,
-                        Cartesian::default(),
-                    ))?;
+                microstate.add_body(create_point_body_3d(
+                    Cartesian::default(),
+                    mass,
+                    Cartesian::default(),
+                ))?;
             }
 
             microstate.thermalize_momentum(temperature);
@@ -319,8 +353,16 @@ mod tests {
                 let variance = components.iter().map(|&v| (v - mean).powi(2)).sum::<f64>()
                     / (N_BODIES - 1) as f64;
 
-                assert_abs_diff_eq!(mean, 0.0, epsilon = expected_variance.sqrt() * EPSILON_MEAN_SCALE);
-                assert_abs_diff_eq!(variance, expected_variance, epsilon = expected_variance * EPSILON_VARIANCE_SCALE);
+                assert_abs_diff_eq!(
+                    mean,
+                    0.0,
+                    epsilon = expected_variance.sqrt() * EPSILON_MEAN_SCALE
+                );
+                assert_abs_diff_eq!(
+                    variance,
+                    expected_variance,
+                    epsilon = expected_variance * EPSILON_VARIANCE_SCALE
+                );
             }
 
             Ok(())
@@ -338,10 +380,16 @@ mod tests {
             let center_momentum = momentum_1 + momentum_2;
 
             let mut microstate = Microstate::builder().try_build()?;
-            microstate
-                .add_body(create_point_body_3d(Cartesian::default(), mass_a, momentum_1))?;
-            microstate
-                .add_body(create_point_body_3d(Cartesian::default(), mass_b, momentum_2))?;
+            microstate.add_body(create_point_body_3d(
+                Cartesian::default(),
+                mass_a,
+                momentum_1,
+            ))?;
+            microstate.add_body(create_point_body_3d(
+                Cartesian::default(),
+                mass_b,
+                momentum_2,
+            ))?;
 
             microstate.zero_center_momentum();
 
@@ -377,18 +425,18 @@ mod tests {
             let position_center = (position_a * mass_a + position_b * mass_b) / (mass_a + mass_b);
 
             let mut microstate = Microstate::builder().try_build()?;
-            microstate
-                .add_body(create_point_body_3d(position_a, mass_a, momentum_a))?;
-            microstate
-                .add_body(create_point_body_3d(position_b, mass_b, momentum_b))?;
+            microstate.add_body(create_point_body_3d(position_a, mass_a, momentum_a))?;
+            microstate.add_body(create_point_body_3d(position_b, mass_b, momentum_b))?;
 
             microstate.zero_center_angular_momentum();
 
             let modified_momentum_a = microstate.bodies()[0].item.properties.momentum;
             let modified_momentum_b = microstate.bodies()[1].item.properties.momentum;
 
-            let modified_angular_momentum_a = (position_a - position_center).wedge(&modified_momentum_a);
-            let modified_angular_momentum_b = (position_b - position_center).wedge(&modified_momentum_b);
+            let modified_angular_momentum_a =
+                (position_a - position_center).wedge(&modified_momentum_a);
+            let modified_angular_momentum_b =
+                (position_b - position_center).wedge(&modified_momentum_b);
 
             assert_abs_diff_eq!(
                 modified_angular_momentum_a + modified_angular_momentum_b,
@@ -417,18 +465,17 @@ mod tests {
         }
 
         #[rstest]
-        fn test_distribution(#[values([1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 1.0, 1.0], [4.0, 2.0, 0.5])] inertia: [f64; 3],
+        fn test_distribution(
+            #[values([1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 1.0, 1.0], [4.0, 2.0, 0.5])]
+            inertia: [f64; 3],
             #[values(0.5, 1.5)] temperature: f64,
-            #[values(42, 123, 999)] seed: u32) -> anyhow::Result<()> {
+            #[values(42, 123, 999)] seed: u32,
+        ) -> anyhow::Result<()> {
             let mut microstate = Microstate::builder().seed(seed).try_build()?;
             let expected_variance = Cartesian::from(inertia) * temperature;
 
             for _ in 0..N_BODIES {
-                microstate
-                    .add_body(create_body_3d(
-                        inertia,
-                        Cartesian::default(),
-                    ))?;
+                microstate.add_body(create_body_3d(inertia, Cartesian::default()))?;
             }
 
             microstate.thermalize_angular_momentum(temperature);
@@ -444,9 +491,13 @@ mod tests {
 
                 let mean = components.iter().sum::<f64>() / (N_BODIES as f64);
                 let variance = components.iter().map(|&v| (v - mean).powi(2)).sum::<f64>()
-                    / (N_BODIES- 1) as f64;
+                    / (N_BODIES - 1) as f64;
 
-                assert_abs_diff_eq!(mean, 0.0, epsilon = expected_variance[dim].sqrt() * EPSILON_MEAN_SCALE);
+                assert_abs_diff_eq!(
+                    mean,
+                    0.0,
+                    epsilon = expected_variance[dim].sqrt() * EPSILON_MEAN_SCALE
+                );
                 assert_abs_diff_eq!(
                     variance,
                     expected_variance[dim],

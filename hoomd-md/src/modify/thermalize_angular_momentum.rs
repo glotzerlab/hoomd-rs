@@ -5,13 +5,16 @@
 
 use super::ThermalizeAngularMomentum;
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, DynamicOrientedPoint, MomentOfInertia, Position}
+    Body, Microstate, SiteKey, Tagged, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{AngularMomentum, DynamicOrientedPoint, MomentOfInertia, Position},
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, Outer, Versor, Wedge};
 use rand_distr::{Distribution, Normal};
 
-impl<P, S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<P, Angle>, S> for Microstate<DynamicOrientedPoint<P, Angle>, S, X, C>
+impl<P, S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<P, Angle>, S>
+    for Microstate<DynamicOrientedPoint<P, Angle>, S, X, C>
 where
     P: Copy + Wedge + Outer,
     DynamicOrientedPoint<P, Angle>: Clone + Transform<S>,
@@ -20,7 +23,13 @@ where
     C: Wrap<DynamicOrientedPoint<P, Angle>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Angle>, S>>) -> bool>(&mut self, temperature: f64, should_thermalize_body: F) {
+    fn thermalize_angular_momentum_with_filter<
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Angle>, S>>) -> bool,
+    >(
+        &mut self,
+        temperature: f64,
+        should_thermalize_body: F,
+    ) {
         let mut rng = self.counter().make_rng();
 
         for body_index in 0..self.bodies().len() {
@@ -28,26 +37,25 @@ where
             if !should_thermalize_body(body) {
                 continue;
             }
-            
+
             let mut body_properties = body.item.properties.clone();
 
             let moment_of_inertia = body_properties.moment_of_inertia();
             let sigma = (temperature * moment_of_inertia).sqrt();
             let normal = Normal::new(0.0, sigma).expect("Normal distribution should be valid");
 
-            *body_properties.angular_momentum_mut() =
-                normal.sample(&mut rng);
+            *body_properties.angular_momentum_mut() = normal.sample(&mut rng);
 
-            self
-                .update_body_properties(body_index, body_properties)
+            self.update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
-    
-    self.increment_substep();
+
+        self.increment_substep();
     }
 }
 
-impl<P, S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<P, Versor>, S> for Microstate<DynamicOrientedPoint<P, Versor>, S, X, C>
+impl<P, S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<P, Versor>, S>
+    for Microstate<DynamicOrientedPoint<P, Versor>, S, X, C>
 where
     P: Copy + Wedge + Outer,
     DynamicOrientedPoint<P, Versor>: Clone + Transform<S>,
@@ -56,7 +64,13 @@ where
     C: Wrap<DynamicOrientedPoint<P, Versor>> + Wrap<S> + GenerateGhosts<S>,
 {
     #[inline]
-    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Versor>, S>>) -> bool>(&mut self, temperature: f64, should_thermalize_body: F) {
+    fn thermalize_angular_momentum_with_filter<
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Versor>, S>>) -> bool,
+    >(
+        &mut self,
+        temperature: f64,
+        should_thermalize_body: F,
+    ) {
         let mut rng = self.counter().make_rng();
 
         for body_index in 0..self.bodies().len() {
@@ -64,7 +78,7 @@ where
             if !should_thermalize_body(body) {
                 continue;
             }
-            
+
             let mut body_properties = body.item.properties.clone();
 
             let moment_of_inertia = body_properties.moment_of_inertia();
@@ -92,11 +106,10 @@ where
             }
 
             *body_properties.angular_momentum_mut() = angular_momentum_new;
-            self
-                .update_body_properties(body_index, body_properties)
+            self.update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
-    
-    self.increment_substep();
+
+        self.increment_substep();
     }
 }

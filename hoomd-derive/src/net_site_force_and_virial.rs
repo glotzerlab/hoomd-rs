@@ -55,11 +55,11 @@ pub(crate) fn net_site_force_and_virial(input: DeriveInput) -> TokenStream {
         ));
     } else {
         generics.where_clause = Some(parse_quote!(where
-            __V: ::std::ops::AddAssign<__V> + ::std::default::Default + ::hoomd_vector::Outer,
-            __V::Tensor: ::std::default::Default + ::std::ops::AddAssign<__V::Tensor>,
-            __S: ::hoomd_microstate::property::Position<Position = __V>,
-            #(#field_types: ::hoomd_interaction::NetSiteForceAndVirial<__B, __S, __X, __C, Force = __V>),*
-            ));
+        __V: ::std::ops::AddAssign<__V> + ::std::default::Default + ::hoomd_vector::Outer,
+        __V::Tensor: ::std::default::Default + ::std::ops::AddAssign<__V::Tensor>,
+        __S: ::hoomd_microstate::property::Position<Position = __V>,
+        #(#field_types: ::hoomd_interaction::NetSiteForceAndVirial<__B, __S, __X, __C, Force = __V>),*
+        ));
     }
 
     let (impl_generics, _, where_clause) = generics.split_for_impl();
@@ -70,7 +70,7 @@ pub(crate) fn net_site_force_and_virial(input: DeriveInput) -> TokenStream {
         impl #impl_generics ::hoomd_interaction::NetSiteForceAndVirial<__B, __S, __X, __C> for #name #ty_generics #where_clause
             {
             type Force = __V;
-            
+
             #[inline]
             fn net_site_force_and_virial(
                 &self,
@@ -109,7 +109,7 @@ fn net_site_force_and_virial_sum(fields: &Fields) -> TokenStream {
                 total_force += force;
                 total_virial += virial;
                 )*
-                (total_force, total_virial)                
+                (total_force, total_virial)
             }
         }
         Fields::Unnamed(fields) => {
@@ -134,7 +134,7 @@ fn net_site_force_and_virial_sum(fields: &Fields) -> TokenStream {
                 total_force += force;
                 total_virial += virial;
                 )*
-                (total_force, total_virial)                
+                (total_force, total_virial)
             }
         }
         Fields::Unit => {

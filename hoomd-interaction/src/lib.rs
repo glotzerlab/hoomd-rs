@@ -12,7 +12,7 @@
 //!
 //! `hoomd-interaction` defines traits that describe site and body interactions
 //! needed to perform Monte Carlo and molecular dynamics simulations.
-//! 
+//!
 //! # Hamiltonian
 //!
 //! A type that describes a Hamiltonian (or a single term in a multi-part Hamiltonian)
@@ -55,11 +55,11 @@
 //! Not all MD models are Hamiltonian, so types may implement [`NetSiteForceAndVirial`]
 //! but but not [`TotalEnergy`]. Similarly, not all Hamiltonian types are
 //! differentiable and may implement [`DeltaEnergyOne`] but not [`NetSiteForceAndVirial`].
-//! 
+//!
 //! All the force interaction model traits can be automatically derived using a
 //! `#[derive()]` macro of the same name. The derived implementation sums over
 //! all the fields in the struct.
-//! 
+//!
 //! # Univariate interactions
 //!
 //! Many interaction potentials are a function of one variable, typically the
@@ -119,7 +119,6 @@
 //!
 //! [complete documentation]: https://hoomd-rs.readthedocs.io
 
-
 pub mod external;
 pub mod pairwise;
 pub mod univariate;
@@ -131,22 +130,15 @@ mod zero;
 
 pub use external_type::External;
 
+pub use hoomd_derive::{
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange,
+    NetSiteForceAndVirial, NetSiteForceVirialAndTorque, SitePairEnergy, TotalEnergy,
+};
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::{Outer, Wedge};
-pub use hoomd_derive::{
-    DeltaEnergyInsert,
-    DeltaEnergyOne,
-    DeltaEnergyRemove,
-    MaximumInteractionRange,
-    NetSiteForceAndVirial,
-    NetSiteForceVirialAndTorque,
-    SitePairEnergy,
-    TotalEnergy,
-};
-pub use rigid::Rigid;
 pub use pairwise_cutoff::PairwiseCutoff;
+pub use rigid::Rigid;
 pub use zero::Zero;
-
 
 /// Compute the total energy of a potential applied to the microstate.
 ///
@@ -914,7 +906,7 @@ pub trait DeltaEnergyRemove<B, S, X, C> {
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyForceAndVirial<B, S, X, C> {
-    /// The type of the result force. 
+    /// The type of the result force.
     type Force: Outer;
 
     /// Compute the net force and virial on a body in the microstate.
@@ -928,7 +920,7 @@ pub trait NetBodyForceAndVirial<B, S, X, C> {
     fn net_body_force_and_virial(
         &self,
         microstate: &Microstate<B, S, X, C>,
-        body_index: usize
+        body_index: usize,
     ) -> (Self::Force, <Self::Force as Outer>::Tensor);
 }
 
@@ -942,9 +934,9 @@ pub trait NetBodyForceAndVirial<B, S, X, C> {
 /// * `X`: The spatial data structure type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyForceVirialAndTorque<B, S, X, C> {
-    /// The type of the result force. 
+    /// The type of the result force.
     type Force: Wedge + Outer;
-    
+
     /// Compute the net force, virial, and torque on a body in the microstate.
     ///
     /// `microstate` describes the configuration and `body_index` is the index
@@ -956,12 +948,16 @@ pub trait NetBodyForceVirialAndTorque<B, S, X, C> {
     fn net_body_force_virial_and_torque(
         &self,
         microstate: &Microstate<B, S, X, C>,
-        body_index: usize
-    ) -> (Self::Force, <Self::Force as Outer>::Tensor, <Self::Force as Wedge>::Bivector);
+        body_index: usize,
+    ) -> (
+        Self::Force,
+        <Self::Force as Outer>::Tensor,
+        <Self::Force as Wedge>::Bivector,
+    );
 }
 
 /// Sum all the forces, virials, and torques that act on a given site in a microstate.
-/// 
+///
 /// In molecular dynamics simulations, bodies move in response to the net force
 /// and torque applied to all sites in the body. As an intermediate step in that
 /// calculation, a type that describes a *force interaction model* must implement
@@ -984,8 +980,8 @@ pub trait NetBodyForceVirialAndTorque<B, S, X, C> {
 /// the struct (in the order in which fields are named in the struct definition).
 /// ```
 /// use hoomd_interaction::{
-///     NetSiteForceVirialAndTorque, External, PairwiseCutoff, external::ConstantForce,
-///     pairwise::Isotropic, univariate::LennardJones,
+///     External, NetSiteForceVirialAndTorque, PairwiseCutoff,
+///     external::ConstantForce, pairwise::Isotropic, univariate::LennardJones,
 /// };
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
@@ -997,7 +993,7 @@ pub trait NetBodyForceVirialAndTorque<B, S, X, C> {
 /// }
 /// ```
 pub trait NetSiteForceVirialAndTorque<B, S, X, C> {
-    /// The type of the result force. 
+    /// The type of the result force.
     type Force: Wedge + Outer;
 
     /// Compute the net force, virial, and torque on a given site.
@@ -1012,12 +1008,16 @@ pub trait NetSiteForceVirialAndTorque<B, S, X, C> {
     fn net_site_force_virial_and_torque(
         &self,
         microstate: &Microstate<B, S, X, C>,
-        site_index: usize
-    ) -> (Self::Force, <Self::Force as Outer>::Tensor, <Self::Force as Wedge>::Bivector);
+        site_index: usize,
+    ) -> (
+        Self::Force,
+        <Self::Force as Outer>::Tensor,
+        <Self::Force as Wedge>::Bivector,
+    );
 }
 
 /// Sum all the forces and virials that act on a given site in a microstate.
-/// 
+///
 /// In molecular dynamics simulations, bodies move in response to the net
 /// force applied to all sites in the body. As an intermediate step in that
 /// calculation, a type that describes a *force interaction model* must
@@ -1040,8 +1040,8 @@ pub trait NetSiteForceVirialAndTorque<B, S, X, C> {
 /// order in which fields are named in the struct definition).
 /// ```
 /// use hoomd_interaction::{
-///     NetSiteForceAndVirial, External, PairwiseCutoff, external::ConstantForce,
-///     pairwise::Isotropic, univariate::LennardJones,
+///     External, NetSiteForceAndVirial, PairwiseCutoff,
+///     external::ConstantForce, pairwise::Isotropic, univariate::LennardJones,
 /// };
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
@@ -1053,14 +1053,14 @@ pub trait NetSiteForceVirialAndTorque<B, S, X, C> {
 /// }
 /// ```
 pub trait NetSiteForceAndVirial<B, S, X, C> {
-    /// The type of the result force. 
+    /// The type of the result force.
     type Force: Outer;
 
     /// Compute the net force and virial on a given site.
-    /// 
+    ///
     /// `microstate` describes the configuration and `site_index` is the index
     /// of the site to compute.
-    /// 
+    ///
     /// Returns:
     ///
     /// TODO
@@ -1068,7 +1068,7 @@ pub trait NetSiteForceAndVirial<B, S, X, C> {
     fn net_site_force_and_virial(
         &self,
         microstate: &Microstate<B, S, X, C>,
-        site_index: usize
+        site_index: usize,
     ) -> (Self::Force, <Self::Force as Outer>::Tensor);
 }
 
@@ -1083,11 +1083,14 @@ pub trait NetSiteForceAndVirial<B, S, X, C> {
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait SiteForceAndVirial<S> {
-    /// The type of the result force. 
+    /// The type of the result force.
     type Force: Outer;
 
     /// Evaluate the force and virial as a function of a single site's properties.
-    fn site_force_and_virial(&self, site_properties: &S) -> (Self::Force, <Self::Force as Outer>::Tensor);
+    fn site_force_and_virial(
+        &self,
+        site_properties: &S,
+    ) -> (Self::Force, <Self::Force as Outer>::Tensor);
 }
 
 /// Compute the force, virial, and torque on a single site as a function of its properties.
@@ -1101,14 +1104,18 @@ pub trait SiteForceAndVirial<S> {
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait SiteForceVirialAndTorque<S> {
-    /// The type of the result force. 
+    /// The type of the result force.
     type Force: Wedge + Outer;
 
     /// Evaluate the force, virial, and torque as a function of a single site's properties.
     fn site_force_virial_and_torque(
         &self,
-        site_properties: &S
-    ) -> (Self::Force, <Self::Force as Outer>::Tensor, <Self::Force as Wedge>::Bivector);
+        site_properties: &S,
+    ) -> (
+        Self::Force,
+        <Self::Force as Outer>::Tensor,
+        <Self::Force as Wedge>::Bivector,
+    );
 }
 
 /// Compute the pairwise force and virial on one site from another site.
@@ -1123,14 +1130,14 @@ pub trait SiteForceVirialAndTorque<S> {
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait SitePairForceAndVirial<S> {
-    /// The type of the result force. 
+    /// The type of the result force.
     type Force: Outer;
 
     /// Evaluate the force  and virial on site `i` caused by site `j`.
     fn site_pair_force_and_virial(
         &self,
         site_properties_i: &S,
-        site_properties_j: &S
+        site_properties_j: &S,
     ) -> (Self::Force, <Self::Force as Outer>::Tensor);
 }
 
@@ -1146,13 +1153,17 @@ pub trait SitePairForceAndVirial<S> {
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait SitePairForceVirialAndTorque<S> {
-    /// The type of the result force. 
+    /// The type of the result force.
     type Force: Wedge + Outer;
 
     /// Evaluate the force, torque, and virial on site `i` caused by site `j`.
     fn site_pair_force_virial_and_torque(
         &self,
         site_properties_i: &S,
-        site_properties_j: &S
-    ) -> (Self::Force, <Self::Force as Outer>::Tensor, <Self::Force as Wedge>::Bivector);
+        site_properties_j: &S,
+    ) -> (
+        Self::Force,
+        <Self::Force as Outer>::Tensor,
+        <Self::Force as Wedge>::Bivector,
+    );
 }
