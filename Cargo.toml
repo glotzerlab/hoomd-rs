@@ -11,6 +11,7 @@ members = ["benchmarks",
            "hoomd-linear-algebra",
            "hoomd-manifold",
            "hoomd-mc",
+           "hoomd-md",
            "hoomd-microstate",
            "hoomd-simulation",
            "hoomd-spatial",
@@ -32,6 +33,7 @@ default-members = ["examples",
                    "hoomd-linear-algebra",
                    "hoomd-manifold",
                    "hoomd-mc",
+                   "hoomd-md",
                    "hoomd-microstate",
                    "hoomd-simulation",
                    "hoomd-spatial",
@@ -62,6 +64,7 @@ hoomd-interaction = { version = "1.1.0", path = "hoomd-interaction" }
 hoomd-linear-algebra = { version = "1.1.0", path = "hoomd-linear-algebra" }
 hoomd-manifold = { version = "1.1.0", path = "hoomd-manifold" }
 hoomd-mc = { version = "1.1.0", path = "hoomd-mc" }
+hoomd-md = { version = "1.1.0", path = "hoomd-md"}
 hoomd-microstate = { version = "1.1.0", path = "hoomd-microstate" }
 hoomd-simulation = { version = "1.1.0", path = "hoomd-simulation" }
 hoomd-spatial = { version = "1.1.0", path = "hoomd-spatial" }
@@ -151,6 +154,7 @@ cast_precision_loss = "allow"
 float_cmp = "allow"
 similar_names = "allow"
 inline_always = "allow"
+must_use_candidate = "allow"
 
 # opt-in to restrictions
 allow_attributes_without_reason = "warn"

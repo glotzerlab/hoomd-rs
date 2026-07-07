@@ -3,7 +3,6 @@
 
 //! Test derive(Orientation)
 
-use assert2::check;
 use hoomd_microstate::property::Orientation;
 
 // Compile error
@@ -41,8 +40,8 @@ struct Named {
 #[test]
 fn derive_orientation() {
     let mut test = Named { orientation: 15.0 };
-    check!(*test.orientation() == 15.0);
+    assert_eq!(*test.orientation(), 15.0);
 
     *test.orientation_mut() = 32.0;
-    check!(test.orientation == 32.0);
+    assert_eq!(test.orientation, 32.0);
 }
