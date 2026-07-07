@@ -1,6 +1,10 @@
 # Release Notes
 
-## Next release
+## 1.2.0 (2026-07-07)
+
+*Highlights:*
+
+**hoomd-rs** 1.2 can perform molecular dynamics simulations with the new `hoomd-md` crate! The release also expands the Monte Carlo capabilities of high dimensional and curved space simulations.
 
 *Added:*
 
@@ -28,10 +32,6 @@
 * `[hoomd-mc]`: `HypercuboidCheckerboard` now builds in an arbitrary number of dimensions (#318).
 * `[hoomd-vector]`: `n_dimensions` is now an associated method (#222).
 * Build the documentation with mdBook 0.5.3 (#295).
-
-*Deprecated:*
-
-*Removed:*
 
 *Fixed:*
 
