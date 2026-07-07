@@ -48,14 +48,23 @@ a microstate for a given interaction model.
 See the [hoomd-microstate] documentation for a more detailed introduction,
 a complete list of all methods, and example code.
 
-## Monte Carlo Simulations
+## Monte Carlo (MC) Simulations
 
-[hoomd-md] implements typical Monte Carlo trial moves used in soft matter
+[hoomd-mc] implements typical Monte Carlo trial moves used in soft matter
 research, such as local translation and rotation moves. Each trial move is
 applied to a `Microstate` ([hoomd-microstate]) and accepted or rejected based on
 the given interaction model ([hoomd-interaction]). When you need a different type
 of trial move for your simulation model, implement your own via one or more of the
 traits defined in [hoomd-mc].
+
+## Molecular Dynamics (MD) Simulations
+
+[hoomd-md] implements methods that integrate the translational and/or rotational
+degrees of freedom in the `Microstate` forward in time. Bodies move in response
+to forces and torques determined by the interaction model ([hoomd-interaction]),
+the chosen integration method, and thermostat. The MD and interaction models are
+the same. Provided that the interaction is differentiable, you can freely swap
+between MD integration and MC trial moves in the same simulation.
 
 ## Writing GSD Files
 
@@ -68,4 +77,5 @@ analysis and visualization after your simulation job completes.
 [hoomd-geometry]: ../api/hoomd_geometry/index.html
 [hoomd-microstate]: ../api/hoomd_microstate/index.html
 [hoomd-mc]: ../api/hoomd_mc/index.html
+[hoomd-md]: ../api/hoomd_md/index.html
 [hoomd-gsd]: ../api/hoomd_gsd/index.html
