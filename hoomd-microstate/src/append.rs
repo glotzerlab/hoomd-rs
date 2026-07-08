@@ -288,7 +288,6 @@ impl<B, X, C> AppendMicrostate<B, Point<Hyperbolic<3>>, X, C> for HoomdGsdFile {
 #[cfg(test)]
 mod test {
     use approxim::assert_relative_eq;
-    use assert2::assert;
     use std::f64::consts::PI;
     use tempfile::tempdir;
 

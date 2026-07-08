@@ -40,7 +40,7 @@ use super::UnivariateEnergy;
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct OverlapPenalty {
-    /// Spring stiffness $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
+    /// Spring stiffness $`[\mathrm{energy}] \cdot [\mathrm{length}]^{-2}`$.
     pub k: f64,
 
     /// The largest overlap distance to allow  $`[\mathrm{length}]`$.

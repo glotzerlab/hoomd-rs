@@ -11,12 +11,13 @@
 //! Apply the Metropolis Monte Carlo simulation method to systems of bodies.
 //!
 //! `hoomd-mc` provides building blocks that you can use to create a Monte Carlo
-//! simulation model. Start with a [`hoomd_microstate::Microstate`] to represent
+//! simulation model. Start with a [`Microstate`] to represent
 //! the properties of all the bodies and sites. Form a Hamiltonian using
 //! types from [`hoomd_interaction`] that implement [`TotalEnergy`], [`DeltaEnergyOne`],
 //! [`DeltaEnergyInsert`], and/or [`DeltaEnergyRemove`] and set the macrostate
 //! using one of the types from [`hoomd_simulation`].
 //!
+//! [`Microstate`]: hoomd_microstate::Microstate
 //! [`DeltaEnergyOne`]: hoomd_interaction::DeltaEnergyOne
 //! [`DeltaEnergyInsert`]: hoomd_interaction::DeltaEnergyInsert
 //! [`DeltaEnergyRemove`]: hoomd_interaction::DeltaEnergyRemove
@@ -39,7 +40,7 @@
 //!
 //! [`Sweep`] implements [`Trial`] by applying the given [`LocalTrial`] to every
 //! body in the microstate. [`ParallelSweep`] does the same, but it executes many
-//! trial moves in parallel to increase performance. [`Sweep`] is very general
+//! trial moves in parallel to increase performance. [`Sweep`] is very general and
 //! will work with any boundary condition and local trial move, even when the move
 //! is not actually confined to a small region in space and when all bodies interact
 //! with all other bodies. [`ParallelSweep`] works only with boundaries that can be

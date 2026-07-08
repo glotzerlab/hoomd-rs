@@ -17,7 +17,7 @@ use rand::{
     distr::{Distribution, StandardUniform, Uniform},
 };
 
-use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
+use crate::{Cross, Error, InnerProduct, Metric, Outer, Rotate, Unit, Vector, Wedge};
 use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
@@ -312,15 +312,13 @@ impl<const N: usize> Metric for Cartesian<N> {
     /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let vec2 = Cartesian::<2>::default();
-    /// let vec3 = Cartesian::<3>::default();
-    /// assert_eq!(2, vec2.n_dimensions());
-    /// assert_eq!(3, vec3.n_dimensions());
+    /// assert_eq!(2, Cartesian::<2>::n_dimensions());
+    /// assert_eq!(3, Cartesian::<3>::n_dimensions());
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         N
     }
 }
@@ -448,6 +446,30 @@ impl Cross for Cartesian<3> {
     }
 }
 
+impl Wedge for Cartesian<3> {
+    type Bivector = Cartesian<3>;
+
+    #[inline]
+    /// Compute the wedge product of two vectors.
+    ///
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, Wedge};
+    ///
+    /// let a = Cartesian::from([1.0, 0.0, 0.0]);
+    /// let b = Cartesian::from([0.0, 1.0, 0.0]);
+    /// assert_eq!(a.wedge(&b), [0.0, 0.0, 1.0].into());
+    /// ```
+    fn wedge(&self, other: &Self) -> Self::Bivector {
+        self.cross(other)
+    }
+}
+
 impl Cartesian<4> {
     /// Compute the `N-1`-ary ([co-unary]) cross product of a four-dimensional vector.
     ///
@@ -568,6 +590,40 @@ impl Cartesian<2> {
     #[must_use]
     pub fn perpendicular(self) -> Self {
         Cartesian::from([-self[1], self[0]])
+    }
+}
+
+impl Wedge for Cartesian<2> {
+    type Bivector = f64;
+
+    /// Compute the wedge product of two vectors.
+    ///
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, Wedge};
+    ///
+    /// let a = Cartesian::from([2.0, 1.0]);
+    /// let b = Cartesian::from([3.0, 1.0]);
+    ///
+    /// assert_eq!(a.wedge(&b), -1.0);
+    /// ```
+    #[inline]
+    fn wedge(&self, other: &Self) -> Self::Bivector {
+        self[0] * other[1] - self[1] * other[0]
+    }
+}
+
+impl<const N: usize> Outer for Cartesian<N> {
+    type Tensor = Matrix<N, N>;
+
+    #[inline]
+    fn outer(&self, other: &Self) -> Self::Tensor {
+        self.to_column_matrix().matmul(&other.to_row_matrix())
     }
 }
 

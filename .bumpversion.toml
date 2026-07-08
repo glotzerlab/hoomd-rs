@@ -1,5 +1,5 @@
 [tool.bumpversion]
-current_version = "1.1.0"
+current_version = "1.2.0"
 
 [[tool.bumpversion.files]]
 filename = "Cargo.toml"
@@ -59,6 +59,11 @@ replace = "/{new_version}/"
 
 [[tool.bumpversion.files]]
 filename = "hoomd-mc/README.md"
+search = "/{current_version}/"
+replace = "/{new_version}/"
+
+[[tool.bumpversion.files]]
+filename = "hoomd-md/README.md"
 search = "/{current_version}/"
 replace = "/{new_version}/"
 

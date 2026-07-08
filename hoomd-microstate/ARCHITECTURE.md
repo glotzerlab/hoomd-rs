@@ -191,16 +191,16 @@ in a separate trait or not.
 
 Here are the traits that the `*Properties` types may have:
 
-* `Position<V>` - Holds a position vector that describes the location of the
+* `Position` - Holds a position vector that describes the location of the
   body or site in space.
-* `Orientation<R>` - Holds an orientation that describes a rotation from a
+* `Orientation` - Holds an orientation that describes a rotation from a
   local reference frame to the space frame of a body or site.
-* `Dynamic`? - Mass, velocity, ... needed for MD. TODO: Need separate
-  names to differentiate between dynamic point particles and dynamic orientable
-  particles? Nominally only applies to bodies. However, some algorithms
-  (e.g. DPD) need to know the velocity of individual sites. OR: Do we make
-  Mass, Velocity, AngularMomentum, etc... all separate traits to allow complete
-  generality when any subset is required (or not).
+* `Mass` - The mass of the body.
+* `Momentum` - Holds a translational momentum vector.
+* `NetForce` - Holds the net force on this body in a `Microstate`.
+* `MomentOfInertia` - Holds the moment of inertia of the body (diagonal).
+* `AngularMomentum` - The angular momentum vector of the body.
+* `NetTorque` - Total torque applied to a body in the microstate.
 
 ## Topology
 

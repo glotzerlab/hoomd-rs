@@ -46,7 +46,6 @@ impl<P> Point<P> {
     }
 }
 
-/// Move [`Point`] properties from the local body frame to the system frame.
 impl<const N: usize> Transform<Point<Cartesian<N>>> for Point<Cartesian<N>> {
     /// Points transform by vector addition.
     ///

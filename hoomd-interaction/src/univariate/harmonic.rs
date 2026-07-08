@@ -44,7 +44,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Harmonic {
-    /// Spring constant $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
+    /// Spring constant $`[\mathrm{energy}] \cdot [\mathrm{length}]^{-2}`$.
     pub k: f64,
     /// Equilibrium spring length $`[\mathrm{length}]`$.
     pub r_0: f64,

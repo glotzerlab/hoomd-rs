@@ -38,12 +38,15 @@ pub(crate) fn delta_energy_insert(input: DeriveInput) -> TokenStream {
     .chain(generics.params)
     .collect();
 
+    // The user provided predicates may or may not end in a comma.
+    // Therefore, list the additional generics first with a trailing
+    // comma (the `,*,`) and then list the user provided predicates.
     let field_types = data.fields.iter().map(|f| f.ty.clone());
     if let Some(previous_where_clause) = generics.where_clause {
         let predicates = previous_where_clause.predicates;
         generics.where_clause = Some(parse_quote!(where
-        #predicates,
-        #(#field_types: ::hoomd_interaction::DeltaEnergyInsert<__B, __S, __X, __C>),*
+        #(#field_types: ::hoomd_interaction::DeltaEnergyInsert<__B, __S, __X, __C>),*,
+        #predicates
         ));
     } else {
         generics.where_clause = Some(parse_quote!(where

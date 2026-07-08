@@ -26,6 +26,7 @@ rayon.workspace = true
 hoomd-geometry.workspace = true
 hoomd-interaction.workspace = true
 hoomd-mc.workspace = true
+hoomd-md.workspace = true
 hoomd-microstate.workspace = true
 hoomd-rand.workspace = true
 hoomd-simulation.workspace = true

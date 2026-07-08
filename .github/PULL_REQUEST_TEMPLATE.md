@@ -13,7 +13,7 @@ Resolves #???
 
 <!--- Please describe in detail how you tested your changes. -->
 
-<!--- Please build the sphinx documentation and check that any changes to
+<!--- Please build the documentation and check that any changes to
       documentation display properly. -->
 
 ## Checklist:

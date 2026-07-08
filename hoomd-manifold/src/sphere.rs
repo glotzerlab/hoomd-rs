@@ -230,7 +230,7 @@ impl Metric for Spherical<3> {
         (self.distance(other)).powi(2)
     }
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         2_usize
     }
 }
@@ -258,7 +258,7 @@ impl Metric for Spherical<4> {
         (self.distance(other)).powi(2)
     }
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         3_usize
     }
 }

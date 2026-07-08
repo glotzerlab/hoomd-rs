@@ -37,6 +37,3 @@ pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
     #[must_use]
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64;
 }
-
-// TODO: determine how to express the torque return type in a general way. Possibly use
-// an associated type of Rotation.
