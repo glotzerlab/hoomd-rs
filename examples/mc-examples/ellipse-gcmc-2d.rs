@@ -5,12 +5,9 @@ use hoomd_geometry::{
     shape::{Ellipse, Rectangle},
 };
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff,
-    pairwise::HardShape,
+    MaximumInteractionRange, PairwiseCutoff, pairwise::HardShape,
 };
-use hoomd_mc::{
-    GrandCanonical, Rotate, Sweep, Translate, Trial, UniformIn,
-};
+use hoomd_mc::{GrandCanonical, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
     Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
 };
@@ -63,8 +60,7 @@ impl HardEllipseGCMC {
         ]);
         let hamiltonian = PairwiseCutoff(HardShape(ellipse.clone()));
 
-        let initial_box_volume =
-            512 as f64 * ellipse.volume() / 0.4;
+        let initial_box_volume = 512_f64 * ellipse.volume() / 0.4;
         let initial_box_edge_length = initial_box_volume.sqrt();
         let square =
             Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
@@ -93,7 +89,7 @@ impl HardEllipseGCMC {
             boundary: microstate.boundary().clone(),
             template_sites: vec![SiteProperties::default()],
         };
-        
+
         let gcmc = GrandCanonical(distribution);
 
         Ok(HardEllipseGCMC {
@@ -110,21 +106,22 @@ impl HardEllipseGCMC {
 impl Simulation for HardEllipseGCMC {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-        self.gcmc.apply(&mut self.microstate, 
-            &self.hamiltonian, 
-            &self.macrostate
+        self.gcmc.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
         );
 
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
-            &self.macrostate
+            &self.macrostate,
         );
 
         self.rotate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
-            &self.macrostate
+            &self.macrostate,
         );
 
         self.microstate.increment_step();
