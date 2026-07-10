@@ -18,12 +18,17 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 workspace = true
 
 [dependencies]
+hex.workspace = true
+md-5.workspace = true
 parquet.workspace = true
 parquet_derive.workspace = true
-thiserror.workspace = true
 serde.workspace = true
+serde_json.workspace = true
+serde-json-fmt.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
 assert2.workspace = true
+rstest.workspace = true
 tempfile.workspace = true
