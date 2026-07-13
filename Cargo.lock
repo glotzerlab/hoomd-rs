@@ -5306,9 +5306,9 @@ dependencies = [
 
 [[package]]
 name = "parquet"
-version = "59.0.0"
+version = "59.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "970dff83e97d953c827ae8176f6bf4e9f77bf62daacc01ec5df348ec5eacd913"
+checksum = "5302d4da74d6596a1f11f9928767995b53bca657cbeea1e4e8c5074f8a1157dd"
 dependencies = [
  "ahash",
  "bytes",
@@ -5325,9 +5325,9 @@ dependencies = [
 
 [[package]]
 name = "parquet_derive"
-version = "59.0.0"
+version = "59.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24f33a384e5744d8ca335cf38ca0afb86882a2f4830ea449a64002ad14bef998"
+checksum = "cbc385c96649f10624ac3bb896fd1242c4b5a0ace271dd1424531d4e5efb9e7c"
 dependencies = [
  "parquet",
  "proc-macro2",
