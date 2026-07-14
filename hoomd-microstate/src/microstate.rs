@@ -2025,17 +2025,17 @@ mod tests {
                 );
             }
 
-            assert!(microstate.bodies().len() == microstate.bodies_sites.len());
+            assert_eq!(microstate.bodies().len(), microstate.bodies_sites.len());
             for (body, body_sites) in microstate
                 .bodies()
                 .iter()
                 .zip(microstate.bodies_sites.iter())
             {
-                assert!(body.item.sites.len() == body_sites.len());
+                assert_eq!(body.item.sites.len(), body_sites.len());
                 for site_tag in body_sites {
                     let site_index = microstate.site_indices()[*site_tag]
                         .expect("body_sites should be consistent with site_indices");
-                    assert!(microstate.sites()[site_index].body_tag == body.tag);
+                    assert_eq!(microstate.sites()[site_index].body_tag, body.tag);
                 }
             }
 
@@ -2225,7 +2225,10 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            assert!(microstate.add_body(Body::point(Cartesian::from([11.0, -21.0]))) == Ok(0));
+            assert_eq!(
+                microstate.add_body(Body::point(Cartesian::from([11.0, -21.0]))),
+                Ok(0)
+            );
 
             let body = &microstate.bodies()[0].item;
             assert_relative_eq!(body.properties.position, [1.0, -1.0].into(), epsilon = 1e-6);
@@ -2275,7 +2278,7 @@ mod tests {
             let site = &microstate.sites()[0];
             assert_relative_eq!(site.properties.position, [-4.5, 1.0].into(), epsilon = 1e-6);
 
-            assert!(microstate.ghosts().len() == 1);
+            assert_eq!(microstate.ghosts().len(), 1);
             let ghost = &microstate.ghosts()[0];
             assert_relative_eq!(ghost.properties.position, [5.5, 1.0].into(), epsilon = 1e-6);
 
@@ -2296,13 +2299,14 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            assert!(
+            assert_eq!(
                 microstate.update_body_properties(
                     0,
                     Point {
                         position: [4.5, 1.0].into()
                     }
-                ) == Ok(())
+                ),
+                Ok(())
             );
 
             let body = &microstate.bodies()[0].item;
@@ -2311,20 +2315,21 @@ mod tests {
             let site = &microstate.sites()[0];
             assert_relative_eq!(site.properties.position, [-4.5, 1.0].into(), epsilon = 1e-6);
 
-            assert!(microstate.ghosts().len() == 1);
+            assert_eq!(microstate.ghosts().len(), 1);
             let ghost = &microstate.ghosts()[0];
             assert_relative_eq!(ghost.properties.position, [5.5, 1.0].into(), epsilon = 1e-6);
 
-            assert!(ghost.site_tag == site.site_tag);
-            assert!(ghost.body_tag == site.body_tag);
+            assert_eq!(ghost.site_tag, site.site_tag);
+            assert_eq!(ghost.body_tag, site.body_tag);
 
-            assert!(
+            assert_eq!(
                 microstate.update_body_properties(
                     0,
                     Point {
                         position: [0.0, 0.0].into()
                     }
-                ) == Ok(())
+                ),
+                Ok(())
             );
 
             assert_eq!(microstate.ghosts().len(), 0);
