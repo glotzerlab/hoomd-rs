@@ -21,7 +21,7 @@ use hoomd_microstate::{
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Versor};
 
-/// Integrate bodies' translational and rotational degrees of freedom in the microstate.
+/// Integrate bodies' degrees of freedom in the microstate, modelling the NVE or NVT ensemble.
 ///
 /// The `ConstantVolume` implementation follows the symplectic integration
 /// scheme by [Tuckerman et al. 2006] for translational motion and [Miller et
@@ -227,6 +227,162 @@ impl<TT, TR> ConstantVolume<TT, TR> {
     }
 }
 
+/// First half step of the symplectic volume-preserving integration scheme for
+/// translational degrees of freedom.
+/// 
+/// This function is defined outside of [`ConstantVolume`] because it
+/// is also used by [`Langevin`](crate::method::Langevin).
+/// 
+/// For details, see the documentation for
+/// [`ConstantVolume::integrate_translation_half_step_one_with_filter`].
+pub(crate) fn integrate_translation_half_step_one_with_filter<V, B, S, X, C, TT, M, F>(
+    delta_t: f64,
+    microstate: &mut Microstate<B, S, X, C>,
+    translational_thermostat: &mut TT,
+    macrostate: &M,
+    should_integrate_body: F,
+)
+where
+    V: Default + InnerProduct,
+    B: Position<Position = V>
+        + Momentum<Momentum = V>
+        + NetForce<NetForce = V>
+        + Mass
+        + Transform<S>
+        + Clone,
+    S: Position<Position = V> + Default,
+    X: PointUpdate<V, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    TT: Thermostat<M>,
+    F: Fn(&Tagged<Body<B, S>>) -> bool,
+{
+    let mut rng = microstate.counter().make_rng();
+    let (kinetic_energy, degrees_of_freedom) =
+        microstate.translational_kinetic_energy_with_filter(&should_integrate_body);
+
+    let conserved_degrees_of_freedom =
+        if degrees_of_freedom == V::n_dimensions() * microstate.bodies().len() {
+            V::n_dimensions()
+        } else {
+            0
+        };
+    *microstate.conserved_degrees_of_freedom_mut() = conserved_degrees_of_freedom;
+
+    let rescaling_factor = translational_thermostat.integrate_half_step_one(
+        &mut rng,
+        macrostate,
+        delta_t,
+        kinetic_energy,
+        degrees_of_freedom - conserved_degrees_of_freedom,
+    );
+
+    for body_index in 0..microstate.bodies().len() {
+        let body = &microstate.bodies()[body_index];
+        if !should_integrate_body(body) {
+            continue;
+        }
+        let mut body_properties = body.item.properties.clone();
+
+        let net_force = *body_properties.net_force();
+        let mass = body_properties.mass();
+        let mut momentum = *body_properties.momentum();
+
+        momentum *= rescaling_factor;
+        momentum += net_force * 0.5 * delta_t;
+        *body_properties.position_mut() += momentum / mass * delta_t;
+        *body_properties.momentum_mut() = momentum;
+
+        microstate
+            .update_body_properties(body_index, body_properties)
+            .expect(
+                "Bodies and sites should remain in simulation boundary.\n
+            Add interactions that prevent sites from moving outside the boundary.",
+            );
+    }
+
+    microstate.increment_substep();
+}
+
+/// Second half stpe of the symplectic volume-preserving integration scheme for
+/// translational degrees of freedom.
+/// 
+/// This function is defined outside of [`ConstantVolume`] because it
+/// is also used by [`Langevin`](crate::method::Langevin).
+/// 
+/// For details, see the documentation for
+/// [`ConstantVolume::integrate_translation_half_step_two_with_filter`].
+pub(crate) fn integrate_translation_half_step_two_with_filter<V, B, S, X, C, TT, M, F>(
+    delta_t: f64,
+    microstate: &mut Microstate<B, S, X, C>,
+    translational_thermostat: &mut TT,
+    macrostate: &M,
+    should_integrate_body: F,
+)
+where
+    V: Default + InnerProduct,
+    B: Position<Position = V>
+        + Momentum<Momentum = V>
+        + NetForce<NetForce = V>
+        + Mass
+        + Transform<S>
+        + Clone,
+    S: Position<Position = V> + Default,
+    X: PointUpdate<V, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    TT: Thermostat<M>,
+    F: Fn(&Tagged<Body<B, S>>) -> bool,
+{
+    let mut rng = microstate.counter().make_rng();
+
+    for body_index in 0..microstate.bodies().len() {
+        let body = &microstate.bodies()[body_index];
+        if !should_integrate_body(body) {
+            continue;
+        }
+        let mut body_properties = body.item.properties.clone();
+        let net_force = *body_properties.net_force();
+
+        *body_properties.momentum_mut() += net_force * delta_t * 0.5;
+
+        microstate
+            .update_body_properties(body_index, body_properties)
+            .expect(
+                "Bodies and sites should remain in simulation boundary.\n
+            Add interactions that prevent sites from moving outside the boundary.",
+            );
+    }
+
+    let (kinetic_energy, degrees_of_freedom) = microstate.translational_kinetic_energy();
+    let rescaling_factor = translational_thermostat.integrate_half_step_two(
+        &mut rng,
+        macrostate,
+        delta_t,
+        kinetic_energy,
+        degrees_of_freedom - microstate.conserved_degrees_of_freedom(),
+    );
+
+    if rescaling_factor != 1.0 {
+        for body_index in 0..microstate.bodies().len() {
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue;
+            }
+            let mut body_properties = body.item.properties.clone();
+
+            *body_properties.momentum_mut() *= rescaling_factor;
+
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect(
+                    "Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.",
+                );
+        }
+    }
+
+    microstate.increment_substep();
+}
+
 impl<V, B, S, X, C, TT, TR, M> TranslationalMotion<B, S, X, C, M> for ConstantVolume<TT, TR>
 where
     V: Default + InnerProduct,
@@ -274,51 +430,13 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        let mut rng = microstate.counter().make_rng();
-        let (kinetic_energy, degrees_of_freedom) =
-            microstate.translational_kinetic_energy_with_filter(&should_integrate_body);
-
-        let conserved_degrees_of_freedom =
-            if degrees_of_freedom == V::n_dimensions() * microstate.bodies().len() {
-                V::n_dimensions()
-            } else {
-                0
-            };
-        *microstate.conserved_degrees_of_freedom_mut() = conserved_degrees_of_freedom;
-
-        let rescaling_factor = self.translational_thermostat.integrate_half_step_one(
-            &mut rng,
-            macrostate,
+        integrate_translation_half_step_one_with_filter(
             self.delta_t,
-            kinetic_energy,
-            degrees_of_freedom - conserved_degrees_of_freedom,
+            microstate,
+            &mut self.translational_thermostat,
+            macrostate,
+            should_integrate_body,
         );
-
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
-                continue;
-            }
-            let mut body_properties = body.item.properties.clone();
-
-            let net_force = *body_properties.net_force();
-            let mass = body_properties.mass();
-            let mut momentum = *body_properties.momentum();
-
-            momentum *= rescaling_factor;
-            momentum += net_force * 0.5 * self.delta_t;
-            *body_properties.position_mut() += momentum / mass * self.delta_t;
-            *body_properties.momentum_mut() = momentum;
-
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect(
-                    "Bodies and sites should remain in simulation boundary.\n
-                Add interactions that prevent sites from moving outside the boundary.",
-                );
-        }
-
-        microstate.increment_substep();
     }
 
     /// Integrate selected body momenta forward a half step.
@@ -349,55 +467,13 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        let mut rng = microstate.counter().make_rng();
-
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
-                continue;
-            }
-            let mut body_properties = body.item.properties.clone();
-            let net_force = *body_properties.net_force();
-
-            *body_properties.momentum_mut() += net_force * self.delta_t * 0.5;
-
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect(
-                    "Bodies and sites should remain in simulation boundary.\n
-                Add interactions that prevent sites from moving outside the boundary.",
-                );
-        }
-
-        let (kinetic_energy, degrees_of_freedom) = microstate.translational_kinetic_energy();
-        let rescaling_factor = self.translational_thermostat.integrate_half_step_two(
-            &mut rng,
-            macrostate,
+        integrate_translation_half_step_two_with_filter(
             self.delta_t,
-            kinetic_energy,
-            degrees_of_freedom - microstate.conserved_degrees_of_freedom(),
+            microstate,
+            &mut self.translational_thermostat,
+            macrostate,
+            should_integrate_body,
         );
-
-        if rescaling_factor != 1.0 {
-            for body_index in 0..microstate.bodies().len() {
-                let body = &microstate.bodies()[body_index];
-                if !should_integrate_body(body) {
-                    continue;
-                }
-                let mut body_properties = body.item.properties.clone();
-
-                *body_properties.momentum_mut() *= rescaling_factor;
-
-                microstate
-                    .update_body_properties(body_index, body_properties)
-                    .expect(
-                        "Bodies and sites should remain in simulation boundary.\n
-                    Add interactions that prevent sites from moving outside the boundary.",
-                    );
-            }
-        }
-
-        microstate.increment_substep();
     }
 }
 
@@ -423,6 +499,216 @@ fn body_net_torque_and_active_degrees_of_freedom(
     }
 
     (net_torque, active)
+}
+
+/// First half step of the symplectic volume-preserving integration scheme for
+/// rotational degrees of freedom in 3D Cartesian space.
+/// 
+/// This function is defined outside of [`ConstantVolume`] because it
+/// is also used by [`Langevin`](crate::method::Langevin).
+/// 
+/// For details, see the documentation for the 3D Cartesian implementation of
+/// [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
+pub(crate) fn integrate_rotation_half_step_one_with_filter_3d<S, X, C, TR, M, F> (
+    delta_t: f64,
+    microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
+    rotational_thermostat: &mut TR,
+    macrostate: &M,
+    should_integrate_body: F,
+)
+where
+    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
+    S: Position<Position = Cartesian<3>> + Default,
+    X: PointUpdate<Cartesian<3>, SiteKey>,
+    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>> + Wrap<S> + GenerateGhosts<S>,
+    TR: Thermostat<M>,
+    F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool,
+{
+    let mut rng = microstate.counter().make_rng();
+    let (kinetic_energy, degrees_of_freedom) =
+        microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
+    let rescaling_factor = rotational_thermostat.integrate_half_step_one(
+        &mut rng,
+        macrostate,
+        delta_t,
+        kinetic_energy,
+        degrees_of_freedom,
+    );
+
+    for body_index in 0..microstate.bodies().len() {
+        let body = &microstate.bodies()[body_index];
+        if !should_integrate_body(body) {
+            continue;
+        }
+        let mut body_properties = body.item.properties;
+
+        let (net_torque, active) =
+            body_net_torque_and_active_degrees_of_freedom(&body_properties);
+        let mut q = *body_properties.orientation().get();
+        let moment_of_inertia = body_properties.moment_of_inertia();
+
+        // DynamicOrientedPoint stores angular momentum in vector form. Convert it
+        // into a quaternion, integrate the quaternion, then store it back as a vector.
+        let s = *body_properties.angular_momentum();
+        let mut p = (q * Quaternion::pure(s)) * 2.0;
+
+        p = p * rescaling_factor + q * Quaternion::pure(net_torque) * delta_t;
+
+        if active[2] {
+            let p3 = Quaternion::from([-p.vector[2], p.vector[1], -p.vector[0], p.scalar]);
+            let q3 = Quaternion::from([-q.vector[2], q.vector[1], -q.vector[0], q.scalar]);
+            let phi3 = (1. / (4. * moment_of_inertia[2]))
+                * ((p.scalar * q3.scalar) + p.vector.dot(&q3.vector));
+            let c_phi3 = (0.5 * delta_t * phi3).cos();
+            let s_phi3 = (0.5 * delta_t * phi3).sin();
+
+            p = p * c_phi3 + p3 * s_phi3;
+            q = q * c_phi3 + q3 * s_phi3;
+        }
+
+        if active[1] {
+            let p2 = Quaternion::from([-p.vector[1], -p.vector[2], p.scalar, p.vector[0]]);
+            let q2 = Quaternion::from([-q.vector[1], -q.vector[2], q.scalar, q.vector[0]]);
+            let phi2 = (1. / (4. * moment_of_inertia[1]))
+                * ((p.scalar * q2.scalar) + p.vector.dot(&q2.vector));
+            let c_phi2 = (0.5 * delta_t * phi2).cos();
+            let s_phi2 = (0.5 * delta_t * phi2).sin();
+
+            p = p * c_phi2 + p2 * s_phi2;
+            q = q * c_phi2 + q2 * s_phi2;
+        }
+
+        if active[0] {
+            let p1 = Quaternion::from([-p.vector[0], p.scalar, p.vector[2], -p.vector[1]]);
+            let q1 = Quaternion::from([-q.vector[0], q.scalar, q.vector[2], -q.vector[1]]);
+            let phi1 = (1. / (4. * moment_of_inertia[0]))
+                * ((p.scalar * q1.scalar) + p.vector.dot(&q1.vector));
+            let c_phi1 = (delta_t * phi1).cos();
+            let s_phi1 = (delta_t * phi1).sin();
+
+            p = p * c_phi1 + p1 * s_phi1;
+            q = q * c_phi1 + q1 * s_phi1;
+        }
+
+        if active[1] {
+            let p2 = Quaternion::from([-p.vector[1], -p.vector[2], p.scalar, p.vector[0]]);
+            let q2 = Quaternion::from([-q.vector[1], -q.vector[2], q.scalar, q.vector[0]]);
+            let phi2 = (1. / (4. * moment_of_inertia[1]))
+                * ((p.scalar * q2.scalar) + p.vector.dot(&q2.vector));
+            let c_phi2 = (0.5 * delta_t * phi2).cos();
+            let s_phi2 = (0.5 * delta_t * phi2).sin();
+
+            p = p * c_phi2 + p2 * s_phi2;
+            q = q * c_phi2 + q2 * s_phi2;
+        }
+
+        if active[2] {
+            let p3 = Quaternion::from([-p.vector[2], p.vector[1], -p.vector[0], p.scalar]);
+            let q3 = Quaternion::from([-q.vector[2], q.vector[1], -q.vector[0], q.scalar]);
+            let phi3 = (1. / (4. * moment_of_inertia[2]))
+                * ((p.scalar * q3.scalar) + p.vector.dot(&q3.vector));
+            let c_phi3 = (0.5 * delta_t * phi3).cos();
+            let s_phi3 = (0.5 * delta_t * phi3).sin();
+
+            p = p * c_phi3 + p3 * s_phi3;
+            q = q * c_phi3 + q3 * s_phi3;
+        }
+
+        *body_properties.orientation_mut() =
+            q.to_versor().expect("body orientation should be non-zero");
+        *body_properties.angular_momentum_mut() = ((q.conjugate() * p) * 0.5).vector;
+
+        microstate
+            .update_body_properties(body_index, body_properties)
+            .expect(
+                "Bodies and sites should remain in simulation boundary.\n
+            Add interactions that prevent sites from moving outside the boundary.",
+            );
+    }
+
+    microstate.increment_substep();
+}
+
+/// Second half step of the symplectic volume-preserving integration scheme for
+/// rotational degrees of freedom in 3D Cartesian space.
+/// 
+/// This function is defined outside of [`ConstantVolume`] because it
+/// is also used by [`Langevin`](crate::method::Langevin).
+/// 
+/// For details, see the documentation for the 3D Cartesian implementation of
+/// [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
+pub(crate) fn integrate_rotation_half_step_two_with_filter_3d<S, X, C, TR, M, F> (
+    delta_t: f64,
+    microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
+    rotational_thermostat: &mut TR,
+    macrostate: &M,
+    should_integrate_body: F,
+)
+where
+    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
+    S: Position<Position = Cartesian<3>> + Default,
+    X: PointUpdate<Cartesian<3>, SiteKey>,
+    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>> + Wrap<S> + GenerateGhosts<S>,
+    TR: Thermostat<M>,
+    F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool,
+{
+    let mut rng = microstate.counter().make_rng();
+
+    for body_index in 0..microstate.bodies().len() {
+        let body = &microstate.bodies()[body_index];
+        if !should_integrate_body(body) {
+            continue;
+        }
+        let mut body_properties = body.item.properties;
+
+        let (net_torque, _) = body_net_torque_and_active_degrees_of_freedom(&body_properties);
+        let q = *body_properties.orientation().get();
+        let s = *body_properties.angular_momentum();
+
+        let mut p = q * Quaternion::pure(s) * 2.0;
+
+        p += (q * Quaternion::pure(net_torque)) * delta_t;
+
+        *body_properties.angular_momentum_mut() = ((q.conjugate() * p) * 0.5).vector;
+
+        microstate
+            .update_body_properties(body_index, body_properties)
+            .expect(
+                "Bodies and sites should remain in simulation boundary.\n
+            Add interactions that prevent sites from moving outside the boundary.",
+            );
+    }
+
+    let (kinetic_energy, degrees_of_freedom) =
+        microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
+    let rescaling_factor = rotational_thermostat.integrate_half_step_two(
+        &mut rng,
+        macrostate,
+        delta_t,
+        kinetic_energy,
+        degrees_of_freedom,
+    );
+
+    if rescaling_factor != 1.0 {
+        for body_index in 0..microstate.bodies().len() {
+            let body = &microstate.bodies()[body_index];
+            if !should_integrate_body(body) {
+                continue;
+            }
+            let mut body_properties = body.item.properties;
+
+            *body_properties.angular_momentum_mut() *= rescaling_factor;
+
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect(
+                    "Bodies and sites should remain in simulation boundary.\n
+                Add interactions that prevent sites from moving outside the boundary.",
+                );
+        }
+    }
+
+    microstate.increment_substep();
 }
 
 /// Rotational motion in 3-dimensional cartesian space.
@@ -568,109 +854,13 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        let mut rng = microstate.counter().make_rng();
-        let (kinetic_energy, degrees_of_freedom) =
-            microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
-        let rescaling_factor = self.rotational_thermostat.integrate_half_step_one(
-            &mut rng,
-            macrostate,
+        integrate_rotation_half_step_one_with_filter_3d(
             self.delta_t,
-            kinetic_energy,
-            degrees_of_freedom,
+            microstate,
+            &mut self.rotational_thermostat,
+            macrostate,
+            should_integrate_body
         );
-
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
-                continue;
-            }
-            let mut body_properties = body.item.properties;
-
-            let (net_torque, active) =
-                body_net_torque_and_active_degrees_of_freedom(&body_properties);
-            let mut q = *body_properties.orientation().get();
-            let moment_of_inertia = body_properties.moment_of_inertia();
-
-            // DynamicOrientedPoint stores angular momentum in vector form. Convert it
-            // into a quaternion, integrate the quaternion, then store it back as a vector.
-            let s = *body_properties.angular_momentum();
-            let mut p = (q * Quaternion::pure(s)) * 2.0;
-
-            p = p * rescaling_factor + q * Quaternion::pure(net_torque) * self.delta_t;
-
-            if active[2] {
-                let p3 = Quaternion::from([-p.vector[2], p.vector[1], -p.vector[0], p.scalar]);
-                let q3 = Quaternion::from([-q.vector[2], q.vector[1], -q.vector[0], q.scalar]);
-                let phi3 = (1. / (4. * moment_of_inertia[2]))
-                    * ((p.scalar * q3.scalar) + p.vector.dot(&q3.vector));
-                let c_phi3 = (0.5 * self.delta_t * phi3).cos();
-                let s_phi3 = (0.5 * self.delta_t * phi3).sin();
-
-                p = p * c_phi3 + p3 * s_phi3;
-                q = q * c_phi3 + q3 * s_phi3;
-            }
-
-            if active[1] {
-                let p2 = Quaternion::from([-p.vector[1], -p.vector[2], p.scalar, p.vector[0]]);
-                let q2 = Quaternion::from([-q.vector[1], -q.vector[2], q.scalar, q.vector[0]]);
-                let phi2 = (1. / (4. * moment_of_inertia[1]))
-                    * ((p.scalar * q2.scalar) + p.vector.dot(&q2.vector));
-                let c_phi2 = (0.5 * self.delta_t * phi2).cos();
-                let s_phi2 = (0.5 * self.delta_t * phi2).sin();
-
-                p = p * c_phi2 + p2 * s_phi2;
-                q = q * c_phi2 + q2 * s_phi2;
-            }
-
-            if active[0] {
-                let p1 = Quaternion::from([-p.vector[0], p.scalar, p.vector[2], -p.vector[1]]);
-                let q1 = Quaternion::from([-q.vector[0], q.scalar, q.vector[2], -q.vector[1]]);
-                let phi1 = (1. / (4. * moment_of_inertia[0]))
-                    * ((p.scalar * q1.scalar) + p.vector.dot(&q1.vector));
-                let c_phi1 = (self.delta_t * phi1).cos();
-                let s_phi1 = (self.delta_t * phi1).sin();
-
-                p = p * c_phi1 + p1 * s_phi1;
-                q = q * c_phi1 + q1 * s_phi1;
-            }
-
-            if active[1] {
-                let p2 = Quaternion::from([-p.vector[1], -p.vector[2], p.scalar, p.vector[0]]);
-                let q2 = Quaternion::from([-q.vector[1], -q.vector[2], q.scalar, q.vector[0]]);
-                let phi2 = (1. / (4. * moment_of_inertia[1]))
-                    * ((p.scalar * q2.scalar) + p.vector.dot(&q2.vector));
-                let c_phi2 = (0.5 * self.delta_t * phi2).cos();
-                let s_phi2 = (0.5 * self.delta_t * phi2).sin();
-
-                p = p * c_phi2 + p2 * s_phi2;
-                q = q * c_phi2 + q2 * s_phi2;
-            }
-
-            if active[2] {
-                let p3 = Quaternion::from([-p.vector[2], p.vector[1], -p.vector[0], p.scalar]);
-                let q3 = Quaternion::from([-q.vector[2], q.vector[1], -q.vector[0], q.scalar]);
-                let phi3 = (1. / (4. * moment_of_inertia[2]))
-                    * ((p.scalar * q3.scalar) + p.vector.dot(&q3.vector));
-                let c_phi3 = (0.5 * self.delta_t * phi3).cos();
-                let s_phi3 = (0.5 * self.delta_t * phi3).sin();
-
-                p = p * c_phi3 + p3 * s_phi3;
-                q = q * c_phi3 + q3 * s_phi3;
-            }
-
-            *body_properties.orientation_mut() =
-                q.to_versor().expect("body orientation should be non-zero");
-            *body_properties.angular_momentum_mut() = ((q.conjugate() * p) * 0.5).vector;
-
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect(
-                    "Bodies and sites should remain in simulation boundary.\n
-                Add interactions that prevent sites from moving outside the boundary.",
-                );
-        }
-
-        microstate.increment_substep();
     }
 
     /// Integrate selected body angular momenta forward a half step.
@@ -753,64 +943,160 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        let mut rng = microstate.counter().make_rng();
-
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
-                continue;
-            }
-            let mut body_properties = body.item.properties;
-
-            let (net_torque, _) = body_net_torque_and_active_degrees_of_freedom(&body_properties);
-            let q = *body_properties.orientation().get();
-            let s = *body_properties.angular_momentum();
-
-            let mut p = q * Quaternion::pure(s) * 2.0;
-
-            p += (q * Quaternion::pure(net_torque)) * self.delta_t;
-
-            *body_properties.angular_momentum_mut() = ((q.conjugate() * p) * 0.5).vector;
-
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect(
-                    "Bodies and sites should remain in simulation boundary.\n
-                Add interactions that prevent sites from moving outside the boundary.",
-                );
-        }
-
-        let (kinetic_energy, degrees_of_freedom) =
-            microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
-        let rescaling_factor = self.rotational_thermostat.integrate_half_step_two(
-            &mut rng,
-            macrostate,
+        integrate_rotation_half_step_two_with_filter_3d(
             self.delta_t,
-            kinetic_energy,
-            degrees_of_freedom,
+            microstate,
+            &mut self.rotational_thermostat,
+            macrostate,
+            should_integrate_body
         );
+    }
+}
 
-        if rescaling_factor != 1.0 {
-            for body_index in 0..microstate.bodies().len() {
-                let body = &microstate.bodies()[body_index];
-                if !should_integrate_body(body) {
-                    continue;
-                }
-                let mut body_properties = body.item.properties;
+/// First half step of the symplectic volume-preserving integration scheme for
+/// rotational degrees of freedom in 2D Cartesian space.
+/// 
+/// This function is defined outside of [`ConstantVolume`] because it
+/// is also used by [`Langevin`](crate::method::Langevin).
+/// 
+/// For details, see the documentation for the 2D Cartesian implementation of
+/// [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
+pub(crate) fn integrate_rotation_half_step_one_with_filter_2d<S, X, C, TR, M, F> (
+    delta_t: f64,
+    microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
+    rotational_thermostat: &mut TR,
+    macrostate: &M,
+    should_integrate_body: F,
+)
+where
+    DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>,
+    S: Position<Position = Cartesian<2>> + Default,
+    X: PointUpdate<Cartesian<2>, SiteKey>,
+    C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>> + Wrap<S> + GenerateGhosts<S>,
+    TR: Thermostat<M>,
+    F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool,
+{
+    let mut rng = microstate.counter().make_rng();
+    let (kinetic_energy, degrees_of_freedom) =
+        microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
+    let rescaling_factor = rotational_thermostat.integrate_half_step_one(
+        &mut rng,
+        macrostate,
+        delta_t,
+        kinetic_energy,
+        degrees_of_freedom,
+    );
 
-                *body_properties.angular_momentum_mut() *= rescaling_factor;
-
-                microstate
-                    .update_body_properties(body_index, body_properties)
-                    .expect(
-                        "Bodies and sites should remain in simulation boundary.\n
-                    Add interactions that prevent sites from moving outside the boundary.",
-                    );
-            }
+    for body_index in 0..microstate.bodies().len() {
+        let body = &microstate.bodies()[body_index];
+        if !should_integrate_body(body) {
+            continue;
         }
 
-        microstate.increment_substep();
+        let mut body_properties = body.item.properties;
+
+        let moment_of_inertia = *body_properties.moment_of_inertia();
+        if moment_of_inertia == 0.0 {
+            continue;
+        }
+
+        let net_torque = *body_properties.net_torque();
+
+        *body_properties.angular_momentum_mut() *= rescaling_factor;
+        *body_properties.angular_momentum_mut() += net_torque * 0.5 * delta_t;
+        body_properties.orientation_mut().theta +=
+            *body_properties.angular_momentum() / moment_of_inertia * delta_t;
+
+        *body_properties.orientation_mut() = body_properties.orientation_mut().to_reduced();
+
+        microstate
+            .update_body_properties(body_index, body_properties)
+            .expect(
+                "Bodies and sites should remain in simulation boundary.\n
+            Add interactions that prevent sites from moving outside the boundary.",
+            );
     }
+
+    microstate.increment_substep();
+}
+
+/// Second half step of the symplectic volume-preserving integration scheme for
+/// rotational degrees of freedom in 2D Cartesian space.
+/// 
+/// This function is defined outside of [`ConstantVolume`] because it
+/// is also used by [`Langevin`](crate::method::Langevin).
+/// 
+/// For details, see the documentation for the 2D Cartesian implementation of
+/// [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
+pub(crate) fn integrate_rotation_half_step_two_with_filter_2d<S, X, C, TR, M, F> (
+    delta_t: f64,
+    microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
+    rotational_thermostat: &mut TR,
+    macrostate: &M,
+    should_integrate_body: F,
+)
+where
+    DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>,
+    S: Position<Position = Cartesian<2>> + Default,
+    X: PointUpdate<Cartesian<2>, SiteKey>,
+    C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>> + Wrap<S> + GenerateGhosts<S>,
+    TR: Thermostat<M>,
+    F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool,
+{
+    let mut rng = microstate.counter().make_rng();
+
+    for body_index in 0..microstate.bodies().len() {
+        let body = &microstate.bodies()[body_index];
+        if !should_integrate_body(body) {
+            continue;
+        }
+
+        let mut body_properties = body.item.properties;
+
+        let moment_of_inertia = *body_properties.moment_of_inertia();
+        if moment_of_inertia == 0.0 {
+            continue;
+        }
+
+        let net_torque = *body_properties.net_torque();
+
+        *body_properties.angular_momentum_mut() += net_torque * 0.5 * delta_t;
+
+        microstate
+            .update_body_properties(body_index, body_properties)
+            .expect(
+                "Bodies and sites should remain in simulation boundary.\n
+            Add interactions that prevent sites from moving outside the boundary.",
+            );
+    }
+
+    let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy();
+    let rescaling_factor = rotational_thermostat.integrate_half_step_two(
+        &mut rng,
+        macrostate,
+        delta_t,
+        kinetic_energy,
+        degrees_of_freedom,
+    );
+
+    for body_index in 0..microstate.bodies().len() {
+        let body = &microstate.bodies()[body_index];
+        if !should_integrate_body(body) {
+            continue;
+        }
+        let mut body_properties = body.item.properties;
+
+        *body_properties.angular_momentum_mut() *= rescaling_factor;
+
+        microstate
+            .update_body_properties(body_index, body_properties)
+            .expect(
+                "Bodies and sites should remain in simulation boundary.\n
+            Add interactions that prevent sites from moving outside the boundary.",
+            );
+    }
+
+    microstate.increment_substep();
 }
 
 /// Rotational motion in 2-dimensional cartesian space.
@@ -861,48 +1147,13 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        let mut rng = microstate.counter().make_rng();
-        let (kinetic_energy, degrees_of_freedom) =
-            microstate.rotational_kinetic_energy_with_filter(&should_integrate_body);
-        let rescaling_factor = self.rotational_thermostat.integrate_half_step_one(
-            &mut rng,
-            macrostate,
+        integrate_rotation_half_step_one_with_filter_2d(
             self.delta_t,
-            kinetic_energy,
-            degrees_of_freedom,
+            microstate,
+            &mut self.rotational_thermostat,
+            macrostate,
+            should_integrate_body
         );
-
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
-                continue;
-            }
-
-            let mut body_properties = body.item.properties;
-
-            let moment_of_inertia = *body_properties.moment_of_inertia();
-            if moment_of_inertia == 0.0 {
-                continue;
-            }
-
-            let net_torque = *body_properties.net_torque();
-
-            *body_properties.angular_momentum_mut() *= rescaling_factor;
-            *body_properties.angular_momentum_mut() += net_torque * 0.5 * self.delta_t;
-            body_properties.orientation_mut().theta +=
-                *body_properties.angular_momentum() / moment_of_inertia * self.delta_t;
-
-            *body_properties.orientation_mut() = body_properties.orientation_mut().to_reduced();
-
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect(
-                    "Bodies and sites should remain in simulation boundary.\n
-                Add interactions that prevent sites from moving outside the boundary.",
-                );
-        }
-
-        microstate.increment_substep();
     }
 
     /// Integrate selected body angular momenta forward a half step.
@@ -937,60 +1188,13 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        let mut rng = microstate.counter().make_rng();
-
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
-                continue;
-            }
-
-            let mut body_properties = body.item.properties;
-
-            let moment_of_inertia = *body_properties.moment_of_inertia();
-            if moment_of_inertia == 0.0 {
-                continue;
-            }
-
-            let net_torque = *body_properties.net_torque();
-
-            *body_properties.angular_momentum_mut() += net_torque * 0.5 * self.delta_t;
-
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect(
-                    "Bodies and sites should remain in simulation boundary.\n
-                Add interactions that prevent sites from moving outside the boundary.",
-                );
-        }
-
-        let (kinetic_energy, degrees_of_freedom) = microstate.rotational_kinetic_energy();
-        let rescaling_factor = self.rotational_thermostat.integrate_half_step_two(
-            &mut rng,
-            macrostate,
+        integrate_rotation_half_step_two_with_filter_2d(
             self.delta_t,
-            kinetic_energy,
-            degrees_of_freedom,
+            microstate,
+            &mut self.rotational_thermostat,
+            macrostate,
+            should_integrate_body
         );
-
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
-                continue;
-            }
-            let mut body_properties = body.item.properties;
-
-            *body_properties.angular_momentum_mut() *= rescaling_factor;
-
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect(
-                    "Bodies and sites should remain in simulation boundary.\n
-                Add interactions that prevent sites from moving outside the boundary.",
-                );
-        }
-
-        microstate.increment_substep();
     }
 }
 
