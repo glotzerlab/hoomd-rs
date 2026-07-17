@@ -230,6 +230,9 @@ impl<TT, TR> ConstantVolume<TT, TR> {
 /// First half step of the symplectic volume-preserving integration scheme for
 /// translational degrees of freedom.
 /// 
+/// Selected bodies' positions are integrated forward a full step and momenta
+/// are integrated forward a half step.
+/// 
 /// This function is defined outside of [`ConstantVolume`] because it
 /// is also used by [`Langevin`](crate::method::Langevin).
 /// 
@@ -305,6 +308,8 @@ where
 
 /// Second half stpe of the symplectic volume-preserving integration scheme for
 /// translational degrees of freedom.
+/// 
+/// Selected bodies' momenta are integrated forward a half step.
 /// 
 /// This function is defined outside of [`ConstantVolume`] because it
 /// is also used by [`Langevin`](crate::method::Langevin).
@@ -504,6 +509,9 @@ fn body_net_torque_and_active_degrees_of_freedom(
 /// First half step of the symplectic volume-preserving integration scheme for
 /// rotational degrees of freedom in 3D Cartesian space.
 /// 
+/// Selected bodies' orientations are integrated forward a full step and
+/// angular momenta are integrated forward a half step.
+/// 
 /// This function is defined outside of [`ConstantVolume`] because it
 /// is also used by [`Langevin`](crate::method::Langevin).
 /// 
@@ -631,6 +639,8 @@ where
 
 /// Second half step of the symplectic volume-preserving integration scheme for
 /// rotational degrees of freedom in 3D Cartesian space.
+/// 
+/// Selected bodies' angular momenta are integrated forward a half step.
 /// 
 /// This function is defined outside of [`ConstantVolume`] because it
 /// is also used by [`Langevin`](crate::method::Langevin).
@@ -956,6 +966,9 @@ where
 /// First half step of the symplectic volume-preserving integration scheme for
 /// rotational degrees of freedom in 2D Cartesian space.
 /// 
+/// Selected bodies' orientations are integrated forward a full step and
+/// angular momenta are integrated forward a half step.
+/// 
 /// This function is defined outside of [`ConstantVolume`] because it
 /// is also used by [`Langevin`](crate::method::Langevin).
 /// 
@@ -1022,6 +1035,8 @@ where
 
 /// Second half step of the symplectic volume-preserving integration scheme for
 /// rotational degrees of freedom in 2D Cartesian space.
+/// 
+/// Selected bodies' angular momenta are integrated forward a half step.
 /// 
 /// This function is defined outside of [`ConstantVolume`] because it
 /// is also used by [`Langevin`](crate::method::Langevin).
