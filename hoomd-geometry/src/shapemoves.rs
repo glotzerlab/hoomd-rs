@@ -129,13 +129,11 @@ mod tests {
     use approxim::assert_relative_eq;
 
     fn unit_box_3d() -> Hyperparallelepiped<3> {
-        let mut b = Hyperparallelepiped::new([
+        Hyperparallelepiped::new([
             Cartesian::from([1.0, 0.0, 0.0]),
             Cartesian::from([0.0, 1.0, 0.0]),
             Cartesian::from([0.0, 0.0, 1.0]),
-        ]);
-        b.calc_qr();
-        b
+        ])
     }
 
     #[test]

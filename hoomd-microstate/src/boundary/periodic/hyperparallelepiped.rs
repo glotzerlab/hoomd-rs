@@ -26,7 +26,7 @@ impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N>
     /// # Example
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-        let plane_distances = self.nearest_plane_distance();
+        let plane_distances = self.nearest_plane_distances();
         plane_distances
             .iter()
             .map(|x| x.get() * 0.5)
@@ -51,17 +51,14 @@ where
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut box_ = Hyperparallelepiped {
-    ///     edge_vectors: [
+    /// let mut box_ = Hyperparallelepiped::new([
     ///         [1.0, 0.0, 0.0].into(),
     ///         [0.5, f64::sqrt(3.0) / 2.0, 0.0].into(),
     ///         [0.0, 0.0, 1.0].into(),
-    ///     ],
-    ///     qr: None,
-    /// };
-    /// box_.calc_qr();
+    ///     ]);
     /// let periodic = Periodic::new(0.25, box_)?;
     /// let point = Point::new(Cartesian::from([1.0, f64::sqrt(3.0), 2.5]));
+    ///
     /// let wrapped_point = periodic.wrap(point)?;
     /// assert_eq!(wrapped_point.position, [0.0, 0.0, -0.5].into());
     /// # Ok(())
@@ -73,10 +70,11 @@ where
         let r = properties.position_mut();
 
         let a = Matrix::<N, N> {
-            rows: self.shape.edge_vectors.map(|v| v.coordinates),
+            rows: self.shape.edge_vectors().map(|v| v.coordinates),
         }
         .transpose();
 
+        // TODO: Can this use the pre-computed qr?
         let fractional = qr::qr_solve(&a, &r.to_column_matrix());
 
         let position_offset = a.matmul(&fractional.map_elements(f64::round));
@@ -107,7 +105,7 @@ where
         }
 
         // Determine fractional coordinates of "twighlight zones," where ghosts must be generated
-        let plane_distances = self.shape.nearest_plane_distance();
+        let plane_distances = self.shape.nearest_plane_distances();
         let fractional_cutoffs: [f64; N] =
             array::from_fn(|i| self.maximum_interaction_range() / plane_distances[i].get());
         let fractional_coordinate = self.shape.fractional(*r);
@@ -132,7 +130,7 @@ where
             for &&direction in &subset {
                 let axis = (direction.unsigned_abs() - 1) as usize;
                 let sign = if direction.is_negative() { 1.0 } else { -1.0 };
-                offset += self.shape.edge_vectors[axis] * sign;
+                offset += self.shape.edge_vectors()[axis] * sign;
             }
             let mut ghost_site = *site_properties;
             *ghost_site.position_mut() += offset;
@@ -153,9 +151,7 @@ mod tests {
     use rstest::{fixture, rstest};
 
     fn hyper_from_triclinic(tric: &Triclinic) -> Hyperparallelepiped<3> {
-        let mut hyper = Hyperparallelepiped::new(tric.edge_vectors());
-        hyper.calc_qr();
-        hyper
+        Hyperparallelepiped::new(tric.edge_vectors())
     }
 
     #[fixture]
