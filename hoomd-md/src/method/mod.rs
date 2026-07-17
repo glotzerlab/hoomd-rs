@@ -7,6 +7,8 @@ mod constant_volume;
 pub use constant_volume::{ConstantVolume, ConstantVolumeBuilder};
 
 mod langevin;
+use hoomd_microstate::property::NetForce;
+use hoomd_vector::Cartesian;
 pub use langevin::{Langevin, LangevinBuilder};
 
 /// The translational drag coefficient.
@@ -15,14 +17,15 @@ pub use langevin::{Langevin, LangevinBuilder};
 /// the translational drag coefficient used in [`Langevin`] and [`Brownian`]
 /// integration. Implement this trait on a new type to assign different drag
 /// coefficients to different sites.
-pub trait Gamma {
-    type BodyProperties;
-
+/// 
+/// The generic type names are:
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+pub trait Gamma<B> {
     /// Access the value for a site.
-    fn value(&self, site_properties: &Self::BodyProperties) -> f64;
+    fn value(&self, body_properties: &B) -> f64;
 
     /// Access the value for a site (mutable).
-    fn value_mut(&mut self, site_properties: &Self::BodyProperties) -> &mut f64;
+    fn value_mut(&mut self, body_properties: &B) -> &mut f64;
 }
 
 /// The rotational drag coefficients.
@@ -32,36 +35,38 @@ pub trait Gamma {
 /// of freedom used in [`Langevin`] and [`Brownian`] integration. Implement this
 /// trait on a new type to assign different sets of drag coefficients to
 /// different sites.
-pub trait GammaR<const N: usize> {
-    type BodyProperties;
+/// The generic type names are:
+/// * `N`: The number of dimensions. (TODO: revise)
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+pub trait GammaR<B> {
+    /// gamma_r vector type.
+    type GammaR;
 
     /// Access the value for a site
-    fn value(&self, site_properties: &Self::BodyProperties) -> [f64; N];
+    fn value(&self, body_properties: &B) -> &Self::GammaR;
 
     /// Access the value for a site (mutable).
-    fn value_mut(&mut self, site_properties: &Self::BodyProperties) -> &mut [f64; N];
+    fn value_mut(&mut self, body_properties: &B) -> &mut Self::GammaR;
 }
 
-impl Gamma for f64 {
-    type BodyProperties = usize;
-    
-    fn value(&self, _: &Self::BodyProperties) -> f64 {
+impl<B> Gamma<B> for f64 {    
+    fn value(&self, _: &B) -> f64 {
         *self
     }
 
-    fn value_mut(&mut self, _: &Self::BodyProperties) -> &mut f64 {
+    fn value_mut(&mut self, _: &B) -> &mut f64 {
         self
     }
 }
 
-impl<const N: usize> GammaR<N> for [f64; N] {
-    type BodyProperties = usize;
-    
-    fn value(&self, _: &Self::BodyProperties) -> [f64; N] {
-        *self
+impl<const N: usize, B> GammaR<B> for Cartesian<N> {
+    type GammaR = Cartesian<N>;
+
+    fn value(&self, _: &B) -> &Self::GammaR {
+        self
     }
     
-    fn value_mut(&mut self, _: &Self::BodyProperties) -> &mut [f64; N] {
+    fn value_mut(&mut self, _: &B) -> &mut Self::GammaR {
         self
     }
 }
