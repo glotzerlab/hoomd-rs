@@ -114,9 +114,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
     #[inline]
     fn calculate_qr(edge_vectors: &[Cartesian<N>; N]) -> Matrix<N, N> {
         let box_matrix = Matrix {
-            rows: std::array::from_fn(|r| {
-                std::array::from_fn(|c| edge_vectors[c].coordinates[r])
-            }),
+            rows: std::array::from_fn(|r| std::array::from_fn(|c| edge_vectors[c].coordinates[r])),
         };
 
         let (qr, _) = box_matrix.qr();
@@ -204,16 +202,14 @@ impl<const N: usize> Hyperparallelepiped<N> {
     ///     Cartesian::from([0.0, 6.0]),
     /// ]);
     ///
-    /// let fractional = hyperparallelepiped.fractional(Cartesian::from([1.0, 1.5]));
+    /// let fractional =
+    ///     hyperparallelepiped.fractional(Cartesian::from([1.0, 1.5]));
     /// assert_relative_eq!(fractional[0], 0.25);
     /// assert_relative_eq!(fractional[1], 0.25);
     /// ```
     #[inline]
     pub fn fractional(&self, absolute: Cartesian<N>) -> Cartesian<N> {
-        Cartesian::from_column_matrix(&qr::qr_solve(
-            &self.qr,
-            &absolute.to_column_matrix(),
-        ))
+        Cartesian::from_column_matrix(&qr::qr_solve(&self.qr, &absolute.to_column_matrix()))
     }
 
     /// Convert fractional coordinates to Cartesian coordinates.
@@ -371,10 +367,7 @@ impl<const N: usize> Scale for Hyperparallelepiped<N> {
         let edge_vectors = self.edge_vectors.map(|ev| ev * v);
         let qr = Self::calculate_qr(&edge_vectors);
 
-        Self {
-            edge_vectors,
-            qr,
-        }
+        Self { edge_vectors, qr }
     }
 
     /// Produce a scaled hyperparallelepiped by uniformly scaling volume.
@@ -468,17 +461,18 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
     ///     Cartesian::from([0.0, 8.0]),
     /// ]);
     ///
-    /// assert!( hyperparallelepiped.is_point_inside(&Cartesian::from([ 2.5, -3.5])));
-    /// assert!( hyperparallelepiped.is_point_inside(&Cartesian::from([-3.0,  0.0])));
-    /// assert!(!hyperparallelepiped.is_point_inside(&Cartesian::from([ 3.0, -3.5])));
-    /// assert!(!hyperparallelepiped.is_point_inside(&Cartesian::from([ 4.0, -3.5])));
+    /// assert!(hyperparallelepiped.is_point_inside(&Cartesian::from([2.5, -3.5])));
+    /// assert!(hyperparallelepiped.is_point_inside(&Cartesian::from([-3.0, 0.0])));
+    /// assert!(
+    ///     !hyperparallelepiped.is_point_inside(&Cartesian::from([3.0, -3.5]))
+    /// );
+    /// assert!(
+    ///     !hyperparallelepiped.is_point_inside(&Cartesian::from([4.0, -3.5]))
+    /// );
     /// ```
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
-        let fractional = qr::qr_solve(
-            &self.qr,
-            &point.to_column_matrix(),
-        );
+        let fractional = qr::qr_solve(&self.qr, &point.to_column_matrix());
 
         fractional
             .rows
@@ -516,7 +510,9 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hyperparallelepiped<N> {
     ///     Cartesian::from([0.0, 8.0]),
     /// ]);
     ///
-    /// let mapped = source.map_point(Cartesian::from([1.0, 1.0]), &destination).unwrap();
+    /// let mapped = source
+    ///     .map_point(Cartesian::from([1.0, 1.0]), &destination)
+    ///     .unwrap();
     /// assert_relative_eq!(mapped[0], 2.0);
     /// assert_relative_eq!(mapped[1], 2.0);
     /// ```
@@ -561,8 +557,8 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hyperparallelepiped<N> {
 
 #[cfg(test)]
 mod tests {
-    use approxim::assert_relative_eq;
     use super::*;
+    use approxim::assert_relative_eq;
     use hoomd_utility::valid::PositiveReal;
 
     fn ortho_box_2d(lx: f64, ly: f64) -> Hyperparallelepiped<2> {
