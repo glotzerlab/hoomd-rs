@@ -430,7 +430,7 @@ pub trait NetTorque {
 /// [`RotationalMotionTypes`] sets which structs store the moment of inertia
 /// and angular momentum for a given `Rotation` representation.
 pub trait RotationalMotionTypes {
-    /// Type that stores the moment of inertia in the natural coordinate frame of the body's  local rotation.
+    /// Type that stores the moment of inertia in the natural coordinate frame of the body's local rotation.
     type MomentOfInertia;
     /// Type that stores the angular momentum.
     type AngularMomentum;
