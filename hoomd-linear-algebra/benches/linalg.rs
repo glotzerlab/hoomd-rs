@@ -11,7 +11,10 @@
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 
-use hoomd_linear_algebra::{Invertible, MatMul, matrix::Matrix};
+use hoomd_linear_algebra::{
+    Invertible, MatMul,
+    matrix::{Matrix, gram_schmidt::gram_schmidt},
+};
 
 fn main() {
     divan::main();
@@ -51,6 +54,16 @@ fn det_matn<const N: usize>(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_matrix::<N, N, _>(&mut rng))
         .bench_local_values(|a| black_box(a.determinant()));
+}
+
+#[divan::bench(consts = SQUARE_DIMENSIONS)]
+fn gram_schmidt_matn<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| create_random_matrix::<N, N, _>(&mut rng))
+        .bench_local_values(|a| black_box(gram_schmidt(&a)));
 }
 
 /// This benchmark is included as a reference implementation for comparison with ``SquareMatrix::<3, 3>::determinant``.
