@@ -236,12 +236,20 @@ impl<TT, TR> ConstantVolume<TT, TR> {
 /// This function is defined outside of [`ConstantVolume`] because it
 /// is also used by [`Langevin`](crate::method::Langevin).
 /// 
+/// The system's number of  degrees of freedom, which is used for integrating
+/// the translational thermostat, is tabulated differently by different methods,
+/// so it must be passed directly to this function (along with kinetic energy)
+/// by the calling method. Note that this is *not* the case for the second
+/// half step.
+/// 
 /// For details, see the documentation for
 /// [`ConstantVolume::integrate_translation_half_step_one_with_filter`].
 pub(crate) fn integrate_translation_half_step_one_with_filter<V, B, S, X, C, TT, M, F>(
     delta_t: f64,
     microstate: &mut Microstate<B, S, X, C>,
     translational_thermostat: &mut TT,
+    kinetic_energy: f64,
+    degrees_of_freedom: usize,
     macrostate: &M,
     should_integrate_body: F,
 )
@@ -260,23 +268,13 @@ where
     F: Fn(&Tagged<Body<B, S>>) -> bool,
 {
     let mut rng = microstate.counter().make_rng();
-    let (kinetic_energy, degrees_of_freedom) =
-        microstate.translational_kinetic_energy_with_filter(&should_integrate_body);
-
-    let conserved_degrees_of_freedom =
-        if degrees_of_freedom == V::n_dimensions() * microstate.bodies().len() {
-            V::n_dimensions()
-        } else {
-            0
-        };
-    *microstate.conserved_degrees_of_freedom_mut() = conserved_degrees_of_freedom;
 
     let rescaling_factor = translational_thermostat.integrate_half_step_one(
         &mut rng,
         macrostate,
         delta_t,
         kinetic_energy,
-        degrees_of_freedom - conserved_degrees_of_freedom,
+        degrees_of_freedom,
     );
 
     for body_index in 0..microstate.bodies().len() {
@@ -435,10 +433,23 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
+        let (kinetic_energy, degrees_of_freedom) =
+            microstate.translational_kinetic_energy_with_filter(&should_integrate_body);
+
+        let conserved_degrees_of_freedom =
+            if degrees_of_freedom == V::n_dimensions() * microstate.bodies().len() {
+                V::n_dimensions()
+            } else {
+                0
+            };
+        *microstate.conserved_degrees_of_freedom_mut() = conserved_degrees_of_freedom;
+
         integrate_translation_half_step_one_with_filter(
             self.delta_t,
             microstate,
             &mut self.translational_thermostat,
+            kinetic_energy,
+            degrees_of_freedom - conserved_degrees_of_freedom,
             macrostate,
             should_integrate_body,
         );
