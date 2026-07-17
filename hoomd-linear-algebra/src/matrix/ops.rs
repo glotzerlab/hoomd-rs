@@ -447,7 +447,7 @@ mod tests {
     ) {
         let mut a = Matrix { rows: a_rows };
         let b = Matrix { rows: b_rows };
-        let c = a.clone() + b.clone();
+        let c = a + b;
 
         a += b;
         assert_eq!(a, c);
@@ -475,7 +475,7 @@ mod tests {
     ) {
         let mut a = Matrix { rows: a_rows };
         let b = Matrix { rows: b_rows };
-        let c = a.clone() - b.clone();
+        let c = a - b;
 
         a -= b;
         assert_eq!(a, c);
@@ -498,7 +498,7 @@ mod tests {
         #[case] x: f64,
     ) {
         let mut a = Matrix { rows: a_rows };
-        let c = a.clone() * x;
+        let c = a * x;
 
         a *= x;
         assert_eq!(a, c);
@@ -522,7 +522,7 @@ mod tests {
         #[case] x: f64,
     ) {
         let a = Matrix { rows: a_rows };
-        assert_eq!(a.clone() * x, x * a);
+        assert_eq!(a * x, x * a);
     }
 
     #[test]

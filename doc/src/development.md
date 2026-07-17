@@ -62,9 +62,9 @@ This documentation is built with [mdBook] using the following plugins:
 [mdbook-katex]: https://github.com/lzanini/mdbook-katex
 
 > [!IMPORTANT]
-> Install the [mdbook-katek v0.10.0 alpha] for compatibility with [mdBook] 0.5.x.
+> Install the [mdbook-katek alpha] for compatibility with [mdBook] 0.5.x.
 
-[mdbook-katex v0.10.0 alpha]: https://github.com/lzanini/mdbook-katex/releases/tag/0.10.0-alpha-binaries
+[mdbook-katek alpha]: https://github.com/lzanini/mdbook-katex/releases/tag/0.10.0-alpha-binaries
 
 To preview the documentation locally:
 ```shell

@@ -430,13 +430,13 @@ impl<B, X, C> AppendMicrostate<B, Point<Hyperbolic<3>>, X, C> for HoomdGsdFile {
 
 #[cfg(test)]
 mod test {
-    use assert2::assert;
+    use approxim::assert_relative_eq;
     use std::f64::consts::PI;
     use tempfile::tempdir;
 
     use super::*;
-    use crate::Body;
-    use hoomd_geometry::shape::Rectangle;
+    use crate::{Body, boundary::Open};
+    use hoomd_geometry::shape::{EightEight, Rectangle};
     use hoomd_gsd::file_layer::{GsdFile, Mode};
 
     #[test]
@@ -463,7 +463,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -507,7 +507,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -521,6 +521,330 @@ mod test {
         let box_ = gsd_file.iter_scalars::<f32>(0, "configuration/box")?;
         itertools::assert_equal(box_, [12.0_f32, 18.0, 0.0, 0.0, 0.0, 0.0]);
 
+        Ok(())
+    }
+
+    #[test]
+    fn point_spherical_2d() -> anyhow::Result<()> {
+        let microstate = Microstate::builder()
+            .boundary(Open)
+            .bodies([
+                Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
+                    -1.0, 0.0, 0.0,
+                ]))),
+                Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
+                    0.0,
+                    f64::sqrt(0.5),
+                    f64::sqrt(0.5),
+                ]))),
+                Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
+                    -f64::sqrt(0.25),
+                    0.0,
+                    f64::sqrt(0.75),
+                ]))),
+            ])
+            .step(1234)
+            .try_build()?;
+
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
+        hoomd_gsd_file.append_microstate(&microstate)?;
+
+        drop(hoomd_gsd_file);
+
+        let gsd_file = GsdFile::open(path, Mode::Read)?;
+
+        assert_eq!(gsd_file.n_frames(), 1);
+
+        let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
+        itertools::assert_equal(step, [1234]);
+
+        let positions: Vec<[f32; 3]> = gsd_file
+            .iter_arrays::<f32, 3>(0, "particles/position")?
+            .collect();
+        assert_relative_eq!(positions[0][0], -1.0);
+        assert_relative_eq!(positions[0][1], 0.0);
+        assert_relative_eq!(positions[0][2], 0.0);
+        assert_relative_eq!(positions[1][0], 0.0);
+        assert_relative_eq!(positions[1][1], f32::sqrt(0.5));
+        assert_relative_eq!(positions[1][2], f32::sqrt(0.5));
+        assert_relative_eq!(positions[2][0], -f32::sqrt(0.25));
+        assert_relative_eq!(positions[2][1], 0.0);
+        assert_relative_eq!(positions[2][2], f32::sqrt(0.75));
+        Ok(())
+    }
+
+    #[test]
+    fn point_spherical_3d() -> anyhow::Result<()> {
+        let microstate = Microstate::builder()
+            .boundary(Open)
+            .bodies([
+                Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
+                    1.0, 0.0, 0.0, 0.0,
+                ]))),
+                Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
+                    f64::sqrt(1.0 / 3.0),
+                    -f64::sqrt(1.0 / 3.0),
+                    f64::sqrt(1.0 / 3.0),
+                    0.0,
+                ]))),
+                Body::point(Spherical::from_cartesian_coordinates(Cartesian::from([
+                    0.0,
+                    0.0,
+                    f64::sqrt(0.5),
+                    f64::sqrt(0.5),
+                ]))),
+            ])
+            .step(1234)
+            .try_build()?;
+
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
+        hoomd_gsd_file.append_microstate(&microstate)?;
+
+        drop(hoomd_gsd_file);
+
+        let gsd_file = GsdFile::open(path, Mode::Read)?;
+
+        assert_eq!(gsd_file.n_frames(), 1);
+
+        let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
+        itertools::assert_equal(step, [1234]);
+
+        let positions: Vec<[f32; 3]> = gsd_file
+            .iter_arrays::<f32, 3>(0, "particles/position")?
+            .collect();
+        assert_relative_eq!(positions[0][0], 1.0);
+        assert_relative_eq!(positions[0][1], 0.0);
+        assert_relative_eq!(positions[0][2], 0.0);
+        assert_relative_eq!(positions[1][0], f32::sqrt(1.0 / 3.0));
+        assert_relative_eq!(positions[1][1], -f32::sqrt(1.0 / 3.0));
+        assert_relative_eq!(positions[1][2], f32::sqrt(1.0 / 3.0));
+        assert_relative_eq!(positions[2][0], 0.0);
+        assert_relative_eq!(positions[2][1], 0.0);
+        assert_relative_eq!(positions[2][2], f32::sqrt(0.5) / (1.0 - f32::sqrt(0.5)));
+        Ok(())
+    }
+
+    #[test]
+    fn point_hyperbolic_2d_open() -> anyhow::Result<()> {
+        let microstate = Microstate::builder()
+            .boundary(Open)
+            .bodies([
+                Body::point(Hyperbolic::<3>::from_polar_coordinates(1.2, 0.0)),
+                Body::point(Hyperbolic::<3>::from_polar_coordinates(0.6, 1.5)),
+            ])
+            .step(1234)
+            .try_build()?;
+
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
+        hoomd_gsd_file.append_microstate(&microstate)?;
+
+        drop(hoomd_gsd_file);
+
+        let gsd_file = GsdFile::open(path, Mode::Read)?;
+
+        assert_eq!(gsd_file.n_frames(), 1);
+
+        let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
+        itertools::assert_equal(step, [1234]);
+
+        let positions: Vec<[f32; 3]> = gsd_file
+            .iter_arrays::<f32, 3>(0, "particles/position")?
+            .collect();
+        assert_relative_eq!(positions[0][0], (f32::sinh(1.2)) / (1.0 + f32::cosh(1.2)));
+        assert_relative_eq!(positions[0][1], 0.0);
+        assert_relative_eq!(
+            positions[1][0],
+            (f32::sinh(0.6) * f32::cos(1.5)) / (1.0 + f32::cosh(0.6))
+        );
+        assert_relative_eq!(
+            positions[1][1],
+            (f32::sinh(0.6) * f32::sin(1.5)) / (1.0 + f32::cosh(0.6))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn point_hyperbolic_2d_eighteight_periodic() -> anyhow::Result<()> {
+        let boundary = Periodic::new(0.6, EightEight {})?;
+        let microstate = Microstate::builder()
+            .boundary(boundary)
+            .bodies([
+                Body::point(Hyperbolic::<3>::from_polar_coordinates(0.2, 0.3)),
+                Body::point(Hyperbolic::<3>::from_polar_coordinates(0.6, 0.7)),
+            ])
+            .step(1234)
+            .try_build()?;
+
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
+        hoomd_gsd_file.append_microstate(&microstate)?;
+
+        drop(hoomd_gsd_file);
+
+        let gsd_file = GsdFile::open(path, Mode::Read)?;
+
+        assert_eq!(gsd_file.n_frames(), 1);
+
+        let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
+        itertools::assert_equal(step, [1234]);
+
+        let positions: Vec<[f32; 3]> = gsd_file
+            .iter_arrays::<f32, 3>(0, "particles/position")?
+            .collect();
+        assert_relative_eq!(
+            positions[0][0],
+            (f32::sinh(0.2) * f32::cos(0.3)) / (1.0 + f32::cosh(0.2))
+        );
+        assert_relative_eq!(
+            positions[0][1],
+            (f32::sinh(0.2) * f32::sin(0.3)) / (1.0 + f32::cosh(0.2))
+        );
+        assert_relative_eq!(
+            positions[1][0],
+            (f32::sinh(0.6) * f32::cos(0.7)) / (1.0 + f32::cosh(0.6))
+        );
+        assert_relative_eq!(
+            positions[1][1],
+            (f32::sinh(0.6) * f32::sin(0.7)) / (1.0 + f32::cosh(0.6))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn oriented_point_hyperbolic_2d_open() -> anyhow::Result<()> {
+        let microstate = Microstate::builder()
+            .boundary(Open)
+            .bodies([
+                Body {
+                    properties: OrientedHyperbolicPoint {
+                        position: Hyperbolic::<3>::from_polar_coordinates(0.5, 0.6),
+                        orientation: Angle::from(0.3),
+                    },
+                    sites: vec![OrientedHyperbolicPoint {
+                        position: Hyperbolic::<3>::default(),
+                        orientation: Angle::default(),
+                    }],
+                },
+                Body {
+                    properties: OrientedHyperbolicPoint {
+                        position: Hyperbolic::<3>::from_polar_coordinates(0.9, 0.3),
+                        orientation: Angle::from(1.2),
+                    },
+                    sites: vec![OrientedHyperbolicPoint {
+                        position: Hyperbolic::<3>::default(),
+                        orientation: Angle::default(),
+                    }],
+                },
+            ])
+            .step(1234)
+            .try_build()?;
+
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
+        hoomd_gsd_file.append_microstate(&microstate)?;
+
+        drop(hoomd_gsd_file);
+
+        let gsd_file = GsdFile::open(path, Mode::Read)?;
+
+        assert_eq!(gsd_file.n_frames(), 1);
+
+        let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
+        itertools::assert_equal(step, [1234]);
+
+        let positions: Vec<[f32; 3]> = gsd_file
+            .iter_arrays::<f32, 3>(0, "particles/position")?
+            .collect();
+        assert_relative_eq!(
+            positions[0][0],
+            (f32::sinh(0.5) * f32::cos(0.6)) / (1.0 + f32::cosh(0.5))
+        );
+        assert_relative_eq!(
+            positions[0][1],
+            (f32::sinh(0.5) * f32::sin(0.6)) / (1.0 + f32::cosh(0.5))
+        );
+        assert_relative_eq!(
+            positions[1][0],
+            (f32::sinh(0.9) * f32::cos(0.3)) / (1.0 + f32::cosh(0.9))
+        );
+        assert_relative_eq!(
+            positions[1][1],
+            (f32::sinh(0.9) * f32::sin(0.3)) / (1.0 + f32::cosh(0.9))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn oriented_point_hyperbolic_2d_periodic_eighteight() -> anyhow::Result<()> {
+        let boundary = Periodic::new(0.6, EightEight {})?;
+        let microstate = Microstate::builder()
+            .boundary(boundary)
+            .bodies([
+                Body {
+                    properties: OrientedHyperbolicPoint {
+                        position: Hyperbolic::<3>::from_polar_coordinates(0.5, 0.6),
+                        orientation: Angle::from(0.3),
+                    },
+                    sites: vec![OrientedHyperbolicPoint {
+                        position: Hyperbolic::<3>::default(),
+                        orientation: Angle::default(),
+                    }],
+                },
+                Body {
+                    properties: OrientedHyperbolicPoint {
+                        position: Hyperbolic::<3>::from_polar_coordinates(0.9, 0.3),
+                        orientation: Angle::from(1.2),
+                    },
+                    sites: vec![OrientedHyperbolicPoint {
+                        position: Hyperbolic::<3>::default(),
+                        orientation: Angle::default(),
+                    }],
+                },
+            ])
+            .step(1234)
+            .try_build()?;
+
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
+        hoomd_gsd_file.append_microstate(&microstate)?;
+
+        drop(hoomd_gsd_file);
+
+        let gsd_file = GsdFile::open(path, Mode::Read)?;
+
+        assert_eq!(gsd_file.n_frames(), 1);
+
+        let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
+        itertools::assert_equal(step, [1234]);
+
+        let positions: Vec<[f32; 3]> = gsd_file
+            .iter_arrays::<f32, 3>(0, "particles/position")?
+            .collect();
+        assert_relative_eq!(
+            positions[0][0],
+            (f32::sinh(0.5) * f32::cos(0.6)) / (1.0 + f32::cosh(0.5))
+        );
+        assert_relative_eq!(
+            positions[0][1],
+            (f32::sinh(0.5) * f32::sin(0.6)) / (1.0 + f32::cosh(0.5))
+        );
+        assert_relative_eq!(
+            positions[1][0],
+            (f32::sinh(0.9) * f32::cos(0.3)) / (1.0 + f32::cosh(0.9))
+        );
+        assert_relative_eq!(
+            positions[1][1],
+            (f32::sinh(0.9) * f32::sin(0.3)) / (1.0 + f32::cosh(0.9))
+        );
         Ok(())
     }
 
@@ -566,7 +890,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -574,11 +898,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 0.0], [-1.0, 2.0, 0.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;
@@ -635,7 +959,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -643,11 +967,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 0.0], [-1.0, 2.0, 0.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;
@@ -683,7 +1007,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -727,7 +1051,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -786,7 +1110,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -794,11 +1118,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 4.0], [-1.0, 2.0, -2.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;
@@ -855,7 +1179,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -863,11 +1187,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 4.0], [-1.0, 2.0, -2.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;

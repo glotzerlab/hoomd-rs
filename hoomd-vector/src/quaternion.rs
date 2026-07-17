@@ -165,6 +165,26 @@ pub struct Quaternion {
 }
 
 impl Quaternion {
+    /// Construct a pure quaternion: $` (0, \vec{v}) `$
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, Quaternion};
+    ///
+    /// let q = Quaternion::pure(Cartesian::from([1.0, -2.0, 4.0]));
+    ///
+    /// assert_eq!(q.scalar, 0.0);
+    /// assert_eq!(q.vector, [1.0, -2.0, 4.0].into());
+    /// ```
+    #[inline]
+    pub fn pure(vector: Cartesian<3>) -> Self {
+        Self {
+            scalar: 0.0,
+            vector,
+        }
+    }
+
     /// The norm of the quaternion, squared.
     /// ```math
     /// |\mathbf{q}|^2
@@ -832,8 +852,8 @@ mod tests {
         #[test]
         fn from_array() {
             let q = Quaternion::from([2.0, -3.0, 4.0, 7.0]);
-            assert!(q.scalar == 2.0);
-            assert!(q.vector == [-3.0, 4.0, 7.0].into());
+            assert_eq!(q.scalar, 2.0);
+            assert_eq!(q.vector, [-3.0, 4.0, 7.0].into());
         }
 
         #[test]
@@ -930,13 +950,13 @@ mod tests {
         #[test]
         fn default() {
             let a = Versor::default();
-            assert!(a.get() == &[1.0, 0.0, 0.0, 0.0].into());
+            assert_eq!(a.get(), &[1.0, 0.0, 0.0, 0.0].into());
         }
 
         #[test]
         fn identity() {
             let a = Versor::identity();
-            assert!(a.get() == &[1.0, 0.0, 0.0, 0.0].into());
+            assert_eq!(a.get(), &[1.0, 0.0, 0.0, 0.0].into());
         }
 
         #[rstest(

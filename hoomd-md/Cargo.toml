@@ -1,0 +1,38 @@
+[package]
+name = "hoomd-md"
+categories.workspace = true
+description = "Perform molecular dynamics simulations on systems of bodies in hoomd-rs."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
+
+[lints]
+workspace = true
+
+[dependencies]
+rand.workspace = true
+rand_distr.workspace = true
+rayon.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+
+hoomd-spatial.workspace = true
+hoomd-linear-algebra.workspace = true
+hoomd-interaction.workspace = true
+hoomd-microstate.workspace = true
+hoomd-utility.workspace = true
+hoomd-vector.workspace = true
+hoomd-simulation.workspace = true
+
+[dev-dependencies]
+anyhow.workspace = true
+approxim.workspace = true
+assert2.workspace = true
+rstest.workspace = true
