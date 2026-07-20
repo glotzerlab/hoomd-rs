@@ -49,6 +49,8 @@ use crate::{method::{Gamma, GammaR}, thermostat::NoThermostat};
 /// 
 /// [fluctuation-dissipation theorem]: https://en.wikipedia.org/wiki/Fluctuation%E2%80%93dissipation_theorem
 /// 
+/// To create a `Langevin`, use [`Langevin::builder`].
+/// 
 /// TODO: example
 pub struct Langevin<const N: usize, B, TT, TR = TT, G = f64, GR = [f64; N]>
 where
@@ -100,25 +102,25 @@ where
         &mut self.rotational_thermostat
     }
 
-    /// Access the rotational thermostat.
+    /// Access the translational drag coefficient.
     #[inline]
     pub fn gamma(&self) -> &G {
         &self.gamma
     }
 
-    /// Access the rotational thermostat (mutable).
+    /// Access the translational drag coefficient (mutable).
     #[inline]
     pub fn gamma_mut(&mut self) -> &mut G {
         &mut self.gamma
     }
 
-    /// Access the rotational thermostat.
+    /// Access the rotational drag coefficients.
     #[inline]
     pub fn gamma_r(&self) -> &GR {
         &self.gamma_r
     }
 
-    /// Access the rotational thermostat (mutable).
+    /// Access the rotational drag coefficients (mutable).
     #[inline]
     pub fn gamma_r_mut(&mut self) -> &mut GR {
         &mut self.gamma_r
