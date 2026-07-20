@@ -52,13 +52,20 @@ use crate::{method::{Gamma, GammaR}, thermostat::NoThermostat};
 /// To create a `Langevin`, use [`Langevin::builder`].
 /// 
 /// TODO: example
-pub struct Langevin<const N: usize, B, TT, TR = TT, G = f64, GR = [f64; N]>
+pub struct Langevin<const N: usize, B, G, GR, TT, TR = TT>
 where
-    G: Gamma<BodyProperties = B>,
-    GR: GammaR<N, BodyProperties = B>,
+    B: NetForce + NetTorque + Momentum + AngularMomentum,
+    G: Gamma<B>,
+    GR: GammaR<B>,
 {
     /// The time step size.
     pub delta_t: f64,
+
+    /// Translational drag coefficient.
+    pub gamma: G,
+
+    /// Rotational drag coefficients.
+    pub gamma_r: GR,
 
     /// Translational thermostat.
     pub translational_thermostat: TT,
@@ -66,14 +73,11 @@ where
     /// Rotational thermostat.
     pub rotational_thermostat: TR,
 
-    /// Translational drag coefficient.
-    pub gamma: G,
-
-    /// Rotational drag coefficients.
-    pub gamma_r: GR,
+    /// Mark the type of the body properties from which to determine gamma and gamma_r.
+    marker: PhantomData<B>,
 }
 
-impl<const N: usize, B, TT, TR, G, GR> Langevin<N, B, TT, TR, G, GR>
+impl<const N: usize, B, G, GR, TT, TR> Langevin<N, B, G, GR, TT, TR>
 where
     G: Gamma<BodyProperties = B>,
     GR: GammaR<N, BodyProperties = B>,
@@ -130,9 +134,15 @@ where
 /// Builder that constructs [`Langevin`].
 ///
 /// Call [`Langevin::builder`] to start building a new [`Langevin`].
-pub struct LangevinBuilder<const N: usize, B, TT, TR = TT, G: Gamma<BodyProperties = B> = f64, GR: GammaR<N, BodyProperties = B> = [f64; N]> {
+pub struct LangevinBuilder<const N: usize, B, G, GR, TT, TR = TT>
     /// The time step size.
     delta_t: f64,
+
+    /// Translational drag coefficient.
+    gamma: G,
+
+    /// Rotational drag coefficients.
+    gamma_r: GR,
 
     /// Translational thermostat.
     translational_thermostat: TT,
@@ -140,15 +150,13 @@ pub struct LangevinBuilder<const N: usize, B, TT, TR = TT, G: Gamma<BodyProperti
     /// Rotational thermostat.
     rotational_thermostat: TR,
 
-    /// Translational drag coefficient.
-    gamma: G,
+    /// Mark the type of the body properties from which to determine gamma and gamma_r.
+    marker: PhantomData<B>,
 
-    /// Rotational drag coefficients.
-    gamma_r: GR,
 }
 
 
-impl<const N: usize, B, TT, TR, G, GR> LangevinBuilder<N, B, TT, TR, G, GR>
+impl<const N: usize, B, G, GR, TT, TR,> LangevinBuilder<N, B, G, GR, TT, TR,>
 where
     G: Gamma<BodyProperties = B>,
     GR: GammaR<N, BodyProperties = B>,
@@ -169,13 +177,14 @@ where
     pub fn translational_thermostat<T>(
         self,
         translational_thermostat: T,
-    ) -> LangevinBuilder<N, B, T, TR, G, GR> {
+    ) -> LangevinBuilder<N, B, G, GR, T, TR> {
         LangevinBuilder {
             delta_t: self.delta_t,
+            gamma: self.gamma,
+            gamma_r: self.gamma_r,
             translational_thermostat,
             rotational_thermostat: self.rotational_thermostat,
-            gamma: self.gamma,
-            gamma_r: self.gamma_r
+            marker: PhantomData,
         }
     }
 
@@ -195,13 +204,14 @@ where
     pub fn rotational_thermostat<T>(
         self,
         rotational_thermostat: T,
-    ) -> LangevinBuilder<N, B, TT, T, G, GR> {
+    ) -> LangevinBuilder<N, B, G, GR, TT, T> {
         LangevinBuilder {
             delta_t: self.delta_t,
+            gamma: self.gamma,
+            gamma_r: self.gamma_r,
             translational_thermostat: self.translational_thermostat,
             rotational_thermostat,
-            gamma: self.gamma,
-            gamma_r: self.gamma_r
+            marker: PhantomData,
         }
     }
 
@@ -224,13 +234,14 @@ where
     pub fn thermostat<T: Clone>(
         self,
         thermostat: T
-    ) -> LangevinBuilder<N, B, T, T, G, GR> {
+    ) -> LangevinBuilder<N, B, G, GR, T, T> {
         LangevinBuilder {
             delta_t: self.delta_t,
+            gamma: self.gamma,
+            gamma_r: self.gamma_r,
             translational_thermostat: thermostat.clone(),
             rotational_thermostat: thermostat,
-            gamma: self.gamma,
-            gamma_r: self.gamma_r
+            marker: PhantomData,
         }
     }
 
@@ -250,13 +261,14 @@ where
     pub fn gamma<T: Gamma<B>>(
         self,
         gamma: T
-    ) -> LangevinBuilder<N, B, TT, TR, T, GR> {
+    ) -> LangevinBuilder<N, B, T, GR, TT, TR> {
         LangevinBuilder {
             delta_t: self.delta_t,
+            gamma,
+            gamma_r: self.gamma_r,
             translational_thermostat: self.translational_thermostat,
             rotational_thermostat: self.rotational_thermostat,
-            gamma,
-            gamma_r: self.gamma_r
+            marker: PhantomData,
         }
     }
 
@@ -273,16 +285,17 @@ where
     ///     .build();
     /// ```
     #[inline]
-    pub fn gamma_r<T: GammaR<N, B>>(
+    pub fn gamma_r<T: GammaR<B>>(
         self,
         gamma_r: T
-    ) -> LangevinBuilder<N, B, TT, TR, G, T> {
+    ) -> LangevinBuilder<N, B, G, T, TT, TR> {
         LangevinBuilder {
             delta_t: self.delta_t,
+            gamma: self.gamma,
+            gamma_r,
             translational_thermostat: self.translational_thermostat,
             rotational_thermostat: self.rotational_thermostat,
-            gamma: self.gamma,
-            gamma_r
+            marker: PhantomData,
         }
     }
 
@@ -297,13 +310,14 @@ where
     /// let langevin = Langevin::builder(delta_t).build();
     /// ```
     #[inline]
-    pub fn build(self) -> Langevin<N, B, TT, TR, G, GR> {
+    pub fn build(self) -> Langevin<N, B, G, GR, TT, TR> {
         Langevin {
             delta_t: self.delta_t,
+            gamma: self.gamma,
+            gamma_r: self.gamma_r,
             translational_thermostat: self.translational_thermostat,
             rotational_thermostat: self.rotational_thermostat,
-            gamma: self.gamma,
-            gamma_r: self.gamma_r
+            marker: PhantomData,
         }
     }
 }
