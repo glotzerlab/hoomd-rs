@@ -7,7 +7,7 @@ mod constant_volume;
 pub use constant_volume::{ConstantVolume, ConstantVolumeBuilder};
 
 mod langevin;
-use hoomd_microstate::property::NetForce;
+use hoomd_microstate::property::{AngularMomentum, Momentum};
 use hoomd_vector::Cartesian;
 pub use langevin::{Langevin, LangevinBuilder};
 
@@ -16,11 +16,11 @@ pub use langevin::{Langevin, LangevinBuilder};
 /// `Gamma` describes a type that provides a float representing $` \gamma `$,
 /// the translational drag coefficient used in [`Langevin`] and [`Brownian`]
 /// integration. Implement this trait on a new type to assign different drag
-/// coefficients to different sites.
+/// coefficients to different bodies.
 /// 
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-pub trait Gamma<B> {
+pub trait Gamma<B: Momentum> {
     /// Access the value for a site.
     fn value(&self, body_properties: &B) -> f64;
 
@@ -28,28 +28,7 @@ pub trait Gamma<B> {
     fn value_mut(&mut self, body_properties: &B) -> &mut f64;
 }
 
-/// The rotational drag coefficients.
-/// 
-/// `GammaR` describes a type that provides an array of N floats representing
-/// $` \gamma_R `$, the rotational drag coefficients for the rotational degrees
-/// of freedom used in [`Langevin`] and [`Brownian`] integration. Implement this
-/// trait on a new type to assign different sets of drag coefficients to
-/// different sites.
-/// The generic type names are:
-/// * `N`: The number of dimensions. (TODO: revise)
-/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-pub trait GammaR<B> {
-    /// gamma_r vector type.
-    type GammaR;
-
-    /// Access the value for a site
-    fn value(&self, body_properties: &B) -> &Self::GammaR;
-
-    /// Access the value for a site (mutable).
-    fn value_mut(&mut self, body_properties: &B) -> &mut Self::GammaR;
-}
-
-impl<B> Gamma<B> for f64 {    
+impl<B: Momentum> Gamma<B> for f64 {    
     fn value(&self, _: &B) -> f64 {
         *self
     }
@@ -59,14 +38,46 @@ impl<B> Gamma<B> for f64 {
     }
 }
 
-impl<const N: usize, B> GammaR<B> for Cartesian<N> {
-    type GammaR = Cartesian<N>;
+/// The rotational drag coefficients.
+/// 
+/// `GammaR` describes a type that provides an array of N floats representing
+/// $` \gamma_R `$, the rotational drag coefficients for the rotational degrees
+/// of freedom used in [`Langevin`] and [`Brownian`] integration. Implement this
+/// trait on a new type to assign different sets of drag coefficients to
+/// different bodies.
+/// The generic type names are:
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+pub trait GammaR<B: AngularMomentum> {
+    /// The type containing the rotational drag coefficient(s).
+    type GammaR;
 
-    fn value(&self, _: &B) -> &Self::GammaR {
+    /// Access the value for a site
+    fn value(&self, body_properties: &B) -> &Self::GammaR;
+
+    /// Access the value for a site (mutable).
+    fn value_mut(&mut self, body_properties: &B) -> &mut Self::GammaR;
+}
+
+impl<B: AngularMomentum<AngularMomentum = f64>> GammaR<B> for f64 {
+    type GammaR = f64;
+
+    fn value(&self, _: &B) -> &f64 {
         self
     }
     
-    fn value_mut(&mut self, _: &B) -> &mut Self::GammaR {
+    fn value_mut(&mut self, _: &B) -> &mut f64 {
+        self
+    }
+}
+
+impl<B: AngularMomentum<AngularMomentum = Cartesian<3>>> GammaR<B> for [f64; 3] {
+    type GammaR = [f64; 3];
+
+    fn value(&self, _: &B) -> &[f64; 3] {
+        self
+    }
+    
+    fn value_mut(&mut self, _: &B) -> &mut [f64; 3] {
         self
     }
 }
