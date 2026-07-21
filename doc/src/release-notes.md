@@ -6,6 +6,8 @@
 
 *Changed:*
 
+* Build the documentation with mdBook 0.5.4 and KaTeX 0.18.1 (#376).
+
 *Deprecated:*
 
 *Removed:*
