@@ -245,17 +245,23 @@ where
 }
 
 /// Langevin torques in 3-dimensional cartesian space.
-impl<S, X, C, G, GR, TT, TR, M, R> DragAndRandomRotation<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C, M, R>
-    for Langevin<3, DynamicOrientedPoint<Cartesian<3>, Versor>, G, GR, TT, TR>
+impl<B, S, X, C, G, GR, TT, TR, M, R> DragAndRandomRotation<B, S, X, C, M, R>
+    for Langevin<3, B, G, GR, TT, TR>
 where
-    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
+    B: Transform<S>
+        + Clone
+        + Momentum
+        + NetForce
+        + AngularMomentum<AngularMomentum = Cartesian<3>>
+        + MomentOfInertia<MomentOfInertia = [f64; 3]>
+        + NetTorque<NetTorque = Cartesian<3>>,
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>>
+    C: Wrap<B>
         + Wrap<S>
         + GenerateGhosts<S>,
-    G: Gamma<DynamicOrientedPoint<Cartesian<3>, Versor>>,
-    GR: GammaR<DynamicOrientedPoint<Cartesian<3>, Versor>, GammaR = [f64; 3]>,
+    G: Gamma<B>,
+    GR: GammaR<B, GammaR = [f64; 3]>,
     TR: Thermostat<M>,
     M: Temperature,
     R: Rng + ?Sized,
@@ -267,10 +273,10 @@ where
     /// system temperature in accordance with the fluctuation-dissipation
     /// theorem. For details, see [above](crate::method::langevin).
     #[inline]
-    fn apply_drag_and_random_torques<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool>(
+    fn apply_drag_and_random_torques<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         rng: &mut R,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {       
@@ -315,17 +321,23 @@ where
 /// Langevin torques in 2-dimensional cartesian space.
 /// 
 /// TODO: discuss how we link the return type of GammaR with the system's vector-space.
-impl<S, X, C, G, GR, TT, TR, M, R> DragAndRandomRotation<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C, M, R>
-    for Langevin<2, DynamicOrientedPoint<Cartesian<2>, Angle>, G, GR, TT, TR>
+impl<B, S, X, C, G, GR, TT, TR, M, R> DragAndRandomRotation<B, S, X, C, M, R>
+    for Langevin<2, B, G, GR, TT, TR>
 where
-    DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>,
+    B: Transform<S>
+        + Clone
+        + Momentum
+        + NetForce
+        + AngularMomentum<AngularMomentum = f64>
+        + MomentOfInertia<MomentOfInertia = f64>
+        + NetTorque<NetTorque = f64>,
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>>
+    C: Wrap<B>
         + Wrap<S>
         + GenerateGhosts<S>,
-    G: Gamma<DynamicOrientedPoint<Cartesian<2>, Angle>>,
-    GR: GammaR<DynamicOrientedPoint<Cartesian<2>, Angle>, GammaR = f64>,
+    G: Gamma<B>,
+    GR: GammaR<B, GammaR = f64>,
     TR: Thermostat<M>,
     M: Temperature,
     R: Rng + ?Sized,
@@ -337,10 +349,10 @@ where
     /// system temperature in accordance with the fluctuation-dissipation
     /// theorem. For details, see [above](crate::method::langevin).
     #[inline]
-    fn apply_drag_and_random_torques<F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool>(
+    fn apply_drag_and_random_torques<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         rng: &mut R,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {       
