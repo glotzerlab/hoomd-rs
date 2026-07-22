@@ -7,11 +7,11 @@ use std::{marker::PhantomData};
 use hoomd_simulation::macrostate::Temperature;
 use rand::{Rng, distr::Distribution};
 
-use hoomd_microstate::{Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, NetVirial, Position}};
+use hoomd_microstate::{Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, CustomBodyCartesian2, CustomBodyCartesian3, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, NetVirial, Orientation, Position}};
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, Outer, Versor};
 use rand_distr::Uniform;
-use crate::{RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, UpdateNetForceAndVirial, UpdateNetForceVirialAndTorque, method::{Gamma, GammaR}, thermostat::NoThermostat};
+use crate::{RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, UpdateNetForceAndVirial, UpdateNetForceVirialAndTorque, method::{Gamma, GammaR}, thermostat::NoThermostat};
 
 /// Integrate bodies' degrees of freedom in the microstate according to
 /// Langevin equations of motion, modelling the NVE or NVT ensemble.
@@ -59,39 +59,18 @@ use crate::{RotationalMotion, Thermostat, TranslationalKineticEnergy, Translatio
 /// To create a `Langevin`, use [`Langevin::builder`].
 /// 
 /// TODO: example
-pub struct Langevin<const N: usize, B, G, GR, TT, TR = TT>
-where
-    B: NetForce + NetTorque + Momentum + AngularMomentum,
-    G: Gamma<B>,
-    GR: GammaR<B>,
-{
+pub struct Langevin<TT, TR = TT> {
     /// The time step size.
     pub delta_t: f64,
-
-    /// Translational drag coefficient.
-    pub gamma: G,
-
-    /// Rotational drag coefficients.
-    pub gamma_r: GR,
 
     /// Translational thermostat.
     pub translational_thermostat: TT,
 
     /// Rotational thermostat.
     pub rotational_thermostat: TR,
-
-    /// Mark the type of the body properties from which to determine gamma and gamma_r.
-    marker: PhantomData<B>,
 }
 
-impl<const N: usize, B, G, GR, TT, TR> Langevin<N, B, G, GR, TT, TR>
-where
-    B: NetForce + NetTorque + Momentum + AngularMomentum,
-    G: Gamma<B>,
-    GR: GammaR<B, GammaR = <B as AngularMomentum>::AngularMomentum>,
-    TT: Copy,
-    TR: Copy,
-{
+impl<TT, TR> Langevin<TT, TR> {
     /// Access the time step size.
     #[inline]
     pub fn delta_t(&self) -> &f64 {
@@ -127,76 +106,11 @@ where
     pub fn rotational_thermostat_mut(&mut self) -> &mut TR {
         &mut self.rotational_thermostat
     }
-
-    /// Access the translational drag coefficient.
-    #[inline]
-    pub fn gamma(&self) -> &G {
-        &self.gamma
-    }
-
-    /// Access the translational drag coefficient (mutable).
-    #[inline]
-    pub fn gamma_mut(&mut self) -> &mut G {
-        &mut self.gamma
-    }
-
-    /// Access the rotational drag coefficients.
-    #[inline]
-    pub fn gamma_r(&self) -> &GR {
-        &self.gamma_r
-    }
-
-    /// Access the rotational drag coefficients (mutable).
-    #[inline]
-    pub fn gamma_r_mut(&mut self) -> &mut GR {
-        &mut self.gamma_r
-    }
 }
 
-/// Dampen and add noise to forces and virials, on bodies in the microstate.
-trait DragAndRandomTranslation<B, S, X, C, M, R: Rng + ?Sized> {
-    fn apply_drag_and_random_forces_and_virials<F: Fn(&Tagged<Body<B, S>>) -> bool>(
-        &self,
-        rng: &mut R,
-        microstate: &mut Microstate<B, S, X, C>,
-        macrostate: &M,
-        should_integrate_body: F,
-    );
-}
-
-/// Dampen and add noise to torques on bodies in the microstate.
-trait DragAndRandomRotation<B, S, X, C, M, R: Rng + ?Sized> {
-    fn apply_drag_and_random_torques<F: Fn(&Tagged<Body<B, S>>) -> bool>(
-        &self,
-        rng: &mut R,
-        microstate: &mut Microstate<B, S, X, C>,
-        macrostate: &M,
-        should_integrate_body: F,
-    );
-}
 
 /// Langevin forces and virials in N-dimensional cartesian space.
-impl<const N: usize, B, S, X, C, G, GR, TT, TR, M, R> DragAndRandomTranslation<B, S, X, C, M, R>
-    for Langevin<N, B, G, GR, TT, TR>
-where
-    B: Position<Position = Cartesian<N>>
-        + Momentum<Momentum = Cartesian<N>>
-        + NetForce<NetForce = Cartesian<N>>
-        + NetVirial<NetVirial = <Cartesian<N> as Outer>::Tensor>
-        + NetTorque
-        + AngularMomentum
-        + Mass
-        + Transform<S>
-        + Clone,
-    S: Position<Position = Cartesian<N>> + Default,
-    X: PointUpdate<Cartesian<N>, SiteKey>,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    G: Gamma<B>,
-    GR: GammaR<B, GammaR = <B as AngularMomentum>::AngularMomentum>,
-    TT: Thermostat<M>,
-    M: Temperature,
-    R: Rng + ?Sized,
-{
+impl<TT, TR> Langevin<TT, TR> {
     /// Apply drag and random forces and virials to selected bodies in the microstate.
     /// 
     /// Drag forces are parameterized by [`Langevin.gamma`] and oppose the
@@ -210,13 +124,29 @@ where
     /// TODO: communicate that this is defined only for CARTESIAN and is not
     /// generic across VECTOR
     #[inline]
-    fn apply_drag_and_random_forces_and_virials<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn apply_drag_and_random_forces_and_virials<const N: usize, B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         rng: &mut R,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
-    ) {
+    )
+    where
+        B: Position<Position = Cartesian<N>>
+            + Momentum<Momentum = Cartesian<N>>
+            + NetForce<NetForce = Cartesian<N>>
+            + NetVirial<NetVirial = <Cartesian<N> as Outer>::Tensor>
+            + Mass
+            + Gamma
+            + Transform<S>
+            + Clone,
+        S: Position<Position = Cartesian<N>> + Default,
+        X: PointUpdate<Cartesian<N>, SiteKey>,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+        TT: Thermostat<M>,
+        M: Temperature,
+        R: Rng + ?Sized,
+    {
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
             if !should_integrate_body(body) {
@@ -225,7 +155,7 @@ where
             let mut body_properties = body.item.properties.clone();
 
             // Calculate the drag force
-            let g = self.gamma.value(&body_properties);
+            let g = body_properties.gamma();
             let v = *body_properties.momentum() / body_properties.mass();
             let f_drag = v * g * -1.0;
             
@@ -245,26 +175,7 @@ where
 }
 
 /// Langevin torques in 3-dimensional cartesian space.
-impl<B, S, X, C, G, GR, TT, TR, M, R> DragAndRandomRotation<B, S, X, C, M, R>
-    for Langevin<3, B, G, GR, TT, TR>
-where
-    B: Transform<S>
-        + Clone
-        + Momentum
-        + NetForce
-        + AngularMomentum<AngularMomentum = Cartesian<3>>
-        + MomentOfInertia<MomentOfInertia = [f64; 3]>
-        + NetTorque<NetTorque = Cartesian<3>>,
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<B>
-        + Wrap<S>
-        + GenerateGhosts<S>,
-    G: Gamma<B>,
-    GR: GammaR<B, GammaR = [f64; 3]>,
-    TR: Thermostat<M>,
-    M: Temperature,
-    R: Rng + ?Sized,
+impl<TT, TR> Langevin<TT, TR>
 {
     /// Apply drag and random torques to selected bodies in the microstate.
     /// 
@@ -273,13 +184,29 @@ where
     /// system temperature in accordance with the fluctuation-dissipation
     /// theorem. For details, see [above](crate::method::langevin).
     #[inline]
-    fn apply_drag_and_random_torques<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn apply_drag_and_random_torques_3d<B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         rng: &mut R,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
-    ) {       
+    )
+    where
+        B: Transform<S>
+            + Clone
+            + AngularMomentum<AngularMomentum = Cartesian<3>>
+            + MomentOfInertia<MomentOfInertia = [f64; 3]>
+            + NetTorque<NetTorque = Cartesian<3>>
+            + GammaR<GammaR = [f64; 3]>,
+        S: Position<Position = Cartesian<3>> + Default,
+        X: PointUpdate<Cartesian<3>, SiteKey>,
+        C: Wrap<B>
+            + Wrap<S>
+            + GenerateGhosts<S>,
+        TR: Thermostat<M>,
+        M: Temperature,
+        R: Rng + ?Sized,
+    {       
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
             if !should_integrate_body(body) {
@@ -288,7 +215,7 @@ where
             let mut body_properties = body.item.properties.clone();
 
             // Calculate the drag torque
-            let g_r = self.gamma_r.value(&body_properties);
+            let g_r = body_properties.gamma_r();
             let moi = body_properties.moment_of_inertia();
             let angular_momentum = body_properties.angular_momentum();
             let w = Cartesian::<3>::from(
@@ -321,27 +248,7 @@ where
 /// Langevin torques in 2-dimensional cartesian space.
 /// 
 /// TODO: discuss how we link the return type of GammaR with the system's vector-space.
-impl<B, S, X, C, G, GR, TT, TR, M, R> DragAndRandomRotation<B, S, X, C, M, R>
-    for Langevin<2, B, G, GR, TT, TR>
-where
-    B: Transform<S>
-        + Clone
-        + Momentum
-        + NetForce
-        + AngularMomentum<AngularMomentum = f64>
-        + MomentOfInertia<MomentOfInertia = f64>
-        + NetTorque<NetTorque = f64>,
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<B>
-        + Wrap<S>
-        + GenerateGhosts<S>,
-    G: Gamma<B>,
-    GR: GammaR<B, GammaR = f64>,
-    TR: Thermostat<M>,
-    M: Temperature,
-    R: Rng + ?Sized,
-{
+impl<TT, TR> Langevin<TT, TR> {
     /// Apply drag and random torques to selected bodies in the microstate.
     /// 
     /// Drag torques are parameterized by [`Langevin.gamma_r`]. Random torques
@@ -349,13 +256,29 @@ where
     /// system temperature in accordance with the fluctuation-dissipation
     /// theorem. For details, see [above](crate::method::langevin).
     #[inline]
-    fn apply_drag_and_random_torques<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    fn apply_drag_and_random_torques_2d<B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         rng: &mut R,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
-    ) {       
+    )
+    where
+        B: Transform<S>
+            + Clone
+            + AngularMomentum<AngularMomentum = f64>
+            + MomentOfInertia<MomentOfInertia = f64>
+            + NetTorque<NetTorque = f64>
+            + GammaR<GammaR = f64>,
+        S: Position<Position = Cartesian<2>> + Default,
+        X: PointUpdate<Cartesian<2>, SiteKey>,
+        C: Wrap<B>
+            + Wrap<S>
+            + GenerateGhosts<S>,
+        TR: Thermostat<M>,
+        M: Temperature,
+        R: Rng + ?Sized,
+    {       
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
             if !should_integrate_body(body) {
@@ -364,7 +287,7 @@ where
             let mut body_properties = body.item.properties.clone();
 
             // Calculate the drag torque
-            let g_r = self.gamma_r.value(&body_properties);
+            let g_r = body_properties.gamma_r();
             let moi = body_properties.moment_of_inertia();
             let angular_momentum = body_properties.angular_momentum();
             let w = angular_momentum / moi;
@@ -389,39 +312,18 @@ where
 /// Builder that constructs [`Langevin`].
 ///
 /// Call [`Langevin::builder`] to start building a new [`Langevin`].
-pub struct LangevinBuilder<const N: usize, B, G, GR, TT, TR = TT>
-where
-    B: NetForce + NetTorque + Momentum + AngularMomentum,
-    G: Gamma<B>,
-    GR: GammaR<B>,
-{
+pub struct LangevinBuilder<TT, TR = TT> {
     /// The time step size.
     delta_t: f64,
-
-    /// Translational drag coefficient.
-    gamma: G,
-
-    /// Rotational drag coefficients.
-    gamma_r: GR,
 
     /// Translational thermostat.
     translational_thermostat: TT,
 
     /// Rotational thermostat.
     rotational_thermostat: TR,
-
-    /// Mark the type of the body properties from which to determine gamma and gamma_r.
-    marker: PhantomData<B>,
-
 }
 
-
-impl<const N: usize, B, G, GR, TT, TR,> LangevinBuilder<N, B, G, GR, TT, TR,>
-where
-    B: NetForce + NetTorque + Momentum + AngularMomentum,
-    G: Gamma<B>,
-    GR: GammaR<B>,
-{
+impl<TT, TR,> LangevinBuilder<TT, TR> {
     /// Set the thermostat that applies to the translational degrees of freedom.
     ///
     /// # Example
@@ -438,14 +340,11 @@ where
     pub fn translational_thermostat<T>(
         self,
         translational_thermostat: T,
-    ) -> LangevinBuilder<N, B, G, GR, T, TR> {
+    ) -> LangevinBuilder<T, TR> {
         LangevinBuilder {
             delta_t: self.delta_t,
-            gamma: self.gamma,
-            gamma_r: self.gamma_r,
             translational_thermostat,
             rotational_thermostat: self.rotational_thermostat,
-            marker: PhantomData,
         }
     }
 
@@ -465,14 +364,11 @@ where
     pub fn rotational_thermostat<T>(
         self,
         rotational_thermostat: T,
-    ) -> LangevinBuilder<N, B, G, GR, TT, T> {
+    ) -> LangevinBuilder<TT, T> {
         LangevinBuilder {
             delta_t: self.delta_t,
-            gamma: self.gamma,
-            gamma_r: self.gamma_r,
             translational_thermostat: self.translational_thermostat,
             rotational_thermostat,
-            marker: PhantomData,
         }
     }
 
@@ -495,68 +391,11 @@ where
     pub fn thermostat<T: Clone>(
         self,
         thermostat: T
-    ) -> LangevinBuilder<N, B, G, GR, T, T> {
+    ) -> LangevinBuilder<T, T> {
         LangevinBuilder {
             delta_t: self.delta_t,
-            gamma: self.gamma,
-            gamma_r: self.gamma_r,
             translational_thermostat: thermostat.clone(),
             rotational_thermostat: thermostat,
-            marker: PhantomData,
-        }
-    }
-
-    /// Set the drag coefficient that applies to translational degrees of freedom.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_md::{method::Langevin, thermostat::Bussi};
-    ///
-    /// let delta_t = 0.001;
-    /// let langevin = Langevin::builder(delta_t)
-    ///     .gamma(2.0)
-    ///     .build();
-    /// ```
-    #[inline]
-    pub fn gamma<T: Gamma<B>>(
-        self,
-        gamma: T
-    ) -> LangevinBuilder<N, B, T, GR, TT, TR> {
-        LangevinBuilder {
-            delta_t: self.delta_t,
-            gamma,
-            gamma_r: self.gamma_r,
-            translational_thermostat: self.translational_thermostat,
-            rotational_thermostat: self.rotational_thermostat,
-            marker: PhantomData,
-        }
-    }
-
-    /// Set the drag coefficients that apply to the rotational degrees of freedom.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_md::{method::Langevin, thermostat::Bussi};
-    ///
-    /// let delta_t = 0.001;
-    /// let langevin = Langevin::builder(delta_t)
-    ///     .gamma_r([2.0, 2.0, 2.0])
-    ///     .build();
-    /// ```
-    #[inline]
-    pub fn gamma_r<T: GammaR<B>>(
-        self,
-        gamma_r: T
-    ) -> LangevinBuilder<N, B, G, T, TT, TR> {
-        LangevinBuilder {
-            delta_t: self.delta_t,
-            gamma: self.gamma,
-            gamma_r,
-            translational_thermostat: self.translational_thermostat,
-            rotational_thermostat: self.rotational_thermostat,
-            marker: PhantomData,
         }
     }
 
@@ -571,22 +410,16 @@ where
     /// let langevin = Langevin::builder(delta_t).build();
     /// ```
     #[inline]
-    pub fn build(self) -> Langevin<N, B, G, GR, TT, TR> {
+    pub fn build(self) -> Langevin<TT, TR> {
         Langevin {
             delta_t: self.delta_t,
-            gamma: self.gamma,
-            gamma_r: self.gamma_r,
             translational_thermostat: self.translational_thermostat,
             rotational_thermostat: self.rotational_thermostat,
-            marker: PhantomData,
         }
     }
 }
 
-impl<B> Langevin<2, B, f64, f64, NoThermostat, NoThermostat>
-where
-    B: NetForce + NetTorque + Momentum + AngularMomentum<AngularMomentum = f64>,
-{
+impl Langevin<NoThermostat, NoThermostat> {
     #[inline]
     /// Start building a new `Langevin`.
     ///
@@ -605,56 +438,16 @@ where
     /// [`NoThermostat`]: crate::thermostat::NoThermostat
     pub fn builder(
         delta_t: f64,
-    ) -> LangevinBuilder<2, B, f64, f64, NoThermostat, NoThermostat> {
+    ) -> LangevinBuilder<NoThermostat, NoThermostat> {
         LangevinBuilder {
             delta_t,
-            gamma: 1.0,
-            gamma_r: 1.0,
             translational_thermostat: NoThermostat,
             rotational_thermostat: NoThermostat,
-            marker: PhantomData,
         }
     }
 }
 
-impl<B> Langevin<3, B, f64, [f64; 3], NoThermostat, NoThermostat>
-where
-    B: NetForce
-        + NetTorque
-        + Momentum
-        + AngularMomentum<AngularMomentum = Cartesian<3>>,
-{
-    #[inline]
-    /// Start building a new `Langevin`.
-    ///
-    /// The default builder uses the given value for `delta_t` and [`NoThermostat`]
-    /// for both the translational and rotational thermostats. Call zero or more
-    /// of the [`LangevinBuilder`] methods to set the thermostats.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_md::method::Langevin;
-    ///
-    /// let delta_t = 0.001;
-    /// let constant_volume = Langevin::builder(delta_t).build();
-    /// ```
-    /// [`NoThermostat`]: crate::thermostat::NoThermostat
-    pub fn builder(
-        delta_t: f64,
-    ) -> LangevinBuilder<3, B, f64, [f64; 3], NoThermostat, NoThermostat> {
-        LangevinBuilder {
-            delta_t,
-            gamma: 1.0,
-            gamma_r: [1.0; 3],
-            translational_thermostat: NoThermostat,
-            rotational_thermostat: NoThermostat,
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<const N: usize, B, S, X, C, G, GR, TT, TR, M> TranslationalMotion<B, S, X, C, M> for Langevin<N, B, G, GR, TT, TR>
+impl<const N: usize, B, S, X, C, TT, TR, M> TranslationalMotion<B, S, X, C, M> for Langevin<TT, TR>
 where
     B: Position<Position = Cartesian<N>>
         + Momentum<Momentum = Cartesian<N>>
@@ -662,6 +455,7 @@ where
         + NetVirial<NetVirial = <Cartesian<N> as Outer>::Tensor>
         + NetTorque
         + AngularMomentum
+        + Gamma
         + Mass
         + Transform<S>
         + Clone,
@@ -670,9 +464,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     M: Temperature,
     TT: Thermostat<M>,
-    G: Gamma<B>,
-    GR: GammaR<B, GammaR = <B as AngularMomentum>::AngularMomentum>,
-    {
+{
     /// Integrate selected body positions forward a full step and their momenta forward a half step.
     ///
     /// This method is identical to [`ConstantVolume::integrate_translation_half_step_one_with_filter`].
@@ -688,7 +480,7 @@ where
         crate::method::constant_volume::integrate_translation_half_step_one_with_filter(
             self.delta_t,
             microstate,
-            &mut self.translational_thermostat,
+            &mut NoThermostat,
             kinetic_energy,
             degrees_of_freedom,
             macrostate,
@@ -719,7 +511,7 @@ where
         crate::method::constant_volume::integrate_translation_half_step_two_with_filter(
             self.delta_t,
             microstate,
-            &mut self.translational_thermostat,
+            &mut NoThermostat,
             macrostate,
             should_integrate_body
         );
@@ -727,35 +519,41 @@ where
 }
 
 /// Rotational motion in 3-dimensional cartesian space.
-impl<S, X, C, M, G, GR, TT, TR> RotationalMotion<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C, M>
-    for Langevin<3, DynamicOrientedPoint<Cartesian<3>, Versor>, G, GR, TT, TR>
+impl<T, S, X, C, M, TT, TR> RotationalMotion<CustomBodyCartesian3<T>, S, X, C, M>
+    for Langevin<TT, TR>
 where
-    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
+    CustomBodyCartesian3<T>: Copy
+        + Transform<S>
+        + Position<Position = Cartesian<3>>
+        + Orientation<Rotation = Versor>
+        + AngularMomentum<AngularMomentum = Cartesian<3>>
+        + MomentOfInertia<MomentOfInertia = [f64; 3]>
+        + NetTorque<NetTorque = Cartesian<3>>
+        + GammaR<GammaR = [f64; 3]>,
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>>
+    C: Wrap<CustomBodyCartesian3<T>>
         + Wrap<S>
         + GenerateGhosts<S>,
     TR: Thermostat<M>,
-    G: Gamma<DynamicOrientedPoint<Cartesian<3>, Versor>>,
-    GR: GammaR<DynamicOrientedPoint<Cartesian<3>, Versor>, GammaR = [f64; 3]>,
     M: Temperature,
+    Microstate<CustomBodyCartesian3<T>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian3<T>, S>,
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
     /// This method is identical to [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool
+        F: Fn(&Tagged<Body<CustomBodyCartesian3<T>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
+        microstate: &mut Microstate<CustomBodyCartesian3<T>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
         crate::method::constant_volume::integrate_rotation_half_step_one_with_filter_3d(
             self.delta_t,
             microstate,
-            &mut self.rotational_thermostat,
+            &mut NoThermostat,
             macrostate,
             should_integrate_body
         );
@@ -767,15 +565,15 @@ where
     /// Aside from the application of drag and random torques, this method is
     /// identical to [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool
+        F: Fn(&Tagged<Body<CustomBodyCartesian3<T>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
+        microstate: &mut Microstate<CustomBodyCartesian3<T>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
-        self.apply_drag_and_random_torques(
+        self.apply_drag_and_random_torques_3d(
             &mut rng,
             microstate,
             macrostate,
@@ -784,7 +582,7 @@ where
         crate::method::constant_volume::integrate_rotation_half_step_two_with_filter_3d(
             self.delta_t,
             microstate,
-            &mut self.rotational_thermostat,
+            &mut NoThermostat,
             macrostate,
             should_integrate_body
         );
@@ -792,35 +590,41 @@ where
 }
 
 /// Rotational motion in 2-dimensional cartesian space.
-impl<S, X, C, G, GR, TT, TR, M> RotationalMotion<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C, M>
-    for Langevin<2, DynamicOrientedPoint<Cartesian<2>, Angle>, G, GR, TT, TR>
+impl<T, S, X, C, TT, TR, M> RotationalMotion<CustomBodyCartesian2<T>, S, X, C, M>
+    for Langevin<TT, TR>
 where
-    DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>,
+    CustomBodyCartesian2<T>: Copy
+        + Transform<S>
+        + Position<Position = Cartesian<2>>
+        + Orientation<Rotation = Angle>
+        + AngularMomentum<AngularMomentum = f64>
+        + MomentOfInertia<MomentOfInertia = f64>
+        + NetTorque<NetTorque = f64>
+        + GammaR<GammaR = f64>,
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>>
+    C: Wrap<CustomBodyCartesian2<T>>
         + Wrap<S>
         + GenerateGhosts<S>,
-    G: Gamma<DynamicOrientedPoint<Cartesian<2>, Angle>>,
-    GR: GammaR<DynamicOrientedPoint<Cartesian<2>, Angle>, GammaR = f64>,
     TR: Thermostat<M>,
     M: Temperature,
+    Microstate<CustomBodyCartesian2<T>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian2<T>, S>,
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
     /// This method is identical to [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool
+        F: Fn(&Tagged<Body<CustomBodyCartesian2<T>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
+        microstate: &mut Microstate<CustomBodyCartesian2<T>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
         crate::method::constant_volume::integrate_rotation_half_step_one_with_filter_2d(
             self.delta_t,
             microstate,
-            &mut self.rotational_thermostat,
+            &mut NoThermostat,
             macrostate,
             should_integrate_body
         );
@@ -832,15 +636,15 @@ where
     /// Aside from the application of drag and random torques, this method is
     /// identical to [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool
+        F: Fn(&Tagged<Body<CustomBodyCartesian2<T>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
+        microstate: &mut Microstate<CustomBodyCartesian2<T>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
-        self.apply_drag_and_random_torques(
+        self.apply_drag_and_random_torques_2d(
             &mut rng,
             microstate,
             macrostate,
@@ -850,7 +654,7 @@ where
         crate::method::constant_volume::integrate_rotation_half_step_two_with_filter_2d(
             self.delta_t,
             microstate,
-            &mut self.rotational_thermostat,
+            &mut NoThermostat,
             macrostate,
             should_integrate_body
         );
@@ -859,7 +663,10 @@ where
 
 #[cfg(test)]
 mod tests {
+    use hoomd_microstate::property::Point;
     use super::*;
+    use strum::VariantNames;
+    use strum_macros::VariantNames;
 
     #[test]
     fn test_langevin() {
@@ -875,5 +682,46 @@ mod tests {
         assert_eq!(lan.delta_t, dt);
     }
 
-    fn test_langevin_integration_2d() {}
+    fn test_custom_gamma() {
+        // Ensure that creating a type-dependent gamma works in Langevin for 2D.
+        // type PositionVector = Cartesian<2>;
+        // type BodyProperties = DynamicOrientedPoint<PositionVector, Angle>;
+
+        // #[derive(Clone, Copy, Default, PartialEq, VariantNames)]
+        // enum BodyType {
+        //     #[default]
+        //     A,
+        //     B
+        // }
+        
+        // #[derive(Position, Orientation, Mass, PartialEq, VariantNames)]
+        // struct BodyProperties {
+        //     position: PositionVector,
+        //     site_type: SiteType,
+        // }
+
+
+
+        // impl Transform<SiteProperties> for BodyProperties {
+        //     fn transform(&self, site_properties: &SiteProperties) -> SiteProperties {
+        //         SiteProperties {
+        //             position: self.position + site_properties.position,
+        //             ..*site_properties
+        //         }
+        //     }
+        // }
+
+        // impl Gamma<BodyProperties> for SiteProperties {
+        //     fn value(&self, body_properties: &BodyProperties) -> f64 {
+        //         todo!()
+        //     }
+        
+        //     fn value_mut(&mut self, body_properties: &BodyProperties) -> &mut f64 {
+        //         todo!()
+        //     }
+        // }
+
+    }
+
+    fn test_custom_gamma_r() {}
 }
