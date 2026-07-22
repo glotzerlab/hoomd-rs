@@ -59,58 +59,13 @@ use crate::{RotationalKineticEnergy, RotationalMotion, Thermostat, Translational
 /// To create a `Langevin`, use [`Langevin::builder`].
 /// 
 /// TODO: example
-pub struct Langevin<TT, TR = TT> {
+pub struct Langevin {
     /// The time step size.
     pub delta_t: f64,
-
-    /// Translational thermostat.
-    pub translational_thermostat: TT,
-
-    /// Rotational thermostat.
-    pub rotational_thermostat: TR,
 }
-
-impl<TT, TR> Langevin<TT, TR> {
-    /// Access the time step size.
-    #[inline]
-    pub fn delta_t(&self) -> &f64 {
-        &self.delta_t
-    }
-
-    /// Access the time step size (mutable).
-    #[inline]
-    pub fn delta_t_mut(&mut self) -> &mut f64 {
-        &mut self.delta_t
-    }
-
-    /// Access the translational thermostat.
-    #[inline]
-    pub fn translational_thermostat(&self) -> &TT {
-        &self.translational_thermostat
-    }
-
-    /// Access the translational thermostat (mutable).
-    #[inline]
-    pub fn translational_thermostat_mut(&mut self) -> &mut TT {
-        &mut self.translational_thermostat
-    }
-
-    /// Access the rotational thermostat.
-    #[inline]
-    pub fn rotational_thermostat(&self) -> &TR {
-        &self.rotational_thermostat
-    }
-
-    /// Access the rotational thermostat (mutable).
-    #[inline]
-    pub fn rotational_thermostat_mut(&mut self) -> &mut TR {
-        &mut self.rotational_thermostat
-    }
-}
-
 
 /// Langevin forces and virials in N-dimensional cartesian space.
-impl<TT, TR> Langevin<TT, TR> {
+impl Langevin {
     /// Apply drag and random forces and virials to selected bodies in the microstate.
     /// 
     /// Drag forces are parameterized by [`Langevin.gamma`] and oppose the
@@ -143,7 +98,6 @@ impl<TT, TR> Langevin<TT, TR> {
         S: Position<Position = Cartesian<N>> + Default,
         X: PointUpdate<Cartesian<N>, SiteKey>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-        TT: Thermostat<M>,
         M: Temperature,
         R: Rng + ?Sized,
     {
@@ -175,7 +129,7 @@ impl<TT, TR> Langevin<TT, TR> {
 }
 
 /// Langevin torques in 3-dimensional cartesian space.
-impl<TT, TR> Langevin<TT, TR>
+impl Langevin
 {
     /// Apply drag and random torques to selected bodies in the microstate.
     /// 
@@ -203,7 +157,6 @@ impl<TT, TR> Langevin<TT, TR>
         C: Wrap<B>
             + Wrap<S>
             + GenerateGhosts<S>,
-        TR: Thermostat<M>,
         M: Temperature,
         R: Rng + ?Sized,
     {       
@@ -248,7 +201,7 @@ impl<TT, TR> Langevin<TT, TR>
 /// Langevin torques in 2-dimensional cartesian space.
 /// 
 /// TODO: discuss how we link the return type of GammaR with the system's vector-space.
-impl<TT, TR> Langevin<TT, TR> {
+impl Langevin {
     /// Apply drag and random torques to selected bodies in the microstate.
     /// 
     /// Drag torques are parameterized by [`Langevin.gamma_r`]. Random torques
@@ -275,7 +228,6 @@ impl<TT, TR> Langevin<TT, TR> {
         C: Wrap<B>
             + Wrap<S>
             + GenerateGhosts<S>,
-        TR: Thermostat<M>,
         M: Temperature,
         R: Rng + ?Sized,
     {       
@@ -309,145 +261,7 @@ impl<TT, TR> Langevin<TT, TR> {
     }
 }
 
-/// Builder that constructs [`Langevin`].
-///
-/// Call [`Langevin::builder`] to start building a new [`Langevin`].
-pub struct LangevinBuilder<TT, TR = TT> {
-    /// The time step size.
-    delta_t: f64,
-
-    /// Translational thermostat.
-    translational_thermostat: TT,
-
-    /// Rotational thermostat.
-    rotational_thermostat: TR,
-}
-
-impl<TT, TR,> LangevinBuilder<TT, TR> {
-    /// Set the thermostat that applies to the translational degrees of freedom.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_md::{method::Langevin, thermostat::Bussi};
-    ///
-    /// let delta_t = 0.001;
-    /// let constant_volume = Langevin::builder(delta_t)
-    ///     .translational_thermostat(Bussi::default())
-    ///     .build();
-    /// ```
-    #[inline]
-    pub fn translational_thermostat<T>(
-        self,
-        translational_thermostat: T,
-    ) -> LangevinBuilder<T, TR> {
-        LangevinBuilder {
-            delta_t: self.delta_t,
-            translational_thermostat,
-            rotational_thermostat: self.rotational_thermostat,
-        }
-    }
-
-    /// Set the thermostat that applies to the rotational degrees of freedom.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_md::{method::Langevin, thermostat::Bussi};
-    ///
-    /// let delta_t = 0.001;
-    /// let langevin = Langevin::builder(delta_t)
-    ///     .rotational_thermostat(Bussi::default())
-    ///     .build();
-    /// ```
-    #[inline]
-    pub fn rotational_thermostat<T>(
-        self,
-        rotational_thermostat: T,
-    ) -> LangevinBuilder<TT, T> {
-        LangevinBuilder {
-            delta_t: self.delta_t,
-            translational_thermostat: self.translational_thermostat,
-            rotational_thermostat,
-        }
-    }
-
-    /// Set the thermostat that applies to both translational and rotational degrees of freedom.
-    ///
-    /// The given thermostat is cloned. The translational and rotational thermostats evolve
-    /// independently.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_md::{method::Langevin, thermostat::Bussi};
-    ///
-    /// let delta_t = 0.001;
-    /// let langevin = Langevin::builder(delta_t)
-    ///     .thermostat(Bussi::default())
-    ///     .build();
-    /// ```
-    #[inline]
-    pub fn thermostat<T: Clone>(
-        self,
-        thermostat: T
-    ) -> LangevinBuilder<T, T> {
-        LangevinBuilder {
-            delta_t: self.delta_t,
-            translational_thermostat: thermostat.clone(),
-            rotational_thermostat: thermostat,
-        }
-    }
-
-    /// Complete building a new [`Langevin`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_md::method::Langevin;
-    ///
-    /// let delta_t = 0.001;
-    /// let langevin = Langevin::builder(delta_t).build();
-    /// ```
-    #[inline]
-    pub fn build(self) -> Langevin<TT, TR> {
-        Langevin {
-            delta_t: self.delta_t,
-            translational_thermostat: self.translational_thermostat,
-            rotational_thermostat: self.rotational_thermostat,
-        }
-    }
-}
-
-impl Langevin<NoThermostat, NoThermostat> {
-    #[inline]
-    /// Start building a new `Langevin`.
-    ///
-    /// The default builder uses the given value for `delta_t` and [`NoThermostat`]
-    /// for both the translational and rotational thermostats. Call zero or more
-    /// of the [`LangevinBuilder`] methods to set the thermostats.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_md::method::Langevin;
-    ///
-    /// let delta_t = 0.001;
-    /// let constant_volume = Langevin::builder(delta_t).build();
-    /// ```
-    /// [`NoThermostat`]: crate::thermostat::NoThermostat
-    pub fn builder(
-        delta_t: f64,
-    ) -> LangevinBuilder<NoThermostat, NoThermostat> {
-        LangevinBuilder {
-            delta_t,
-            translational_thermostat: NoThermostat,
-            rotational_thermostat: NoThermostat,
-        }
-    }
-}
-
-impl<const N: usize, B, S, X, C, TT, TR, M> TranslationalMotion<B, S, X, C, M> for Langevin<TT, TR>
+impl<const N: usize, B, S, X, C, M> TranslationalMotion<B, S, X, C, M> for Langevin
 where
     B: Position<Position = Cartesian<N>>
         + Momentum<Momentum = Cartesian<N>>
@@ -463,7 +277,6 @@ where
     X: PointUpdate<Cartesian<N>, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     M: Temperature,
-    TT: Thermostat<M>,
 {
     /// Integrate selected body positions forward a full step and their momenta forward a half step.
     ///
@@ -519,8 +332,8 @@ where
 }
 
 /// Rotational motion in 3-dimensional cartesian space.
-impl<T, S, X, C, M, TT, TR> RotationalMotion<CustomBodyCartesian3<T>, S, X, C, M>
-    for Langevin<TT, TR>
+impl<T, S, X, C, M> RotationalMotion<CustomBodyCartesian3<T>, S, X, C, M>
+    for Langevin
 where
     CustomBodyCartesian3<T>: Copy
         + Transform<S>
@@ -535,7 +348,6 @@ where
     C: Wrap<CustomBodyCartesian3<T>>
         + Wrap<S>
         + GenerateGhosts<S>,
-    TR: Thermostat<M>,
     M: Temperature,
     Microstate<CustomBodyCartesian3<T>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian3<T>, S>,
 {
@@ -590,8 +402,8 @@ where
 }
 
 /// Rotational motion in 2-dimensional cartesian space.
-impl<T, S, X, C, TT, TR, M> RotationalMotion<CustomBodyCartesian2<T>, S, X, C, M>
-    for Langevin<TT, TR>
+impl<T, S, X, C, M> RotationalMotion<CustomBodyCartesian2<T>, S, X, C, M>
+    for Langevin
 where
     CustomBodyCartesian2<T>: Copy
         + Transform<S>
@@ -606,7 +418,6 @@ where
     C: Wrap<CustomBodyCartesian2<T>>
         + Wrap<S>
         + GenerateGhosts<S>,
-    TR: Thermostat<M>,
     M: Temperature,
     Microstate<CustomBodyCartesian2<T>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian2<T>, S>,
 {
