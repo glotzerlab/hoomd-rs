@@ -177,6 +177,9 @@
 //! ```
 
 mod point;
+use std::ops::{Div, Mul};
+
+use hoomd_vector::{Outer, Wedge};
 pub use point::Point;
 
 mod oriented_point;
@@ -435,3 +438,269 @@ pub trait RotationalMotionTypes {
     /// Type that stores the angular momentum.
     type AngularMomentum;
 }
+
+
+pub struct CustomBodyCartesian2<T> (T);
+
+impl<V, T: Position<Position = V>> Position for CustomBodyCartesian2<T> {
+    type Position = V;
+
+    fn position(&self) -> &Self::Position {
+        self.0.position()
+    }
+
+    fn position_mut(&mut self) -> &mut Self::Position {
+        self.0.position_mut()
+    }
+}
+
+impl<R, T: Orientation<Rotation = R>> Orientation for CustomBodyCartesian2<T> {
+    type Rotation = R;
+
+    fn orientation(&self) -> &Self::Rotation {
+        self.0.orientation()
+    }
+
+    fn orientation_mut(&mut self) -> &mut Self::Rotation {
+        self.0.orientation_mut()
+    }
+}
+
+impl<V, T: Momentum<Momentum = V> + Mass> Momentum for CustomBodyCartesian2<T>
+where
+    V: Copy
+        + Mul<f64, Output = V>
+        + Div<f64, Output = V>
+        + Wedge
+        + Outer,
+{
+    type Momentum = V;
+
+    fn momentum(&self) -> &V {
+        self.0.momentum()
+    }
+
+    fn momentum_mut(&mut self) -> &mut V {
+        self.0.momentum_mut()
+    }
+
+    fn velocity(&self) -> Self::Momentum {
+        *self.0.momentum() / self.0.mass()
+    }
+
+    fn set_velocity(&mut self, velocity: Self::Momentum) {
+        *self.0.momentum_mut() = velocity * self.0.mass();
+    }
+}
+
+impl<T: Mass> Mass for CustomBodyCartesian2<T> {
+    fn mass(&self) -> f64 {
+        self.0.mass()
+    }
+}
+
+impl<V, T: NetForce<NetForce = V>> NetForce for CustomBodyCartesian2<T> {
+    type NetForce = V;
+
+    fn net_force(&self) -> &Self::NetForce {
+        self.0.net_force()
+    }
+
+    fn net_force_mut(&mut self) -> &mut Self::NetForce {
+        self.0.net_force_mut()
+    }
+}
+
+impl<V, T: NetVirial<NetVirial = V::Tensor>> NetVirial for CustomBodyCartesian2<T>
+where
+    V: Wedge + Outer
+{
+    type NetVirial = V::Tensor;
+
+    fn net_virial(&self) -> &Self::NetVirial {
+        self.0.net_virial()
+    }
+
+    fn net_virial_mut(&mut self) -> &mut Self::NetVirial {
+        self.0.net_virial_mut()
+    }
+}
+
+impl<R, T: MomentOfInertia<MomentOfInertia = R::MomentOfInertia>> MomentOfInertia for CustomBodyCartesian2<T>
+where
+    R: RotationalMotionTypes
+{
+    type MomentOfInertia = R::MomentOfInertia;
+
+    fn moment_of_inertia(&self) -> &Self::MomentOfInertia {
+        self.0.moment_of_inertia()
+    }
+
+    fn moment_of_inertia_mut(&mut self) -> &mut Self::MomentOfInertia {
+        self.0.moment_of_inertia_mut()
+    }
+}
+
+impl<R, T: AngularMomentum<AngularMomentum = R::AngularMomentum>> AngularMomentum for CustomBodyCartesian2<T>
+where
+    R: RotationalMotionTypes
+{
+    type AngularMomentum = R::AngularMomentum;
+
+    fn angular_momentum(&self) -> &Self::AngularMomentum {
+        self.0.angular_momentum()
+    }
+
+    fn angular_momentum_mut(&mut self) -> &mut Self::AngularMomentum {
+        self.0.angular_momentum_mut()
+    }
+}
+
+impl<V, T: NetTorque<NetTorque = V::Bivector>> NetTorque for CustomBodyCartesian2<T>
+where
+    V: Wedge + Outer
+{
+    type NetTorque = V::Bivector;
+
+    fn net_torque(&self) -> &Self::NetTorque {
+        self.0.net_torque()
+    }
+
+    fn net_torque_mut(&mut self) -> &mut Self::NetTorque {
+        self.0.net_torque_mut()
+    }
+}
+
+///
+pub struct CustomBodyCartesian3<T> (T);
+
+impl<P, T: Position<Position = P>> Position for CustomBodyCartesian3<T> {
+    type Position = P;
+
+    fn position(&self) -> &Self::Position {
+        self.0.position()
+    }
+
+    fn position_mut(&mut self) -> &mut Self::Position {
+        self.0.position_mut()
+    }
+}
+
+impl<R, T: Orientation<Rotation = R>> Orientation for CustomBodyCartesian3<T> {
+    type Rotation = R;
+
+    fn orientation(&self) -> &Self::Rotation {
+        self.0.orientation()
+    }
+
+    fn orientation_mut(&mut self) -> &mut Self::Rotation {
+        self.0.orientation_mut()
+    }
+}
+
+impl<V, T: Momentum<Momentum = V> + Mass> Momentum for CustomBodyCartesian3<T>
+where
+    V: Copy
+        + Mul<f64, Output = V>
+        + Div<f64, Output = V>
+        + Wedge
+        + Outer,
+{
+    type Momentum = V;
+
+    fn momentum(&self) -> &V {
+        self.0.momentum()
+    }
+
+    fn momentum_mut(&mut self) -> &mut V {
+        self.0.momentum_mut()
+    }
+
+    fn velocity(&self) -> Self::Momentum {
+        *self.0.momentum() / self.0.mass()
+    }
+
+    fn set_velocity(&mut self, velocity: Self::Momentum) {
+        *self.0.momentum_mut() = velocity * self.0.mass();
+    }
+}
+
+impl<T: Mass> Mass for CustomBodyCartesian3<T> {
+    fn mass(&self) -> f64 {
+        self.0.mass()
+    }
+}
+
+impl<V, T: NetForce<NetForce = V>> NetForce for CustomBodyCartesian3<T> {
+    type NetForce = V;
+
+    fn net_force(&self) -> &Self::NetForce {
+        self.0.net_force()
+    }
+
+    fn net_force_mut(&mut self) -> &mut Self::NetForce {
+        self.0.net_force_mut()
+    }
+}
+
+impl<V, T: NetVirial<NetVirial = V::Tensor>> NetVirial for CustomBodyCartesian3<T>
+where
+    V: Wedge + Outer
+{
+    type NetVirial = V::Tensor;
+
+    fn net_virial(&self) -> &Self::NetVirial {
+        self.0.net_virial()
+    }
+
+    fn net_virial_mut(&mut self) -> &mut Self::NetVirial {
+        self.0.net_virial_mut()
+    }
+}
+
+impl<R, T: MomentOfInertia<MomentOfInertia = R::MomentOfInertia>> MomentOfInertia for CustomBodyCartesian3<T>
+where
+    R: RotationalMotionTypes
+{
+    type MomentOfInertia = R::MomentOfInertia;
+
+    fn moment_of_inertia(&self) -> &Self::MomentOfInertia {
+        self.0.moment_of_inertia()
+    }
+
+    fn moment_of_inertia_mut(&mut self) -> &mut Self::MomentOfInertia {
+        self.0.moment_of_inertia_mut()
+    }
+}
+
+impl<R, T: AngularMomentum<AngularMomentum = R::AngularMomentum>> AngularMomentum for CustomBodyCartesian3<T>
+where
+    R: RotationalMotionTypes
+{
+    type AngularMomentum = R::AngularMomentum;
+
+    fn angular_momentum(&self) -> &Self::AngularMomentum {
+        self.0.angular_momentum()
+    }
+
+    fn angular_momentum_mut(&mut self) -> &mut Self::AngularMomentum {
+        self.0.angular_momentum_mut()
+    }
+}
+
+impl<V, T: NetTorque<NetTorque = V::Bivector>> NetTorque for CustomBodyCartesian3<T>
+where
+    V: Wedge + Outer
+{
+    type NetTorque = V::Bivector;
+
+    fn net_torque(&self) -> &Self::NetTorque {
+        self.0.net_torque()
+    }
+
+    fn net_torque_mut(&mut self) -> &mut Self::NetTorque {
+        self.0.net_torque_mut()
+    }
+}
+
+
