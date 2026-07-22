@@ -496,9 +496,14 @@ where
 /// Compute the net torque in the body frame.
 ///
 /// Also determine which of the three rotational degrees of freedom are active.
-fn body_net_torque_and_active_degrees_of_freedom(
-    body_properties: &DynamicOrientedPoint<Cartesian<3>, Versor>,
-) -> (Cartesian<3>, [bool; 3]) {
+fn body_net_torque_and_active_degrees_of_freedom<B>(
+    body_properties: &B,
+) -> (Cartesian<3>, [bool; 3])
+where
+    B: Orientation<Rotation = Versor>
+        + MomentOfInertia<MomentOfInertia = [f64; 3]>
+        + NetTorque<NetTorque = Cartesian<3>>
+{
     let q = body_properties.orientation();
     let moment_of_inertia = body_properties.moment_of_inertia();
 
@@ -528,20 +533,27 @@ fn body_net_torque_and_active_degrees_of_freedom(
 /// 
 /// For details, see the documentation for the 3D Cartesian implementation of
 /// [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
-pub(crate) fn integrate_rotation_half_step_one_with_filter_3d<S, X, C, TR, M, F> (
+pub(crate) fn integrate_rotation_half_step_one_with_filter_3d<B, S, X, C, TR, M, F> (
     delta_t: f64,
-    microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
+    microstate: &mut Microstate<B, S, X, C>,
     rotational_thermostat: &mut TR,
     macrostate: &M,
     should_integrate_body: F,
 )
 where
-    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
+    B: Copy
+        + Transform<S>
+        + Position<Position = Cartesian<3>>
+        + Orientation<Rotation = Versor>
+        + AngularMomentum<AngularMomentum = Cartesian<3>>
+        + MomentOfInertia<MomentOfInertia = [f64; 3]>
+        + NetTorque<NetTorque = Cartesian<3>>,
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     TR: Thermostat<M>,
-    F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool,
+    F: Fn(&Tagged<Body<B, S>>) -> bool,
+    Microstate<B, S, X, C>: RotationalKineticEnergy<B, S>,
 {
     let mut rng = microstate.counter().make_rng();
     let (kinetic_energy, degrees_of_freedom) =
@@ -658,20 +670,27 @@ where
 /// 
 /// For details, see the documentation for the 3D Cartesian implementation of
 /// [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
-pub(crate) fn integrate_rotation_half_step_two_with_filter_3d<S, X, C, TR, M, F> (
+pub(crate) fn integrate_rotation_half_step_two_with_filter_3d<B, S, X, C, TR, M, F> (
     delta_t: f64,
-    microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
+    microstate: &mut Microstate<B, S, X, C>,
     rotational_thermostat: &mut TR,
     macrostate: &M,
     should_integrate_body: F,
 )
 where
-    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
+    B: Copy
+        + Transform<S>
+        + Position<Position = Cartesian<3>>
+        + Orientation<Rotation = Versor>
+        + AngularMomentum<AngularMomentum = Cartesian<3>>
+        + MomentOfInertia<MomentOfInertia = [f64; 3]>
+        + NetTorque<NetTorque = Cartesian<3>>,
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     TR: Thermostat<M>,
-    F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool,
+    F: Fn(&Tagged<Body<B, S>>) -> bool,
+    Microstate<B, S, X, C>: RotationalKineticEnergy<B, S>,
 {
     let mut rng = microstate.counter().make_rng();
 
