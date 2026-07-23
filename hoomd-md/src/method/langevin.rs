@@ -331,6 +331,10 @@ where
     }
 }
 
+// TODO: check that we want to make users use the CustomBodyCartesian3 and 2 in
+// order to use Langevin (because currently GammaR is not implemented on
+// DynamicOrientedPoint).
+
 /// Rotational motion in 3-dimensional cartesian space.
 impl<T, S, X, C, M> RotationalMotion<CustomBodyCartesian3<T>, S, X, C, M>
     for Langevin
