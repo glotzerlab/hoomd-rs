@@ -335,21 +335,22 @@ where
 impl<T, S, X, C, M> RotationalMotion<CustomBodyCartesian3<T>, S, X, C, M>
     for Langevin
 where
-    CustomBodyCartesian3<T>: Copy
-        + Transform<S>
+    T: Transform<S>
         + Position<Position = Cartesian<3>>
         + Orientation<Rotation = Versor>
-        + AngularMomentum<AngularMomentum = Cartesian<3>>
-        + MomentOfInertia<MomentOfInertia = [f64; 3]>
-        + NetTorque<NetTorque = Cartesian<3>>
-        + GammaR<GammaR = [f64; 3]>,
+        + AngularMomentum<AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum>
+        + MomentOfInertia<MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia>
+        + NetTorque<NetTorque = <Cartesian<3> as Wedge>::Bivector>,
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
     C: Wrap<CustomBodyCartesian3<T>>
         + Wrap<S>
         + GenerateGhosts<S>,
     M: Temperature,
-    Microstate<CustomBodyCartesian3<T>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian3<T>, S>,
+    CustomBodyCartesian3<T>: Copy
+        + Transform<S>
+        + GammaR<GammaR = [f64; 3]>,
+    Microstate<CustomBodyCartesian3<T>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian3<T>, S>
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
@@ -405,20 +406,21 @@ where
 impl<T, S, X, C, M> RotationalMotion<CustomBodyCartesian2<T>, S, X, C, M>
     for Langevin
 where
-    CustomBodyCartesian2<T>: Copy
-        + Transform<S>
+    T: Transform<S>
         + Position<Position = Cartesian<2>>
         + Orientation<Rotation = Angle>
-        + AngularMomentum<AngularMomentum = f64>
-        + MomentOfInertia<MomentOfInertia = f64>
-        + NetTorque<NetTorque = f64>
-        + GammaR<GammaR = f64>,
+        + AngularMomentum<AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum>
+        + MomentOfInertia<MomentOfInertia = <Angle as RotationalMotionTypes>::MomentOfInertia>
+        + NetTorque<NetTorque = <Cartesian<2> as Wedge>::Bivector>,
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
     C: Wrap<CustomBodyCartesian2<T>>
         + Wrap<S>
         + GenerateGhosts<S>,
     M: Temperature,
+    CustomBodyCartesian2<T>: Copy
+        + Transform<S>
+        + GammaR<GammaR = f64>,
     Microstate<CustomBodyCartesian2<T>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian2<T>, S>,
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
