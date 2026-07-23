@@ -7,9 +7,7 @@ mod constant_volume;
 pub use constant_volume::{ConstantVolume, ConstantVolumeBuilder};
 
 mod langevin;
-use hoomd_microstate::property::{AngularMomentum, Momentum};
-use hoomd_vector::Cartesian;
-pub use langevin::{Langevin, LangevinBuilder};
+pub use langevin::Langevin;
 
 /// The translational drag coefficient.
 /// 
