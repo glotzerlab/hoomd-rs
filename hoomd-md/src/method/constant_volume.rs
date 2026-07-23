@@ -493,6 +493,9 @@ where
 /// Compute the net torque in the body frame.
 ///
 /// Also determine which of the three rotational degrees of freedom are active.
+/// 
+/// This function is only for use with bodies embedded in 3-dimensional
+/// cartesian space.
 fn body_net_torque_and_active_degrees_of_freedom<B>(
     body_properties: &B,
 ) -> (Cartesian<3>, [bool; 3])
