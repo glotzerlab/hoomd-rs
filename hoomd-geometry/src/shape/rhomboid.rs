@@ -20,86 +20,30 @@ use crate::{
 ///
 /// The shape is centered at the origin, with the centroid at $`(0,0)`$.
 ///
-/// # Construction
+/// # Example
 ///
-/// Rhomboids can be constructed using the `from_box_vector` method, which takes
-/// an array of 3 values: `[lx, ly, xy]`. They can also be created from a 2D
-/// parallelepiped using the `from_parallelogram` method, or directly from a tuple
-/// of `(PositiveReal, PositiveReal, f64)`.
-///
-/// # Examples
-///
-/// Basic construction and methods:
 /// ```
 /// use hoomd_geometry::{Volume, shape::Rhomboid};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let rhomboid = Rhomboid::from_box_vector([10.0, 12.0, 1.0]);
+/// let rhomboid = Rhomboid { extents: [10.0.try_into()?,
+///                           12.0.try_into()?],
+///                           xy: 1.0 };
+///
 /// assert_eq!(rhomboid.volume(), 120.0);
-///
-/// assert_eq!(rhomboid.lx().get(), 10.0);
-/// assert_eq!(rhomboid.ly().get(), 12.0);
-/// # Ok(())
-/// # }
-/// ```
-///
-/// Checking if a point is inside the rhomboid:
-/// ```
-/// use hoomd_geometry::{IsPointInside, shape::Rhomboid};
-///
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let rhomboid = Rhomboid::from_box_vector([6.0, 8.0, 0.5]);
-///
-/// assert!(rhomboid.is_point_inside(&[1.0, 1.0].into()));
-/// assert!(!rhomboid.is_point_inside(&[4.0, 1.0].into()));
-/// # Ok(())
-/// # }
-/// ```
-///
-/// Scaling the rhomboid:
-/// ```
-/// use hoomd_geometry::{Scale, shape::Rhomboid};
-///
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let rhomboid = Rhomboid::from_box_vector([10.0, 12.0, 1.0]);
-///
-/// let scaled = rhomboid.scale_length(2.0.try_into()?);
-/// assert_eq!(scaled.lx().get(), 20.0);
-/// assert_eq!(scaled.ly().get(), 24.0);
 /// # Ok(())
 /// # }
 /// ```
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Rhomboid {
     /// The extents [``L_x``, ``L_y``] of each edge along the Cartesian axes ``x`` and ``y``.
-    extents: [PositiveReal; 2],
+    pub extents: [PositiveReal; 2],
     /// The shear applied to the shape in the x direction relative to ``L_y``
-    xy: f64,
-}
-
-impl From<(PositiveReal, PositiveReal, f64)> for Rhomboid {
-    /// Construct a rhomboid from its extents and shear factor.
-    ///
-    /// The tuple is interpreted as `(lx, ly, xy)`.
-    #[inline]
-    fn from(value: (PositiveReal, PositiveReal, f64)) -> Self {
-        Rhomboid {
-            extents: [value.0, value.1],
-            xy: value.2,
-        }
-    }
+    pub xy: f64,
 }
 
 impl Rhomboid {
-    /// Construct a rhomboid from box dimensions.
-    ///
-    /// The dimensions array should contain [lx, ly, xy] where:
-    /// - lx, ly are the edge lengths (must be positive)
-    /// - xy is the shear factor
-    ///
-    /// # Panics
-    ///
-    /// Panics if any of lx, ly are not positive.
+    /// Construct a square.
     ///
     /// # Example
     ///
@@ -107,25 +51,51 @@ impl Rhomboid {
     /// use hoomd_geometry::shape::Rhomboid;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid::from_box_vector([10.0, 12.0, 1.0]);
-    /// assert_eq!(rhomboid.lx().get(), 10.0);
-    /// assert_eq!(rhomboid.xy(), 1.0);
+    /// let rhomboid = Rhomboid::square(10.0.try_into()?);
+    ///
+    /// assert_eq!(rhomboid.extents[0].get(), 10.0);
+    /// assert_eq!(rhomboid.extents[1].get(), 10.0);
+    /// assert_eq!(rhomboid.xy(), 0.0);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_box_vector(box_dimensions: [f64; 3]) -> Self {
+    pub fn square(side_length: PositiveReal) -> Self {
         Self {
             extents: [
-                box_dimensions[0]
-                    .try_into()
-                    .expect("Extent lx must be positive"),
-                box_dimensions[1]
-                    .try_into()
-                    .expect("Extent ly must be positive"),
+                side_length,
+                side_length,
             ],
-            xy: box_dimensions[2],
+            xy: 0.0,
+        }
+    }
+
+    /// Construct a rectangle.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rhomboid;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid::rectangle(10.0.try_into()?, 15.0.try_into()?);
+    ///
+    /// assert_eq!(rhomboid.extents[0].get(), 10.0);
+    /// assert_eq!(rhomboid.extents[1].get(), 15.0);
+    /// assert_eq!(rhomboid.xy(), 0.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn rectangle(x_side_length: PositiveReal, y_side_length: PositiveReal) -> Self {
+        Self {
+            extents: [
+                x_side_length,
+                y_side_length,
+            ],
+            xy: 0.0,
         }
     }
 
@@ -150,15 +120,18 @@ impl Rhomboid {
     ///     Cartesian::from([1.0, 0.0]),
     ///     Cartesian::from([0.5, 1.0]),
     /// ]);
+    ///
     /// let rhomboid = Rhomboid::from_parallelogram(&parallelepiped);
-    /// assert_relative_eq!(rhomboid.lx().get(), 1.0, epsilon = 1e-8);
-    /// assert_relative_eq!(rhomboid.xy(), 0.5, epsilon = 1e-8);
+    ///
+    /// assert_relative_eq!(rhomboid.lx().get(), 1.0);
+    /// assert_relative_eq!(rhomboid.xy(), 0.5);
     /// # Ok(())
     /// # }
     /// ```
+    ///
     /// # Panics
     ///
-    /// Panics if the computed box dimensions are not positive.
+    /// Panics when the hyperparallelepiped has 0 volume.
     #[inline]
     #[must_use]
     pub fn from_parallelogram(parallelepiped: &Hyperparallelepiped<2>) -> Self {
@@ -182,28 +155,28 @@ impl Rhomboid {
         }
     }
 
-    /// Returns the edge length in the x-direction (lx)
+    /// The extent in the x-direction (lx)
     #[inline]
     #[must_use]
     pub fn lx(&self) -> PositiveReal {
         self.extents[0]
     }
 
-    /// Returns the edge length in the y-direction (ly)
+    /// The extent in the y-direction (ly)
     #[inline]
     #[must_use]
     pub fn ly(&self) -> PositiveReal {
         self.extents[1]
     }
 
-    /// Returns the xy shear factor
+    /// The xy shear factor
     #[inline]
     #[must_use]
     pub fn xy(&self) -> f64 {
         self.xy
     }
 
-    /// Convert a Cartesian vector to fractional (lattice) coordinates.
+    /// Convert a Cartesian vector to fractional coordinates.
     ///
     /// Fractional coordinates express a point as coefficients of the edge
     /// vectors. If the edge vectors form the columns of matrix $`\mathbf{A}`$, then
@@ -212,16 +185,16 @@ impl Rhomboid {
     /// # Example
     ///
     /// ```
+    /// use approxim::assert_relative_eq;
     /// use hoomd_geometry::shape::Rhomboid;
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid::from_box_vector([4.0, 6.0, 0.0]);
+    /// let rhomboid = Rhomboid::rectangle(4.0.try_into()?, 6.0.try_into()?);
     ///
-    /// // A point at (1.0, 1.5) should have fractional coords (0.25, 0.25)
-    /// let frac = rhomboid.fractional(&Cartesian::from([1.0, 1.5]));
-    /// assert!((frac[0] - 0.25).abs() < 1e-10);
-    /// assert!((frac[1] - 0.25).abs() < 1e-10);
+    /// let fractional= rhomboid.fractional(&Cartesian::from([1.0, 1.5]));
+    /// assert_relative_eq!(fractional[0], 0.25);
+    /// assert_relative_eq!(fractional[1], 0.25);
     /// # Ok(())
     /// # }
     /// ```
@@ -255,7 +228,7 @@ impl Rhomboid {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid::from((2.0.try_into()?, 2.0.try_into()?, 0.0));
+    /// let rhomboid = Rhomboid::square(2.0.try_into()?);
     ///
     /// let frac = Cartesian::from([0.5, 0.0]);
     /// let pos = rhomboid.absolute(&frac);
@@ -276,7 +249,7 @@ impl Rhomboid {
         Cartesian::from([r1, r2])
     }
 
-    /// Compute the vertices of the Rhomboid assuming it is centered at the origin.
+    /// Compute the vertices of the Rhomboid.
     ///
     /// Returns the four vertices of the rhomboid in counter-clockwise order,
     /// starting from the bottom-left corner.
@@ -288,7 +261,8 @@ impl Rhomboid {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid::from_box_vector([2.0, 3.0, 0.0]);
+    /// let rhomboid = Rhomboid::rectangle(2.0.try_into()?, 3.0.try_into()?);
+    ///
     /// let vertices = rhomboid.vertices();
     ///
     /// assert_eq!(vertices[0], Cartesian::from([-1.0, -1.5]));
@@ -309,6 +283,23 @@ impl Rhomboid {
     ///
     /// The first edge vector is aligned with the x-axis and the second is
     /// sheared by the `xy` factor in the x direction.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rhomboid;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid { extents: [2.0.try_into()?, 3.0.try_into()?], xy: 0.5};
+    ///
+    /// let edge_vectors = rhomboid.edge_vectors();
+    ///
+    /// assert_eq!(edge_vectors[0], Cartesian::from([2.0, 0.0]));
+    /// assert_eq!(edge_vectors[1], Cartesian::from([1.5, 3.0]));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn edge_vectors(&self) -> [Cartesian<2>; 2] {
@@ -327,12 +318,15 @@ impl Rhomboid {
     /// # Example
     ///
     /// ```
+    /// use approxim::assert_relative_eq;
+    /// use std::f64::consts::PI;
     /// use hoomd_geometry::shape::Rhomboid;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid::from_box_vector([2.0, 3.0, 1.0]);
+    /// let rhomboid = Rhomboid { extents: [2.0.try_into()?, 3.0.try_into()?], xy: 1.0};
     /// let angle = rhomboid.box_angle();
-    /// assert!((angle - (1.0 / (1.0 + 1.0_f64).sqrt()).acos()).abs() < 1e-12);
+    ///
+    /// assert_relative_eq!(angle, PI/4.0);
     /// # Ok(())
     /// # }
     /// ```
@@ -344,23 +338,22 @@ impl Rhomboid {
 
     /// Get the perpendicular distances between parallel edges of the rhomboid.
     ///
-    /// For a rhomboid, the distance between parallel edges is not simply
-    /// the extent since it is sheared.
-    ///
     /// Returns [`d_x`, `d_y`] where `d_i` is the width in direction i.
     ///
     /// # Example
     ///
     /// ```
+    /// use approxim::assert_relative_eq;
+    /// use std::f64::consts::PI;
     /// use hoomd_geometry::shape::Rhomboid;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid::from_box_vector([2.0, 2.0, 0.0]);
+    /// let rhomboid = Rhomboid { extents: [2.0.try_into()?, 3.0.try_into()?], xy: 1.0};
+    ///
     /// let distances = rhomboid.nearest_plane_distance();
     ///
-    /// // For orthogonal rhomboid, distances are just extents
-    /// assert_eq!(distances[0].get(), 2.0);
-    /// assert_eq!(distances[1].get(), 2.0);
+    /// assert_relative_eq!(distances[0].get(), 2.0 * (PI/4.0).sin());
+    /// assert_eq!(distances[1].get(), 3.0);
     /// # Ok(())
     /// # }
     /// ```
@@ -388,7 +381,7 @@ impl Rhomboid {
     /// use hoomd_geometry::shape::Rhomboid;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomb = Rhomboid::from((1.0.try_into()?, 2.0.try_into()?, 1.5));
+    /// let rhomb = Rhomboid { extents: [1.0.try_into()?, 2.0.try_into()?], xy: 1.5 };
     ///
     /// let gsd_box = rhomb.to_gsd_box();
     /// assert_eq!(gsd_box, [1.0, 2.0, 0.0, 1.5, 0.0, 0.0]);
@@ -416,6 +409,21 @@ impl Volume for Rhomboid {
     /// ```math
     /// A = L_x \times L_y
     /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Volume, shape::Rhomboid};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid { extents: [10.0.try_into()?,
+    ///                           12.0.try_into()?],
+    ///                           xy: 1.0 };
+    ///
+    /// assert_eq!(rhomboid.volume(), 120.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn volume(&self) -> f64 {
         // When A is triangular, det(A) = det(diag(A))
@@ -440,11 +448,12 @@ impl Scale for Rhomboid {
     /// use hoomd_geometry::{Scale, shape::Rhomboid};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid::from_box_vector([5.0, 6.0, 1.5]);
+    /// let rhomboid = Rhomboid { extents: [5.0.try_into()?, 6.0.try_into()?], xy: 1.5 };
     ///
     /// let scaled_rhomboid = rhomboid.scale_length(0.5.try_into()?);
     ///
     /// assert_eq!(scaled_rhomboid.lx().get(), 2.5);
+    /// assert_eq!(scaled_rhomboid.ly().get(), 3.0);
     /// # Ok(())
     /// # }
     /// ```
@@ -472,11 +481,12 @@ impl Scale for Rhomboid {
     /// use hoomd_geometry::{Scale, shape::Rhomboid};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid::from_box_vector([5.0, 6.0, 1.5]);
+    /// let rhomboid = Rhomboid { extents: [5.0.try_into()?, 6.0.try_into()?], xy: 1.5 };
     ///
     /// let scaled_rhomboid = rhomboid.scale_volume(4.0.try_into()?);
     ///
     /// assert_eq!(scaled_rhomboid.lx().get(), 10.0);
+    /// assert_eq!(scaled_rhomboid.ly().get(), 12.0);
     /// # Ok(())
     /// # }
     /// ```
@@ -494,8 +504,19 @@ impl Scale for Rhomboid {
 impl IsPointInside<Cartesian<2>> for Rhomboid {
     /// Test if a point is inside the rhomboid.
     ///
-    /// Uses the transformed coordinate system where the rhomboid
-    /// becomes an axis-aligned rectangle.
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, shape::Rhomboid};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid { extents: [6.0.try_into()?, 8.0.try_into()?], xy: 0.5};
+    ///
+    /// assert!(rhomboid.is_point_inside(&[1.0, 1.0].into()));
+    /// assert!(!rhomboid.is_point_inside(&[4.0, 1.0].into()));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<2>) -> bool {
         let [x, y] = point.coordinates;
@@ -513,12 +534,14 @@ impl IsPointInside<Cartesian<2>> for Rhomboid {
 }
 
 impl SupportMapping<Cartesian<2>> for Rhomboid {
-    /// Calculate the point furthest from the center in a given direction. Mathematically,
-    /// we use that
+    /// Calculate the point furthest from the center in a given direction.
+    ///
+    /// Mathematically:
     /// ```math
     ///  \mathbf{A}^{-1} \vec{v_i} \cdot \mathbf{A}^T \vec{n} = \vec{v_i}^T (\mathbf{A}^{-T} \mathbf{A}^{T}) \vec{n} = \vec{v_i} \cdot \vec{n}.
     /// ```
-    /// The vertices of the scaled box ($`\mathbf{A}^{-1} \vec{v_i}`$) have components $`\pm 0.5`$, so we can determine the correct vertex using the sign of $`\mathbf{A}^{T}n`$.
+    /// The vertices of the scaled box ($`\mathbf{A}^{-1} \vec{v_i}`$) have components $`\pm 0.5`$,
+    /// so we can determine the correct vertex using the sign of $`\mathbf{A}^{T}n`$.
     #[inline]
     fn support_mapping(&self, n: &Cartesian<2>) -> Cartesian<2> {
         let d = Cartesian::from([
@@ -535,9 +558,23 @@ impl BoundingSphereRadius for Rhomboid {
     ///
     /// The bounding sphere is centered at the origin and encompasses
     /// all points of the rhomboid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{BoundingSphereRadius, shape::Rhomboid};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid { extents: [10.0.try_into()?,
+    ///                           15.0.try_into()?],
+    ///                           xy: 1.0 };
+    ///
+    /// assert_eq!(rhomboid.bounding_sphere_radius().get(), 14.577379737113251177185382193863957691303495837214929886125016862);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        // || maximal_extent || / 2.0 = { lx + ly * |xy|, ly } || / 2.0
         (0.5 * f64::sqrt(
             (self.lx().get() + self.ly().get() * self.xy().abs()).powi(2) + self.ly().get().powi(2),
         ))
@@ -562,7 +599,7 @@ impl Distribution<Cartesian<2>> for Rhomboid {
     /// use hoomd_geometry::{IsPointInside, shape::Rhomboid};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid::from_box_vector([6.0, 8.0, 0.5]);
+    /// let rhomboid = Rhomboid { extents: [6.0.try_into()?, 8.0.try_into()?], xy: 0.5};
     /// let mut rng = StdRng::seed_from_u64(1);
     ///
     /// let point = rhomboid.sample(&mut rng);
@@ -591,12 +628,11 @@ where
     RotationMatrix<2>: From<R>,
 {
     /// Test rhomboid intersections using the separating axis theorem.
-    ///
-    /// Rhomboids have two unique edge directions each, giving four potential
-    /// separating axes. All comparisons are scaled by 2 to avoid halving the
-    /// projection radii.
     #[inline]
     fn intersects_at(&self, other: &Rhomboid, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
+        // Rhomboids have two unique edge directions each, giving four potential
+        // separating axes. All comparisons are scaled by 2 to avoid halving the
+        // projection radii.
         let o_j = RotationMatrix::from(*o_ij);
         let [c, s] = [o_j.rows()[0][0], o_j.rows()[1][0]];
 
@@ -650,10 +686,6 @@ where
     RotationMatrix<2>: From<R>,
 {
     /// Test whether two rhomboids intersect in global coordinates.
-    ///
-    /// This first culls by bounding-sphere distance and then transforms the
-    /// second rhomboid into the local frame of the first before calling the
-    /// local intersection test.
     #[inline]
     fn intersects_at_global(
         &self,
@@ -680,6 +712,26 @@ impl MapPoint<Cartesian<2>> for Rhomboid {
     ///
     /// The point is first expressed in fractional coordinates relative to `self`
     /// and then transformed into the Cartesian coordinates of `other`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{MapPoint, shape::Rhomboid};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let source = Rhomboid::square(4.0.try_into()?);
+    /// let destination = Rhomboid::square(8.0.try_into()?);
+    ///
+    /// let mapped = source
+    ///     .map_point(Cartesian::from([1.0, 1.0]), &destination)
+    ///     .unwrap();
+    /// assert_relative_eq!(mapped[0], 2.0);
+    /// assert_relative_eq!(mapped[1], 2.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn map_point(&self, point: Cartesian<2>, other: &Self) -> Result<Cartesian<2>, crate::Error> {
         let fractional = self.fractional(&point);
@@ -721,18 +773,16 @@ mod tests {
         let lx: f64 = rng.random_range(0.1..10.0);
         let ly: f64 = rng.random_range(0.1..10.0);
         let xy: f64 = rng.random_range(-2.0..2.0);
-        (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into()
+        Rhomboid { extents: [lx.try_into().unwrap(), ly.try_into().unwrap()], xy }
     }
 
     /// Check that the support value (dot product with direction) matches the polygon.
     /// This avoids tie-breaking differences when multiple vertices maximize the dot product.
     fn check_support_value(lx: f64, ly: f64, xy: f64, n: [f64; 2]) {
-        let rhomboid: Rhomboid = (
-            lx.try_into().expect("lx > 0"),
-            ly.try_into().expect("ly > 0"),
+        let rhomboid = Rhomboid { extents: [lx.try_into().expect("lx > 0"),
+            ly.try_into().expect("ly > 0")],
             xy,
-        )
-            .into();
+        };
 
         let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
             .expect("rhomboid vertices form a polygon");
@@ -763,7 +813,7 @@ mod tests {
     #[apply(rhomboid_shapes)]
     fn support_mapping_random_directions(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
         let mut rng = StdRng::seed_from_u64(42);
-        let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
+        let rhomboid = Rhomboid { extents: [lx.try_into().unwrap(), ly.try_into().unwrap()], xy};
         let polygon =
             ConvexPolygon::with_vertices(rhomboid.vertices().to_vec()).expect("valid polygon");
 
@@ -779,7 +829,7 @@ mod tests {
 
     #[apply(rhomboid_shapes)]
     fn bounding_sphere_radius_matches_polygon(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
-        let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
+        let rhomboid = Rhomboid { extents: [lx.try_into().unwrap(), ly.try_into().unwrap()], xy };
         let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
             .expect("rhomboid vertices form a polygon");
 
@@ -835,8 +885,8 @@ mod tests {
 
     #[apply(square_displacements)]
     fn intersects_at_identical_squares(#[case] tx: f64, #[case] ty: f64, #[case] theta: f64) {
-        let a: Rhomboid = (2.0.try_into().unwrap(), 2.0.try_into().unwrap(), 0.0).into();
-        let b: Rhomboid = (2.0.try_into().unwrap(), 2.0.try_into().unwrap(), 0.0).into();
+        let a = Rhomboid { extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()], xy: 0.0};
+        let b = Rhomboid { extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()], xy: 0.0};
         check_sat_against_mesh(a, b, tx, ty, theta);
     }
 
@@ -854,8 +904,8 @@ mod tests {
 
     #[apply(mirror_shear_displacements)]
     fn intersects_at_mirror_sheared(#[case] tx: f64, #[case] ty: f64, #[case] theta: f64) {
-        let a: Rhomboid = (2.0.try_into().unwrap(), 2.0.try_into().unwrap(), 1.0).into();
-        let b: Rhomboid = (2.0.try_into().unwrap(), 2.0.try_into().unwrap(), -1.0).into();
+        let a = Rhomboid { extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()], xy: 1.0};
+        let b = Rhomboid { extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()], xy: -1.0};
         check_sat_against_mesh(a, b, tx, ty, theta);
     }
 
@@ -863,43 +913,43 @@ mod tests {
     fn intersects_at_mixed_shapes() {
         // Different shapes, various displacements and rotations.
         check_sat_against_mesh(
-            (1.0.try_into().unwrap(), 3.0.try_into().unwrap(), 1.5).into(),
-            (2.0.try_into().unwrap(), 1.0.try_into().unwrap(), -0.5).into(),
+            Rhomboid { extents: [1.0.try_into().unwrap(), 3.0.try_into().unwrap()],xy:  1.5 },
+            Rhomboid { extents: [2.0.try_into().unwrap(), 1.0.try_into().unwrap()], xy: -0.5 },
             1.0,
             0.5,
             0.0,
         );
         check_sat_against_mesh(
-            (1.0.try_into().unwrap(), 5.0.try_into().unwrap(), 2.0).into(),
-            (1.0.try_into().unwrap(), 5.0.try_into().unwrap(), 2.0).into(),
+            Rhomboid { extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()],xy:  2.0 },
+            Rhomboid { extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()],xy:  2.0 },
             1.0,
             0.0,
             0.0,
         );
         check_sat_against_mesh(
-            (1.0.try_into().unwrap(), 3.0.try_into().unwrap(), 1.5).into(),
-            (2.0.try_into().unwrap(), 1.0.try_into().unwrap(), -0.5).into(),
+            Rhomboid { extents: [1.0.try_into().unwrap(), 3.0.try_into().unwrap()],xy:  1.5 },
+            Rhomboid { extents: [2.0.try_into().unwrap(), 1.0.try_into().unwrap()], xy: -0.5 },
             0.5,
             0.5,
             PI / 6.0,
         );
         check_sat_against_mesh(
-            (1.0.try_into().unwrap(), 5.0.try_into().unwrap(), 2.0).into(),
-            (1.0.try_into().unwrap(), 5.0.try_into().unwrap(), -2.0).into(),
+            Rhomboid { extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()],xy:  2.0 },
+            Rhomboid { extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()], xy: -2.0 },
             0.5,
             0.0,
             PI / 2.0,
         );
         check_sat_against_mesh(
-            (3.0.try_into().unwrap(), 1.0.try_into().unwrap(), -1.0).into(),
-            (1.0.try_into().unwrap(), 2.0.try_into().unwrap(), 0.5).into(),
+            Rhomboid { extents: [3.0.try_into().unwrap(), 1.0.try_into().unwrap()], xy: -1.0 },
+            Rhomboid { extents: [1.0.try_into().unwrap(), 2.0.try_into().unwrap()],xy:  0.5 },
             1.5,
             0.3,
             PI / 5.0,
         );
         check_sat_against_mesh(
-            (2.0.try_into().unwrap(), 1.0.try_into().unwrap(), 0.8).into(),
-            (1.5.try_into().unwrap(), 2.5.try_into().unwrap(), -0.3).into(),
+            Rhomboid { extents: [2.0.try_into().unwrap(), 1.0.try_into().unwrap()],xy:  0.8 },
+            Rhomboid { extents: [1.5.try_into().unwrap(), 2.5.try_into().unwrap()], xy: -0.3 },
             0.0,
             1.0,
             PI / 8.0,
@@ -908,7 +958,7 @@ mod tests {
 
     #[test]
     fn scale_preserves_aspect_ratio_and_volume() {
-        let rhomboid: Rhomboid = (3.0.try_into().unwrap(), 2.0.try_into().unwrap(), 1.5).into();
+        let rhomboid = Rhomboid { extents: [3.0.try_into().unwrap(), 2.0.try_into().unwrap()], xy: 1.5};
         let original_volume = rhomboid.volume();
         let original_lx_over_ly = rhomboid.lx().get() / rhomboid.ly().get();
 
@@ -936,7 +986,7 @@ mod tests {
     fn is_point_inside_matches_rectangle(#[case] lx: f64, #[case] ly: f64) {
         let mut rng = StdRng::seed_from_u64(789);
 
-        let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), 0.0).into();
+        let rhomboid = Rhomboid { extents: [lx.try_into().unwrap(), ly.try_into().unwrap()], xy: 0.0 };
         let rect = Hypercuboid {
             edge_lengths: [lx.try_into().unwrap(), ly.try_into().unwrap()],
         };
@@ -959,7 +1009,7 @@ mod tests {
     fn is_point_inside_area_fraction(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
         let mut rng = StdRng::seed_from_u64(1011);
 
-        let rhomboid: Rhomboid = (lx.try_into().unwrap(), ly.try_into().unwrap(), xy).into();
+        let rhomboid = Rhomboid { extents: [lx.try_into().unwrap(), ly.try_into().unwrap()], xy };
         let area = rhomboid.volume();
 
         // Bounding box for sampling.
