@@ -530,7 +530,7 @@ where
 /// 
 /// For details, see the documentation for the 3D Cartesian implementation of
 /// [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
-pub(crate) fn integrate_rotation_half_step_one_with_filter_3d<B, S, X, C, TR, M, F> (
+pub(crate) fn integrate_rotation_half_step_one_with_filter_cartesian3<B, S, X, C, TR, M, F> (
     delta_t: f64,
     microstate: &mut Microstate<B, S, X, C>,
     rotational_thermostat: &mut TR,
@@ -667,7 +667,7 @@ where
 /// 
 /// For details, see the documentation for the 3D Cartesian implementation of
 /// [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
-pub(crate) fn integrate_rotation_half_step_two_with_filter_3d<B, S, X, C, TR, M, F> (
+pub(crate) fn integrate_rotation_half_step_two_with_filter_cartesian3<B, S, X, C, TR, M, F> (
     delta_t: f64,
     microstate: &mut Microstate<B, S, X, C>,
     rotational_thermostat: &mut TR,
@@ -774,7 +774,7 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        integrate_rotation_half_step_one_with_filter_3d(
+        integrate_rotation_half_step_one_with_filter_cartesian3(
             self.delta_t,
             microstate,
             &mut self.rotational_thermostat,
@@ -797,7 +797,7 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        integrate_rotation_half_step_two_with_filter_3d(
+        integrate_rotation_half_step_two_with_filter_cartesian3(
             self.delta_t,
             microstate,
             &mut self.rotational_thermostat,
@@ -957,7 +957,7 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        integrate_rotation_half_step_one_with_filter_3d(
+        integrate_rotation_half_step_one_with_filter_cartesian3(
             self.delta_t,
             microstate,
             &mut self.rotational_thermostat,
@@ -1046,7 +1046,7 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        integrate_rotation_half_step_two_with_filter_3d(
+        integrate_rotation_half_step_two_with_filter_cartesian3(
             self.delta_t,
             microstate,
             &mut self.rotational_thermostat,
@@ -1067,7 +1067,7 @@ where
 /// 
 /// For details, see the documentation for the 2D Cartesian implementation of
 /// [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
-pub(crate) fn integrate_rotation_half_step_one_with_filter_2d<B, S, X, C, TR, M, F> (
+pub(crate) fn integrate_rotation_half_step_one_with_filter_cartesian2<B, S, X, C, TR, M, F> (
     delta_t: f64,
     microstate: &mut Microstate<B, S, X, C>,
     rotational_thermostat: &mut TR,
@@ -1143,7 +1143,7 @@ where
 /// 
 /// For details, see the documentation for the 2D Cartesian implementation of
 /// [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
-pub(crate) fn integrate_rotation_half_step_two_with_filter_2d<B, S, X, C, TR, M, F> (
+pub(crate) fn integrate_rotation_half_step_two_with_filter_cartesian2<B, S, X, C, TR, M, F> (
     delta_t: f64,
     microstate: &mut Microstate<B, S, X, C>,
     rotational_thermostat: &mut TR,
@@ -1245,7 +1245,7 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        integrate_rotation_half_step_one_with_filter_2d(
+        integrate_rotation_half_step_one_with_filter_cartesian2(
             self.delta_t,
             microstate,
             &mut self.rotational_thermostat,
@@ -1268,7 +1268,7 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        integrate_rotation_half_step_two_with_filter_2d(
+        integrate_rotation_half_step_two_with_filter_cartesian2(
             self.delta_t,
             microstate,
             &mut self.rotational_thermostat,
@@ -1333,7 +1333,7 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        integrate_rotation_half_step_one_with_filter_2d(
+        integrate_rotation_half_step_one_with_filter_cartesian2(
             self.delta_t,
             microstate,
             &mut self.rotational_thermostat,
@@ -1374,7 +1374,7 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        integrate_rotation_half_step_two_with_filter_2d(
+        integrate_rotation_half_step_two_with_filter_cartesian2(
             self.delta_t,
             microstate,
             &mut self.rotational_thermostat,

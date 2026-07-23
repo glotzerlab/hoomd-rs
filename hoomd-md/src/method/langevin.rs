@@ -362,7 +362,7 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        crate::method::constant_volume::integrate_rotation_half_step_one_with_filter_3d(
+        crate::method::constant_volume::integrate_rotation_half_step_one_with_filter_cartesian3(
             self.delta_t,
             microstate,
             &mut NoThermostat,
@@ -391,7 +391,7 @@ where
             macrostate,
             &should_integrate_body,
         );
-        crate::method::constant_volume::integrate_rotation_half_step_two_with_filter_3d(
+        crate::method::constant_volume::integrate_rotation_half_step_two_with_filter_cartesian3(
             self.delta_t,
             microstate,
             &mut NoThermostat,
@@ -432,7 +432,7 @@ where
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        crate::method::constant_volume::integrate_rotation_half_step_one_with_filter_2d(
+        crate::method::constant_volume::integrate_rotation_half_step_one_with_filter_cartesian2(
             self.delta_t,
             microstate,
             &mut NoThermostat,
@@ -462,7 +462,7 @@ where
             &should_integrate_body,
         );
 
-        crate::method::constant_volume::integrate_rotation_half_step_two_with_filter_2d(
+        crate::method::constant_volume::integrate_rotation_half_step_two_with_filter_cartesian2(
             self.delta_t,
             microstate,
             &mut NoThermostat,
