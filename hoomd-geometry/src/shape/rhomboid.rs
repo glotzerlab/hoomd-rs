@@ -63,10 +63,7 @@ impl Rhomboid {
     #[must_use]
     pub fn square(side_length: PositiveReal) -> Self {
         Self {
-            extents: [
-                side_length,
-                side_length,
-            ],
+            extents: [side_length, side_length],
             xy: 0.0,
         }
     }
@@ -91,10 +88,7 @@ impl Rhomboid {
     #[must_use]
     pub fn rectangle(x_side_length: PositiveReal, y_side_length: PositiveReal) -> Self {
         Self {
-            extents: [
-                x_side_length,
-                y_side_length,
-            ],
+            extents: [x_side_length, y_side_length],
             xy: 0.0,
         }
     }
@@ -773,14 +767,20 @@ mod tests {
         let lx: f64 = rng.random_range(0.1..10.0);
         let ly: f64 = rng.random_range(0.1..10.0);
         let xy: f64 = rng.random_range(-2.0..2.0);
-        Rhomboid { extents: [lx.try_into().unwrap(), ly.try_into().unwrap()], xy }
+        Rhomboid {
+            extents: [lx.try_into().unwrap(), ly.try_into().unwrap()],
+            xy,
+        }
     }
 
     /// Check that the support value (dot product with direction) matches the polygon.
     /// This avoids tie-breaking differences when multiple vertices maximize the dot product.
     fn check_support_value(lx: f64, ly: f64, xy: f64, n: [f64; 2]) {
-        let rhomboid = Rhomboid { extents: [lx.try_into().expect("lx > 0"),
-            ly.try_into().expect("ly > 0")],
+        let rhomboid = Rhomboid {
+            extents: [
+                lx.try_into().expect("lx > 0"),
+                ly.try_into().expect("ly > 0"),
+            ],
             xy,
         };
 
@@ -813,7 +813,10 @@ mod tests {
     #[apply(rhomboid_shapes)]
     fn support_mapping_random_directions(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
         let mut rng = StdRng::seed_from_u64(42);
-        let rhomboid = Rhomboid { extents: [lx.try_into().unwrap(), ly.try_into().unwrap()], xy};
+        let rhomboid = Rhomboid {
+            extents: [lx.try_into().unwrap(), ly.try_into().unwrap()],
+            xy,
+        };
         let polygon =
             ConvexPolygon::with_vertices(rhomboid.vertices().to_vec()).expect("valid polygon");
 
@@ -829,7 +832,10 @@ mod tests {
 
     #[apply(rhomboid_shapes)]
     fn bounding_sphere_radius_matches_polygon(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
-        let rhomboid = Rhomboid { extents: [lx.try_into().unwrap(), ly.try_into().unwrap()], xy };
+        let rhomboid = Rhomboid {
+            extents: [lx.try_into().unwrap(), ly.try_into().unwrap()],
+            xy,
+        };
         let polygon = ConvexPolygon::with_vertices(rhomboid.vertices().to_vec())
             .expect("rhomboid vertices form a polygon");
 
@@ -885,8 +891,14 @@ mod tests {
 
     #[apply(square_displacements)]
     fn intersects_at_identical_squares(#[case] tx: f64, #[case] ty: f64, #[case] theta: f64) {
-        let a = Rhomboid { extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()], xy: 0.0};
-        let b = Rhomboid { extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()], xy: 0.0};
+        let a = Rhomboid {
+            extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()],
+            xy: 0.0,
+        };
+        let b = Rhomboid {
+            extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()],
+            xy: 0.0,
+        };
         check_sat_against_mesh(a, b, tx, ty, theta);
     }
 
@@ -904,8 +916,14 @@ mod tests {
 
     #[apply(mirror_shear_displacements)]
     fn intersects_at_mirror_sheared(#[case] tx: f64, #[case] ty: f64, #[case] theta: f64) {
-        let a = Rhomboid { extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()], xy: 1.0};
-        let b = Rhomboid { extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()], xy: -1.0};
+        let a = Rhomboid {
+            extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()],
+            xy: 1.0,
+        };
+        let b = Rhomboid {
+            extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()],
+            xy: -1.0,
+        };
         check_sat_against_mesh(a, b, tx, ty, theta);
     }
 
@@ -913,43 +931,79 @@ mod tests {
     fn intersects_at_mixed_shapes() {
         // Different shapes, various displacements and rotations.
         check_sat_against_mesh(
-            Rhomboid { extents: [1.0.try_into().unwrap(), 3.0.try_into().unwrap()],xy:  1.5 },
-            Rhomboid { extents: [2.0.try_into().unwrap(), 1.0.try_into().unwrap()], xy: -0.5 },
+            Rhomboid {
+                extents: [1.0.try_into().unwrap(), 3.0.try_into().unwrap()],
+                xy: 1.5,
+            },
+            Rhomboid {
+                extents: [2.0.try_into().unwrap(), 1.0.try_into().unwrap()],
+                xy: -0.5,
+            },
             1.0,
             0.5,
             0.0,
         );
         check_sat_against_mesh(
-            Rhomboid { extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()],xy:  2.0 },
-            Rhomboid { extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()],xy:  2.0 },
+            Rhomboid {
+                extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()],
+                xy: 2.0,
+            },
+            Rhomboid {
+                extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()],
+                xy: 2.0,
+            },
             1.0,
             0.0,
             0.0,
         );
         check_sat_against_mesh(
-            Rhomboid { extents: [1.0.try_into().unwrap(), 3.0.try_into().unwrap()],xy:  1.5 },
-            Rhomboid { extents: [2.0.try_into().unwrap(), 1.0.try_into().unwrap()], xy: -0.5 },
+            Rhomboid {
+                extents: [1.0.try_into().unwrap(), 3.0.try_into().unwrap()],
+                xy: 1.5,
+            },
+            Rhomboid {
+                extents: [2.0.try_into().unwrap(), 1.0.try_into().unwrap()],
+                xy: -0.5,
+            },
             0.5,
             0.5,
             PI / 6.0,
         );
         check_sat_against_mesh(
-            Rhomboid { extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()],xy:  2.0 },
-            Rhomboid { extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()], xy: -2.0 },
+            Rhomboid {
+                extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()],
+                xy: 2.0,
+            },
+            Rhomboid {
+                extents: [1.0.try_into().unwrap(), 5.0.try_into().unwrap()],
+                xy: -2.0,
+            },
             0.5,
             0.0,
             PI / 2.0,
         );
         check_sat_against_mesh(
-            Rhomboid { extents: [3.0.try_into().unwrap(), 1.0.try_into().unwrap()], xy: -1.0 },
-            Rhomboid { extents: [1.0.try_into().unwrap(), 2.0.try_into().unwrap()],xy:  0.5 },
+            Rhomboid {
+                extents: [3.0.try_into().unwrap(), 1.0.try_into().unwrap()],
+                xy: -1.0,
+            },
+            Rhomboid {
+                extents: [1.0.try_into().unwrap(), 2.0.try_into().unwrap()],
+                xy: 0.5,
+            },
             1.5,
             0.3,
             PI / 5.0,
         );
         check_sat_against_mesh(
-            Rhomboid { extents: [2.0.try_into().unwrap(), 1.0.try_into().unwrap()],xy:  0.8 },
-            Rhomboid { extents: [1.5.try_into().unwrap(), 2.5.try_into().unwrap()], xy: -0.3 },
+            Rhomboid {
+                extents: [2.0.try_into().unwrap(), 1.0.try_into().unwrap()],
+                xy: 0.8,
+            },
+            Rhomboid {
+                extents: [1.5.try_into().unwrap(), 2.5.try_into().unwrap()],
+                xy: -0.3,
+            },
             0.0,
             1.0,
             PI / 8.0,
@@ -958,7 +1012,10 @@ mod tests {
 
     #[test]
     fn scale_preserves_aspect_ratio_and_volume() {
-        let rhomboid = Rhomboid { extents: [3.0.try_into().unwrap(), 2.0.try_into().unwrap()], xy: 1.5};
+        let rhomboid = Rhomboid {
+            extents: [3.0.try_into().unwrap(), 2.0.try_into().unwrap()],
+            xy: 1.5,
+        };
         let original_volume = rhomboid.volume();
         let original_lx_over_ly = rhomboid.lx().get() / rhomboid.ly().get();
 
@@ -986,7 +1043,10 @@ mod tests {
     fn is_point_inside_matches_rectangle(#[case] lx: f64, #[case] ly: f64) {
         let mut rng = StdRng::seed_from_u64(789);
 
-        let rhomboid = Rhomboid { extents: [lx.try_into().unwrap(), ly.try_into().unwrap()], xy: 0.0 };
+        let rhomboid = Rhomboid {
+            extents: [lx.try_into().unwrap(), ly.try_into().unwrap()],
+            xy: 0.0,
+        };
         let rect = Hypercuboid {
             edge_lengths: [lx.try_into().unwrap(), ly.try_into().unwrap()],
         };
@@ -1009,7 +1069,10 @@ mod tests {
     fn is_point_inside_area_fraction(#[case] lx: f64, #[case] ly: f64, #[case] xy: f64) {
         let mut rng = StdRng::seed_from_u64(1011);
 
-        let rhomboid = Rhomboid { extents: [lx.try_into().unwrap(), ly.try_into().unwrap()], xy };
+        let rhomboid = Rhomboid {
+            extents: [lx.try_into().unwrap(), ly.try_into().unwrap()],
+            xy,
+        };
         let area = rhomboid.volume();
 
         // Bounding box for sampling.
