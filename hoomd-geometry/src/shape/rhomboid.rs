@@ -23,14 +23,12 @@ use crate::{
 /// # Example
 ///
 /// ```
-/// use hoomd_geometry::{Volume, shape::Rhomboid};
+/// use hoomd_geometry::shape::Rhomboid;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let rhomboid = Rhomboid { extents: [10.0.try_into()?,
 ///                           12.0.try_into()?],
 ///                           xy: 1.0 };
-///
-/// assert_eq!(rhomboid.volume(), 120.0);
 /// # Ok(())
 /// # }
 /// ```
@@ -60,7 +58,6 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    #[must_use]
     pub fn square(side_length: PositiveReal) -> Self {
         Self {
             extents: [side_length, side_length],
@@ -85,7 +82,6 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    #[must_use]
     pub fn rectangle(x_side_length: PositiveReal, y_side_length: PositiveReal) -> Self {
         Self {
             extents: [x_side_length, y_side_length],
@@ -127,7 +123,6 @@ impl Rhomboid {
     ///
     /// Panics when the hyperparallelepiped has 0 volume.
     #[inline]
-    #[must_use]
     pub fn from_parallelogram(parallelepiped: &Hyperparallelepiped<2>) -> Self {
         let v1 = parallelepiped.edge_vectors[0];
         let v2 = parallelepiped.edge_vectors[1];
@@ -151,26 +146,23 @@ impl Rhomboid {
 
     /// The extent in the x-direction (lx)
     #[inline]
-    #[must_use]
     pub fn lx(&self) -> PositiveReal {
         self.extents[0]
     }
 
     /// The extent in the y-direction (ly)
     #[inline]
-    #[must_use]
     pub fn ly(&self) -> PositiveReal {
         self.extents[1]
     }
 
     /// The xy shear factor
     #[inline]
-    #[must_use]
     pub fn xy(&self) -> f64 {
         self.xy
     }
 
-    /// Convert a Cartesian vector to fractional coordinates.
+    /// Convert a real space (absolute) position to fractional coordinates.
     ///
     /// Fractional coordinates express a point as coefficients of the edge
     /// vectors. If the edge vectors form the columns of matrix $`\mathbf{A}`$, then
@@ -193,14 +185,13 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    #[must_use]
-    pub fn fractional(&self, pos: &Cartesian<2>) -> Cartesian<2> {
+    pub fn fractional(&self, absolute: &Cartesian<2>) -> Cartesian<2> {
         let lx = self.lx().get();
         let ly = self.ly().get();
         let xy = self.xy();
 
-        let s1 = (pos[0] - xy * pos[1]) / lx;
-        let s2 = pos[1] / ly;
+        let s1 = (absolute[0] - xy * absolute[1]) / lx;
+        let s2 = absolute[1] / ly;
 
         Cartesian::from([s1, s2])
     }
@@ -231,14 +222,13 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    #[must_use]
-    pub fn absolute(&self, frac: &Cartesian<2>) -> Cartesian<2> {
+    pub fn absolute(&self, fractional: &Cartesian<2>) -> Cartesian<2> {
         let lx = self.lx().get();
         let ly = self.ly().get();
         let xy = self.xy();
 
-        let r1 = lx * frac[0] + xy * ly * frac[1];
-        let r2 = ly * frac[1];
+        let r1 = lx * fractional[0] + xy * ly * fractional[1];
+        let r2 = ly * fractional[1];
 
         Cartesian::from([r1, r2])
     }
@@ -267,7 +257,6 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    #[must_use]
     pub fn vertices(&self) -> [Cartesian<2>; 4] {
         [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]
             .map(|c| self.absolute(&Cartesian::from(c)))
@@ -295,7 +284,6 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    #[must_use]
     pub fn edge_vectors(&self) -> [Cartesian<2>; 2] {
         let mut edge_vectors = [Cartesian::<2>::default(); 2];
         edge_vectors[0] = [self.lx().get(), 0.].into();
@@ -325,7 +313,6 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    #[must_use]
     pub fn box_angle(&self) -> f64 {
         (self.xy() / (1.0 + self.xy() * self.xy()).sqrt()).acos()
     }
@@ -355,7 +342,6 @@ impl Rhomboid {
     ///
     /// Panics if the computed nearest-plane width cannot be converted to a positive real.
     #[inline]
-    #[must_use]
     pub fn nearest_plane_distance(&self) -> [PositiveReal; 2] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 2];
@@ -383,7 +369,6 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    #[must_use]
     pub fn to_gsd_box(&self) -> [f64; 6] {
         [
             self.extents[0].get(),

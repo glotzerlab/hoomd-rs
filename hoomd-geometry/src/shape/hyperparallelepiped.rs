@@ -184,7 +184,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
         self.maximal_extents().map(|x| -x)
     }
 
-    /// Convert a Cartesian vector to fractional coordinates.
+    /// Convert a real space (absolute) position to fractional coordinates.
     ///
     /// Fractional coordinates express a point as coefficients of the edge
     /// vectors. Let the edge vectors form the columns of matrix $`\mathbf{A}`$. Then
@@ -212,7 +212,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
         Cartesian::from_column_matrix(&qr::qr_solve(&self.qr, &absolute.to_column_matrix()))
     }
 
-    /// Convert fractional coordinates to Cartesian coordinates.
+    /// Convert fractional coordinates to absolute position.
     ///
     /// This is the inverse of [`fractional`]. Given a vector of fractional
     /// coefficients $`\vec{s}`$, the Cartesian point is:

@@ -104,7 +104,7 @@ where
             return result;
         }
 
-        // Determine fractional coordinates of "twighlight zones," where ghosts must be generated
+        // Determine fractional coordinates of "twilight zones," where ghosts must be generated
         let plane_distances = self.shape.nearest_plane_distances();
         let fractional_cutoffs: [f64; N] =
             array::from_fn(|i| self.maximum_interaction_range() / plane_distances[i].get());
@@ -156,14 +156,14 @@ mod tests {
 
     #[fixture]
     fn sheared_triclinic() -> Triclinic {
-        Triclinic::from_box_vector([
-            2.0,
-            2.0,
-            2.0,
+        Triclinic { extents: [
+            2.0.try_into().unwrap(),
+            2.0.try_into().unwrap(),
+            2.0.try_into().unwrap()], tilt_factors: [
             f64::sqrt(2.0),
             f64::sqrt(2.0),
-            f64::sqrt(2.0),
-        ])
+            f64::sqrt(2.0)
+        ]}
     }
 
     #[fixture]
@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn same_behavior_as_triclinic() {
-        let tric = Triclinic::from_box_vector([20.0, 10.0, 40.0, 0.2, -0.3, 0.4]);
+        let tric = Triclinic { extents: [20.0.try_into().unwrap(), 10.0.try_into().unwrap(), 40.0.try_into().unwrap()], tilt_factors: [0.2, -0.3, 0.4]};
         let hyper = hyper_from_triclinic(&tric);
 
         let periodic_tric = Periodic::new(1.0, tric.clone()).expect("valid periodic triclinic");
