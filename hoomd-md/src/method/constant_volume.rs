@@ -501,8 +501,8 @@ fn body_net_torque_and_active_degrees_of_freedom<B>(
 ) -> (Cartesian<3>, [bool; 3])
 where
     B: Orientation<Rotation = Versor>
-        + MomentOfInertia<MomentOfInertia = [f64; 3]>
-        + NetTorque<NetTorque = Cartesian<3>>
+        + MomentOfInertia<MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia>
+        + NetTorque<NetTorque = <Cartesian<3> as Wedge>::Bivector>
 {
     let q = body_properties.orientation();
     let moment_of_inertia = body_properties.moment_of_inertia();
