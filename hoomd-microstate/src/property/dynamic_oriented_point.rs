@@ -292,12 +292,12 @@ where
     type Momentum = V;
 
     #[inline]
-    fn momentum(&self) -> &V {
+    fn momentum(&self) -> &Self::Momentum {
         &self.momentum
     }
 
     #[inline]
-    fn momentum_mut(&mut self) -> &mut V {
+    fn momentum_mut(&mut self) -> &mut Self::Momentum {
         &mut self.momentum
     }
 
