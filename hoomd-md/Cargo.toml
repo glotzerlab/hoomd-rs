@@ -30,6 +30,8 @@ hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 hoomd-simulation.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
