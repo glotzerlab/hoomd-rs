@@ -179,7 +179,7 @@
 mod point;
 use std::ops::{Div, Mul};
 
-use hoomd_vector::{Outer, Wedge};
+use hoomd_vector::{Angle, Cartesian, Outer, Versor, Wedge};
 pub use point::Point;
 
 mod oriented_point;
@@ -195,6 +195,9 @@ mod oriented_hyperbolic_point;
 pub use oriented_hyperbolic_point::OrientedHyperbolicPoint;
 
 pub use hoomd_derive::{Orientation, Position};
+use serde::{Deserialize, Serialize};
+
+use crate::Transform;
 
 /// Locate a site or body in space: $` \vec{r} `$
 ///
@@ -439,11 +442,36 @@ pub trait RotationalMotionTypes {
     type AngularMomentum;
 }
 
+// TODO: inline?
 
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CustomBodyCartesian2<T> (T);
 
-impl<V, T: Position<Position = V>> Position for CustomBodyCartesian2<T> {
-    type Position = V;
+impl<T> Transform<Point<Cartesian<2>>> for CustomBodyCartesian2<T>
+where
+    T: Transform<Point<Cartesian<2>>>
+{
+    #[inline]
+    fn transform(&self, site_properties: &Point<Cartesian<2>>) -> Point<Cartesian<2>> {
+        self.0.transform(site_properties)
+    }
+}
+
+impl<T> Transform<OrientedPoint<Cartesian<2>, Angle>> for CustomBodyCartesian2<T>
+where
+    T: Transform<OrientedPoint<Cartesian<2>, Angle>>
+{
+    #[inline]
+    fn transform(
+        &self,
+        site_properties: &OrientedPoint<Cartesian<2>, Angle>
+    ) -> OrientedPoint<Cartesian<2>, Angle> {
+        self.0.transform(site_properties)
+    }
+}
+
+impl<T: Position<Position = Cartesian<2>>> Position for CustomBodyCartesian2<T> {
+    type Position = Cartesian<2>;
 
     fn position(&self) -> &Self::Position {
         self.0.position()
@@ -454,8 +482,8 @@ impl<V, T: Position<Position = V>> Position for CustomBodyCartesian2<T> {
     }
 }
 
-impl<R, T: Orientation<Rotation = R>> Orientation for CustomBodyCartesian2<T> {
-    type Rotation = R;
+impl<T: Orientation<Rotation = Angle>> Orientation for CustomBodyCartesian2<T> {
+    type Rotation = Angle;
 
     fn orientation(&self) -> &Self::Rotation {
         self.0.orientation()
@@ -466,21 +494,14 @@ impl<R, T: Orientation<Rotation = R>> Orientation for CustomBodyCartesian2<T> {
     }
 }
 
-impl<V, T: Momentum<Momentum = V> + Mass> Momentum for CustomBodyCartesian2<T>
-where
-    V: Copy
-        + Mul<f64, Output = V>
-        + Div<f64, Output = V>
-        + Wedge
-        + Outer,
-{
-    type Momentum = V;
+impl<T: Momentum<Momentum = Cartesian<2>> + Mass> Momentum for CustomBodyCartesian2<T> {
+    type Momentum = Cartesian<2>;
 
-    fn momentum(&self) -> &V {
+    fn momentum(&self) -> &Self::Momentum {
         self.0.momentum()
     }
 
-    fn momentum_mut(&mut self) -> &mut V {
+    fn momentum_mut(&mut self) -> &mut Self::Momentum {
         self.0.momentum_mut()
     }
 
@@ -499,8 +520,8 @@ impl<T: Mass> Mass for CustomBodyCartesian2<T> {
     }
 }
 
-impl<V, T: NetForce<NetForce = V>> NetForce for CustomBodyCartesian2<T> {
-    type NetForce = V;
+impl<T: NetForce<NetForce = Cartesian<2>>> NetForce for CustomBodyCartesian2<T> {
+    type NetForce = Cartesian<2>;
 
     fn net_force(&self) -> &Self::NetForce {
         self.0.net_force()
@@ -511,11 +532,8 @@ impl<V, T: NetForce<NetForce = V>> NetForce for CustomBodyCartesian2<T> {
     }
 }
 
-impl<V, T: NetVirial<NetVirial = V::Tensor>> NetVirial for CustomBodyCartesian2<T>
-where
-    V: Wedge + Outer
-{
-    type NetVirial = V::Tensor;
+impl<T: NetVirial<NetVirial = <Cartesian<2> as Outer>::Tensor>> NetVirial for CustomBodyCartesian2<T> {
+    type NetVirial = <Cartesian<2> as Outer>::Tensor;
 
     fn net_virial(&self) -> &Self::NetVirial {
         self.0.net_virial()
@@ -526,11 +544,8 @@ where
     }
 }
 
-impl<R, T: MomentOfInertia<MomentOfInertia = R::MomentOfInertia>> MomentOfInertia for CustomBodyCartesian2<T>
-where
-    R: RotationalMotionTypes
-{
-    type MomentOfInertia = R::MomentOfInertia;
+impl<T: MomentOfInertia<MomentOfInertia = <Angle as RotationalMotionTypes>::MomentOfInertia>> MomentOfInertia for CustomBodyCartesian2<T> {
+    type MomentOfInertia = <Angle as RotationalMotionTypes>::MomentOfInertia;
 
     fn moment_of_inertia(&self) -> &Self::MomentOfInertia {
         self.0.moment_of_inertia()
@@ -541,11 +556,8 @@ where
     }
 }
 
-impl<R, T: AngularMomentum<AngularMomentum = R::AngularMomentum>> AngularMomentum for CustomBodyCartesian2<T>
-where
-    R: RotationalMotionTypes
-{
-    type AngularMomentum = R::AngularMomentum;
+impl<T: AngularMomentum<AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum>> AngularMomentum for CustomBodyCartesian2<T> {
+    type AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum;
 
     fn angular_momentum(&self) -> &Self::AngularMomentum {
         self.0.angular_momentum()
@@ -556,11 +568,8 @@ where
     }
 }
 
-impl<V, T: NetTorque<NetTorque = V::Bivector>> NetTorque for CustomBodyCartesian2<T>
-where
-    V: Wedge + Outer
-{
-    type NetTorque = V::Bivector;
+impl<T: NetTorque<NetTorque = <Cartesian<2> as Wedge>::Bivector>> NetTorque for CustomBodyCartesian2<T> {
+    type NetTorque = <Cartesian<2> as Wedge>::Bivector;
 
     fn net_torque(&self) -> &Self::NetTorque {
         self.0.net_torque()
@@ -571,11 +580,34 @@ where
     }
 }
 
-///
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CustomBodyCartesian3<T> (T);
 
-impl<P, T: Position<Position = P>> Position for CustomBodyCartesian3<T> {
-    type Position = P;
+impl<T> Transform<Point<Cartesian<3>>> for CustomBodyCartesian2<T>
+where
+    T: Transform<Point<Cartesian<3>>>
+{
+    #[inline]
+    fn transform(&self, site_properties: &Point<Cartesian<3>>) -> Point<Cartesian<3>> {
+        self.0.transform(site_properties)
+    }
+}
+
+impl<T> Transform<OrientedPoint<Cartesian<3>, Versor>> for CustomBodyCartesian2<T>
+where
+    T: Transform<OrientedPoint<Cartesian<3>, Versor>>
+{
+    #[inline]
+    fn transform(
+        &self,
+        site_properties: &OrientedPoint<Cartesian<3>, Versor>
+    ) -> OrientedPoint<Cartesian<3>, Versor> {
+        self.0.transform(site_properties)
+    }
+}
+
+impl<T: Position<Position = Cartesian<3>>> Position for CustomBodyCartesian3<T> {
+    type Position = Cartesian<3>;
 
     fn position(&self) -> &Self::Position {
         self.0.position()
@@ -586,8 +618,8 @@ impl<P, T: Position<Position = P>> Position for CustomBodyCartesian3<T> {
     }
 }
 
-impl<R, T: Orientation<Rotation = R>> Orientation for CustomBodyCartesian3<T> {
-    type Rotation = R;
+impl<T: Orientation<Rotation = Versor>> Orientation for CustomBodyCartesian3<T> {
+    type Rotation = Versor;
 
     fn orientation(&self) -> &Self::Rotation {
         self.0.orientation()
@@ -598,21 +630,14 @@ impl<R, T: Orientation<Rotation = R>> Orientation for CustomBodyCartesian3<T> {
     }
 }
 
-impl<V, T: Momentum<Momentum = V> + Mass> Momentum for CustomBodyCartesian3<T>
-where
-    V: Copy
-        + Mul<f64, Output = V>
-        + Div<f64, Output = V>
-        + Wedge
-        + Outer,
-{
-    type Momentum = V;
+impl<T: Momentum<Momentum = Cartesian<3>> + Mass> Momentum for CustomBodyCartesian3<T> {
+    type Momentum = Cartesian<3>;
 
-    fn momentum(&self) -> &V {
+    fn momentum(&self) -> &Self::Momentum {
         self.0.momentum()
     }
 
-    fn momentum_mut(&mut self) -> &mut V {
+    fn momentum_mut(&mut self) -> &mut Self::Momentum {
         self.0.momentum_mut()
     }
 
@@ -631,8 +656,8 @@ impl<T: Mass> Mass for CustomBodyCartesian3<T> {
     }
 }
 
-impl<V, T: NetForce<NetForce = V>> NetForce for CustomBodyCartesian3<T> {
-    type NetForce = V;
+impl<T: NetForce<NetForce = Cartesian<3>>> NetForce for CustomBodyCartesian3<T> {
+    type NetForce = Cartesian<3>;
 
     fn net_force(&self) -> &Self::NetForce {
         self.0.net_force()
@@ -643,11 +668,8 @@ impl<V, T: NetForce<NetForce = V>> NetForce for CustomBodyCartesian3<T> {
     }
 }
 
-impl<V, T: NetVirial<NetVirial = V::Tensor>> NetVirial for CustomBodyCartesian3<T>
-where
-    V: Wedge + Outer
-{
-    type NetVirial = V::Tensor;
+impl<T: NetVirial<NetVirial = <Cartesian<3> as Outer>::Tensor>> NetVirial for CustomBodyCartesian3<T> {
+    type NetVirial = <Cartesian<3> as Outer>::Tensor;
 
     fn net_virial(&self) -> &Self::NetVirial {
         self.0.net_virial()
@@ -658,11 +680,8 @@ where
     }
 }
 
-impl<R, T: MomentOfInertia<MomentOfInertia = R::MomentOfInertia>> MomentOfInertia for CustomBodyCartesian3<T>
-where
-    R: RotationalMotionTypes
-{
-    type MomentOfInertia = R::MomentOfInertia;
+impl<T: MomentOfInertia<MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia>> MomentOfInertia for CustomBodyCartesian3<T> {
+    type MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia;
 
     fn moment_of_inertia(&self) -> &Self::MomentOfInertia {
         self.0.moment_of_inertia()
@@ -673,11 +692,8 @@ where
     }
 }
 
-impl<R, T: AngularMomentum<AngularMomentum = R::AngularMomentum>> AngularMomentum for CustomBodyCartesian3<T>
-where
-    R: RotationalMotionTypes
-{
-    type AngularMomentum = R::AngularMomentum;
+impl<T: AngularMomentum<AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum>> AngularMomentum for CustomBodyCartesian3<T> {
+    type AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum;
 
     fn angular_momentum(&self) -> &Self::AngularMomentum {
         self.0.angular_momentum()
@@ -688,11 +704,8 @@ where
     }
 }
 
-impl<V, T: NetTorque<NetTorque = V::Bivector>> NetTorque for CustomBodyCartesian3<T>
-where
-    V: Wedge + Outer
-{
-    type NetTorque = V::Bivector;
+impl<T: NetTorque<NetTorque = <Cartesian<3> as Wedge>::Bivector>> NetTorque for CustomBodyCartesian3<T> {
+    type NetTorque = <Cartesian<3> as Wedge>::Bivector;
 
     fn net_torque(&self) -> &Self::NetTorque {
         self.0.net_torque()
@@ -702,5 +715,3 @@ where
         self.0.net_torque_mut()
     }
 }
-
-
