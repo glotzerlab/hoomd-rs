@@ -2,16 +2,43 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `Langevin`.
-use std::{marker::PhantomData};
 
 use hoomd_simulation::macrostate::Temperature;
 use rand::{Rng, distr::Distribution};
 
-use hoomd_microstate::{Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, CustomBodyCartesian2, CustomBodyCartesian3, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, NetVirial, Orientation, Position}};
+use hoomd_microstate::{
+    Body,
+    Microstate,
+    SiteKey,
+    Tagged,
+    Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{
+        AngularMomentum,
+        CustomBodyCartesian2,
+        CustomBodyCartesian3,
+        Mass,
+        MomentOfInertia,
+        Momentum,
+        NetForce,
+        NetTorque,
+        NetVirial,
+        Orientation,
+        Position,
+        RotationalMotionTypes
+    }
+};
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Angle, Cartesian, Outer, Versor};
+use hoomd_vector::{Angle, Cartesian, Outer, Versor, Wedge};
 use rand_distr::Uniform;
-use crate::{RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, UpdateNetForceAndVirial, UpdateNetForceVirialAndTorque, method::{Gamma, GammaR}, thermostat::NoThermostat};
+use crate::{
+    RotationalKineticEnergy,
+    RotationalMotion,
+    TranslationalKineticEnergy,
+    TranslationalMotion,
+    method::{Gamma, GammaR},
+    thermostat::NoThermostat
+};
 
 /// Integrate bodies' degrees of freedom in the microstate according to
 /// Langevin equations of motion, modelling the NVE or NVT ensemble.
