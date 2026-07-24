@@ -252,6 +252,23 @@ impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Periodic<Hypercuboid<3>>>
     }
 }
 
+impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Closed<Triclinic>> for HoomdGsdFile {
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, Point<Cartesian<3>>, X, Closed<Triclinic>>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().0.to_gsd_box())?
+            .configuration_dimensions(Dimensions::Three)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position),
+            )
+    }
+}
+
 impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Periodic<Triclinic>> for HoomdGsdFile {
     #[inline]
     fn append_microstate(
@@ -308,6 +325,30 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().shape().to_gsd_box())?
+            .configuration_dimensions(Dimensions::Three)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position),
+            )?
+            .particles_orientation(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.orientation),
+            )
+    }
+}
+
+impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Closed<Triclinic>>
+    for HoomdGsdFile
+{
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, OrientedPoint<Cartesian<3>, Versor>, X, Closed<Triclinic>>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().0.to_gsd_box())?
             .configuration_dimensions(Dimensions::Three)?
             .particles_position(
                 microstate
