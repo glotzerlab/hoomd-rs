@@ -50,20 +50,20 @@ use crate::{
 /// ```math
 /// \begin{align*}
 /// \vec{F}_i &= \vec{F}_C - \gamma \cdot \vec{v}_i + \vec{F}_R \\
-/// \vec{\tau}_i &= \vec{\tau}_C - \vec{\gamma}_R \cdot \vec{\omega}_i + \vec{\tau}_R \\
+/// \vec{\tau}_i &= \vec{\tau}_C - \gamma_R \cdot \vec{\omega}_i + \vec{\tau}_R \\
 /// \end{align*}
 /// ```
 /// 
 /// where $` \vec{F}_C `$ and $` \vec{\tau}_C `$ are the force and torque on the
 /// body from all other bodies and external interactions, $` \gamma `$ and
-/// $` \vec{\gamma}_R `$ are the translational and rotational drag coefficients, and
+/// $` \gamma_R `$ are the translational and rotational drag coefficients, and
 /// $` \vec{F}_R `$ and $` \vec{\tau}_R `$ are random forces and torques. These
 /// random forces and torques are uniform
 /// 
 /// ```math
 /// \begin{align*}
-/// \left< \vec{F}_R \right> &= 0 \\
-/// \left< \vec{\tau}_R \right> &= 0 \\
+/// \lang \vec{F}_R \rang &= \vec{0} \\
+/// \lang \vec{\tau}_R \rang &= \vec{0} \\
 /// \end{align*}
 /// ```
 /// 
@@ -72,20 +72,21 @@ use crate::{
 /// 
 /// ```math
 /// \begin{align*}
-/// \left< \left| \vec{F}_R \right|^2 \right> &= \frac{2 d k T \gamma}{\Delta t} \\
-/// \left< \left| \vec{\tau}_R \right|^2 \right> &= \frac{2 d_R k T \gamma_R}{\Delta t} \\
+/// \lang F_{R,j} \cdot F_{R,j} \rang &= 2 k T \gamma / \Delta t \\
+/// \lang \tau_{R,j} \cdot \tau_{R,j} \rang &= 2 k T \gamma_{R,j} / \Delta t \\
 /// \end{align*}
 /// ```
 /// 
-/// where $` d `$ and $` d_R `$ are the number of translational and rotational
-/// degrees of freedom. Note that $` d_R `$ is determined by the number of
-/// non-zero components of the body's moment of inertia.
+/// for each component $` j `$  of the force vector and torque bivector.
 /// 
 /// [fluctuation-dissipation theorem]: https://en.wikipedia.org/wiki/Fluctuation%E2%80%93dissipation_theorem
 /// 
-/// To create a `Langevin`, use [`Langevin::builder`].
+/// ```
+/// use hoomd_md::method::Langevin;
 /// 
-/// TODO: example
+/// let delta_t = 0.001;
+/// let langevin = Langevin{ delta_t };
+/// ```
 pub struct Langevin {
     /// The time step size.
     pub delta_t: f64,
@@ -103,8 +104,6 @@ impl Langevin {
     /// [above](crate::method::langevin).
     /// 
     /// TODO: check whether virials should be updated
-    /// TODO: communicate that this is defined only for CARTESIAN and is not
-    /// generic across VECTOR
     #[inline]
     fn apply_drag_and_random_forces_and_virials<const N: usize, B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
@@ -226,8 +225,6 @@ impl Langevin
 }
 
 /// Langevin torques in 2-dimensional cartesian space.
-/// 
-/// TODO: discuss how we link the return type of GammaR with the system's vector-space.
 impl Langevin {
     /// Apply drag and random torques to selected bodies in the microstate.
     /// 
