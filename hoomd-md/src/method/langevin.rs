@@ -44,8 +44,8 @@ use crate::{
 /// Langevin equations of motion, modelling the NVE or NVT ensemble.
 /// 
 /// The `Langevin` implementation follows the same symplectic integration scheme
-/// used in [`ConstantVolume`](crate::ConstantVolume), but with drag and random
-/// forces and torques applied to each body *i*:
+/// used in [`ConstantVolume`], but with drag and random forces and torques
+/// applied to each body *i*:
 /// 
 /// ```math
 /// \begin{align*}
@@ -83,9 +83,8 @@ use crate::{
 /// 
 /// Because `Langevin` rescales momentum and angular momentum according to the
 /// system's temperature, it can be considered as a kind of thermostat. For this
-/// reason, contrary to [`ConstantVolume`](crate::ConstantVolume), it does not
-/// store thermostats in its fields. To create a `Langevin`, provide a value for
-/// `delta_t`.
+/// reason, contrary to [`ConstantVolume`], it does not store thermostats in its
+/// fields. To create a `Langevin`, provide a value for `delta_t`.
 /// 
 /// ```
 /// use hoomd_md::method::Langevin;
@@ -98,9 +97,10 @@ use crate::{
 /// [custom body cartesian newtypes], and implement [`Gamma`] and [`GammaR`] on
 /// that newtype.
 /// 
+/// [`ConstantVolume`]: crate::method::ConstantVolume
 /// [custom body cartesian newtypes]: hoomd_microstate::property
-/// [`Gamma`]: crate::Gamma
-/// [`GammaR`]: crate::GammaR
+/// [`Gamma`]: crate::method::Gamma
+/// [`GammaR`]: crate::method::GammaR
 /// 
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -13,11 +13,8 @@ pub use langevin::Langevin;
 /// 
 /// `Gamma` describes a type that provides a float representing $` \gamma `$,
 /// the translational drag coefficient used in [`Langevin`] and [`Brownian`]
-/// integration. Implement this trait on a body properties object to assign a
-/// specific drag coefficient to a specific body.
-/// 
-/// The generic type names are:
-/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// integration. Implement this trait on a body properties object to assign
+/// translational drag coefficient values to bodies.
 pub trait Gamma {
     /// Access the drag coefficient for the body.
     fn gamma(&self) -> f64;
@@ -25,14 +22,17 @@ pub trait Gamma {
 
 /// The rotational drag coefficients.
 /// 
-/// `GammaR` describes a type that provides an array of N floats representing
+/// `GammaR` describes a type that provides one or more floats representing
 /// $` \gamma_R `$, the rotational drag coefficients for the rotational degrees
 /// of freedom used in [`Langevin`] and [`Brownian`] integration. Implement this
-/// trait on a body properties object to assign specific drag coefficients to
-/// specific bodies.
+/// trait on a body properties object to assign rotational drag coefficient
+/// values to bodies.
 /// 
-/// The generic type names are:
-/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// <div class="warning">
+/// For rotational integration in 2-dimensional cartesian space, the
+/// associtated type of this trait must be <code>f64</code>. For 3-dimensional
+/// cartesian space, the associated type must be <code>[f64; 3]</code>.
+/// </div>
 pub trait GammaR {
     /// The type containing the rotational drag coefficient(s).
     type GammaR;
