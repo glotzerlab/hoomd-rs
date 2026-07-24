@@ -21,9 +21,13 @@ use hoomd_vector::Cartesian;
 use itertools::Itertools;
 
 impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N> {
-    /// The largest value that the maximum interaction range can take. While theoretically to avoid self-interaction the interaction distance may be as large as 1/2 the smallest box vector, we choose to take the maximum interaction range to be 1/2 the smallest perpendicular distance between pairs of parallel faces in order to avoid having to generating more than one ghost per particle.
+    /// The largest value that the maximum interaction range can take.
     ///
-    /// # Example
+    /// While theoretically to avoid self-interaction the interaction distance
+    /// may be as large as 1/2 the smallest box vector, we choose to take the maximum
+    /// interaction range to be 1/2 the smallest perpendicular distance between pairs
+    /// of parallel faces in order to avoid having to generating more than one ghost
+    /// per particle.
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
         let plane_distances = self.nearest_plane_distances();
@@ -38,7 +42,7 @@ impl<P, const N: usize> Wrap<P> for Periodic<Hyperparallelepiped<N>>
 where
     P: Position<Position = Cartesian<N>>,
 {
-    /// Wrap any cartesian vector to the inside of the given hyperparallepiped.
+    /// Wrap any cartesian vector to the inside of the given hyperparallelepiped.
     ///
     /// # Example
     ///
@@ -93,7 +97,7 @@ where
         self.maximum_interaction_range
     }
 
-    // /// Place periodic images of sites near the edge of the periodic boundary.
+    /// Place periodic images of sites near the edge of the periodic boundary.
     #[inline]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
@@ -150,8 +154,8 @@ mod tests {
     use hoomd_vector::Cartesian;
     use rstest::{fixture, rstest};
 
-    fn hyper_from_triclinic(tric: &Triclinic) -> Hyperparallelepiped<3> {
-        Hyperparallelepiped::new(tric.edge_vectors())
+    fn hyper_from_triclinic(triclinic: &Triclinic) -> Hyperparallelepiped<3> {
+        Hyperparallelepiped::new(triclinic.edge_vectors())
     }
 
     #[fixture]
@@ -221,10 +225,10 @@ mod tests {
 
     #[test]
     fn same_behavior_as_triclinic() {
-        let tric = Triclinic { extents: [20.0.try_into().unwrap(), 10.0.try_into().unwrap(), 40.0.try_into().unwrap()], tilt_factors: [0.2, -0.3, 0.4]};
-        let hyper = hyper_from_triclinic(&tric);
+        let triclinic = Triclinic { extents: [20.0.try_into().unwrap(), 10.0.try_into().unwrap(), 40.0.try_into().unwrap()], tilt_factors: [0.2, -0.3, 0.4]};
+        let hyper = hyper_from_triclinic(&triclinic);
 
-        let periodic_tric = Periodic::new(1.0, tric.clone()).expect("valid periodic triclinic");
+        let periodic_triclinic = Periodic::new(1.0, triclinic.clone()).expect("valid periodic triclinic");
         let periodic_hyper = Periodic::new(1.0, hyper).expect("valid periodic hyperparallelepiped");
 
         let test_points = vec![
@@ -235,21 +239,21 @@ mod tests {
         ];
 
         for frac_pos in test_points {
-            let abs_point = Point::new(periodic_tric.shape.absolute(&frac_pos));
+            let abs_point = Point::new(periodic_triclinic.shape.absolute(&frac_pos));
 
-            let wrapped_tric = periodic_tric.wrap(abs_point).unwrap();
+            let wrapped_triclinic = periodic_triclinic.wrap(abs_point).unwrap();
             let wrapped_hyper = periodic_hyper.wrap(abs_point).unwrap();
             assert_relative_eq!(
-                wrapped_tric.position,
+                wrapped_triclinic.position,
                 wrapped_hyper.position,
                 epsilon = 1e-8
             );
 
-            let ghosts_tric = periodic_tric.generate_ghosts(&abs_point);
+            let ghosts_triclinic = periodic_triclinic.generate_ghosts(&abs_point);
             let ghosts_hyper = periodic_hyper.generate_ghosts(&abs_point);
-            assert_eq!(ghosts_tric.len(), ghosts_hyper.len());
+            assert_eq!(ghosts_triclinic.len(), ghosts_hyper.len());
 
-            for ghost in &ghosts_tric {
+            for ghost in &ghosts_triclinic {
                 let found = ghosts_hyper.iter().any(|other| {
                     ghost
                         .position
