@@ -3889,6 +3889,7 @@ dependencies = [
  "anyhow",
  "approxim",
  "assert2",
+ "hoomd-geometry",
  "hoomd-interaction",
  "hoomd-linear-algebra",
  "hoomd-microstate",
@@ -4553,6 +4554,10 @@ dependencies = [
  "num-traits",
  "pxfm",
 ]
+
+[[package]]
+name = "mwe"
+version = "1.2.0"
 
 [[package]]
 name = "naga"
