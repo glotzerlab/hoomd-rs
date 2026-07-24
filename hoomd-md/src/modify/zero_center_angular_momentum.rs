@@ -17,7 +17,7 @@ use hoomd_vector::{Cartesian, InnerProduct, Outer, Wedge};
 
 /// Zero a 3D microstate's angular momentum.
 #[inline]
-fn zero_angular_momentum_3d<B, S, X, C, F>(
+fn zero_angular_momentum_cartesian3<B, S, X, C, F>(
     microstate: &mut Microstate<B, S, X, C>,
     should_zero_body: F,
 ) where
@@ -111,7 +111,7 @@ fn zero_angular_momentum_3d<B, S, X, C, F>(
 
 /// Zero a 2D microstate's angular momentum.
 #[inline]
-fn zero_angular_momentum_2d<B, S, X, C, F>(
+fn zero_angular_momentum_cartesian2<B, S, X, C, F>(
     microstate: &mut Microstate<B, S, X, C>,
     should_zero_body: F,
 ) where
@@ -201,7 +201,7 @@ where
         &mut self,
         should_zero_body: F,
     ) {
-        zero_angular_momentum_3d(self, should_zero_body);
+        zero_angular_momentum_cartesian3(self, should_zero_body);
     }
 }
 
@@ -220,7 +220,7 @@ where
         &mut self,
         should_zero_body: F,
     ) {
-        zero_angular_momentum_3d(self, should_zero_body);
+        zero_angular_momentum_cartesian3(self, should_zero_body);
     }
 }
 
@@ -240,7 +240,7 @@ where
         &mut self,
         should_zero_body: F,
     ) {
-        zero_angular_momentum_2d(self, should_zero_body);
+        zero_angular_momentum_cartesian2(self, should_zero_body);
     }
 }
 
@@ -259,6 +259,6 @@ where
         &mut self,
         should_zero_body: F,
     ) {
-        zero_angular_momentum_2d(self, should_zero_body);
+        zero_angular_momentum_cartesian2(self, should_zero_body);
     }
 }
