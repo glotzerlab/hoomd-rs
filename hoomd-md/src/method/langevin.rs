@@ -363,10 +363,11 @@ where
 // DynamicOrientedPoint).
 
 /// Rotational motion in 3-dimensional cartesian space.
-impl<T, S, X, C, M> RotationalMotion<CustomBodyCartesian3<T>, S, X, C, M>
+impl<R, E, S, X, C, M> RotationalMotion<CustomBodyCartesian3<R, E>, S, X, C, M>
     for Langevin
 where
-    T: Transform<S>
+    CustomBodyCartesian3<R, E>: Clone
+        + Transform<S>
         + Position<Position = Cartesian<3>>
         + Orientation<Rotation = Versor>
         + AngularMomentum<AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum>
@@ -374,23 +375,23 @@ where
         + NetTorque<NetTorque = <Cartesian<3> as Wedge>::Bivector>,
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<CustomBodyCartesian3<T>>
+    C: Wrap<CustomBodyCartesian3<R, E>>
         + Wrap<S>
         + GenerateGhosts<S>,
     M: Temperature,
-    CustomBodyCartesian3<T>: Copy
+    CustomBodyCartesian3<R, E>: Copy
         + Transform<S>
         + GammaR<GammaR = [f64; 3]>,
-    Microstate<CustomBodyCartesian3<T>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian3<T>, S>
+    Microstate<CustomBodyCartesian3<R, E>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian3<R, E>, S>
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
     /// This method is identical to [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian3<T>, S>>) -> bool
+        F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian3<T>, S, X, C>,
+        microstate: &mut Microstate<CustomBodyCartesian3<R, E>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -409,10 +410,10 @@ where
     /// Aside from the application of drag and random torques, this method is
     /// identical to [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian3<T>, S>>) -> bool
+        F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian3<T>, S, X, C>,
+        microstate: &mut Microstate<CustomBodyCartesian3<R, E>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -434,10 +435,11 @@ where
 }
 
 /// Rotational motion in 2-dimensional cartesian space.
-impl<T, S, X, C, M> RotationalMotion<CustomBodyCartesian2<T>, S, X, C, M>
+impl<R, E, S, X, C, M> RotationalMotion<CustomBodyCartesian2<R, E>, S, X, C, M>
     for Langevin
 where
-    T: Transform<S>
+    CustomBodyCartesian2<R, E>: Clone
+        + Transform<S>
         + Position<Position = Cartesian<2>>
         + Orientation<Rotation = Angle>
         + AngularMomentum<AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum>
@@ -445,23 +447,23 @@ where
         + NetTorque<NetTorque = <Cartesian<2> as Wedge>::Bivector>,
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<CustomBodyCartesian2<T>>
+    C: Wrap<CustomBodyCartesian2<R, E>>
         + Wrap<S>
         + GenerateGhosts<S>,
     M: Temperature,
-    CustomBodyCartesian2<T>: Copy
+    CustomBodyCartesian2<R, E>: Copy
         + Transform<S>
         + GammaR<GammaR = f64>,
-    Microstate<CustomBodyCartesian2<T>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian2<T>, S>,
+    Microstate<CustomBodyCartesian2<R, E>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian2<R, E>, S>,
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
     /// This method is identical to [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian2<T>, S>>) -> bool
+        F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian2<T>, S, X, C>,
+        microstate: &mut Microstate<CustomBodyCartesian2<R, E>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -480,10 +482,10 @@ where
     /// Aside from the application of drag and random torques, this method is
     /// identical to [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian2<T>, S>>) -> bool
+        F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian2<T>, S, X, C>,
+        microstate: &mut Microstate<CustomBodyCartesian2<R, E>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
