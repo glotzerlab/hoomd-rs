@@ -38,5 +38,5 @@ pub trait GammaR {
     type GammaR;
 
     /// Access the value for a site
-    fn gamma_r(&self) -> &Self::GammaR;
+    fn gamma_r(&self) -> Self::GammaR;
 }
