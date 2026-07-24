@@ -5,18 +5,17 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::fmt;
 
+use crate::{
+    Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix,
+    matrix::qr::qr_decomposition,
+};
+
 /// ``std::ops`` implementations for [`Matrix`]
 mod ops;
 /// ``qr`` decomposition for [`Matrix`] types.
 pub mod qr;
 
 pub use crate::diagonal::DiagonalMatrix;
-
-/// A lightweight representation of a diagonal matrix.
-use crate::{
-    Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix,
-    matrix::qr::qr_decomposition,
-};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 ///
@@ -228,7 +227,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// );
     /// ```
     #[inline]
-    #[must_use]
     pub fn map_rows<F>(self, f: F) -> Self
     where
         F: FnMut([f64; M]) -> [f64; M],
@@ -253,7 +251,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// );
     /// ```
     #[inline]
-    #[must_use]
     pub fn map_columns<F>(self, f: F) -> Self
     where
         F: FnMut([f64; N]) -> [f64; N],
@@ -270,7 +267,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// assert_eq!(m.map_elements(|x| x + 2.0), m + Matrix33::full(2.0));
     /// ```
     #[inline]
-    #[must_use]
     pub fn map_elements<F>(self, f: F) -> Self
     where
         F: Fn(f64) -> f64,
@@ -423,7 +419,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// };
     /// assert_eq!(m.n_rows(), 2);
     /// ```
-    #[must_use]
     #[inline]
     pub const fn n_rows(&self) -> usize {
         N
@@ -439,7 +434,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// };
     /// assert_eq!(m.n_columns(), 3);
     /// ```
-    #[must_use]
     #[inline]
     pub const fn n_columns(&self) -> usize {
         M
@@ -490,7 +484,6 @@ impl<const N: usize> Matrix<N, N> {
     /// let scaled = identity * 2.0;
     /// assert_eq!(scaled.determinant(), 2.0 * 2.0);
     /// ```
-    #[must_use]
     #[inline]
     pub fn determinant(&self) -> f64 {
         // Compute the determinant of a 2x2 minor.
@@ -575,7 +568,6 @@ impl<const N: usize> Matrix<N, N> {
     /// let scaled = identity * 3.0;
     /// assert_eq!(scaled.trace(), 3.0 + 3.0);
     /// ```
-    #[must_use]
     #[inline]
     pub fn trace(&self) -> f64 {
         std::array::from_fn::<_, N, _>(|i| self[(i, i)])
@@ -1001,7 +993,7 @@ pub mod test_utils {
     use approxim::{assert_ulps_eq, ulps_eq};
 
     const EPS: f64 = 1e-13;
-    pub(crate) fn assert_matrixes_ulps_eq<
+    pub(crate) fn assert_matrices_ulps_eq<
         const N: usize,
         const M: usize,
         T0: Index<(usize, usize), Output = f64> + Debug,
@@ -1033,7 +1025,7 @@ pub mod test_utils {
 #[cfg(test)]
 mod tests {
     use super::{
-        test_utils::{assert_diags_ulps_eq, assert_matrixes_ulps_eq},
+        test_utils::{assert_diags_ulps_eq, assert_matrices_ulps_eq},
         *,
     };
     use crate::matrix::{Matrix, Matrix22, Matrix33, Matrix44};
@@ -1114,7 +1106,7 @@ mod tests {
 
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
-        assert_matrixes_ulps_eq::<N, N, _, _>(&custom_prod, &faer_prod);
+        assert_matrices_ulps_eq::<N, N, _, _>(&custom_prod, &faer_prod);
     }
 
     #[rstest]
@@ -1146,7 +1138,7 @@ mod tests {
 
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
-        assert_matrixes_ulps_eq::<N, K, _, _>(&custom_prod, &faer_prod);
+        assert_matrices_ulps_eq::<N, K, _, _>(&custom_prod, &faer_prod);
     }
 
     #[rstest(
@@ -1173,7 +1165,7 @@ mod tests {
         let (u, s, vt) = matrix.svd();
 
         // Verify we can rebuild A from UΣVt
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s.to_dense()).matmul(&vt), &matrix);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&u.matmul(&s.to_dense()).matmul(&vt), &matrix);
 
         // Test against faer
         let faer = fill_faer(rows);
@@ -1190,10 +1182,10 @@ mod tests {
             faerv[(1, 1)] *= -1.0;
         }
 
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &faeru);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&u, &faeru);
         assert_diags_ulps_eq::<2, _, _>(&s, &faers);
         // Note that faer returns V, not Vt
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &faerv.transpose());
+        assert_matrices_ulps_eq::<2, 2, _, _>(&vt, &faerv.transpose());
     }
 
     #[rstest(
@@ -1217,16 +1209,16 @@ mod tests {
         let (u, s, vt) = matrix.svd();
 
         // Verify we can rebuild A from UΣVt
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s.to_dense()).matmul(&vt), &matrix);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&u.matmul(&s.to_dense()).matmul(&vt), &matrix);
 
         // Test against nalgebra
         let na = nalgebra::Matrix2::from(rows).transpose();
         let nasvd = na.svd(true, true);
         let (nau, nas, navt) = (nasvd.u.unwrap(), nasvd.singular_values, nasvd.v_t.unwrap());
 
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &nau);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&u, &nau);
         assert_diags_ulps_eq::<2, _, _>(&s, &nas);
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &navt);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&vt, &navt);
     }
 
     #[rstest(
@@ -1244,13 +1236,13 @@ mod tests {
 
         // Verify reconstruction
         let m_recon = u.matmul(&s).matmul(&vt);
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&m_recon, &matrix);
+        assert_matrices_ulps_eq::<3, 3, _, _>(&m_recon, &matrix);
 
         // Verify properties of U and V
         assert_relative_eq!(u.determinant(), 1.0, epsilon = EPS);
         assert_relative_eq!(vt.transpose().determinant(), 1.0, epsilon = EPS);
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&u.matmul(&u.transpose()), &Matrix33::identity());
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&vt.matmul(&vt.transpose()), &Matrix33::identity());
+        assert_matrices_ulps_eq::<3, 3, _, _>(&u.matmul(&u.transpose()), &Matrix33::identity());
+        assert_matrices_ulps_eq::<3, 3, _, _>(&vt.matmul(&vt.transpose()), &Matrix33::identity());
 
         // Compare with faer SVD
         let faer_mat = fill_faer(rows);
@@ -1273,7 +1265,7 @@ mod tests {
         let faer_matrix = fill_faer(rows);
         let custom_transpose = matrix.transpose();
         let faer_transpose = faer_matrix.transpose();
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_transpose, &faer_transpose);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&custom_transpose, &faer_transpose);
     }
 
     #[test]
@@ -1283,7 +1275,7 @@ mod tests {
         let faer_matrix = fill_faer(rows);
         let custom_transpose = matrix.transpose();
         let faer_transpose = faer_matrix.transpose();
-        assert_matrixes_ulps_eq::<3, 2, _, _>(&custom_transpose, &faer_transpose);
+        assert_matrices_ulps_eq::<3, 2, _, _>(&custom_transpose, &faer_transpose);
     }
 
     #[test]
@@ -1293,14 +1285,14 @@ mod tests {
         let faer_matrix = fill_faer(rows);
         let custom_transpose = matrix.transpose();
         let faer_transpose = faer_matrix.transpose();
-        assert_matrixes_ulps_eq::<2, 3, _, _>(&custom_transpose, &faer_transpose);
+        assert_matrices_ulps_eq::<2, 3, _, _>(&custom_transpose, &faer_transpose);
     }
 
     #[test]
     fn test_transpose_1x1() {
         let rows = [[-9.0]];
         let matrix = Matrix::<1, 1> { rows };
-        assert_matrixes_ulps_eq::<1, 1, _, _>(&matrix.transpose(), &matrix);
+        assert_matrices_ulps_eq::<1, 1, _, _>(&matrix.transpose(), &matrix);
     }
 
     #[test]
@@ -1322,7 +1314,7 @@ mod tests {
         let expected = Matrix::<3, 3> {
             rows: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
         };
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&identity, &expected);
+        assert_matrices_ulps_eq::<3, 3, _, _>(&identity, &expected);
     }
 
     #[test]
@@ -1340,7 +1332,7 @@ mod tests {
         let expected_from_diag = Matrix {
             rows: [[1.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 9.0]],
         };
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&from_diag, &expected_from_diag);
+        assert_matrices_ulps_eq::<3, 3, _, _>(&from_diag, &expected_from_diag);
     }
 
     #[rstest(
@@ -1380,7 +1372,7 @@ mod tests {
         let product = matrix.matmul(&inv_matrix);
         let identity = Matrix22::identity();
 
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&product, &identity);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&product, &identity);
     }
     #[rstest(
         rows,
@@ -1395,7 +1387,7 @@ mod tests {
         let product = matrix.matmul(&inv_matrix);
         let identity = Matrix33::identity();
 
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&product, &identity);
+        assert_matrices_ulps_eq::<3, 3, _, _>(&product, &identity);
     }
     #[rstest(
         rows,
@@ -1408,6 +1400,6 @@ mod tests {
         let product = matrix.matmul(&inv_matrix);
         let identity = Matrix44::identity();
 
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&product, &identity);
+        assert_matrices_ulps_eq::<4, 4, _, _>(&product, &identity);
     }
 }

@@ -433,7 +433,7 @@ mod tests {
         MatMul, SquareMatrix,
         matrix::{
             qr::{get_q, get_r, q_times, qr_solve, qt_times, times_q, times_qt},
-            test_utils::assert_matrixes_ulps_eq,
+            test_utils::assert_matrices_ulps_eq,
         },
     };
 
@@ -446,7 +446,7 @@ mod tests {
         let correct_answer = Matrix::<3, 3> {
             rows: [[-3., -16., -26.], [0.2, -5., 0.], [0.4, 0., -10.]],
         };
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&correct_answer, &qr);
+        assert_matrices_ulps_eq::<3, 3, _, _>(&correct_answer, &qr);
     }
 
     #[test]
@@ -465,24 +465,24 @@ mod tests {
             ],
         };
 
-        assert_matrixes_ulps_eq::<4, 3, _, _>(&correct_answer, &qr);
+        assert_matrices_ulps_eq::<4, 3, _, _>(&correct_answer, &qr);
 
         let test_q = get_q(&qr, &taus);
         let test_r = get_r(&qr);
 
         let identity = Matrix::<4, 4>::identity();
-        assert_matrixes_ulps_eq::<4, 3, _, _>(&test_a, &test_q.matmul(&test_r));
-        assert_matrixes_ulps_eq::<4, 3, _, _>(&test_a, &q_times(&test_r, &qr, &taus));
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&identity, &times_q(&test_q.transpose(), &qr, &taus));
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&identity, &times_qt(&test_q, &qr, &taus));
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&identity, &qt_times(&test_q, &qr, &taus));
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&test_q, &q_times(&identity, &qr, &taus));
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&test_q, &times_q(&identity, &qr, &taus));
-        assert_matrixes_ulps_eq::<4, 4, _, _>(
+        assert_matrices_ulps_eq::<4, 3, _, _>(&test_a, &test_q.matmul(&test_r));
+        assert_matrices_ulps_eq::<4, 3, _, _>(&test_a, &q_times(&test_r, &qr, &taus));
+        assert_matrices_ulps_eq::<4, 4, _, _>(&identity, &times_q(&test_q.transpose(), &qr, &taus));
+        assert_matrices_ulps_eq::<4, 4, _, _>(&identity, &times_qt(&test_q, &qr, &taus));
+        assert_matrices_ulps_eq::<4, 4, _, _>(&identity, &qt_times(&test_q, &qr, &taus));
+        assert_matrices_ulps_eq::<4, 4, _, _>(&test_q, &q_times(&identity, &qr, &taus));
+        assert_matrices_ulps_eq::<4, 4, _, _>(&test_q, &times_q(&identity, &qr, &taus));
+        assert_matrices_ulps_eq::<4, 4, _, _>(
             &test_q.transpose(),
             &qt_times(&identity, &qr, &taus),
         );
-        assert_matrixes_ulps_eq::<4, 4, _, _>(
+        assert_matrices_ulps_eq::<4, 4, _, _>(
             &test_q.transpose(),
             &times_qt(&identity, &qr, &taus),
         );
@@ -494,7 +494,7 @@ mod tests {
             rows: [[1.0], [2.0], [3.0]],
         };
         let test_x = qr_solve(&test_a, &test_b);
-        assert_matrixes_ulps_eq::<3, 1, _, _>(&x_actual, &test_x);
+        assert_matrices_ulps_eq::<3, 1, _, _>(&x_actual, &test_x);
     }
 
     #[test]
@@ -505,7 +505,7 @@ mod tests {
         let (qr, taus) = super::qr_decomposition(&a);
         let q = super::get_q(&qr, &taus);
         let r = super::get_r(&qr);
-        assert_matrixes_ulps_eq::<4, 3, _, _>(&a, &q.matmul(&r));
+        assert_matrices_ulps_eq::<4, 3, _, _>(&a, &q.matmul(&r));
     }
 
     #[test]
@@ -516,8 +516,8 @@ mod tests {
         let r = super::get_r(&qr);
         let r_inv = super::get_r_inv(&qr);
         let identity = Matrix::<3, 3>::identity();
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&identity, &r.matmul(&r_inv));
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&identity, &r_inv.matmul(&r));
+        assert_matrices_ulps_eq::<3, 3, _, _>(&identity, &r.matmul(&r_inv));
+        assert_matrices_ulps_eq::<3, 3, _, _>(&identity, &r_inv.matmul(&r));
     }
 
     #[test]
@@ -531,10 +531,10 @@ mod tests {
         let id4 = Matrix::<4, 4>::identity();
 
         let t_q = super::times_q(&id4, &qr, &taus);
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&q, &t_q);
+        assert_matrices_ulps_eq::<4, 4, _, _>(&q, &t_q);
 
         let t_qt = super::times_qt(&id4, &qr, &taus);
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&q.transpose(), &t_qt);
+        assert_matrices_ulps_eq::<4, 4, _, _>(&q.transpose(), &t_qt);
     }
 
     #[test]
@@ -548,10 +548,10 @@ mod tests {
         let id4 = Matrix::<4, 4>::identity();
 
         let q_left = super::q_times(&id4, &qr, &taus);
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&q, &q_left);
+        assert_matrices_ulps_eq::<4, 4, _, _>(&q, &q_left);
 
         let qt_left = super::qt_times(&id4, &qr, &taus);
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&q.transpose(), &qt_left);
+        assert_matrices_ulps_eq::<4, 4, _, _>(&q.transpose(), &qt_left);
     }
 }
 
@@ -575,5 +575,5 @@ mod tests {
 //             [1. / 3., 1. / 5., -4., 0.],
 //         ],
 //     };
-//     assert_matrixes_ulps_eq::<3, 4, _, _>(&correct_answer, &qr);
+//     assert_matrices_ulps_eq::<3, 4, _, _>(&correct_answer, &qr);
 // }
