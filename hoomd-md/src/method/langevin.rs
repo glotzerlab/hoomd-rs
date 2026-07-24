@@ -72,8 +72,8 @@ use crate::{
 /// 
 /// ```math
 /// \begin{align*}
-/// \lang F_{R,j} \cdot F_{R,j} \rang &= 2 k T \gamma / \Delta t \\
-/// \lang \tau_{R,j} \cdot \tau_{R,j} \rang &= 2 k T \gamma_{R,j} / \Delta t \\
+/// \lang F_{R,j} \cdot F_{R,j} \rang &= 6 k T \gamma / \Delta t \\
+/// \lang \tau_{R,j} \cdot \tau_{R,j} \rang &= 6 k T \gamma_{R,j} / \Delta t \\
 /// \end{align*}
 /// ```
 /// 
@@ -81,11 +81,79 @@ use crate::{
 /// 
 /// [fluctuation-dissipation theorem]: https://en.wikipedia.org/wiki/Fluctuation%E2%80%93dissipation_theorem
 /// 
+/// Because `Langevin` rescales momentum and angular momentum according to the
+/// system's temperature, it can be considered as a kind of thermostat. For this
+/// reason, contrary to [`ConstantVolume`](crate::ConstantVolume), it does not
+/// store thermostats in its fields. To create a `Langevin`, provide a value for
+/// `delta_t`.
+/// 
 /// ```
 /// use hoomd_md::method::Langevin;
 /// 
 /// let delta_t = 0.001;
 /// let langevin = Langevin{ delta_t };
+/// ```
+/// 
+/// To use `Langevin`, create a microstate whose body properties use one of the
+/// [custom body cartesian newtypes], and implement [`Gamma`] and [`GammaR`] on
+/// that newtype.
+/// 
+/// [custom body cartesian newtypes]: hoomd_microstate::property
+/// [`Gamma`]: crate::Gamma
+/// [`GammaR`]: crate::GammaR
+/// 
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use hoomd_microstate::{
+///     Microstate,
+///     Body,
+///     property::{
+///         CustomBodyCartesian3,
+///         DynamicOrientedPoint,
+///         Point,
+///     }
+/// };
+/// use hoomd_vector::{Cartesian, Versor};
+/// use hoomd_md::method::{Gamma, GammaR};
+/// 
+/// #[derive(Clone)]
+/// struct ExtraProperties {
+///     pub gamma: f64,
+///     pub gamma_r: [f64; 3],
+/// }
+///
+/// type CustomBodyProperties = CustomBodyCartesian3<
+///     DynamicOrientedPoint<Cartesian<3>, Versor>,
+///     ExtraProperties
+/// >;
+///
+/// // Implement traits required for langevin on the custom type
+/// impl Gamma for CustomBodyProperties {
+///     fn gamma(&self) -> f64 {
+///         self.extra.gamma
+///     }
+/// }
+///
+/// impl GammaR for CustomBodyProperties {
+///     type GammaR = [f64; 3];
+///
+///     fn gamma_r(&self) -> Self::GammaR {
+///         self.extra.gamma_r
+///     }
+/// }
+/// 
+/// // Create microstate
+/// let mut microstate = Microstate::default();
+/// 
+/// microstate.add_body(Body::single_site(
+///     CustomBodyProperties {
+///         required: DynamicOrientedPoint::default(),
+///         extra: ExtraProperties { gamma: 1.0, gamma_r: [1.0; 3] }
+///     },
+///     Point::default(),
+/// ));
+/// # Ok(())
+/// # }
 /// ```
 pub struct Langevin {
     /// The time step size.
