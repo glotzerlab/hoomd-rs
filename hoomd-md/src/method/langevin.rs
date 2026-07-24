@@ -164,14 +164,12 @@ pub struct Langevin {
 impl Langevin {
     /// Apply drag and random forces and virials to selected bodies in the microstate.
     /// 
-    /// Drag forces are parameterized by [`Langevin.gamma`] and oppose the
-    /// direction of motion. Random forces are uniform and have magnitudes that
-    /// are consistent with the drag and system temperature in accordance with
-    /// the fluctuation-dissipation theorem. Drag and random virials are
-    /// calculated directly from these forces. For details, see
-    /// [above](crate::method::langevin).
+    /// Drag forces are parameterized by `gamma` and oppose the direction of
+    /// motion. Random forces are uniform and have magnitudes that scale with
+    /// drag and temperature. Drag and random virials are calculated directly
+    /// from these forces. For details, see [above](Langevin).
     #[inline]
-    fn apply_drag_and_random_forces_and_virials<const N: usize, B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    pub fn apply_drag_and_random_forces_and_virials<const N: usize, B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         rng: &mut R,
         microstate: &mut Microstate<B, S, X, C>,
@@ -221,16 +219,14 @@ impl Langevin {
 }
 
 /// Langevin torques in 3-dimensional cartesian space.
-impl Langevin
-{
+impl Langevin {
     /// Apply drag and random torques to selected bodies in the microstate.
     /// 
-    /// Drag torques are parameterized by [`Langevin.gamma_r`]. Random torques
-    /// are uniform and have magnitudes that are consistent with the drag and
-    /// system temperature in accordance with the fluctuation-dissipation
-    /// theorem. For details, see [above](crate::method::langevin).
+    /// Drag torques are parameterized by `gamma_r` and oppose the direction of
+    /// motion. Random torques are uniform and have magnitudes that scale with
+    /// drag and temperature. For details, see [above](Langevin).
     #[inline]
-    fn apply_drag_and_random_torques_3d<B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    pub fn apply_drag_and_random_torques_3d<B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         rng: &mut R,
         microstate: &mut Microstate<B, S, X, C>,
@@ -294,12 +290,11 @@ impl Langevin
 impl Langevin {
     /// Apply drag and random torques to selected bodies in the microstate.
     /// 
-    /// Drag torques are parameterized by [`Langevin.gamma_r`]. Random torques
-    /// are uniform and have magnitudes that are consistent with the drag and
-    /// system temperature in accordance with the fluctuation-dissipation
-    /// theorem. For details, see [above](crate::method::langevin).
+    /// Drag torques are parameterized by `gamma_r` and oppose the direction of
+    /// motion. Random torques are uniform and have magnitudes that scale with
+    /// drag and temperature. For details, see [above](Langevin).
     #[inline]
-    fn apply_drag_and_random_torques_2d<B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    pub fn apply_drag_and_random_torques_2d<B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         rng: &mut R,
         microstate: &mut Microstate<B, S, X, C>,
@@ -370,7 +365,7 @@ where
 {
     /// Integrate selected body positions forward a full step and their momenta forward a half step.
     ///
-    /// This method is identical to [`ConstantVolume::integrate_translation_half_step_one_with_filter`].
+    /// This method is identical to `ConstantVolume::integrate_translation_half_step_one_with_filter`.
     fn integrate_translation_half_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
@@ -396,7 +391,7 @@ where
     ///
     /// Aside from the application of drag and random forces and virials, this
     /// method is identical to
-    /// [`ConstantVolume::integrate_translation_half_step_two_with_filter`].
+    /// `ConstantVolume::integrate_translation_half_step_two_with_filter`.
     fn integrate_translation_half_step_two_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
@@ -445,7 +440,7 @@ where
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
-    /// This method is identical to [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
+    /// This method is identical to `ConstantVolume::integrate_rotation_half_step_one_with_filter`.
     fn integrate_rotation_half_step_one_with_filter<
         F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool
     >(
@@ -467,7 +462,7 @@ where
     /// angular momenta forward a half step.
     ///
     /// Aside from the application of drag and random torques, this method is
-    /// identical to [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
+    /// identical to `ConstantVolume::integrate_rotation_half_step_two_with_filter`.
     fn integrate_rotation_half_step_two_with_filter<
         F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool
     >(
@@ -517,7 +512,7 @@ where
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
-    /// This method is identical to [`ConstantVolume::integrate_rotation_half_step_one_with_filter`].
+    /// This method is identical to `ConstantVolume::integrate_rotation_half_step_one_with_filter`.
     fn integrate_rotation_half_step_one_with_filter<
         F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool
     >(
@@ -539,7 +534,7 @@ where
     /// angular momenta forward a half step.
     ///
     /// Aside from the application of drag and random torques, this method is
-    /// identical to [`ConstantVolume::integrate_rotation_half_step_two_with_filter`].
+    /// identical to `ConstantVolume::integrate_rotation_half_step_two_with_filter`.
     fn integrate_rotation_half_step_two_with_filter<
         F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool
     >(
