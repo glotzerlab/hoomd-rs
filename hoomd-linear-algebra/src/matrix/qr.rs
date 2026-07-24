@@ -89,7 +89,7 @@ use std::cmp::min;
 pub(super) fn qr_decomposition<const N: usize, const M: usize>(
     a: &Matrix<N, M>,
 ) -> (Matrix<N, M>, [f64; M]) {
-    let mut qr = a.clone();
+    let mut qr = *a;
     let mut taus = [0.0_f64; M];
 
     for i in 0..M {
@@ -97,7 +97,7 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
         let mut beta = 0.0;
 
         let x_norm_2 = qr
-            .get_col_slice_iter(i, (i + 1)..N)
+            .iter_column_slice(i, (i + 1)..N)
             .map(|x| x * x)
             .sum::<f64>();
 
@@ -121,11 +121,11 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
 
         // Collect the Householder vector v for this step (stored in column i, rows i..N).
         // Note: w_t is indexed from 0 but corresponds to columns (i+1)..M of qr.
-        let v_col: Vec<f64> = qr.get_col_slice_iter(i, i..N).collect();
+        let v_col: Vec<f64> = qr.iter_column_slice(i, i..N).collect();
 
         // Compute w^T = C^T * v, where C = qr[i..N, (i+1)..M].
         let mut w_t = vec![0.0; M - i - 1];
-        for (row_slice, &v_r) in qr.submatrix_slice_iter(i..N, (i + 1)..M).zip(v_col.iter()) {
+        for (row_slice, &v_r) in qr.iter_submatrix(i..N, (i + 1)..M).zip(v_col.iter()) {
             for (j, &val) in row_slice.iter().enumerate() {
                 w_t[j] += val * v_r;
             }
@@ -133,7 +133,7 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
 
         // Apply the rank-1 update: C -= tau * v * w^T.
         for (row_slice_mut, &v_r) in qr
-            .submatrix_slice_iter_mut(i..N, (i + 1)..M)
+            .iter_submatrix_mut(i..N, (i + 1)..M)
             .zip(v_col.iter())
         {
             for (j, cell) in row_slice_mut.iter_mut().enumerate() {
@@ -172,8 +172,8 @@ fn apply_householder_left<const N: usize, const M: usize, const K: usize>(
         w_t[col] += val; // leading element of v is 1
     }
     for (row_slice, v_r) in result
-        .submatrix_slice_iter(tail.clone(), 0..K)
-        .zip(qr.get_col_slice_iter(iter, tail.clone()))
+        .iter_submatrix(tail.clone(), 0..K)
+        .zip(qr.iter_column_slice(iter, tail.clone()))
     {
         for (col, &val) in row_slice.iter().enumerate() {
             w_t[col] += val * v_r;
@@ -182,7 +182,7 @@ fn apply_householder_left<const N: usize, const M: usize, const K: usize>(
 
     // result[iter..N, 0..K] -= tau * v * w^T
     for (col, val) in result
-        .submatrix_slice_iter_mut(iter..iter + 1, 0..K)
+        .iter_submatrix_mut(iter..iter + 1, 0..K)
         .next()
         .expect("submatrix must contain at least one row")
         .iter_mut()
@@ -191,8 +191,8 @@ fn apply_householder_left<const N: usize, const M: usize, const K: usize>(
         *val -= tau * w_t[col]; // leading element of v is 1
     }
     for (row_slice_mut, v_r) in result
-        .submatrix_slice_iter_mut(tail.clone(), 0..K)
-        .zip(qr.get_col_slice_iter(iter, tail.clone()))
+        .iter_submatrix_mut(tail.clone(), 0..K)
+        .zip(qr.iter_column_slice(iter, tail.clone()))
     {
         for (col, val) in row_slice_mut.iter_mut().enumerate() {
             *val -= tau * v_r * w_t[col];
@@ -221,15 +221,15 @@ fn apply_householder_right<const N: usize, const M: usize, const K: usize>(
     let mut w = vec![0.0; K];
 
     for (row, row_slice) in result
-        .submatrix_slice_iter(0..K, iter..iter + 1)
+        .iter_submatrix(0..K, iter..iter + 1)
         .enumerate()
     {
         w[row] += row_slice[0]; // leading element of v is 1
     }
-    for (row, row_slice) in result.submatrix_slice_iter(0..K, tail.clone()).enumerate() {
+    for (row, row_slice) in result.iter_submatrix(0..K, tail.clone()).enumerate() {
         for (&val, v_r) in row_slice
             .iter()
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
+            .zip(qr.iter_column_slice(iter, tail.clone()))
         {
             w[row] += val * v_r;
         }
@@ -237,18 +237,18 @@ fn apply_householder_right<const N: usize, const M: usize, const K: usize>(
 
     // result[0..K, iter..N] -= tau * w * v^T
     for (row, row_slice_mut) in result
-        .submatrix_slice_iter_mut(0..K, iter..iter + 1)
+        .iter_submatrix_mut(0..K, iter..iter + 1)
         .enumerate()
     {
         row_slice_mut[0] -= tau * w[row]; // leading element of v is 1
     }
     for (row, row_slice_mut) in result
-        .submatrix_slice_iter_mut(0..K, tail.clone())
+        .iter_submatrix_mut(0..K, tail.clone())
         .enumerate()
     {
         for (val, v_r) in row_slice_mut
             .iter_mut()
-            .zip(qr.get_col_slice_iter(iter, tail.clone()))
+            .zip(qr.iter_column_slice(iter, tail.clone()))
         {
             *val -= tau * w[row] * v_r;
         }
@@ -263,7 +263,7 @@ fn apply_householder_right<const N: usize, const M: usize, const K: usize>(
 #[inline]
 #[must_use]
 pub fn get_r<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> {
-    let mut r = qr.clone();
+    let mut r = *qr;
     for row in 1..N {
         for col in 0..min(row, M) {
             r[(row, col)] = 0.;
@@ -323,7 +323,7 @@ fn qt_times<const N: usize, const M: usize, const K: usize>(
     qr: &Matrix<N, M>,
     taus: &[f64],
 ) -> Matrix<N, K> {
-    let mut result = a.clone();
+    let mut result = *a;
     for (iter, &tau) in taus.iter().enumerate() {
         if tau != 0.0 {
             apply_householder_left(&mut result, qr, iter, tau);
@@ -344,7 +344,7 @@ pub fn q_times<const N: usize, const M: usize, const K: usize>(
     qr: &Matrix<N, M>,
     taus: &[f64],
 ) -> Matrix<N, K> {
-    let mut result = a.clone();
+    let mut result = *a;
     for (iter, &tau) in taus.iter().enumerate().rev() {
         if tau != 0.0 {
             apply_householder_left(&mut result, qr, iter, tau);
@@ -365,7 +365,7 @@ pub fn times_q<const N: usize, const M: usize, const K: usize>(
     qr: &Matrix<N, M>,
     taus: &[f64],
 ) -> Matrix<K, N> {
-    let mut result = a.clone();
+    let mut result = *a;
     for (iter, &tau) in taus.iter().enumerate() {
         // forward: H_{k-1} first, H_0 last
         if tau != 0.0 {
@@ -387,7 +387,7 @@ pub fn times_qt<const N: usize, const M: usize, const K: usize>(
     qr: &Matrix<N, M>,
     taus: &[f64],
 ) -> Matrix<K, N> {
-    let mut result = a.clone();
+    let mut result = *a;
     for (iter, &tau) in taus.iter().enumerate().rev() {
         // reverse: H_0 first, H_{k-1} last
         if tau != 0.0 {

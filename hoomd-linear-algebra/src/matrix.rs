@@ -6,7 +6,7 @@ use serde_with::serde_as;
 use std::fmt;
 
 /// ``std::ops`` implementations for [`Matrix`]
-pub mod ops;
+mod ops;
 /// ``qr`` decomposition for [`Matrix`] types.
 pub mod qr;
 
