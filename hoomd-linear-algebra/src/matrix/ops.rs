@@ -35,24 +35,6 @@ impl<const N: usize, const M: usize> IndexMut<(usize, usize)> for Matrix<N, M> {
     }
 }
 
-impl<const N: usize, const M: usize> Index<(usize, std::ops::Range<usize>)> for Matrix<N, M> {
-    type Output = [f64];
-
-    #[inline]
-    fn index(&self, index: (usize, std::ops::Range<usize>)) -> &Self::Output {
-        let (row_index, col_range) = index;
-        &self.rows[row_index][col_range]
-    }
-}
-
-impl<const N: usize, const M: usize> IndexMut<(usize, std::ops::Range<usize>)> for Matrix<N, M> {
-    #[inline]
-    fn index_mut(&mut self, index: (usize, std::ops::Range<usize>)) -> &mut Self::Output {
-        let (row_index, col_range) = index;
-        &mut self.rows[row_index][col_range]
-    }
-}
-
 /// Compute the elementwise scalar multiplication of a [`Matrix`]
 ///
 /// # Examples
@@ -177,46 +159,6 @@ impl<const N: usize, const M: usize> SubAssign for Matrix<N, M> {
     }
 }
 impl<const N: usize, const M: usize> Matrix<N, M> {
-    /// Extract a single row from a matrix.
-    ///
-    /// # Examples
-    /// ```
-    /// use hoomd_linear_algebra::matrix::Matrix;
-    ///
-    /// let m: Matrix<2, 3> = Matrix {
-    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-    /// };
-    /// let row = m.get_row(1);
-    /// assert_eq!(row.rows, [[4.0, 5.0, 6.0]]);
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn get_row(&self, row_index: usize) -> Matrix<1, M> {
-        Matrix {
-            rows: [self.rows[row_index]],
-        }
-    }
-
-    /// Extract a single column from a matrix.
-    ///
-    /// # Examples
-    /// ```
-    /// use hoomd_linear_algebra::matrix::Matrix;
-    ///
-    /// let m: Matrix<2, 3> = Matrix {
-    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-    /// };
-    /// let col = m.get_col(1);
-    /// assert_eq!(col.rows, [[2.0], [5.0]]);
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn get_col(&self, col_index: usize) -> Matrix<N, 1> {
-        Matrix {
-            rows: std::array::from_fn(|i| [self.rows[i][col_index]]),
-        }
-    }
-
     /// Extract a submatrix of size `R`x`C` starting at `(start_row, start_col)`.
     ///
     /// # Panics
@@ -276,13 +218,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         self.rows[row_range]
             .iter_mut()
             .map(move |row| &mut row[col_index])
-    }
-
-    /// Returns the matrix as a flat slice of `f64`.
-    #[must_use]
-    #[inline]
-    pub fn as_slice(&self) -> &[f64] {
-        self.rows.as_flattened()
     }
 
     /// Returns an iterator over slices of each row in a submatrix view.
@@ -526,28 +461,6 @@ mod tests {
     }
 
     #[test]
-    fn test_get_row() {
-        let m: Matrix<2, 3> = Matrix {
-            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-        };
-        let row0 = m.get_row(0);
-        assert_eq!(row0.rows, [[1.0, 2.0, 3.0]]);
-        let row1 = m.get_row(1);
-        assert_eq!(row1.rows, [[4.0, 5.0, 6.0]]);
-    }
-
-    #[test]
-    fn test_get_col() {
-        let m: Matrix<2, 3> = Matrix {
-            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-        };
-        let col0 = m.get_col(0);
-        assert_eq!(col0.rows, [[1.0], [4.0]]);
-        let col2 = m.get_col(2);
-        assert_eq!(col2.rows, [[3.0], [6.0]]);
-    }
-
-    #[test]
     fn test_get_submatrix() {
         let m: Matrix<3, 4> = Matrix {
             rows: [
@@ -570,24 +483,6 @@ mod tests {
         };
         let sub = m.get_submatrix::<2, 2>(0, 0);
         assert_eq!(sub.rows, [[1.0, 2.0], [4.0, 5.0]]);
-    }
-
-    #[test]
-    #[should_panic(expected = "index out of bounds: the len is 2 but the index is 2")]
-    fn test_get_row_panic() {
-        let m: Matrix<2, 3> = Matrix {
-            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-        };
-        let _ = m.get_row(2);
-    }
-
-    #[test]
-    #[should_panic(expected = "index out of bounds: the len is 3 but the index is 3")]
-    fn test_get_col_panic() {
-        let m: Matrix<2, 3> = Matrix {
-            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-        };
-        let _ = m.get_col(3);
     }
 
     #[test]
@@ -616,26 +511,6 @@ mod tests {
         };
         // this should panic because it tries to access col 4
         let _ = m.get_submatrix::<2, 2>(0, 3);
-    }
-
-    #[test]
-    fn test_get_row_slice() {
-        let m: Matrix<2, 3> = Matrix {
-            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-        };
-        let row_slice = &m[(1, 1..3)];
-        assert_eq!(row_slice, &[5.0, 6.0]);
-    }
-
-    #[test]
-    fn test_get_row_slice_mut() {
-        let mut m: Matrix<2, 3> = Matrix {
-            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-        };
-        let row_slice = &mut m[(1, 1..3)];
-        row_slice[0] = 99.0;
-        row_slice[1] = 101.0;
-        assert_eq!(m.rows, [[1.0, 2.0, 3.0], [4.0, 99.0, 101.0]]);
     }
 
     #[test]
@@ -670,15 +545,6 @@ mod tests {
             [9.0, 10.0, 11.0, 12.0],
         ];
         assert_eq!(m.rows, expected_rows);
-    }
-
-    #[test]
-    fn test_as_slice() {
-        let m: Matrix<2, 3> = Matrix {
-            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-        };
-        let slice = m.as_slice();
-        assert_eq!(slice, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
     }
 
     #[test]

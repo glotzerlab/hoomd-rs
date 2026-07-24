@@ -302,8 +302,8 @@ impl<const N: usize> Hyperparallelepiped<N> {
     pub fn nearest_plane_distances(&self) -> [PositiveReal; N] {
         let r_inv = get_r_inv(&self.qr);
         let distances: [PositiveReal; N] = std::array::from_fn(|i| {
-            let row = r_inv.get_row(i);
-            let inv_norm = 1.0 / row.as_slice().iter().map(|&x| x * x).sum::<f64>().sqrt();
+            let row = r_inv.rows[i];
+            let inv_norm = 1.0 / row.iter().map(|&x| x * x).sum::<f64>().sqrt();
             inv_norm.try_into().expect("row norm should be positive")
         });
         distances

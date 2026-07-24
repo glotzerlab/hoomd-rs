@@ -168,7 +168,7 @@ fn apply_householder_left<const N: usize, const M: usize, const K: usize>(
     // w^T = v^T * result[iter..N, 0..K]
     let mut w_t = vec![0.0; K];
 
-    for (col, &val) in result.get_row(iter).as_slice().iter().enumerate() {
+    for (col, &val) in result.rows[iter].iter().enumerate() {
         w_t[col] += val; // leading element of v is 1
     }
     for (row_slice, v_r) in result
