@@ -506,7 +506,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use hoomd_geometry::shape::Rectangle;
+    use hoomd_geometry::shape::{Cuboid, Rectangle};
     use hoomd_interaction::{MaximumInteractionRange, PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::LennardJones};
     use hoomd_microstate::{boundary::{MaximumAllowableInteractionRange, Periodic}, property::{DynamicOrientedPoint, Point}};
     use hoomd_simulation::macrostate::Isothermal;
