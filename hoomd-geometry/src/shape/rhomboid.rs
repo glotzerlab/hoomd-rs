@@ -34,9 +34,9 @@ use crate::{
 /// ```
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Rhomboid {
-    /// The extents [``L_x``, ``L_y``] of each edge along the Cartesian axes ``x`` and ``y``.
+    /// The extents [$`L_x`$, $`L_y`$] of each edge along the Cartesian axes *x* and *y*.
     pub extents: [PositiveReal; 2],
-    /// The shear applied to the shape in the x direction relative to ``L_y``
+    /// The shear applied to the shape in the *x* direction relative to $`L_y`$
     pub xy: f64,
 }
 
@@ -91,11 +91,14 @@ impl Rhomboid {
 
     /// Construct a rhomboid from a 2D hyperparallelepiped.
     ///
-    /// Computes the rhomboid box parameters from a parallelogram with edge vectors $`\vec{u}_i`$by computing
-    /// the edge vectors and applying the transformation formulas:
+    /// Computes the rhomboid box parameters from a parallelogram with edge vectors $`\vec{u}_i`$
+    /// by computing the edge vectors and applying the transformation formulas:
     /// ```math
-    ///     L_x = |\vec{u}_1|, \quad L_y = \sqrt{|\vec{u}_2|^2 - \frac{(\vec{u}_1 \cdot \vec{u}_2)^2}{|\vec{u}_1|^2}} \quad
-    ///     xy = \frac{\vec{u}_1 \cdot \vec{u}_2}{|\vec{u}_1| L_y}
+    ///     \begin{align*}
+    ///     L_x &= |\vec{u}_1| \\
+    ///     L_y &= \sqrt{|\vec{u}_2|^2 - \frac{(\vec{u}_1 \cdot \vec{u}_2)^2}{|\vec{u}_1|^2}} \\
+    ///     xy &= \frac{\vec{u}_1 \cdot \vec{u}_2}{|\vec{u}_1| L_y}
+    ///     \end{align*}
     /// ```
     ///
     /// # Example
@@ -144,13 +147,13 @@ impl Rhomboid {
         }
     }
 
-    /// The extent in the x-direction (lx)
+    /// The extent in the x-direction: $`L_x`$
     #[inline]
     pub fn lx(&self) -> PositiveReal {
         self.extents[0]
     }
 
-    /// The extent in the y-direction (ly)
+    /// The extent in the y-direction: $`L_y`$
     #[inline]
     pub fn ly(&self) -> PositiveReal {
         self.extents[1]
@@ -319,7 +322,7 @@ impl Rhomboid {
 
     /// Get the perpendicular distances between parallel edges of the rhomboid.
     ///
-    /// Returns [`d_x`, `d_y`] where `d_i` is the width in direction i.
+    /// Returns [$`d_x`$, $`d_y`$] where $`d_i`$ is the width in direction *i*.
     ///
     /// # Example
     ///

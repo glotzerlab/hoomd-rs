@@ -25,7 +25,11 @@ use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume, shape::Hyper
 /// describe the ratio of the length of the components of the basis vector to the extent in
 /// the corresponding direction. That is, the edges of the box are spanned by the vectors:
 /// ```math
-///  \vec{a}_1 = \left(L_x,0,0\right) \qquad \vec{a}_2 = \left(xyL_y,L_y,0\right) \qquad \vec{a}_3 = \left(xzL_z,yzL_z,L_z\right)
+///  \begin{align*}
+///  \vec{a}_1 &= \left(L_x, 0, 0\right) \\
+///  \vec{a}_2 &= \left(L_y \cdot xy, L_y, 0\right) \\
+///  \vec{a}_3 &= \left(L_z \cdot xz, L_z \cdot yz, L_z\right)
+///  \end{align*}
 /// ```
 ///
 /// The box is centered at the origin, $`(0,0,0)`$.
@@ -44,7 +48,7 @@ use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume, shape::Hyper
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Triclinic {
-    /// The extents of each edge of the triclinic box. [lx, ly, lz]
+    /// The extents of each edge of the triclinic box. [$`L_x`$, $`L_y`$], $`L_z`$]
     pub extents: [PositiveReal; 3],
     /// The tilt factors that define the shear of the box.
     ///
@@ -59,9 +63,16 @@ impl Triclinic {
     /// Computes the triclinic parameters from a parallelepiped with edge vectors $`\vec{u}_i`$ by computing
     /// applying the transformation formulas:
     /// ```math
-    ///     a_{2x} = \frac{\vec{u}_1\cdot \vec{u}_2}{v_1}, \qquad a_{3x} = \frac{\vec{u}_1\cdot \vec{u}_3}{u_1} \\[3pt]
-    ///     L_x = u_1, \qquad L_y = \sqrt{u_2^2 - a_{2x}^2}, \qquad L_z = \vec{u}_3 \cdot \frac{\vec{u}_1 \times \vec{u}_2}{\left|\vec{u}_1 \times \vec{u}_2 \right|}\\[2pt]
-    ///     xy = \frac{a_{2x}}{L_y}, \qquad xz = \frac{a_{3x}}{L_z}, \qquad yz = \frac{\vec{u}_2\cdot \vec{u}_3 - a_{2x} a_{3x}}{L_yL_z}
+    ///     \begin{align*}
+    ///     a_{2,x} &= \frac{\vec{u}_1\cdot \vec{u}_2}{v_1} \\
+    ///     a_{3,x} &= \frac{\vec{u}_1\cdot \vec{u}_3}{u_1} \\
+    ///     L_x &= u_1 \\
+    ///     L_y &= \sqrt{u_2^2 - a_{2,x}^2} \\
+    ///     L_z &= \vec{u}_3 \cdot \frac{\vec{u}_1 \times \vec{u}_2}{\left|\vec{u}_1 \times \vec{u}_2 \right|} \\
+    ///     xy &= \frac{a_{2,x}}{L_y} \\
+    ///     xz &= \frac{a_{3,x}}{L_z} \\
+    ///     yz &= \frac{\vec{u}_2\cdot \vec{u}_3 - a_{2,x} a_{3,x}}{L_yL_z}
+    ///     \end{align*}
     /// ```
     ///
     /// # Example
@@ -215,9 +226,9 @@ impl Triclinic {
     /// Namely,
     /// ```math
     /// \begin{align*}
-    ///     r_1 &= L_x s_1 + xyL_y s_2 + xzL_z s_3\\
-    ///     r_2 &= L_y s_2 + yz L_z s_3\\
-    ///     r_3 &= L_z s_3.\\
+    ///     r_1 &= L_x \cdot s_1 + L_y \cdot xy \cdot s_2 + xzL_z s_3 \\
+    ///     r_2 &= L_y \cdot s_2 + L_z \cdot yz \cdot s_3 \\
+    ///     r_3 &= L_z \cdot s_3 \\
     /// \end{align*}
     /// ```
     ///
@@ -249,15 +260,16 @@ impl Triclinic {
 
     /// Get the edge vectors of the triclinic box.
     ///
-    /// Returns the three basis vectors [`a_1`, `a_2`, `a_3`] that span the box edges.
+    /// Returns the three basis vectors [$`\vec{a}_1`$, $`\vec{a}_2`$, $`\vec{a}_3`$] that span the box edges.
     /// These vectors are computed from the extents and tilt factors.
     /// ```math
-    /// \begin{align*}
-    ///     \vec{a}_1 &= \left( L_x, 0, 0 \right) \\
-    ///     \vec{a}_2 &= \left( xy L_y, L_y, 0 \right) \\
-    ///     \vec{a}_3 &= \left( xz L_z, yz L_z, L_z \right)
-    /// \end{align*}
+    ///  \begin{align*}
+    ///  \vec{a}_1 &= \left(L_x, 0, 0\right) \\
+    ///  \vec{a}_2 &= \left(L_y \cdot xy, L_y, 0\right) \\
+    ///  \vec{a}_3 &= \left(L_z \cdot xz, L_z \cdot yz, L_z\right)
+    ///  \end{align*}
     /// ```
+    ///
     /// # Example
     ///
     /// ```
