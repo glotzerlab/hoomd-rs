@@ -252,7 +252,7 @@ mod tests {
     fn maximum_allowable_tilted(sheared_triclinic: Triclinic) {
         // Test with tilted box
         let max_range = sheared_triclinic.maximum_allowable_interaction_range();
-        assert!(max_range == 1.0 / (9.0_f64 - 4.0 * 2.0_f64.sqrt()).sqrt());
+        assert_eq!(max_range, 1.0 / (9.0_f64 - 4.0 * 2.0_f64.sqrt()).sqrt());
     }
 
     #[test]
