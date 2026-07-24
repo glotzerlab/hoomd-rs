@@ -6,10 +6,8 @@
 use super::ZeroCenterAngularMomentum;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::{
-        DynamicOrientedPoint, DynamicPoint, Mass, Momentum, Position, RotationalMotionTypes,
+    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
+        CustomBodyCartesian2, CustomBodyCartesian3, DynamicOrientedPoint, DynamicPoint, Mass, Momentum, Position, RotationalMotionTypes,
     },
 };
 use hoomd_spatial::PointUpdate;
@@ -224,6 +222,29 @@ where
     }
 }
 
+impl<R, E, S, X, C> ZeroCenterAngularMomentum<CustomBodyCartesian3<R, E>, S>
+    for Microstate<CustomBodyCartesian3<R, E>, S, X, C>
+where
+    CustomBodyCartesian3<R, E>: Clone
+        + Transform<S>
+        + Position<Position = Cartesian<3>>
+        + Mass
+        + Momentum<Momentum = Cartesian<3>>,
+    S: Position<Position = Cartesian<3>> + Default,
+    X: PointUpdate<Cartesian<3>, SiteKey>,
+    C: Wrap<CustomBodyCartesian3<R, E>> + Wrap<S> + GenerateGhosts<S>,
+{
+    #[inline]
+    fn zero_center_angular_momentum_with_filter<
+        F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool,
+    >(
+        &mut self,
+        should_zero_body: F,
+    ) {
+        zero_angular_momentum_cartesian3(self, should_zero_body);
+    }
+}
+
 impl<R, S, X, C> ZeroCenterAngularMomentum<DynamicOrientedPoint<Cartesian<2>, R>, S>
     for Microstate<DynamicOrientedPoint<Cartesian<2>, R>, S, X, C>
 where
@@ -255,6 +276,29 @@ where
     #[inline]
     fn zero_center_angular_momentum_with_filter<
         F: Fn(&Tagged<Body<DynamicPoint<Cartesian<2>>, S>>) -> bool,
+    >(
+        &mut self,
+        should_zero_body: F,
+    ) {
+        zero_angular_momentum_cartesian2(self, should_zero_body);
+    }
+}
+
+impl<R, E, S, X, C> ZeroCenterAngularMomentum<CustomBodyCartesian2<R, E>, S>
+    for Microstate<CustomBodyCartesian2<R, E>, S, X, C>
+where
+    CustomBodyCartesian2<R, E>: Clone
+        + Transform<S>
+        + Position<Position = Cartesian<2>>
+        + Mass
+        + Momentum<Momentum = Cartesian<2>>,
+    S: Position<Position = Cartesian<2>> + Default,
+    X: PointUpdate<Cartesian<2>, SiteKey>,
+    C: Wrap<CustomBodyCartesian2<R, E>> + Wrap<S> + GenerateGhosts<S>,
+{
+    #[inline]
+    fn zero_center_angular_momentum_with_filter<
+        F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool,
     >(
         &mut self,
         should_zero_body: F,
