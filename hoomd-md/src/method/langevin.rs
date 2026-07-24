@@ -102,8 +102,6 @@ impl Langevin {
     /// the fluctuation-dissipation theorem. Drag and random virials are
     /// calculated directly from these forces. For details, see
     /// [above](crate::method::langevin).
-    /// 
-    /// TODO: check whether virials should be updated
     #[inline]
     fn apply_drag_and_random_forces_and_virials<const N: usize, B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
@@ -354,10 +352,6 @@ where
         );
     }
 }
-
-// TODO: check that we want to make users use the CustomBodyCartesian3 and 2 in
-// order to use Langevin (because currently GammaR is not implemented on
-// DynamicOrientedPoint).
 
 /// Rotational motion in 3-dimensional cartesian space.
 impl<R, E, S, X, C, M> RotationalMotion<CustomBodyCartesian3<R, E>, S, X, C, M>
