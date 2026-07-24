@@ -4,10 +4,10 @@
 //! Implement [`Hyperparallelepiped`]
 use std::array;
 
-use hoomd_linear_algebra::matrix::{
+use hoomd_linear_algebra::{MatMul, SquareMatrix, matrix::{
     Matrix,
     qr::{self, get_r, get_r_inv},
-};
+}};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 use rand::{
@@ -307,6 +307,30 @@ impl<const N: usize> Hyperparallelepiped<N> {
             inv_norm.try_into().expect("row norm should be positive")
         });
         distances
+    }
+
+    /// Apply a shear transformation to the hyperparallelepiped.
+    ///
+    /// The `parallel_axis` defines the direction along which the shear is
+    /// performed, and `perpendicular_axis` defines the direction of displacement.
+    #[inline]
+    #[must_use]
+    pub fn shear(
+        &self,
+        angle: f64,
+        parallel_axis: &Cartesian<N>,
+        perpendicular_axis: &Cartesian<N>,
+    ) -> Self {
+        let shear_matrix = Matrix::<N, N>::identity()
+            + perpendicular_axis
+                .to_column_matrix()
+                .matmul(&parallel_axis.to_row_matrix())
+                * angle.tan();
+        let edge_vectors = self.edge_vectors.map(|v| Cartesian {
+            coordinates: v.to_row_matrix().matmul(&shear_matrix).rows[0],
+        });
+
+        Self::new(edge_vectors)
     }
 }
 
@@ -871,5 +895,29 @@ mod tests {
         for i in 0..3 {
             assert_relative_eq!(expected[i], distances[i].get(), epsilon = 1.0e-4);
         }
+    }
+  
+    #[test]
+    fn test_parallelepiped_shear() {
+        let hyperparallelpiped = Hyperparallelepiped::new([
+            Cartesian::from([1.0, 0.0, 0.0]),
+            Cartesian::from([0.0, 1.0, 0.0]),
+            Cartesian::from([0.0, 0.0, 1.0]),
+        ]);
+        let parallel_axis = Cartesian {
+            coordinates: [1., 0., 0.],
+        };
+        let perpendicular_axis = Cartesian {
+            coordinates: [0., 0., 1.],
+        };
+        let angle = std::f64::consts::PI / 6.0;
+        let sheared = hyperparallelpiped.shear(angle, &parallel_axis, &perpendicular_axis);
+        assert_relative_eq!(sheared.edge_vectors[0], [1., 0., 0.].into(), epsilon = 1e-14);
+        assert_relative_eq!(sheared.edge_vectors[1], [0., 1., 0.].into(), epsilon = 1e-14);
+        assert_relative_eq!(
+            sheared.edge_vectors[2],
+            [f64::sqrt(3.) / 3., 0., 1.].into(),
+            epsilon = 1e-14
+        );
     }
 }

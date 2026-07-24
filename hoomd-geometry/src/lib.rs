@@ -125,7 +125,6 @@ mod convex;
 pub use convex::Convex;
 
 pub mod shape;
-pub mod shapemoves;
 pub mod xenocollide;
 
 /// The N-hypervolume of a geometry. In 2D, this is area and in 3D this is Volume.
