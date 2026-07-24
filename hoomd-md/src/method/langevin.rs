@@ -506,65 +506,238 @@ where
 
 #[cfg(test)]
 mod tests {
-    use hoomd_microstate::property::Point;
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_interaction::{MaximumInteractionRange, PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::LennardJones};
+    use hoomd_microstate::{boundary::{MaximumAllowableInteractionRange, Periodic}, property::{DynamicOrientedPoint, Point}};
+    use hoomd_simulation::macrostate::Isothermal;
+    use hoomd_spatial::VecCell;
     use super::*;
-    use strum::VariantNames;
-    use strum_macros::VariantNames;
+    use crate::modify::{
+        ThermalizeMomentum,
+        ThermalizeAngularMomentum,
+        ZeroCenterMomentum,
+        ZeroCenterAngularMomentum
+    };
+
+    const R_CUT: f64 = 3.0;
+
+    /// Make a simple LJ force using the constant R_CUT.
+    fn make_lj() -> Rigid<PairwiseCutoff<Isotropic<LennardJones::<12, 6>>>> {
+        let epsilon = 1.0;
+        let sigma = 1.0;
+
+        Rigid(PairwiseCutoff(Isotropic {
+            interaction: LennardJones::<12, 6> { epsilon, sigma },
+            r_cut: R_CUT,
+        }))
+    }
+
+    /// Make a simple microstate with 2 bodies of a given template placed at given positions.
+    fn make_microstate<const N: usize, G, E, B, S, X, C>(
+        boundary_shape: G,
+        positions: &mut [Cartesian<N>; 2],
+        interaction_model: &E,
+        body_template: Body<B, S>,
+    ) -> anyhow::Result<Microstate<B, S, VecCell<SiteKey, N>, Periodic<G>>>
+    where
+        Body<B, S>: Clone,
+        G: MaximumAllowableInteractionRange,
+        B: Transform<S> + Position<Position = Cartesian<N>>,
+        S: Position<Position = Cartesian<N>> + Default,
+        E: MaximumInteractionRange,
+        Periodic<G>: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    {
+        let vec_cell = VecCell::builder()
+            .nominal_search_radius(
+                interaction_model.maximum_interaction_range().try_into()?,
+            )
+            .build();
+        let boundary =
+            Periodic::new(interaction_model.maximum_interaction_range(), boundary_shape)?;
+        
+        let mut microstate = Microstate::builder()
+            .spatial_data(vec_cell)
+            .boundary(boundary)
+            .try_build()?;
+
+        for p in positions {
+            let mut body = body_template.clone();
+            let mut body_position = body.properties.position_mut();
+            body_position = p;
+            microstate.add_body(body);
+        }
+
+        Ok(microstate)
+    }
 
     #[test]
     fn test_langevin() {
-        type B2 = DynamicOrientedPoint<Cartesian<2>, Angle>;
-        type B3 = DynamicOrientedPoint<Cartesian<3>, Versor>;
-
-        let dt = 2.0;
-        
-        let lan = Langevin::<2, B2, _, _, _>::builder(dt).build();
-        assert_eq!(lan.delta_t, dt);
-
-        let lan = Langevin::<3, B3, _, _, _>::builder(dt).build();
-        assert_eq!(lan.delta_t, dt);
+        let delta_t = 0.001;
+        let langevin = Langevin{ delta_t };
+        assert_eq!(delta_t, langevin.delta_t);
     }
 
-    fn test_custom_gamma() {
-        // Ensure that creating a type-dependent gamma works in Langevin for 2D.
-        // type PositionVector = Cartesian<2>;
-        // type BodyProperties = DynamicOrientedPoint<PositionVector, Angle>;
+    /// Ensure that custom 2D cartesian bodies move around.
+    #[test]
+    fn test_langevin_bodies_move_cartesian2() -> anyhow::Result<()> {
+        // Define the type that will hold the extra body properties
+        #[derive(Clone)]
+        struct ExtraBodyProperties {
+            pub gamma: f64,
+            pub gamma_r: f64,
+        }
 
-        // #[derive(Clone, Copy, Default, PartialEq, VariantNames)]
-        // enum BodyType {
-        //     #[default]
-        //     A,
-        //     B
-        // }
-        
-        // #[derive(Position, Orientation, Mass, PartialEq, VariantNames)]
-        // struct BodyProperties {
-        //     position: PositionVector,
-        //     site_type: SiteType,
-        // }
+        // Type alias for custom body properties type
+        type CustomBodyType = CustomBodyCartesian2<
+            DynamicOrientedPoint<Cartesian<2>, Angle>,
+            ExtraBodyProperties
+        >;
 
+        // Impl traits required for langevin on custom body properties type
+        impl Gamma for CustomBodyType {
+            fn gamma(&self) -> f64 {
+                self.extra.gamma
+            }
+        }
 
+        impl GammaR for CustomBodyType {
+            type GammaR = f64;
 
-        // impl Transform<SiteProperties> for BodyProperties {
-        //     fn transform(&self, site_properties: &SiteProperties) -> SiteProperties {
-        //         SiteProperties {
-        //             position: self.position + site_properties.position,
-        //             ..*site_properties
-        //         }
-        //     }
-        // }
+            fn gamma_r(&self) -> Self::GammaR {
+                self.extra.gamma_r
+            }
+        }
 
-        // impl Gamma<BodyProperties> for SiteProperties {
-        //     fn value(&self, body_properties: &BodyProperties) -> f64 {
-        //         todo!()
-        //     }
-        
-        //     fn value_mut(&mut self, body_properties: &BodyProperties) -> &mut f64 {
-        //         todo!()
-        //     }
-        // }
+        // Interaction model
+        let interaction_model = make_lj();
 
+        // Build microstate
+        type BoxShape = Rectangle;
+        let boundary_shape = BoxShape::with_equal_edges((2.5 * R_CUT).try_into()?);
+        let mut positions = [
+            Cartesian::<2>::from([-2.0, 0.0]),
+            Cartesian::<2>::from([2.0, 0.0]),
+        ];
+        let body_template = Body::single_site(
+            CustomBodyType {
+                required: DynamicOrientedPoint::default(),
+                extra: ExtraBodyProperties { gamma: 1.0, gamma_r: 1.0 }
+            },
+            Point::default(),
+        );
+        let mut microstate = make_microstate::<2, _, _, _, _, VecCell<SiteKey, 2>, Periodic<BoxShape>>(
+            boundary_shape,
+            &mut positions,
+            &interaction_model,
+            body_template
+        ).unwrap();
+
+        // Macrostate and related
+        let temperature = 1.5;
+        let macrostate = Isothermal { temperature };
+
+        microstate.thermalize_momentum(temperature);
+        microstate.thermalize_angular_momentum(temperature);
+        microstate.zero_center_angular_momentum();
+        microstate.zero_center_momentum();
+
+        // Integrate.
+        let mut langevin = Langevin{ delta_t: 0.001 };
+        for _ in 0..5 {
+            langevin.integrate_translation(
+                &mut microstate,
+                &macrostate,
+                &interaction_model
+            );
+            microstate.increment_step();
+        }
+
+        // Ensure the positions have changed
+        assert_ne!(positions[0], microstate.bodies()[0].item.properties.position().clone());
+        assert_ne!(positions[1], microstate.bodies()[1].item.properties.position().clone());
+
+        Ok(())
     }
 
-    fn test_custom_gamma_r() {}
+    /// Ensure that custom 3D cartesian bodies move around.
+    #[test]
+    fn test_langevin_bodies_move_cartesian3() -> anyhow::Result<()> {
+        // Define the type that will hold the extra body properties
+        #[derive(Clone)]
+        struct ExtraBodyProperties {
+            pub gamma: f64,
+            pub gamma_r: [f64; 3],
+        }
+
+        // Type alias for custom body properties type
+        type CustomBodyType = CustomBodyCartesian3<
+            DynamicOrientedPoint<Cartesian<3>, Versor>,
+            ExtraBodyProperties
+        >;
+
+        // Impl traits required for langevin on custom body properties type
+        impl Gamma for CustomBodyType {
+            fn gamma(&self) -> f64 {
+                self.extra.gamma
+            }
+        }
+
+        impl GammaR for CustomBodyType {
+            type GammaR = [f64; 3];
+
+            fn gamma_r(&self) -> Self::GammaR {
+                self.extra.gamma_r
+            }
+        }
+
+        // Interaction model
+        let interaction_model = make_lj();
+
+        // Build microstate
+        type BoxShape = Cuboid;
+        let boundary_shape = BoxShape::with_equal_edges((2.5 * R_CUT).try_into()?);
+        let mut positions = [
+            Cartesian::<3>::from([-2.0, 0.0, 0.0]),
+            Cartesian::<3>::from([2.0, 0.0, 0.0]),
+        ];
+        let body_template = Body::single_site(
+            CustomBodyType {
+                required: DynamicOrientedPoint::default(),
+                extra: ExtraBodyProperties { gamma: 1.0, gamma_r: [1.0; 3] }
+            },
+            Point::default(),
+        );
+        let mut microstate = make_microstate::<3, _, _, _, _, VecCell<SiteKey, 3>, Periodic<BoxShape>>(
+            boundary_shape,
+            &mut positions,
+            &interaction_model,
+            body_template
+        ).unwrap();
+
+        // Macrostate and related
+        let temperature = 1.5;
+        let macrostate = Isothermal { temperature };
+
+        microstate.thermalize_momentum(temperature);
+        microstate.thermalize_angular_momentum(temperature);
+        microstate.zero_center_angular_momentum();
+        microstate.zero_center_momentum();
+
+        // Integrate.
+        let mut langevin = Langevin{ delta_t: 0.001 };
+        for _ in 0..5 {
+            langevin.integrate_translation(
+                &mut microstate,
+                &macrostate,
+                &interaction_model
+            );
+            microstate.increment_step();
+        }
+
+        // Ensure the positions have changed
+        assert_ne!(positions[0], microstate.bodies()[0].item.properties.position().clone());
+        assert_ne!(positions[1], microstate.bodies()[1].item.properties.position().clone());
+
+        Ok(())
+    }
 }
