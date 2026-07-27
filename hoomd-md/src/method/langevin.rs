@@ -58,7 +58,7 @@ use crate::{
 /// body from all other bodies and external interactions, $` \gamma `$ and
 /// $` \gamma_R `$ are the translational and rotational drag coefficients, and
 /// $` \vec{F}_R `$ and $` \vec{\tau}_R `$ are random forces and torques. These
-/// random forces and torques are uniform
+/// random forces and torques are zero-centered
 /// 
 /// ```math
 /// \begin{align*}
@@ -67,13 +67,14 @@ use crate::{
 /// \end{align*}
 /// ```
 /// 
-/// and their magnitudes are chosen via the [fluctuation-dissipation theorem]
-/// to be consistent with the specified drag and temperature
+/// and their magnitudes are uniformly distributed, with variances chosen via
+/// the [fluctuation-dissipation theorem] to be consistent with the specified
+/// drag and temperature
 /// 
 /// ```math
 /// \begin{align*}
-/// \lang F_{R,j} \cdot F_{R,j} \rang &= 6 k T \gamma / \Delta t \\
-/// \lang \tau_{R,j} \cdot \tau_{R,j} \rang &= 6 k T \gamma_{R,j} / \Delta t \\
+/// \lang F_{R,j} \cdot F_{R,j} \rang &= 2 k T \gamma / \Delta t \\
+/// \lang \tau_{R,j} \cdot \tau_{R,j} \rang &= 2 k T \gamma_{R,j} / \Delta t \\
 /// \end{align*}
 /// ```
 /// 
