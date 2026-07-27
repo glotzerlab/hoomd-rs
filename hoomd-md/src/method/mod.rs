@@ -9,6 +9,9 @@ pub use constant_volume::{ConstantVolume, ConstantVolumeBuilder};
 mod langevin;
 pub use langevin::Langevin;
 
+mod brownian;
+pub use brownian::Brownian;
+
 /// The translational drag coefficient.
 /// 
 /// `Gamma` describes a type that provides a float representing $` \gamma `$,
