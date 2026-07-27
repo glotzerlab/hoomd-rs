@@ -174,7 +174,7 @@ impl Langevin {
         rng: &mut R,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
-        should_integrate_body: F,
+        should_update_body: F,
     )
     where
         B: Position<Position = Cartesian<N>>
@@ -193,7 +193,7 @@ impl Langevin {
     {
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
+            if !should_update_body(body) {
                 continue;
             }
             let mut body_properties = body.item.properties.clone();
@@ -231,7 +231,7 @@ impl Langevin {
         rng: &mut R,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
-        should_integrate_body: F,
+        should_update_body: F,
     )
     where
         B: Transform<S>
@@ -250,7 +250,7 @@ impl Langevin {
     {       
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
+            if !should_update_body(body) {
                 continue;
             }
             let mut body_properties = body.item.properties.clone();
@@ -299,7 +299,7 @@ impl Langevin {
         rng: &mut R,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
-        should_integrate_body: F,
+        should_update_body: F,
     )
     where
         B: Transform<S>
@@ -318,7 +318,7 @@ impl Langevin {
     {       
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
+            if !should_update_body(body) {
                 continue;
             }
             let mut body_properties = body.item.properties.clone();
