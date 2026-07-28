@@ -6,33 +6,17 @@
 use core::array::from_fn;
 
 use hoomd_microstate::{
-    Body,
-    Microstate,
-    SiteKey,
-    Tagged,
-    Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::{
-        AngularMomentum,
-        CustomBodyCartesian2,
-        CustomBodyCartesian3,
-        Mass,
-        MomentOfInertia,
-        Momentum,
-        NetForce,
-        NetTorque,
-        Orientation,
-        Position,
-        RotationalMotionTypes
+    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
+        AngularMomentum, Drag, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Orientation, Position, RotationalDrag
     }
 };
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Angle, Cartesian, Quaternion, Rotate, Versor, Wedge};
+use hoomd_vector::{Angle, Cartesian, Quaternion, Rotate, Versor};
 
 use rand_distr::{Distribution, Normal, Uniform};
 
-use crate::{RotationalKineticEnergy, RotationalMotion, TranslationalMotion, method::{Gamma, GammaR}};
+use crate::{RotationalMotion, TranslationalMotion};
 
 /// Integrate bodies' degrees of freedom in the microstate according to
 /// Brownian equations of motion.
@@ -46,7 +30,7 @@ where
     B: Position<Position = Cartesian<N>>
         + Momentum<Momentum = Cartesian<N>>
         + NetForce<NetForce = Cartesian<N>>
-        + Gamma
+        + Drag
         + Mass
         + Transform<S>
         + Clone,
@@ -73,7 +57,7 @@ where
             let mut body_properties = body.item.properties.clone();
 
             // Pick a random force
-            let g = body_properties.gamma();
+            let g = body_properties.drag().clone();
             let uniform = Uniform::new_inclusive(-1.0, 1.0).unwrap();
             let magnitude = (6.0 * macrostate.temperature() * g / self.delta_t).sqrt();
             let f_rand = Cartesian::<N>::from(from_fn(|_| magnitude * uniform.sample(&mut rng)));
@@ -108,33 +92,23 @@ where
 }
 
 /// Rotational motion in 3-dimensional cartesian space.
-impl<R, E, S, X, C, M> RotationalMotion<CustomBodyCartesian3<R, E>, S, X, C, M>
+impl<S, X, C, M> RotationalMotion<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C, M>
     for Brownian
 where
-    CustomBodyCartesian3<R, E>: Clone
-        + Transform<S>
-        + Position<Position = Cartesian<3>>
-        + Orientation<Rotation = Versor>
-        + AngularMomentum<AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum>
-        + MomentOfInertia<MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia>
-        + NetTorque<NetTorque = <Cartesian<3> as Wedge>::Bivector>,
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<CustomBodyCartesian3<R, E>>
+    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>>
         + Wrap<S>
         + GenerateGhosts<S>,
     M: Temperature,
-    CustomBodyCartesian3<R, E>: Copy
-        + Transform<S>
-        + GammaR<GammaR = [f64; 3]>,
-    Microstate<CustomBodyCartesian3<R, E>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian3<R, E>, S>
+    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
 {
     /// Integrate selected bodies forward a whole step. [TODO]
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian3<R, E>, S, X, C>,
+        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -149,7 +123,7 @@ where
             let mut body_properties = body.item.properties.clone();
 
             // Pick a random torque in the body frame
-            let g_r = body_properties.gamma_r();
+            let g_r = body_properties.rotational_drag();
             let moi = *body_properties.moment_of_inertia();
             let t_rand = Cartesian::<3>::from(from_fn(|i| {
                 let normal = Normal::new(
@@ -200,43 +174,33 @@ where
 
     /// Do nothing. (There is no second step in brownian dynamics.)
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool
     >(
         &mut self,
-        _microstate: &mut Microstate<CustomBodyCartesian3<R, E>, S, X, C>,
+        _microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
         _macrostate: &M,
         _should_integrate_body: F,
     ) {}
 }
 
 /// Rotational motion in 2-dimensional cartesian space.
-impl<R, E, S, X, C, M> RotationalMotion<CustomBodyCartesian2<R, E>, S, X, C, M>
+impl<S, X, C, M> RotationalMotion<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C, M>
     for Brownian
 where
-    CustomBodyCartesian2<R, E>: Clone
-        + Transform<S>
-        + Position<Position = Cartesian<2>>
-        + Orientation<Rotation = Angle>
-        + AngularMomentum<AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum>
-        + MomentOfInertia<MomentOfInertia = <Angle as RotationalMotionTypes>::MomentOfInertia>
-        + NetTorque<NetTorque = <Cartesian<2> as Wedge>::Bivector>,
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<CustomBodyCartesian2<R, E>>
+    C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>>
         + Wrap<S>
         + GenerateGhosts<S>,
     M: Temperature,
-    CustomBodyCartesian2<R, E>: Copy
-        + Transform<S>
-        + GammaR<GammaR = f64>,
-    Microstate<CustomBodyCartesian2<R, E>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian2<R, E>, S>,
+    DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>
 {
     /// Integrate selected bodies forward a whole step. [TODO]
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian2<R, E>, S, X, C>,
+        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -251,7 +215,7 @@ where
             let mut body_properties = body.item.properties.clone();
 
             // Pick a random torque in the body frame
-            let g_r = body_properties.gamma_r();
+            let g_r = body_properties.rotational_drag();
             let moi = *body_properties.moment_of_inertia();
             let normal = Normal::new(
                 0.0,
@@ -290,10 +254,10 @@ where
 
     /// Do nothing. (There is no second step in brownian dynamics.)
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool
     >(
         &mut self,
-        _microstate: &mut Microstate<CustomBodyCartesian2<R, E>, S, X, C>,
+        _microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
         _macrostate: &M,
         _should_integrate_body: F,
     ) {}
@@ -375,34 +339,6 @@ mod tests {
     /// Ensure that custom 2D cartesian bodies move around.
     #[test]
     fn test_brownian_bodies_move_cartesian2() -> anyhow::Result<()> {
-        // Define the type that will hold the extra body properties
-        #[derive(Clone)]
-        struct ExtraBodyProperties {
-            pub gamma: f64,
-            pub gamma_r: f64,
-        }
-
-        // Type alias for custom body properties type
-        type CustomBodyType = CustomBodyCartesian2<
-            DynamicOrientedPoint<Cartesian<2>, Angle>,
-            ExtraBodyProperties
-        >;
-
-        // Impl traits required for brownian on custom body properties type
-        impl Gamma for CustomBodyType {
-            fn gamma(&self) -> f64 {
-                self.extra.gamma
-            }
-        }
-
-        impl GammaR for CustomBodyType {
-            type GammaR = f64;
-
-            fn gamma_r(&self) -> Self::GammaR {
-                self.extra.gamma_r
-            }
-        }
-
         // Interaction model
         let interaction_model = make_lj();
 
@@ -414,10 +350,7 @@ mod tests {
             Cartesian::<2>::from([2.0, 0.0]),
         ];
         let body_template = Body::single_site(
-            CustomBodyType {
-                required: DynamicOrientedPoint::default(),
-                extra: ExtraBodyProperties { gamma: 1.0, gamma_r: 1.0 }
-            },
+            DynamicOrientedPoint::<_, Angle>::default(),
             Point::default(),
         );
         let mut microstate = make_microstate::<2, _, _, _, _, VecCell<SiteKey, 2>, Periodic<BoxShape>>(
@@ -457,34 +390,6 @@ mod tests {
     /// Ensure that custom 3D cartesian bodies move around.
     #[test]
     fn test_brownian_bodies_move_cartesian3() -> anyhow::Result<()> {
-        // Define the type that will hold the extra body properties
-        #[derive(Clone)]
-        struct ExtraBodyProperties {
-            pub gamma: f64,
-            pub gamma_r: [f64; 3],
-        }
-
-        // Type alias for custom body properties type
-        type CustomBodyType = CustomBodyCartesian3<
-            DynamicOrientedPoint<Cartesian<3>, Versor>,
-            ExtraBodyProperties
-        >;
-
-        // Impl traits required for brownian on custom body properties type
-        impl Gamma for CustomBodyType {
-            fn gamma(&self) -> f64 {
-                self.extra.gamma
-            }
-        }
-
-        impl GammaR for CustomBodyType {
-            type GammaR = [f64; 3];
-
-            fn gamma_r(&self) -> Self::GammaR {
-                self.extra.gamma_r
-            }
-        }
-
         // Interaction model
         let interaction_model = make_lj();
 
@@ -496,10 +401,7 @@ mod tests {
             Cartesian::<3>::from([2.0, 0.0, 0.0]),
         ];
         let body_template = Body::single_site(
-            CustomBodyType {
-                required: DynamicOrientedPoint::default(),
-                extra: ExtraBodyProperties { gamma: 1.0, gamma_r: [1.0; 3] }
-            },
+            DynamicOrientedPoint::<_, Versor>::default(),
             Point::default(),
         );
         let mut microstate = make_microstate::<3, _, _, _, _, VecCell<SiteKey, 3>, Periodic<BoxShape>>(

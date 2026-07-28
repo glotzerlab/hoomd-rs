@@ -7,36 +7,17 @@ use hoomd_simulation::macrostate::Temperature;
 use rand::{Rng, distr::Distribution};
 
 use hoomd_microstate::{
-    Body,
-    Microstate,
-    SiteKey,
-    Tagged,
-    Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::{
-        AngularMomentum,
-        CustomBodyCartesian2,
-        CustomBodyCartesian3,
-        Mass,
-        MomentOfInertia,
-        Momentum,
-        NetForce,
-        NetTorque,
-        NetVirial,
-        Orientation,
-        Position,
-        RotationalMotionTypes
+    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
+        AngularMomentum, Drag, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, NetVirial, Position, RotationalDrag
     }
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Angle, Cartesian, Outer, Versor, Wedge};
+use hoomd_vector::{Angle, Cartesian, Outer, Versor};
 use rand_distr::Uniform;
 use crate::{
-    RotationalKineticEnergy,
     RotationalMotion,
     TranslationalKineticEnergy,
     TranslationalMotion,
-    method::{Gamma, GammaR},
     thermostat::NoThermostat
 };
 
@@ -91,71 +72,66 @@ use crate::{
 /// use hoomd_md::method::Langevin;
 /// 
 /// let delta_t = 0.001;
-/// let langevin = Langevin{ delta_t };
+/// let mut langevin = Langevin{ delta_t };
 /// ```
 /// 
-/// To use `Langevin`, create a microstate whose body properties use one of the
-/// [custom body cartesian newtypes], and implement [`Gamma`] and [`GammaR`] on
-/// that newtype.
-/// 
-/// [`ConstantVolume`]: crate::method::ConstantVolume
-/// [custom body cartesian newtypes]: hoomd_microstate::property
-/// [`Gamma`]: crate::method::Gamma
-/// [`GammaR`]: crate::method::GammaR
+/// To use `Langevin`, assign translational and rotational drag coefficients
+/// directly to bodies.
 /// 
 /// ```
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # use hoomd_md::method::Langevin;
+/// # let delta_t = 0.001;
+/// # let mut langevin = Langevin{ delta_t };
 /// use hoomd_microstate::{
 ///     Microstate,
 ///     Body,
-///     property::{
-///         CustomBodyCartesian3,
-///         DynamicOrientedPoint,
-///         Point,
-///     }
+///     property::{DynamicOrientedPoint, Point},
 /// };
-/// use hoomd_vector::{Cartesian, Versor};
-/// use hoomd_md::method::{Gamma, GammaR};
+/// use hoomd_vector::Versor;
+/// use hoomd_simulation::macrostate::Isothermal;
+/// use hoomd_interaction::{
+///     PairwiseCutoff,
+///     Rigid,
+///     pairwise::Isotropic,
+///     univariate::LennardJones
+/// };
+/// use hoomd_md::RotationalMotion;
 /// 
-/// #[derive(Clone)]
-/// struct ExtraProperties {
-///     pub gamma: f64,
-///     pub gamma_r: [f64; 3],
-/// }
-///
-/// type CustomBodyProperties = CustomBodyCartesian3<
-///     DynamicOrientedPoint<Cartesian<3>, Versor>,
-///     ExtraProperties
-/// >;
-///
-/// // Implement traits required for langevin on the custom type
-/// impl Gamma for CustomBodyProperties {
-///     fn gamma(&self) -> f64 {
-///         self.extra.gamma
-///     }
-/// }
-///
-/// impl GammaR for CustomBodyProperties {
-///     type GammaR = [f64; 3];
-///
-///     fn gamma_r(&self) -> Self::GammaR {
-///         self.extra.gamma_r
-///     }
-/// }
-/// 
-/// // Create microstate
+/// // Microstate
 /// let mut microstate = Microstate::default();
-/// 
 /// microstate.add_body(Body::single_site(
-///     CustomBodyProperties {
-///         required: DynamicOrientedPoint::default(),
-///         extra: ExtraProperties { gamma: 1.0, gamma_r: [1.0; 3] }
+///     DynamicOrientedPoint::<_, Versor> {
+///         drag: 2.0,
+///         rotational_drag: [1.0, 2.0, 3.0],
+///         ..Default::default()
 ///     },
 ///     Point::default(),
 /// ));
+/// 
+/// // Macrostate
+/// let macrostate = Isothermal { temperature: 1.0 };
+/// 
+/// // Interaction Model
+/// let lj = Rigid(PairwiseCutoff(Isotropic {
+///     interaction: LennardJones::<12, 6> {
+///         epsilon: 1.0,
+///         sigma: 1.0
+///     },
+///     r_cut: 4.0,
+/// }));
+/// 
+/// // Integrate
+/// langevin.integrate_translation_and_rotation(
+///     &mut microstate,
+///     &macrostate,
+///     &lj
+/// );
 /// # Ok(())
 /// # }
 /// ```
+/// 
+/// [`ConstantVolume`]: (crate::method::ConstantVolume)
 pub struct Langevin {
     /// The time step size.
     pub delta_t: f64,
@@ -183,7 +159,7 @@ impl Langevin {
             + NetForce<NetForce = Cartesian<N>>
             + NetVirial<NetVirial = <Cartesian<N> as Outer>::Tensor>
             + Mass
-            + Gamma
+            + Drag
             + Transform<S>
             + Clone,
         S: Position<Position = Cartesian<N>> + Default,
@@ -200,9 +176,9 @@ impl Langevin {
             let mut body_properties = body.item.properties.clone();
 
             // Calculate the drag force
-            let g = body_properties.gamma();
+            let g = body_properties.drag();
             let v = *body_properties.momentum() / body_properties.mass();
-            let f_drag = v * g * -1.0;
+            let f_drag = v * *g * -1.0;
             
             // Pick a random force
             let magnitude = (6.0 * macrostate.temperature() * g / self.delta_t).sqrt();
@@ -240,7 +216,7 @@ impl Langevin {
             + AngularMomentum<AngularMomentum = Cartesian<3>>
             + MomentOfInertia<MomentOfInertia = [f64; 3]>
             + NetTorque<NetTorque = Cartesian<3>>
-            + GammaR<GammaR = [f64; 3]>,
+            + RotationalDrag<RotationalDrag = [f64; 3]>,
         S: Position<Position = Cartesian<3>> + Default,
         X: PointUpdate<Cartesian<3>, SiteKey>,
         C: Wrap<B>
@@ -257,7 +233,7 @@ impl Langevin {
             let mut body_properties = body.item.properties.clone();
 
             // Calculate the drag torque
-            let g_r = body_properties.gamma_r();
+            let g_r = body_properties.rotational_drag();
             let moi = body_properties.moment_of_inertia();
             let angular_momentum = body_properties.angular_momentum();
             let w = Cartesian::<3>::from(
@@ -308,7 +284,7 @@ impl Langevin {
             + AngularMomentum<AngularMomentum = f64>
             + MomentOfInertia<MomentOfInertia = f64>
             + NetTorque<NetTorque = f64>
-            + GammaR<GammaR = f64>,
+            + RotationalDrag<RotationalDrag = f64>,
         S: Position<Position = Cartesian<2>> + Default,
         X: PointUpdate<Cartesian<2>, SiteKey>,
         C: Wrap<B>
@@ -325,7 +301,7 @@ impl Langevin {
             let mut body_properties = body.item.properties.clone();
 
             // Calculate the drag torque
-            let g_r = body_properties.gamma_r();
+            let g_r = body_properties.rotational_drag();
             let moi = body_properties.moment_of_inertia();
             let angular_momentum = body_properties.angular_momentum();
             let w = angular_momentum / moi;
@@ -355,7 +331,7 @@ where
         + NetVirial<NetVirial = <Cartesian<N> as Outer>::Tensor>
         + NetTorque
         + AngularMomentum
-        + Gamma
+        + Drag
         + Mass
         + Transform<S>
         + Clone,
@@ -418,35 +394,25 @@ where
 }
 
 /// Rotational motion in 3-dimensional cartesian space.
-impl<R, E, S, X, C, M> RotationalMotion<CustomBodyCartesian3<R, E>, S, X, C, M>
+impl<S, X, C, M> RotationalMotion<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C, M>
     for Langevin
 where
-    CustomBodyCartesian3<R, E>: Clone
-        + Transform<S>
-        + Position<Position = Cartesian<3>>
-        + Orientation<Rotation = Versor>
-        + AngularMomentum<AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum>
-        + MomentOfInertia<MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia>
-        + NetTorque<NetTorque = <Cartesian<3> as Wedge>::Bivector>,
     S: Position<Position = Cartesian<3>> + Default,
     X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<CustomBodyCartesian3<R, E>>
+    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>>
         + Wrap<S>
         + GenerateGhosts<S>,
     M: Temperature,
-    CustomBodyCartesian3<R, E>: Copy
-        + Transform<S>
-        + GammaR<GammaR = [f64; 3]>,
-    Microstate<CustomBodyCartesian3<R, E>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian3<R, E>, S>
+    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
     /// This method is identical to `ConstantVolume::integrate_rotation_half_step_one_with_filter`.
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian3<R, E>, S, X, C>,
+        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -465,10 +431,10 @@ where
     /// Aside from the application of drag and random torques, this method is
     /// identical to `ConstantVolume::integrate_rotation_half_step_two_with_filter`.
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian3<R, E>, S, X, C>,
+        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -490,35 +456,25 @@ where
 }
 
 /// Rotational motion in 2-dimensional cartesian space.
-impl<R, E, S, X, C, M> RotationalMotion<CustomBodyCartesian2<R, E>, S, X, C, M>
+impl<S, X, C, M> RotationalMotion<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C, M>
     for Langevin
 where
-    CustomBodyCartesian2<R, E>: Clone
-        + Transform<S>
-        + Position<Position = Cartesian<2>>
-        + Orientation<Rotation = Angle>
-        + AngularMomentum<AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum>
-        + MomentOfInertia<MomentOfInertia = <Angle as RotationalMotionTypes>::MomentOfInertia>
-        + NetTorque<NetTorque = <Cartesian<2> as Wedge>::Bivector>,
     S: Position<Position = Cartesian<2>> + Default,
     X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<CustomBodyCartesian2<R, E>>
+    C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>>
         + Wrap<S>
         + GenerateGhosts<S>,
     M: Temperature,
-    CustomBodyCartesian2<R, E>: Copy
-        + Transform<S>
-        + GammaR<GammaR = f64>,
-    Microstate<CustomBodyCartesian2<R, E>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian2<R, E>, S>,
+    DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>,
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
     /// This method is identical to `ConstantVolume::integrate_rotation_half_step_one_with_filter`.
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian2<R, E>, S, X, C>,
+        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -537,10 +493,10 @@ where
     /// Aside from the application of drag and random torques, this method is
     /// identical to `ConstantVolume::integrate_rotation_half_step_two_with_filter`.
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian2<R, E>, S, X, C>,
+        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -635,37 +591,9 @@ mod tests {
         assert_eq!(delta_t, langevin.delta_t);
     }
 
-    /// Ensure that custom 2D cartesian bodies move around.
+    /// Ensure that 2D cartesian bodies move around.
     #[test]
     fn test_langevin_bodies_move_cartesian2() -> anyhow::Result<()> {
-        // Define the type that will hold the extra body properties
-        #[derive(Clone)]
-        struct ExtraBodyProperties {
-            pub gamma: f64,
-            pub gamma_r: f64,
-        }
-
-        // Type alias for custom body properties type
-        type CustomBodyType = CustomBodyCartesian2<
-            DynamicOrientedPoint<Cartesian<2>, Angle>,
-            ExtraBodyProperties
-        >;
-
-        // Impl traits required for langevin on custom body properties type
-        impl Gamma for CustomBodyType {
-            fn gamma(&self) -> f64 {
-                self.extra.gamma
-            }
-        }
-
-        impl GammaR for CustomBodyType {
-            type GammaR = f64;
-
-            fn gamma_r(&self) -> Self::GammaR {
-                self.extra.gamma_r
-            }
-        }
-
         // Interaction model
         let interaction_model = make_lj();
 
@@ -677,10 +605,7 @@ mod tests {
             Cartesian::<2>::from([2.0, 0.0]),
         ];
         let body_template = Body::single_site(
-            CustomBodyType {
-                required: DynamicOrientedPoint::default(),
-                extra: ExtraBodyProperties { gamma: 1.0, gamma_r: 1.0 }
-            },
+            DynamicOrientedPoint::<_, Angle>::default(),
             Point::default(),
         );
         let mut microstate = make_microstate::<2, _, _, _, _, VecCell<SiteKey, 2>, Periodic<BoxShape>>(
@@ -720,34 +645,6 @@ mod tests {
     /// Ensure that custom 3D cartesian bodies move around.
     #[test]
     fn test_langevin_bodies_move_cartesian3() -> anyhow::Result<()> {
-        // Define the type that will hold the extra body properties
-        #[derive(Clone)]
-        struct ExtraBodyProperties {
-            pub gamma: f64,
-            pub gamma_r: [f64; 3],
-        }
-
-        // Type alias for custom body properties type
-        type CustomBodyType = CustomBodyCartesian3<
-            DynamicOrientedPoint<Cartesian<3>, Versor>,
-            ExtraBodyProperties
-        >;
-
-        // Impl traits required for langevin on custom body properties type
-        impl Gamma for CustomBodyType {
-            fn gamma(&self) -> f64 {
-                self.extra.gamma
-            }
-        }
-
-        impl GammaR for CustomBodyType {
-            type GammaR = [f64; 3];
-
-            fn gamma_r(&self) -> Self::GammaR {
-                self.extra.gamma_r
-            }
-        }
-
         // Interaction model
         let interaction_model = make_lj();
 
@@ -759,10 +656,7 @@ mod tests {
             Cartesian::<3>::from([2.0, 0.0, 0.0]),
         ];
         let body_template = Body::single_site(
-            CustomBodyType {
-                required: DynamicOrientedPoint::default(),
-                extra: ExtraBodyProperties { gamma: 1.0, gamma_r: [1.0; 3] }
-            },
+            DynamicOrientedPoint::<_, Versor>::default(),
             Point::default(),
         );
         let mut microstate = make_microstate::<3, _, _, _, _, VecCell<SiteKey, 3>, Periodic<BoxShape>>(

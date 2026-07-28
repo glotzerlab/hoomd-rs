@@ -7,7 +7,7 @@
 
 use super::ThermalizeAngularMomentum;
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, CustomBodyCartesian2, CustomBodyCartesian3, DynamicOrientedPoint, MomentOfInertia, Position, RotationalMotionTypes},
+    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, DynamicOrientedPoint, MomentOfInertia, Position, RotationalMotionTypes},
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, Versor};
@@ -114,7 +114,7 @@ where
     microstate.increment_substep();
 }
 
-/// Thermalize angular momentum in 2-dimensional cartesian space for simple bodies.
+/// Thermalize angular momentum for bodies in 2-dimensional cartesian space.
 impl<S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<Cartesian<2>, Angle>, S>
     for Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>
 where
@@ -139,35 +139,7 @@ where
     }
 }
 
-/// Thermalize angular momentum in 2-dimensional cartesian space for custom bodies.
-impl<R, E, S, X, C> ThermalizeAngularMomentum<CustomBodyCartesian2<R, E>, S>
-    for Microstate<CustomBodyCartesian2<R, E>, S, X, C>
-where
-    R: Position<Position = Cartesian<2>>
-        + MomentOfInertia<MomentOfInertia = <Angle as RotationalMotionTypes>::MomentOfInertia>
-        + AngularMomentum<AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum>,
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<CustomBodyCartesian2<R, E>> + Wrap<S> + GenerateGhosts<S>,
-    CustomBodyCartesian2<R, E>: Clone + Transform<S>,
-{
-    #[inline]
-    fn thermalize_angular_momentum_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool,
-    >(
-        &mut self,
-        temperature: f64,
-        should_thermalize_body: F,
-    ) {
-        thermalize_angular_momentum_with_filter_cartesian2(
-            self,
-            temperature,
-            should_thermalize_body
-        );
-    }
-}
-
-/// Thermalize angular momentum in 3-dimensional cartesian space for simple bodies.
+/// Thermalize angular momentum for bodies in 3-dimensional cartesian space.
 impl<S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<Cartesian<3>, Versor>, S>
     for Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>
 where
@@ -179,34 +151,6 @@ where
     #[inline]
     fn thermalize_angular_momentum_with_filter<
         F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool,
-    >(
-        &mut self,
-        temperature: f64,
-        should_thermalize_body: F,
-    ) {
-        thermalize_angular_momentum_with_filter_cartesian3(
-            self,
-            temperature,
-            should_thermalize_body
-        );
-    }
-}
-
-/// Thermalize angular momentum in 3-dimensional cartesian space for custom bodies.
-impl<R, E, S, X, C> ThermalizeAngularMomentum<CustomBodyCartesian3<R, E>, S>
-    for Microstate<CustomBodyCartesian3<R, E>, S, X, C>
-where
-    R: Position<Position = Cartesian<3>>
-        + MomentOfInertia<MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia>
-        + AngularMomentum<AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum>,
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<CustomBodyCartesian3<R, E>> + Wrap<S> + GenerateGhosts<S>,
-    CustomBodyCartesian3<R, E>: Clone + Transform<S>,
-{
-    #[inline]
-    fn thermalize_angular_momentum_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool,
     >(
         &mut self,
         temperature: f64,

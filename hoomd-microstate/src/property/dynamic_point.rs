@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::{Mass, Momentum, NetForce, OrientedPoint, Point, Position};
-use crate::{Transform, property::NetVirial};
+use crate::{Transform, property::{Drag, NetVirial}};
 use hoomd_vector::{Outer, Vector};
 
 /// A position in space with the properties necessary for translational motion in MD.
@@ -47,6 +47,10 @@ where
 
     /// The net virial applied to the body in a [`Microstate`](crate::Microstate) $`[\mathrm{energy}]`$.
     pub net_virial: V::Tensor,
+
+    /// The translational drag coefficient.
+    #[serde(default)]
+    pub drag: f64,
 }
 
 impl<V> Default for DynamicPoint<V>
@@ -70,6 +74,7 @@ where
     /// assert_eq!(dynamic_point.momentum, [0.0, 0.0, 0.0].into());
     /// assert_eq!(dynamic_point.net_force, [0.0, 0.0, 0.0].into());
     /// assert_eq!(dynamic_point.net_virial, Matrix::zeros());
+    /// assert_eq!(dynamic_point.drag, 1.0);
     /// ```
     #[inline]
     fn default() -> Self {
@@ -79,6 +84,7 @@ where
             momentum: Default::default(),
             net_force: Default::default(),
             net_virial: V::Tensor::default(),
+            drag: 1.0,
         }
     }
 }
@@ -231,6 +237,16 @@ impl<V: Outer> NetVirial for DynamicPoint<V> {
     }
 }
 
+impl<V: Outer> Drag for DynamicPoint<V> {
+    fn drag(&self) -> &f64 {
+        &self.drag
+    }
+
+    fn drag_mut(&mut self) -> &mut f64 {
+        &mut self.drag
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -272,5 +288,14 @@ mod test {
         *dynamic_point.net_force_mut() = [1.0, 2.0].into();
         assert_eq!(dynamic_point.net_force, [1.0, 2.0].into());
         assert_eq!(dynamic_point.net_force(), &[1.0, 2.0].into());
+    }
+
+    #[test]
+    fn drag() {
+        let mut dynamic_point = DynamicPoint::<Cartesian<2>>::default();
+
+        *dynamic_point.drag_mut() = 2.0;
+        assert_eq!(dynamic_point.drag, 2.0);
+        assert_eq!(dynamic_point.drag(), &2.0);
     }
 }

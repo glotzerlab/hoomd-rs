@@ -9,17 +9,19 @@ use super::{
     AngularMomentum, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Orientation,
     OrientedPoint, Point, Position, RotationalMotionTypes,
 };
-use crate::{Transform, property::NetVirial};
+use crate::{Transform, property::{Drag, NetVirial, RotationalDrag}};
 use hoomd_vector::{Angle, Cartesian, Outer, Rotate, Rotation, Vector, Versor, Wedge};
 
 impl RotationalMotionTypes for Angle {
     type MomentOfInertia = f64;
     type AngularMomentum = f64;
+    type RotationalDrag = f64;
 }
 
 impl RotationalMotionTypes for Versor {
     type MomentOfInertia = [f64; 3];
     type AngularMomentum = Cartesian<3>;
+    type RotationalDrag = [f64; 3];
 }
 
 /// A position in space with the properties necessary for translational and
@@ -78,6 +80,14 @@ where
 
     /// The net torque applied to the body by others in a [`Microstate`](crate::Microstate) $` [\mathrm{energy}] `$.
     pub net_torque: V::Bivector,
+
+    /// The translational drag coefficient.
+    #[serde(default)]
+    pub drag: f64,
+    
+    /// The rotational drag coefficient(s).
+    #[serde(default)]
+    pub rotational_drag: R::RotationalDrag,
 }
 
 impl<V> Default for DynamicOrientedPoint<V, Angle>
@@ -106,6 +116,8 @@ where
     /// assert_eq!(dynamic_point.net_force, [0.0, 0.0].into());
     /// assert_eq!(dynamic_point.net_virial, Matrix::zeros());
     /// assert_eq!(dynamic_point.net_torque, 0.0);
+    /// assert_eq!(dynamic_point.drag, 1.0);
+    /// assert_eq!(dynamic_point.rotational_drag, 1.0);
     /// ```
     #[inline]
     fn default() -> Self {
@@ -119,6 +131,8 @@ where
             net_force: Default::default(),
             net_virial: V::Tensor::default(),
             net_torque: Default::default(),
+            drag: 1.0,
+            rotational_drag: 1.0,
         }
     }
 }
@@ -147,6 +161,8 @@ where
     /// assert_eq!(dynamic_point.angular_momentum, [0.0, 0.0, 0.0].into());
     /// assert_eq!(dynamic_point.net_force, [0.0, 0.0, 0.0].into());
     /// assert_eq!(dynamic_point.net_torque, [0.0, 0.0, 0.0].into());
+    /// assert_eq!(dynamic_point.drag, 1.0);
+    /// assert_eq!(dynamic_point.rotational_drag, [1.0; 3]);
     /// ```
     #[inline]
     fn default() -> Self {
@@ -160,6 +176,8 @@ where
             net_force: Default::default(),
             net_virial: V::default().outer(&V::default()),
             net_torque: Default::default(),
+            drag: 1.0,
+            rotational_drag: [1.0; 3],
         }
     }
 }
@@ -413,6 +431,36 @@ where
     }
 }
 
+impl<V, R> Drag for DynamicOrientedPoint<V, R>
+where
+    V: Wedge + Outer,
+    R: RotationalMotionTypes,
+{
+    fn drag(&self) -> &f64 {
+        &self.drag
+    }
+
+    fn drag_mut(&mut self) -> &mut f64 {
+        &mut self.drag
+    }
+}
+
+impl<V, R> RotationalDrag for DynamicOrientedPoint<V, R>
+where
+    V: Wedge + Outer,
+    R: RotationalMotionTypes
+{
+    type RotationalDrag = <R as RotationalMotionTypes>::RotationalDrag;
+
+    fn rotational_drag(&self) -> &Self::RotationalDrag {
+        &self.rotational_drag
+    }
+
+    fn rotational_drag_mut(&mut self) -> &mut Self::RotationalDrag {
+        &mut self.rotational_drag
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -490,5 +538,23 @@ mod test {
         *dynamic_point.net_torque_mut() = 2.0;
         assert_eq!(dynamic_point.net_torque, 2.0);
         assert_eq!(dynamic_point.net_torque(), &2.0);
+    }
+
+    #[test]
+    fn drag() {
+        let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
+
+        *dynamic_point.drag_mut() = 2.0;
+        assert_eq!(dynamic_point.drag, 2.0);
+        assert_eq!(dynamic_point.drag(), &2.0);
+    }
+
+    #[test]
+    fn rotational_drag() {
+        let mut dynamic_point = DynamicOrientedPoint::<Cartesian<2>, Angle>::default();
+
+        *dynamic_point.rotational_drag_mut() = 2.0;
+        assert_eq!(dynamic_point.rotational_drag, 2.0);
+        assert_eq!(dynamic_point.rotational_drag(), &2.0);
     }
 }

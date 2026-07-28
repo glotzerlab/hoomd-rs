@@ -431,6 +431,39 @@ pub trait NetTorque {
     fn net_torque_mut(&mut self) -> &mut Self::NetTorque;
 }
 
+/// A body's translational drag coefficient.
+/// 
+/// Translational drag is used for `Langevin` and `Brownian` integration.
+/// 
+/// # Units
+/// 
+/// The units of [`Drag`] are $` [\mathrm{mass} / \mathrm{time}] `$
+pub trait Drag {
+    /// The drag coefficient on this body.
+    fn drag(&self) -> &f64;
+
+    /// The mutable drag coefficient on this body.
+    fn drag_mut(&mut self) -> &mut f64;
+}
+
+/// A body's rotational drag coefficient. [TODO]
+///
+/// Rotational drag is used for `Langevin` and `Brownian` integration.
+/// 
+/// # Units
+/// 
+/// The units of [`RotationalDrag`] are $` [\mathrm{moment of inertia} / \mathrm{time}] `$
+pub trait RotationalDrag {
+    /// Type that can express the rotational drag coefficients for a body.
+    type RotationalDrag;
+    
+    /// The rotational drag coefficient(s) on this body.
+    fn rotational_drag(&self) -> &Self::RotationalDrag;
+
+    /// The mutable rotational drag coefficient(s) on this body.
+    fn rotational_drag_mut(&mut self) -> &mut Self::RotationalDrag;
+}
+
 /// Moment of inertia and angular momentum types.
 ///
 /// [`RotationalMotionTypes`] sets which structs store the moment of inertia
@@ -440,332 +473,6 @@ pub trait RotationalMotionTypes {
     type MomentOfInertia;
     /// Type that stores the angular momentum.
     type AngularMomentum;
-}
-
-// TODO: inline?
-
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CustomBodyCartesian2<R, E> {
-    pub required: R,
-    pub extra: E,
-}
-
-impl<R, E> Transform<Point<Cartesian<2>>> for CustomBodyCartesian2<R, E>
-where
-    R: Transform<Point<Cartesian<2>>>
-{
-    #[inline]
-    fn transform(&self, site_properties: &Point<Cartesian<2>>) -> Point<Cartesian<2>> {
-        self.required.transform(site_properties)
-    }
-}
-
-impl<R, E> Transform<OrientedPoint<Cartesian<2>, Angle>> for CustomBodyCartesian2<R, E>
-where
-    R: Transform<OrientedPoint<Cartesian<2>, Angle>>
-{
-    #[inline]
-    fn transform(
-        &self,
-        site_properties: &OrientedPoint<Cartesian<2>, Angle>
-    ) -> OrientedPoint<Cartesian<2>, Angle> {
-        self.required.transform(site_properties)
-    }
-}
-
-impl<R: Position<Position = Cartesian<2>>, E> Position for CustomBodyCartesian2<R, E> {
-    type Position = Cartesian<2>;
-
-    fn position(&self) -> &Self::Position {
-        self.required.position()
-    }
-
-    fn position_mut(&mut self) -> &mut Self::Position {
-        self.required.position_mut()
-    }
-}
-
-// these are here so that we can use a custom body with constant volume integration
-
-
-impl<R, E> Orientation for CustomBodyCartesian2<R, E>
-where
-    R: Orientation<Rotation = Angle>
-{
-    type Rotation = Angle;
-
-    fn orientation(&self) -> &Self::Rotation {
-        self.required.orientation()
-    }
-
-    fn orientation_mut(&mut self) -> &mut Self::Rotation {
-        self.required.orientation_mut()
-    }
-}
-
-impl<R, E> Momentum for CustomBodyCartesian2<R, E>
-where
-    R: Momentum<Momentum = Cartesian<2>> + Mass
-{
-    type Momentum = Cartesian<2>;
-
-    fn momentum(&self) -> &Self::Momentum {
-        self.required.momentum()
-    }
-
-    fn momentum_mut(&mut self) -> &mut Self::Momentum {
-        self.required.momentum_mut()
-    }
-
-    fn velocity(&self) -> Self::Momentum {
-        *self.required.momentum() / self.required.mass()
-    }
-
-    fn set_velocity(&mut self, velocity: Self::Momentum) {
-        *self.required.momentum_mut() = velocity * self.required.mass();
-    }
-}
-
-impl<R: Mass, E> Mass for CustomBodyCartesian2<R, E> {
-    fn mass(&self) -> f64 {
-        self.required.mass()
-    }
-}
-
-impl<R, E> NetForce for CustomBodyCartesian2<R, E>
-where
-    R: NetForce<NetForce = Cartesian<2>>
-{
-    type NetForce = Cartesian<2>;
-
-    fn net_force(&self) -> &Self::NetForce {
-        self.required.net_force()
-    }
-
-    fn net_force_mut(&mut self) -> &mut Self::NetForce {
-        self.required.net_force_mut()
-    }
-}
-
-impl<R, E> NetVirial for CustomBodyCartesian2<R, E>
-where
-    R: NetVirial<NetVirial = <Cartesian<2> as Outer>::Tensor>
-{
-    type NetVirial = <Cartesian<2> as Outer>::Tensor;
-
-    fn net_virial(&self) -> &Self::NetVirial {
-        self.required.net_virial()
-    }
-
-    fn net_virial_mut(&mut self) -> &mut Self::NetVirial {
-        self.required.net_virial_mut()
-    }
-}
-
-impl<R, E> MomentOfInertia for CustomBodyCartesian2<R, E>
-where
-    R: MomentOfInertia<MomentOfInertia = <Angle as RotationalMotionTypes>::MomentOfInertia>
-{
-    type MomentOfInertia = <Angle as RotationalMotionTypes>::MomentOfInertia;
-
-    fn moment_of_inertia(&self) -> &Self::MomentOfInertia {
-        self.required.moment_of_inertia()
-    }
-
-    fn moment_of_inertia_mut(&mut self) -> &mut Self::MomentOfInertia {
-        self.required.moment_of_inertia_mut()
-    }
-}
-
-impl<R, E> AngularMomentum for CustomBodyCartesian2<R, E>
-where
-    R: AngularMomentum<AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum>
-{
-    type AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum;
-
-    fn angular_momentum(&self) -> &Self::AngularMomentum {
-        self.required.angular_momentum()
-    }
-
-    fn angular_momentum_mut(&mut self) -> &mut Self::AngularMomentum {
-        self.required.angular_momentum_mut()
-    }
-}
-
-impl<R, E> NetTorque for CustomBodyCartesian2<R, E>
-where
-    R: NetTorque<NetTorque = <Cartesian<2> as Wedge>::Bivector>
-{
-    type NetTorque = <Cartesian<2> as Wedge>::Bivector;
-
-    fn net_torque(&self) -> &Self::NetTorque {
-        self.required.net_torque()
-    }
-
-    fn net_torque_mut(&mut self) -> &mut Self::NetTorque {
-        self.required.net_torque_mut()
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CustomBodyCartesian3<R, E> {
-    pub required: R,
-    pub extra: E,
-}
-
-impl<R, E> Transform<Point<Cartesian<3>>> for CustomBodyCartesian3<R, E>
-where
-    R: Transform<Point<Cartesian<3>>>
-{
-    #[inline]
-    fn transform(&self, site_properties: &Point<Cartesian<3>>) -> Point<Cartesian<3>> {
-        self.required.transform(site_properties)
-    }
-}
-
-impl<R, E> Transform<OrientedPoint<Cartesian<3>, Versor>> for CustomBodyCartesian3<R, E>
-where
-    R: Transform<OrientedPoint<Cartesian<3>, Versor>>
-{
-    #[inline]
-    fn transform(
-        &self,
-        site_properties: &OrientedPoint<Cartesian<3>, Versor>
-    ) -> OrientedPoint<Cartesian<3>, Versor> {
-        self.required.transform(site_properties)
-    }
-}
-
-impl<R, E> Position for CustomBodyCartesian3<R, E>
-where
-    R: Position<Position = Cartesian<3>>
-{
-    type Position = Cartesian<3>;
-
-    fn position(&self) -> &Self::Position {
-        self.required.position()
-    }
-
-    fn position_mut(&mut self) -> &mut Self::Position {
-        self.required.position_mut()
-    }
-}
-
-impl<R, E> Orientation for CustomBodyCartesian3<R, E>
-where
-    R: Orientation<Rotation = Versor>
-{
-    type Rotation = Versor;
-
-    fn orientation(&self) -> &Self::Rotation {
-        self.required.orientation()
-    }
-
-    fn orientation_mut(&mut self) -> &mut Self::Rotation {
-        self.required.orientation_mut()
-    }
-}
-
-impl<R, E> Momentum for CustomBodyCartesian3<R, E>
-where
-    R: Momentum<Momentum = Cartesian<3>> + Mass
-{
-    type Momentum = Cartesian<3>;
-
-    fn momentum(&self) -> &Self::Momentum {
-        self.required.momentum()
-    }
-
-    fn momentum_mut(&mut self) -> &mut Self::Momentum {
-        self.required.momentum_mut()
-    }
-
-    fn velocity(&self) -> Self::Momentum {
-        *self.required.momentum() / self.required.mass()
-    }
-
-    fn set_velocity(&mut self, velocity: Self::Momentum) {
-        *self.required.momentum_mut() = velocity * self.required.mass();
-    }
-}
-
-impl<R: Mass, E> Mass for CustomBodyCartesian3<R, E> {
-    fn mass(&self) -> f64 {
-        self.required.mass()
-    }
-}
-
-impl<R, E> NetForce for CustomBodyCartesian3<R, E>
-where
-    R: NetForce<NetForce = Cartesian<3>>
-{
-    type NetForce = Cartesian<3>;
-
-    fn net_force(&self) -> &Self::NetForce {
-        self.required.net_force()
-    }
-
-    fn net_force_mut(&mut self) -> &mut Self::NetForce {
-        self.required.net_force_mut()
-    }
-}
-
-impl<R, E> NetVirial for CustomBodyCartesian3<R, E>
-where
-    R: NetVirial<NetVirial = <Cartesian<3> as Outer>::Tensor>
-{
-    type NetVirial = <Cartesian<3> as Outer>::Tensor;
-
-    fn net_virial(&self) -> &Self::NetVirial {
-        self.required.net_virial()
-    }
-
-    fn net_virial_mut(&mut self) -> &mut Self::NetVirial {
-        self.required.net_virial_mut()
-    }
-}
-
-impl<R, E> MomentOfInertia for CustomBodyCartesian3<R, E>
-where
-    R: MomentOfInertia<MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia>
-{
-    type MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia;
-
-    fn moment_of_inertia(&self) -> &Self::MomentOfInertia {
-        self.required.moment_of_inertia()
-    }
-
-    fn moment_of_inertia_mut(&mut self) -> &mut Self::MomentOfInertia {
-        self.required.moment_of_inertia_mut()
-    }
-}
-
-impl<R, E> AngularMomentum for CustomBodyCartesian3<R, E>
-where
-    R: AngularMomentum<AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum>
-{
-    type AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum;
-
-    fn angular_momentum(&self) -> &Self::AngularMomentum {
-        self.required.angular_momentum()
-    }
-
-    fn angular_momentum_mut(&mut self) -> &mut Self::AngularMomentum {
-        self.required.angular_momentum_mut()
-    }
-}
-
-impl<R, E> NetTorque for CustomBodyCartesian3<R, E>
-where
-    R: NetTorque<NetTorque = <Cartesian<3> as Wedge>::Bivector>
-{
-    type NetTorque = <Cartesian<3> as Wedge>::Bivector;
-
-    fn net_torque(&self) -> &Self::NetTorque {
-        self.required.net_torque()
-    }
-
-    fn net_torque_mut(&mut self) -> &mut Self::NetTorque {
-        self.required.net_torque_mut()
-    }
+    /// Type that stores the rotational drag coefficients.
+    type RotationalDrag;
 }

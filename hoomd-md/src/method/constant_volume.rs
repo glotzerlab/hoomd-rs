@@ -12,7 +12,7 @@ use crate::{
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        AngularMomentum, CustomBodyCartesian2, CustomBodyCartesian3, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Orientation, Position, RotationalMotionTypes,
+        AngularMomentum, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Orientation, Position, RotationalMotionTypes,
     },
 };
 use hoomd_spatial::PointUpdate;
@@ -765,71 +765,6 @@ where
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
-    /// This implementation is identical to the one for `CustomBodyCartesian3`.
-    /// It is given separately for convenience and backwards-compatibility. See
-    /// that implementation's documentation for more information.
-    #[inline]
-    fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool,
-    >(
-        &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
-        macrostate: &M,
-        should_integrate_body: F,
-    ) {
-        integrate_rotation_half_step_one_with_filter_cartesian3(
-            self.delta_t,
-            microstate,
-            &mut self.rotational_thermostat,
-            macrostate,
-            should_integrate_body
-        );
-    }
-
-    /// Integrate selected body angular momenta forward a half step.
-    ///
-    /// This implementation is identical to the one for `CustomBodyCartesian3`.
-    /// It is given separately for convenience and backwards-compatibility. See
-    /// that implementation's documentation for more information.
-    #[inline]
-    fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool,
-    >(
-        &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
-        macrostate: &M,
-        should_integrate_body: F,
-    ) {
-        integrate_rotation_half_step_two_with_filter_cartesian3(
-            self.delta_t,
-            microstate,
-            &mut self.rotational_thermostat,
-            macrostate,
-            should_integrate_body
-        );
-    }
-}
-
-/// Rotational motion in 3-dimensional cartesian space for custom bodies.
-impl<R, E, S, X, C, TT, TR, M> RotationalMotion<CustomBodyCartesian3<R, E>, S, X, C, M>
-    for ConstantVolume<TT, TR>
-where
-    CustomBodyCartesian3<R, E>: Clone
-        + Transform<S>
-        + Position<Position = Cartesian<3>>
-        + Orientation<Rotation = Versor>
-        + AngularMomentum<AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum>
-        + MomentOfInertia<MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia>
-        + NetTorque<NetTorque = <Cartesian<3> as Wedge>::Bivector>,
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<CustomBodyCartesian3<R, E>> + Wrap<S> + GenerateGhosts<S>,
-    TR: Thermostat<M>,
-    CustomBodyCartesian3<R, E>: Copy + Transform<S>,
-    Microstate<CustomBodyCartesian3<R, E>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian3<R, E>, S>
-{
-    /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
-    ///
     /// The first half step of the symplectic integration procedure is given by the equations below, which are
     /// applied to each selected body *i*. In each step, the marker $`'`$ is used when a variable's value changes
     /// during a step to distinguish the value before ( $`'`$ is present) from the value after ( $`'`$ is absent).
@@ -954,10 +889,10 @@ where
     ///        ```
     #[inline]
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool,
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool,
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian3<R, E>, S, X, C>,
+        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -1043,10 +978,10 @@ where
     ///    second half step method implemented by `TR`.
     #[inline]
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian3<R, E>, S>>) -> bool,
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool,
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian3<R, E>, S, X, C>,
+        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -1237,71 +1172,6 @@ where
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
-    /// This implementation is identical to the one for `CustomBodyCartesian2`.
-    /// It is given separately for convenience and backwards-compatibility. See
-    /// that implementation's documentation for more information.
-    #[inline]
-    fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool,
-    >(
-        &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
-        macrostate: &M,
-        should_integrate_body: F,
-    ) {
-        integrate_rotation_half_step_one_with_filter_cartesian2(
-            self.delta_t,
-            microstate,
-            &mut self.rotational_thermostat,
-            macrostate,
-            should_integrate_body
-        );
-    }
-
-    /// Integrate selected body angular momenta forward a half step.
-    ///
-    /// This implementation is identical to the one for `CustomBodyCartesian2`.
-    /// It is given separately for convenience and backwards-compatibility. See
-    /// that implementation's documentation for more information.
-    #[inline]
-    fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool,
-    >(
-        &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
-        macrostate: &M,
-        should_integrate_body: F,
-    ) {
-        integrate_rotation_half_step_two_with_filter_cartesian2(
-            self.delta_t,
-            microstate,
-            &mut self.rotational_thermostat,
-            macrostate,
-            should_integrate_body
-        );
-    }
-}
-
-/// Rotational motion in 2-dimensional cartesian space for custom bodies.
-impl<R, E, S, X, C, TT, TR, M> RotationalMotion<CustomBodyCartesian2<R, E>, S, X, C, M>
-    for ConstantVolume<TT, TR>
-where
-    CustomBodyCartesian2<R, E>: Clone
-        + Transform<S>
-        + Position<Position = Cartesian<2>>
-        + Orientation<Rotation = Angle>
-        + AngularMomentum<AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum>
-        + MomentOfInertia<MomentOfInertia = <Angle as RotationalMotionTypes>::MomentOfInertia>
-        + NetTorque<NetTorque = <Cartesian<2> as Wedge>::Bivector>,
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<CustomBodyCartesian2<R, E>> + Wrap<S> + GenerateGhosts<S>,
-    TR: Thermostat<M>,
-    CustomBodyCartesian2<R, E>: Copy + Transform<S>,
-    Microstate<CustomBodyCartesian2<R, E>, S, X, C>: RotationalKineticEnergy<CustomBodyCartesian2<R, E>, S>
-{
-    /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
-    ///
     /// The first half step of the symplectic integration procedure is given by the equations below, which are
     /// applied to each selected body *i*. In each step, the marker $`'`$ is used when a variable's value changes
     /// during a step to distinguish the value before ( $`'`$ is present) from the value after ( $`'`$ is absent).
@@ -1331,10 +1201,10 @@ where
     ///    ```
     #[inline]
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool,
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool,
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian2<R, E>, S, X, C>,
+        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -1372,10 +1242,10 @@ where
     ///    second half step method implemented by `TR`.
     #[inline]
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<CustomBodyCartesian2<R, E>, S>>) -> bool,
+        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool,
     >(
         &mut self,
-        microstate: &mut Microstate<CustomBodyCartesian2<R, E>, S, X, C>,
+        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
@@ -1432,6 +1302,7 @@ mod tests {
                 angular_momentum: 0.0,
                 net_torque: 0.0,
                 mass,
+                ..Default::default()
             },
             sites: vec![Point::new(Cartesian::from([0.0, 0.0]))],
         }
