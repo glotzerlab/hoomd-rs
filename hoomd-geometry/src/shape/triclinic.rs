@@ -58,6 +58,56 @@ pub struct Triclinic {
 }
 
 impl Triclinic {
+    /// Construct a cube.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic = Triclinic::cube(10.0.try_into()?);
+    ///
+    /// assert_eq!(triclinic.extents[0].get(), 10.0);
+    /// assert_eq!(triclinic.extents[1].get(), 10.0);
+    /// assert_eq!(triclinic.extents[2].get(), 10.0);
+    /// assert_eq!(triclinic.tilt_factors, [0.0, 0.0, 0.0]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn cube(side_length: PositiveReal) -> Self {
+        Self {
+            extents: [side_length, side_length, side_length],
+            tilt_factors: [0.0; 3]
+        }
+    }
+    
+    /// Construct a cuboid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic = Triclinic::cuboid(10.0.try_into()?, 15.0.try_into()?, 20.0.try_into()?);
+    ///
+    /// assert_eq!(triclinic.extents[0].get(), 10.0);
+    /// assert_eq!(triclinic.extents[1].get(), 15.0);
+    /// assert_eq!(triclinic.extents[2].get(), 20.0);
+    /// assert_eq!(triclinic.tilt_factors, [0.0, 0.0, 0.0]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn cuboid(x_side_length: PositiveReal, y_side_length: PositiveReal, z_side_length: PositiveReal) -> Self {
+        Self {
+            extents: [x_side_length, y_side_length, z_side_length],
+            tilt_factors: [0.0; 3],
+        }
+    }
+
     /// Construct a triclinic box from a general parallelepiped.
     ///
     /// Computes the triclinic parameters from a parallelepiped with edge vectors $`\vec{u}_i`$ by computing
