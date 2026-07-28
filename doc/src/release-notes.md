@@ -4,8 +4,12 @@
 
 *Added:*
 
-* `[hoomd-geometry]`: Adds new shapes, `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` for use in simulations with sheared boxes. All shapes can be used as boundary conditions for simulations, although `Triclinic`, and `Rhomboid` should be preferred for simulations in 2D/3D.
-* `[hoomd-linear-algebra]` As a helper method for inverting matrices in a numerically stable way, `qr` has also been added as a method to the `matrix` crate to calculate the QR factorization of a tall matrix.
+* `[hoomd-geometry]`: Add `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` shapes (#88).
+* `[hoomd-linear-algebra]` Add `matrix::qr` module with methods to compute the QR factorization of matrices (#88).
+* `[hoomd-linear-algebra]` Add methods `iter_column_slice`, `iter_column_slice_mut`, `iter_submatrix`, to `Matrix<N, M>` (#88).
+* `[hoomd-microstate`]: Implement all traits necessary to use `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` as simulation boundaries (#88).
+* `[hoomd-microstate`]: Implement `AppendMicrostate` for microstates with `Triclinic` and `Rhomboid` boundaries (#88).
+* `[hoomd-vector`]: Implement `Mul<Cartesian<N>> for f64`, `Mul<PositiveReal> for Cartesian<N>`, `Mul<Cartesian<N>> for PositiveReal`, `MulAssign<f64> for Cartesian<N>`, and `MulAssign<PositiveReal> for Cartesian<N>` (#88).
 
 *Changed:*
 
