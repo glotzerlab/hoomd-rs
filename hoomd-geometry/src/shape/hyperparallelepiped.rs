@@ -4,10 +4,13 @@
 //! Implement [`Hyperparallelepiped`]
 use std::array;
 
-use hoomd_linear_algebra::{MatMul, SquareMatrix, matrix::{
-    Matrix,
-    qr::{self, get_r, get_r_inv},
-}};
+use hoomd_linear_algebra::{
+    MatMul, SquareMatrix,
+    matrix::{
+        Matrix,
+        qr::{self, get_r, get_r_inv},
+    },
+};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 use rand::{
@@ -896,7 +899,7 @@ mod tests {
             assert_relative_eq!(expected[i], distances[i].get(), epsilon = 1.0e-4);
         }
     }
-  
+
     #[test]
     fn test_parallelepiped_shear() {
         let hyperparallelpiped = Hyperparallelepiped::new([
@@ -912,8 +915,16 @@ mod tests {
         };
         let angle = std::f64::consts::PI / 6.0;
         let sheared = hyperparallelpiped.shear(angle, &parallel_axis, &perpendicular_axis);
-        assert_relative_eq!(sheared.edge_vectors[0], [1., 0., 0.].into(), epsilon = 1e-14);
-        assert_relative_eq!(sheared.edge_vectors[1], [0., 1., 0.].into(), epsilon = 1e-14);
+        assert_relative_eq!(
+            sheared.edge_vectors[0],
+            [1., 0., 0.].into(),
+            epsilon = 1e-14
+        );
+        assert_relative_eq!(
+            sheared.edge_vectors[1],
+            [0., 1., 0.].into(),
+            epsilon = 1e-14
+        );
         assert_relative_eq!(
             sheared.edge_vectors[2],
             [f64::sqrt(3.) / 3., 0., 1.].into(),

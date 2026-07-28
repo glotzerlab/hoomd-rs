@@ -160,14 +160,14 @@ mod tests {
 
     #[fixture]
     fn sheared_triclinic() -> Triclinic {
-        Triclinic { extents: [
-            2.0.try_into().unwrap(),
-            2.0.try_into().unwrap(),
-            2.0.try_into().unwrap()], tilt_factors: [
-            f64::sqrt(2.0),
-            f64::sqrt(2.0),
-            f64::sqrt(2.0)
-        ]}
+        Triclinic {
+            extents: [
+                2.0.try_into().unwrap(),
+                2.0.try_into().unwrap(),
+                2.0.try_into().unwrap(),
+            ],
+            tilt_factors: [f64::sqrt(2.0), f64::sqrt(2.0), f64::sqrt(2.0)],
+        }
     }
 
     #[fixture]
@@ -225,10 +225,18 @@ mod tests {
 
     #[test]
     fn same_behavior_as_triclinic() {
-        let triclinic = Triclinic { extents: [20.0.try_into().unwrap(), 10.0.try_into().unwrap(), 40.0.try_into().unwrap()], tilt_factors: [0.2, -0.3, 0.4]};
+        let triclinic = Triclinic {
+            extents: [
+                20.0.try_into().unwrap(),
+                10.0.try_into().unwrap(),
+                40.0.try_into().unwrap(),
+            ],
+            tilt_factors: [0.2, -0.3, 0.4],
+        };
         let hyper = hyper_from_triclinic(&triclinic);
 
-        let periodic_triclinic = Periodic::new(1.0, triclinic.clone()).expect("valid periodic triclinic");
+        let periodic_triclinic =
+            Periodic::new(1.0, triclinic.clone()).expect("valid periodic triclinic");
         let periodic_hyper = Periodic::new(1.0, hyper).expect("valid periodic hyperparallelepiped");
 
         let test_points = vec![

@@ -41,8 +41,10 @@ use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume, shape::Hyper
 /// use hoomd_geometry::shape::Triclinic;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let triclinic =
-///     Triclinic { extents: [10.0.try_into()?, 12.0.try_into()?, 14.0.try_into()?], tilt_factors: [1.0, 0.5, -0.2]};
+/// let triclinic = Triclinic {
+///     extents: [10.0.try_into()?, 12.0.try_into()?, 14.0.try_into()?],
+///     tilt_factors: [1.0, 0.5, -0.2],
+/// };
 /// # Ok(())
 /// # }
 /// ```
@@ -79,10 +81,10 @@ impl Triclinic {
     pub fn cube(side_length: PositiveReal) -> Self {
         Self {
             extents: [side_length, side_length, side_length],
-            tilt_factors: [0.0; 3]
+            tilt_factors: [0.0; 3],
         }
     }
-    
+
     /// Construct a cuboid.
     ///
     /// # Example
@@ -91,7 +93,8 @@ impl Triclinic {
     /// use hoomd_geometry::shape::Triclinic;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic::cuboid(10.0.try_into()?, 15.0.try_into()?, 20.0.try_into()?);
+    /// let triclinic =
+    ///     Triclinic::cuboid(10.0.try_into()?, 15.0.try_into()?, 20.0.try_into()?);
     ///
     /// assert_eq!(triclinic.extents[0].get(), 10.0);
     /// assert_eq!(triclinic.extents[1].get(), 15.0);
@@ -101,7 +104,11 @@ impl Triclinic {
     /// # }
     /// ```
     #[inline]
-    pub fn cuboid(x_side_length: PositiveReal, y_side_length: PositiveReal, z_side_length: PositiveReal) -> Self {
+    pub fn cuboid(
+        x_side_length: PositiveReal,
+        y_side_length: PositiveReal,
+        z_side_length: PositiveReal,
+    ) -> Self {
         Self {
             extents: [x_side_length, y_side_length, z_side_length],
             tilt_factors: [0.0; 3],
@@ -250,7 +257,10 @@ impl Triclinic {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic { extents: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?], tilt_factors: [0.0, 0.0, 0.0]};
+    /// let triclinic = Triclinic {
+    ///     extents: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
+    ///     tilt_factors: [0.0, 0.0, 0.0],
+    /// };
     ///
     /// let pos = Cartesian::from([1.0, 0.0, 0.0]);
     /// let frac = triclinic.fractional(&pos);
@@ -262,7 +272,8 @@ impl Triclinic {
     pub fn fractional(&self, absolute: &Cartesian<3>) -> Cartesian<3> {
         let l: Cartesian<3> = self.extents.map(|x| x.get()).into();
         let mut fractional = *absolute;
-        fractional[0] -= (self.xz() - self.yz() * self.xy()) * absolute[2] + self.xy() * absolute[1];
+        fractional[0] -=
+            (self.xz() - self.yz() * self.xy()) * absolute[2] + self.xy() * absolute[1];
         fractional[1] -= self.yz() * absolute[2];
         for i in 0..3 {
             fractional[i] /= l[i];
@@ -289,7 +300,10 @@ impl Triclinic {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic { extents: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?], tilt_factors: [0.0, 0.0, 0.0] };
+    /// let triclinic = Triclinic {
+    ///     extents: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
+    ///     tilt_factors: [0.0, 0.0, 0.0],
+    /// };
     ///
     /// let frac = Cartesian::from([0.5, 0.0, 0.0]);
     /// let pos = triclinic.absolute(&frac);
@@ -327,7 +341,10 @@ impl Triclinic {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic { extents: [2.0.try_into()?, 3.0.try_into()?, 4.0.try_into()?], tilt_factors: [0.5, 0.0, 0.0]};
+    /// let triclinic = Triclinic {
+    ///     extents: [2.0.try_into()?, 3.0.try_into()?, 4.0.try_into()?],
+    ///     tilt_factors: [0.5, 0.0, 0.0],
+    /// };
     /// let edges = triclinic.edge_vectors();
     ///
     /// assert_eq!(edges[0], Cartesian::from([2.0, 0.0, 0.0]));
@@ -377,8 +394,10 @@ impl Triclinic {
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic { extents: [10.0.try_into()?, 10.0.try_into()?, 10.0.try_into()?], tilt_factors: [0.0, 0.0, 0.0]};
+    /// let triclinic = Triclinic {
+    ///     extents: [10.0.try_into()?, 10.0.try_into()?, 10.0.try_into()?],
+    ///     tilt_factors: [0.0, 0.0, 0.0],
+    /// };
     /// let angles = triclinic.box_angles();
     ///
     /// assert_relative_eq!(angles[0], PI / 2.0);
@@ -411,7 +430,10 @@ impl Triclinic {
     /// use hoomd_geometry::shape::Triclinic;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic { extents: [2.0.try_into()?, 4.0.try_into()?, 6.0.try_into()?], tilt_factors: [0.0, 0.0, 0.0]};
+    /// let triclinic = Triclinic {
+    ///     extents: [2.0.try_into()?, 4.0.try_into()?, 6.0.try_into()?],
+    ///     tilt_factors: [0.0, 0.0, 0.0],
+    /// };
     /// let distances = triclinic.nearest_plane_distance();
     ///
     /// assert_eq!(distances[0].get(), 2.0);
@@ -450,7 +472,10 @@ impl Triclinic {
     /// use hoomd_geometry::shape::Triclinic;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic { extents: [5.0.try_into()?, 5.0.try_into()?, 6.0.try_into()?], tilt_factors: [1.5, 1.2, -1.0]};
+    /// let triclinic = Triclinic {
+    ///     extents: [5.0.try_into()?, 5.0.try_into()?, 6.0.try_into()?],
+    ///     tilt_factors: [1.5, 1.2, -1.0],
+    /// };
     ///
     /// let gsd_box = triclinic.to_gsd_box();
     /// assert_eq!(gsd_box, [5.0, 5.0, 6.0, 1.5, 1.2, -1.0]);
@@ -483,8 +508,10 @@ impl Volume for Triclinic {
     /// use hoomd_geometry::{Volume, shape::Triclinic};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic { extents: [10.0.try_into()?, 12.0.try_into()?, 14.0.try_into()?], tilt_factors: [1.0, 0.5, -0.2]};
+    /// let triclinic = Triclinic {
+    ///     extents: [10.0.try_into()?, 12.0.try_into()?, 14.0.try_into()?],
+    ///     tilt_factors: [1.0, 0.5, -0.2],
+    /// };
     ///
     /// assert_eq!(triclinic.volume(), 1680.0);
     /// # Ok(())
@@ -544,7 +571,10 @@ impl IsPointInside<Cartesian<3>> for Triclinic {
     /// use hoomd_geometry::{IsPointInside, shape::Triclinic};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic { extents: [6.0.try_into()?, 8.0.try_into()?, 10.0.try_into()?], tilt_factors: [0.5, 0.0, 0.0]};
+    /// let triclinic = Triclinic {
+    ///     extents: [6.0.try_into()?, 8.0.try_into()?, 10.0.try_into()?],
+    ///     tilt_factors: [0.5, 0.0, 0.0],
+    /// };
     ///
     /// assert!(triclinic.is_point_inside(&[1.0, 1.0, 1.0].into()));
     /// assert!(!triclinic.is_point_inside(&[4.0, 1.0, 1.0].into()));
@@ -588,8 +618,10 @@ impl Scale for Triclinic {
     /// use hoomd_geometry::{Scale, shape::Triclinic};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic { extents: [10.0.try_into()?, 12.0.try_into()?, 14.0.try_into()?], tilt_factors: [1.0, 0.5, -0.2]};
+    /// let triclinic = Triclinic {
+    ///     extents: [10.0.try_into()?, 12.0.try_into()?, 14.0.try_into()?],
+    ///     tilt_factors: [1.0, 0.5, -0.2],
+    /// };
     ///
     /// let scaled = triclinic.scale_length(2.0.try_into()?);
     ///
@@ -622,7 +654,10 @@ impl Scale for Triclinic {
     /// use hoomd_geometry::{Scale, shape::Triclinic};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic { extents: [5.0.try_into()?, 5.0.try_into()?, 6.0.try_into()?], tilt_factors: [1.5, 1.2, -1.0]};
+    /// let triclinic = Triclinic {
+    ///     extents: [5.0.try_into()?, 5.0.try_into()?, 6.0.try_into()?],
+    ///     tilt_factors: [1.5, 1.2, -1.0],
+    /// };
     ///
     /// let scaled_triclinic = triclinic.scale_volume(8.0.try_into()?);
     ///
@@ -652,7 +687,10 @@ impl Distribution<Cartesian<3>> for Triclinic {
     /// use hoomd_geometry::{IsPointInside, shape::Triclinic};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic { extents: [6.0.try_into()?, 8.0.try_into()?, 10.0.try_into()?], tilt_factors: [0.5, 0.0, 0.0]};
+    /// let triclinic = Triclinic {
+    ///     extents: [6.0.try_into()?, 8.0.try_into()?, 10.0.try_into()?],
+    ///     tilt_factors: [0.5, 0.0, 0.0],
+    /// };
     /// let mut rng = StdRng::seed_from_u64(1);
     ///
     /// let point = triclinic.sample(&mut rng);

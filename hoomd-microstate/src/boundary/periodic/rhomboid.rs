@@ -211,9 +211,8 @@ mod tests {
 
     #[fixture]
     fn sheared_rhomboid() -> Rhomboid {
-        Rhomboid {extents: [
-            2.0.try_into().unwrap(),
-            2.0.try_into().unwrap()],
+        Rhomboid {
+            extents: [2.0.try_into().unwrap(), 2.0.try_into().unwrap()],
             xy: f64::sqrt(2.0),
         }
     }
@@ -243,7 +242,10 @@ mod tests {
     #[test]
     fn maximum_allowable_orthogonal() {
         // Test with orthogonal rhomboid (no tilt)
-        let rhomboid = Rhomboid { extents: [20.0.try_into().unwrap(), 10.0.try_into().unwrap()], xy: 0.0};
+        let rhomboid = Rhomboid {
+            extents: [20.0.try_into().unwrap(), 10.0.try_into().unwrap()],
+            xy: 0.0,
+        };
         assert_eq!(rhomboid.maximum_allowable_interaction_range(), 5.0);
     }
 
@@ -261,7 +263,10 @@ mod tests {
     #[test]
     fn wrap_orthogonal() {
         // Test wrapping with orthogonal rhomboid (no tilt)
-        let rhomboid = Rhomboid { extents: [20.0.try_into().unwrap(), 20.0.try_into().unwrap()], xy: 0.0 };
+        let rhomboid = Rhomboid {
+            extents: [20.0.try_into().unwrap(), 20.0.try_into().unwrap()],
+            xy: 0.0,
+        };
         let periodic = Periodic::new(0.0, rhomboid).expect("hard-coded range should be valid");
 
         let point = Point::new([5.0, 3.0].into());
@@ -340,7 +345,10 @@ mod tests {
     #[test]
     fn ghosts_orthogonal_faces() {
         // Comprehensive test with orthogonal rhomboid to validate ghost generation
-        let rhomboid = Rhomboid { extents: [20.0.try_into().unwrap(), 10.0.try_into().unwrap()], xy: 0.0};
+        let rhomboid = Rhomboid {
+            extents: [20.0.try_into().unwrap(), 10.0.try_into().unwrap()],
+            xy: 0.0,
+        };
         let periodic = Periodic::new(1.0, rhomboid).expect("hard-coded range should be valid");
 
         // no ghosts for points outside the boundary

@@ -26,9 +26,10 @@ use crate::{
 /// use hoomd_geometry::shape::Rhomboid;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let rhomboid = Rhomboid { extents: [10.0.try_into()?,
-///                           12.0.try_into()?],
-///                           xy: 1.0 };
+/// let rhomboid = Rhomboid {
+///     extents: [10.0.try_into()?, 12.0.try_into()?],
+///     xy: 1.0,
+/// };
 /// # Ok(())
 /// # }
 /// ```
@@ -181,7 +182,7 @@ impl Rhomboid {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let rhomboid = Rhomboid::rectangle(4.0.try_into()?, 6.0.try_into()?);
     ///
-    /// let fractional= rhomboid.fractional(&Cartesian::from([1.0, 1.5]));
+    /// let fractional = rhomboid.fractional(&Cartesian::from([1.0, 1.5]));
     /// assert_relative_eq!(fractional[0], 0.25);
     /// assert_relative_eq!(fractional[1], 0.25);
     /// # Ok(())
@@ -277,7 +278,10 @@ impl Rhomboid {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid { extents: [2.0.try_into()?, 3.0.try_into()?], xy: 0.5};
+    /// let rhomboid = Rhomboid {
+    ///     extents: [2.0.try_into()?, 3.0.try_into()?],
+    ///     xy: 0.5,
+    /// };
     ///
     /// let edge_vectors = rhomboid.edge_vectors();
     ///
@@ -304,14 +308,17 @@ impl Rhomboid {
     ///
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use std::f64::consts::PI;
     /// use hoomd_geometry::shape::Rhomboid;
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid { extents: [2.0.try_into()?, 3.0.try_into()?], xy: 1.0};
+    /// let rhomboid = Rhomboid {
+    ///     extents: [2.0.try_into()?, 3.0.try_into()?],
+    ///     xy: 1.0,
+    /// };
     /// let angle = rhomboid.box_angle();
     ///
-    /// assert_relative_eq!(angle, PI/4.0);
+    /// assert_relative_eq!(angle, PI / 4.0);
     /// # Ok(())
     /// # }
     /// ```
@@ -328,15 +335,18 @@ impl Rhomboid {
     ///
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use std::f64::consts::PI;
     /// use hoomd_geometry::shape::Rhomboid;
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid { extents: [2.0.try_into()?, 3.0.try_into()?], xy: 1.0};
+    /// let rhomboid = Rhomboid {
+    ///     extents: [2.0.try_into()?, 3.0.try_into()?],
+    ///     xy: 1.0,
+    /// };
     ///
     /// let distances = rhomboid.nearest_plane_distance();
     ///
-    /// assert_relative_eq!(distances[0].get(), 2.0 * (PI/4.0).sin());
+    /// assert_relative_eq!(distances[0].get(), 2.0 * (PI / 4.0).sin());
     /// assert_eq!(distances[1].get(), 3.0);
     /// # Ok(())
     /// # }
@@ -364,7 +374,10 @@ impl Rhomboid {
     /// use hoomd_geometry::shape::Rhomboid;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomb = Rhomboid { extents: [1.0.try_into()?, 2.0.try_into()?], xy: 1.5 };
+    /// let rhomb = Rhomboid {
+    ///     extents: [1.0.try_into()?, 2.0.try_into()?],
+    ///     xy: 1.5,
+    /// };
     ///
     /// let gsd_box = rhomb.to_gsd_box();
     /// assert_eq!(gsd_box, [1.0, 2.0, 0.0, 1.5, 0.0, 0.0]);
@@ -398,9 +411,10 @@ impl Volume for Rhomboid {
     /// use hoomd_geometry::{Volume, shape::Rhomboid};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid { extents: [10.0.try_into()?,
-    ///                           12.0.try_into()?],
-    ///                           xy: 1.0 };
+    /// let rhomboid = Rhomboid {
+    ///     extents: [10.0.try_into()?, 12.0.try_into()?],
+    ///     xy: 1.0,
+    /// };
     ///
     /// assert_eq!(rhomboid.volume(), 120.0);
     /// # Ok(())
@@ -430,7 +444,10 @@ impl Scale for Rhomboid {
     /// use hoomd_geometry::{Scale, shape::Rhomboid};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid { extents: [5.0.try_into()?, 6.0.try_into()?], xy: 1.5 };
+    /// let rhomboid = Rhomboid {
+    ///     extents: [5.0.try_into()?, 6.0.try_into()?],
+    ///     xy: 1.5,
+    /// };
     ///
     /// let scaled_rhomboid = rhomboid.scale_length(0.5.try_into()?);
     ///
@@ -463,7 +480,10 @@ impl Scale for Rhomboid {
     /// use hoomd_geometry::{Scale, shape::Rhomboid};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid { extents: [5.0.try_into()?, 6.0.try_into()?], xy: 1.5 };
+    /// let rhomboid = Rhomboid {
+    ///     extents: [5.0.try_into()?, 6.0.try_into()?],
+    ///     xy: 1.5,
+    /// };
     ///
     /// let scaled_rhomboid = rhomboid.scale_volume(4.0.try_into()?);
     ///
@@ -492,7 +512,10 @@ impl IsPointInside<Cartesian<2>> for Rhomboid {
     /// use hoomd_geometry::{IsPointInside, shape::Rhomboid};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid { extents: [6.0.try_into()?, 8.0.try_into()?], xy: 0.5};
+    /// let rhomboid = Rhomboid {
+    ///     extents: [6.0.try_into()?, 8.0.try_into()?],
+    ///     xy: 0.5,
+    /// };
     ///
     /// assert!(rhomboid.is_point_inside(&[1.0, 1.0].into()));
     /// assert!(!rhomboid.is_point_inside(&[4.0, 1.0].into()));
@@ -547,11 +570,15 @@ impl BoundingSphereRadius for Rhomboid {
     /// use hoomd_geometry::{BoundingSphereRadius, shape::Rhomboid};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid { extents: [10.0.try_into()?,
-    ///                           15.0.try_into()?],
-    ///                           xy: 1.0 };
+    /// let rhomboid = Rhomboid {
+    ///     extents: [10.0.try_into()?, 15.0.try_into()?],
+    ///     xy: 1.0,
+    /// };
     ///
-    /// assert_eq!(rhomboid.bounding_sphere_radius().get(), 14.577379737113251177185382193863957691303495837214929886125016862);
+    /// assert_eq!(
+    ///     rhomboid.bounding_sphere_radius().get(),
+    ///     14.577379737113251177185382193863957691303495837214929886125016862
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -581,7 +608,10 @@ impl Distribution<Cartesian<2>> for Rhomboid {
     /// use hoomd_geometry::{IsPointInside, shape::Rhomboid};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rhomboid = Rhomboid { extents: [6.0.try_into()?, 8.0.try_into()?], xy: 0.5};
+    /// let rhomboid = Rhomboid {
+    ///     extents: [6.0.try_into()?, 8.0.try_into()?],
+    ///     xy: 0.5,
+    /// };
     /// let mut rng = StdRng::seed_from_u64(1);
     ///
     /// let point = rhomboid.sample(&mut rng);

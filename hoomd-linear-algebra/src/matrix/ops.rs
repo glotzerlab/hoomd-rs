@@ -171,7 +171,9 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         column_slice: usize,
         row_range: std::ops::Range<usize>,
     ) -> impl ExactSizeIterator<Item = f64> + '_ + Clone {
-        self.rows[row_range].iter().map(move |row| row[column_slice])
+        self.rows[row_range]
+            .iter()
+            .map(move |row| row[column_slice])
     }
 
     /// Returns a mutable iterator over the elements of a part of a column.

@@ -34,8 +34,10 @@ impl MaximumAllowableInteractionRange for Triclinic {
     /// use hoomd_microstate::boundary::MaximumAllowableInteractionRange;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic { extents: [10.0.try_into()?, 10.0.try_into()?, 10.0.try_into()?], tilt_factors: [0.0, 0.0, 0.0]};
+    /// let triclinic = Triclinic {
+    ///     extents: [10.0.try_into()?, 10.0.try_into()?, 10.0.try_into()?],
+    ///     tilt_factors: [0.0, 0.0, 0.0],
+    /// };
     ///
     /// assert_eq!(triclinic.maximum_allowable_interaction_range(), 5.0);
     /// # Ok(())
@@ -78,8 +80,10 @@ where
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic =
-    ///     Triclinic { extents: [10.0.try_into()?, 10.0.try_into()?, 10.0.try_into()?], tilt_factors: [0.0, 0.0, 0.0] };
+    /// let triclinic = Triclinic {
+    ///     extents: [10.0.try_into()?, 10.0.try_into()?, 10.0.try_into()?],
+    ///     tilt_factors: [0.0, 0.0, 0.0],
+    /// };
     /// let periodic = Periodic::new(5.0, triclinic)?;
     ///
     /// let point = Point::new(Cartesian::from([6.0, 0.0, 0.0]));
@@ -145,7 +149,10 @@ where
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let triclinic = Triclinic { extents: [4.0.try_into()?, 4.0.try_into()?, 4.0.try_into()?], tilt_factors: [0.0, 0.0, 0.0]};
+    /// let triclinic = Triclinic {
+    ///     extents: [4.0.try_into()?, 4.0.try_into()?, 4.0.try_into()?],
+    ///     tilt_factors: [0.0, 0.0, 0.0],
+    /// };
     /// let periodic = Periodic::new(1.0, triclinic)?;
     ///
     /// // Point near the x-face
@@ -216,7 +223,10 @@ mod tests {
     #[fixture]
     fn sheared_triclinic() -> Triclinic {
         let two = 2.0.try_into().expect("2 should be positive");
-        Triclinic { extents: [two, two, two], tilt_factors: [f64::sqrt(2.), f64::sqrt(2.), f64::sqrt(2.)] }
+        Triclinic {
+            extents: [two, two, two],
+            tilt_factors: [f64::sqrt(2.), f64::sqrt(2.), f64::sqrt(2.)],
+        }
     }
 
     #[rstest]
@@ -244,7 +254,14 @@ mod tests {
     #[test]
     fn maximum_allowable_orthogonal() {
         // Test with orthogonal box (no tilt)
-        let triclinic = Triclinic { extents: [20.0.try_into().unwrap(), 10.0.try_into().unwrap(), 40.0.try_into().unwrap()], tilt_factors: [0.0, 0.0, 0.0]};
+        let triclinic = Triclinic {
+            extents: [
+                20.0.try_into().unwrap(),
+                10.0.try_into().unwrap(),
+                40.0.try_into().unwrap(),
+            ],
+            tilt_factors: [0.0, 0.0, 0.0],
+        };
         assert_eq!(triclinic.maximum_allowable_interaction_range(), 5.0);
     }
 
@@ -258,7 +275,14 @@ mod tests {
     #[test]
     fn wrap_orthogonal() {
         // Test wrapping with orthogonal box (no tilt)
-        let triclinic = Triclinic { extents: [20.0.try_into().unwrap(), 20.0.try_into().unwrap(), 20.0.try_into().unwrap()], tilt_factors: [0.0, 0.0, 0.0]};
+        let triclinic = Triclinic {
+            extents: [
+                20.0.try_into().unwrap(),
+                20.0.try_into().unwrap(),
+                20.0.try_into().unwrap(),
+            ],
+            tilt_factors: [0.0, 0.0, 0.0],
+        };
         let periodic = Periodic::new(0.0, triclinic).expect("hard-coded range should be valid");
 
         let point = Point::new([5.0, 3.0, 8.0].into());
@@ -350,7 +374,14 @@ mod tests {
     #[test]
     fn ghosts_orthogonal_faces() {
         // Comprehensive test with orthogonal box to validate ghost generation
-        let triclinic = Triclinic { extents: [20.0.try_into().unwrap(), 10.0.try_into().unwrap(), 40.0.try_into().unwrap()], tilt_factors: [0.0, 0.0, 0.0]};
+        let triclinic = Triclinic {
+            extents: [
+                20.0.try_into().unwrap(),
+                10.0.try_into().unwrap(),
+                40.0.try_into().unwrap(),
+            ],
+            tilt_factors: [0.0, 0.0, 0.0],
+        };
         let periodic = Periodic::new(1.0, triclinic).expect("hard-coded range should be valid");
 
         // no ghosts for points outside the boundary

@@ -132,10 +132,7 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
         }
 
         // Apply the rank-1 update: C -= tau * v * w^T.
-        for (row_slice_mut, &v_r) in qr
-            .iter_submatrix_mut(i..N, (i + 1)..M)
-            .zip(v_col.iter())
-        {
+        for (row_slice_mut, &v_r) in qr.iter_submatrix_mut(i..N, (i + 1)..M).zip(v_col.iter()) {
             for (j, cell) in row_slice_mut.iter_mut().enumerate() {
                 *cell -= tau * v_r * w_t[j];
             }
@@ -220,10 +217,7 @@ fn apply_householder_right<const N: usize, const M: usize, const K: usize>(
     // w = result[0..K, iter..N] * v
     let mut w = vec![0.0; K];
 
-    for (row, row_slice) in result
-        .iter_submatrix(0..K, iter..iter + 1)
-        .enumerate()
-    {
+    for (row, row_slice) in result.iter_submatrix(0..K, iter..iter + 1).enumerate() {
         w[row] += row_slice[0]; // leading element of v is 1
     }
     for (row, row_slice) in result.iter_submatrix(0..K, tail.clone()).enumerate() {
@@ -236,16 +230,10 @@ fn apply_householder_right<const N: usize, const M: usize, const K: usize>(
     }
 
     // result[0..K, iter..N] -= tau * w * v^T
-    for (row, row_slice_mut) in result
-        .iter_submatrix_mut(0..K, iter..iter + 1)
-        .enumerate()
-    {
+    for (row, row_slice_mut) in result.iter_submatrix_mut(0..K, iter..iter + 1).enumerate() {
         row_slice_mut[0] -= tau * w[row]; // leading element of v is 1
     }
-    for (row, row_slice_mut) in result
-        .iter_submatrix_mut(0..K, tail.clone())
-        .enumerate()
-    {
+    for (row, row_slice_mut) in result.iter_submatrix_mut(0..K, tail.clone()).enumerate() {
         for (val, v_r) in row_slice_mut
             .iter_mut()
             .zip(qr.iter_column_slice(iter, tail.clone()))
