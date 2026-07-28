@@ -5,12 +5,14 @@
 
 mod ellipsoid;
 mod hard_sphere;
+mod hard_sphere_triclinic;
 mod lennard_jones;
 mod octahedron;
 mod regular_polygon;
 
 pub use ellipsoid::EllipsoidSim;
 pub use hard_sphere::HardSphereSim;
+pub use hard_sphere_triclinic::HardSphereTriclinicSim;
 pub use lennard_jones::LennardJones;
 pub use octahedron::Octahedron;
 pub use regular_polygon::RegularPolygon;

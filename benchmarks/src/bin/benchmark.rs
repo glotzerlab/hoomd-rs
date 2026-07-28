@@ -167,6 +167,15 @@ fn execute_matching(
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 
+    let name = "mc_3d_sphere_triclinic";
+    if benchmark_matcher.matches(name) && threads == 1 {
+        let mut simulation = mc::HardSphereTriclinicSim::new(
+            n,
+            false,
+        )?;
+        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
+    }
+
     let name = "mc_3d_lennard_jones";
     if benchmark_matcher.matches(name) {
         let mut simulation = mc::LennardJones::<3, VecCell<SiteKey, 3>>::new(
