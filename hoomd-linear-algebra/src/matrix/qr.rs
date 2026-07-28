@@ -542,26 +542,3 @@ mod tests {
         assert_matrices_ulps_eq::<4, 4, _, _>(&q.transpose(), &qt_left);
     }
 }
-
-// #[test]
-// fn test_qr_wide() {
-//     let (qr, taus) = super::qr_decomposition(&Matrix::<3, 4> {
-//         rows: [[-1., -1., 1., 0.], [1., 3., 3., 0.], [-1., -1., 5., 0.]],
-//     });
-
-//     for row in 0..3 {
-//         for col in 0..4 {
-//             print!("{:8.4} ", qr[(row, col)]);
-//         }
-//         println!();
-//     }
-
-//     let correct_answer = Matrix::<3, 4> {
-//         rows: [
-//             [2., 4., 2., 0.],
-//             [-1. / 3., -2., -8., 0.],
-//             [1. / 3., 1. / 5., -4., 0.],
-//         ],
-//     };
-//     assert_matrices_ulps_eq::<3, 4, _, _>(&correct_answer, &qr);
-// }
