@@ -1,5 +1,6 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, Settings, representation::disk,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, Settings,
+    representation::disk,
 };
 
 use anyhow::Context;
@@ -17,8 +18,7 @@ struct Ghost;
 pub(crate) fn main() -> anyhow::Result<()> {
     let simulation =
         HardDiskSelfAssembly::new().context("failed to setup simulation")?;
-    let l =
-        simulation.microstate.boundary().shape().extents[1].get() as f32;
+    let l = simulation.microstate.boundary().shape().extents[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
             camera: InitialCamera::Orthographic2d(l + 2.0),

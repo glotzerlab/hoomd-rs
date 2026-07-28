@@ -84,8 +84,13 @@ impl HardDiskSelfAssembly {
         let initial_box_volume =
             n_disks as f64 * circle.volume() / initial_packing_fraction;
         let initial_box_edge_length = initial_box_volume.sqrt();
-        let rhomboid =
-            Rhomboid { extents: [initial_box_edge_length.try_into()?, initial_box_edge_length.try_into()?], xy: 1.0 / 3.0f64.sqrt() };
+        let rhomboid = Rhomboid {
+            extents: [
+                initial_box_edge_length.try_into()?,
+                initial_box_edge_length.try_into()?,
+            ],
+            xy: 1.0 / 3.0f64.sqrt(),
+        };
         let periodic_rhomboid =
             Periodic::new(hamiltonian.maximum_interaction_range(), rhomboid)?;
         // ANCHOR_END: periodic

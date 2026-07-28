@@ -169,10 +169,7 @@ fn execute_matching(
 
     let name = "mc_3d_sphere_triclinic";
     if benchmark_matcher.matches(name) && threads == 1 {
-        let mut simulation = mc::HardSphereTriclinicSim::new(
-            n,
-            false,
-        )?;
+        let mut simulation = mc::HardSphereTriclinicSim::new(n, false)?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 

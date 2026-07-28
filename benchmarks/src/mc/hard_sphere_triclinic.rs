@@ -12,7 +12,7 @@ use std::{
 use anyhow::Context;
 use hoomd_geometry::{
     Volume,
-    shape::{Triclinic, Hypersphere},
+    shape::{Hypersphere, Triclinic},
 };
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
@@ -20,11 +20,7 @@ use hoomd_interaction::{
     univariate::{Expanded, OverlapPenalty},
 };
 use hoomd_mc::{Count, Sweep, Translate, Trial};
-use hoomd_microstate::{
-    Microstate, SiteKey,
-    boundary::Periodic,
-    property::Point,
-};
+use hoomd_microstate::{Microstate, SiteKey, boundary::Periodic, property::Point};
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
 use hoomd_vector::Cartesian;
@@ -40,7 +36,12 @@ const RELAX_STEPS: usize = 1_000;
 #[derive(Serialize, Deserialize)]
 pub struct HardSphereTriclinicSim {
     /// Simulation microstate
-    microstate: Microstate<Point<Cartesian<3>>, Point<Cartesian<3>>, VecCell<SiteKey, 3>, Periodic<Triclinic>>,
+    microstate: Microstate<
+        Point<Cartesian<3>>,
+        Point<Cartesian<3>>,
+        VecCell<SiteKey, 3>,
+        Periodic<Triclinic>,
+    >,
 
     /// Translate moves (serial)
     translate_sweep: Sweep<Translate<Cartesian<3>>>,
@@ -67,19 +68,16 @@ impl Effort for HardSphereTriclinicSim {
     }
 }
 
-impl Simulation for HardSphereTriclinicSim
-{
+impl Simulation for HardSphereTriclinicSim {
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
         if self.microstate.step().is_multiple_of(300) {
             self.microstate.sort_sites();
         }
 
-        self.count += self.translate_sweep.apply(
-            &mut self.microstate,
-            &self.hamiltonian,
-            &self.macrostate,
-        );
+        self.count +=
+            self.translate_sweep
+                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
         self.microstate.increment_step();
 
         Ok(())
@@ -91,8 +89,7 @@ impl Simulation for HardSphereTriclinicSim
     }
 }
 
-impl fmt::Display for HardSphereTriclinicSim
-{
+impl fmt::Display for HardSphereTriclinicSim {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.microstate.fmt(f)?;
@@ -106,8 +103,7 @@ impl fmt::Display for HardSphereTriclinicSim
     }
 }
 
-impl HardSphereTriclinicSim
-{
+impl HardSphereTriclinicSim {
     /// Construct a new hard sphere simulation
     ///
     /// # Errors
@@ -152,24 +148,28 @@ impl HardSphereTriclinicSim
 
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
 
-        let microstate_hypercuboid: Microstate<_, _, VecCell<SiteKey, 3>, _> = place_single_site_point_bodies(
-            n,
-            number_density,
-            hamiltonian.0.maximum_interaction_range(),
-            &overlap_penalty_hamiltonian,
-        )?;
+        let microstate_hypercuboid: Microstate<_, _, VecCell<SiteKey, 3>, _> =
+            place_single_site_point_bodies(
+                n,
+                number_density,
+                hamiltonian.0.maximum_interaction_range(),
+                &overlap_penalty_hamiltonian,
+            )?;
 
         let triclinic = Triclinic::cube(microstate_hypercuboid.boundary().shape().edge_lengths[0]);
-        let periodic_triclinic = Periodic::new(hamiltonian.maximum_interaction_range(), triclinic)?; 
+        let periodic_triclinic = Periodic::new(hamiltonian.maximum_interaction_range(), triclinic)?;
         let vec_cell = VecCell::builder()
-            .nominal_search_radius(
-                hamiltonian.maximum_interaction_range().try_into()?,
-            )
+            .nominal_search_radius(hamiltonian.maximum_interaction_range().try_into()?)
             .build();
         let microstate = Microstate::builder()
             .boundary(periodic_triclinic)
             .spatial_data(vec_cell)
-            .bodies(microstate_hypercuboid.bodies().iter().map(|b| b.item.clone()))
+            .bodies(
+                microstate_hypercuboid
+                    .bodies()
+                    .iter()
+                    .map(|b| b.item.clone()),
+            )
             .try_build()?;
 
         let mut simulation = Self {
