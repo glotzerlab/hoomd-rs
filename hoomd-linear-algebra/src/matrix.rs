@@ -227,6 +227,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// );
     /// ```
     #[inline]
+    #[must_use]
     pub fn map_rows<F>(self, f: F) -> Self
     where
         F: FnMut([f64; M]) -> [f64; M],
@@ -251,6 +252,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// );
     /// ```
     #[inline]
+    #[must_use]
     pub fn map_columns<F>(self, f: F) -> Self
     where
         F: FnMut([f64; N]) -> [f64; N],
@@ -267,6 +269,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// assert_eq!(m.map_elements(|x| x + 2.0), m + Matrix33::full(2.0));
     /// ```
     #[inline]
+    #[must_use]
     pub fn map_elements<F>(self, f: F) -> Self
     where
         F: Fn(f64) -> f64,
