@@ -82,15 +82,12 @@ where
             let net_force = body_properties.net_force().clone();
             *body_properties.position_mut() += (net_force + f_rand) * self.delta_t / g;
 
-            // Pick a new random velocity
+            // Pick a new random momentum
             let normal = Normal::new(
                 0.0,
-                (macrostate.temperature() / body_properties.mass()).sqrt(),
+                (macrostate.temperature() * body_properties.mass()).sqrt(),
             ).unwrap();
-            let v_rand = Cartesian::<N>::from(from_fn(|_| normal.sample(&mut rng)));
-
-            // Update momentum using the new velocity
-            *body_properties.momentum_mut() = v_rand * body_properties.mass();
+            *body_properties.momentum_mut() = Cartesian::<N>::from(from_fn(|_| normal.sample(&mut rng)));
 
             microstate
                 .update_body_properties(body_index, body_properties)
@@ -182,20 +179,15 @@ where
                 )
             ).to_versor_unchecked();
 
-            // Pick a new random angular velocity
-            let w_rand = Cartesian::<3>::from(from_fn(|i| {
+            // Pick a new random angular momentum
+            *body_properties.angular_momentum_mut() = Cartesian::<3>::from(from_fn(|i| {
                 let normal = Normal::new(
                     0.0,
-                    (moi[i] * macrostate.temperature()).sqrt(), // TODO: why multiply instead of divide?
+                    (moi[i] * macrostate.temperature()).sqrt(),
                 ).unwrap();
                 let is_zero = if moi[i] == 0.0 { 0.0 } else { 1.0 };
                 normal.sample(&mut rng) * is_zero
             }));
-
-            // Update angular momentum using the new angular velocity
-            *body_properties.angular_momentum_mut() = Cartesian::<3>::from(
-                from_fn(|i| moi[i] * w_rand[i])
-            );
 
             microstate
                 .update_body_properties(body_index, body_properties)
@@ -280,15 +272,12 @@ where
             );
             *body_properties.orientation_mut() = Angle::from(new_theta).to_reduced();
 
-            // Pick a new random angular velocity
+            // Pick a new random angular momentum
             let normal = Normal::new(
                 0.0,
-                (moi * macrostate.temperature()).sqrt(), // TODO: why multiply instead of divide?
+                (moi * macrostate.temperature()).sqrt(),
             ).unwrap();
-            let w_rand = if moi == 0.0 { 0.0 } else { normal.sample(&mut rng) };
-
-            // Update angular momentum using the new angular velocity
-            *body_properties.angular_momentum_mut() = moi * w_rand;
+            *body_properties.angular_momentum_mut() = if moi == 0.0 { 0.0 } else { normal.sample(&mut rng) };
 
             microstate
                 .update_body_properties(body_index, body_properties)
