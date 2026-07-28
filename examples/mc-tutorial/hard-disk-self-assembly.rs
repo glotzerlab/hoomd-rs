@@ -4,7 +4,7 @@ use anyhow::{Context, anyhow};
 
 use hoomd_geometry::{
     Volume,
-    shape::{Circle, Rectangle},
+    shape::{Circle, Rhomboid},
 };
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
@@ -34,7 +34,7 @@ struct HardDiskSelfAssembly {
         BodyProperties,
         SiteProperties,
         VecCell<SiteKey, 2>,
-        Periodic<Rectangle>,
+        Periodic<Rhomboid>,
     >,
     /// How sites interact with other sites and fields.
     hamiltonian: PairwiseCutoff<HardSphere>,
@@ -43,7 +43,7 @@ struct HardDiskSelfAssembly {
     /// Temperature set point.
     macrostate: Isothermal,
     /// Quick compress algorithm
-    quick_compress: QuickCompress<Periodic<Rectangle>>,
+    quick_compress: QuickCompress<Periodic<Rhomboid>>,
     /// How sites interact during compression.
     overlap_penalty_hamiltonian:
         PairwiseCutoff<Isotropic<Expanded<OverlapPenalty>>>,
@@ -66,7 +66,7 @@ impl HardDiskSelfAssembly {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
         let initial_packing_fraction = 0.4;
-        let target_packing_fraction = 0.76;
+        let target_packing_fraction = 0.73;
         let n_disks = 64_usize.pow(2);
         let maximum_distance = 0.07;
         let sigma = 1.0;
@@ -84,10 +84,10 @@ impl HardDiskSelfAssembly {
         let initial_box_volume =
             n_disks as f64 * circle.volume() / initial_packing_fraction;
         let initial_box_edge_length = initial_box_volume.sqrt();
-        let square =
-            Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
-        let periodic_square =
-            Periodic::new(hamiltonian.maximum_interaction_range(), square)?;
+        let rhomboid =
+            Rhomboid { extents: [initial_box_edge_length.try_into()?, initial_box_edge_length.try_into()?], xy: 1.0 / 3.0f64.sqrt() };
+        let periodic_rhomboid =
+            Periodic::new(hamiltonian.maximum_interaction_range(), rhomboid)?;
         // ANCHOR_END: periodic
 
         // ANCHOR: microstate
@@ -97,7 +97,7 @@ impl HardDiskSelfAssembly {
             )
             .build();
         let mut microstate = Microstate::builder()
-            .boundary(periodic_square)
+            .boundary(periodic_rhomboid)
             .spatial_data(vec_cell)
             .try_build()?;
         // ANCHOR_END: microstate
