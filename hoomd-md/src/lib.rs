@@ -514,7 +514,7 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 /// [`integrate_rotation_half_step_two_with_filter`]: Self::integrate_rotation_half_step_two_with_filter
 /// [`Orientation`]: hoomd_microstate::property::Orientation
 /// [`AngularMomentum`]: hoomd_microstate::property::AngularMomentum
-pub trait RotationalMotion<B, S, X, C, M> {
+pub trait RotationalMotion<R, B, S, X, C, M> {
     /// Integrate all body orientations forward a full step and their angular momenta forward a half step.
     #[inline]
     fn integrate_rotation_half_step_one(
