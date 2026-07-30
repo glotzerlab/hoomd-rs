@@ -509,14 +509,14 @@ pub(crate) fn integrate_rotation_half_step_one_with_filter<V, R, B, S, X, C, TR,
 )
 where
     V: Wedge + Copy,
-    R: IntegrateRotation<Rotation = R> + RotationalMotionTypes + Clone,
+    R: IntegrateRotation<Rotation = R, NetTorque = <V as Wedge>::Bivector> + RotationalMotionTypes + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>
-        + Orientation<Rotation = <R as IntegrateRotation>::Rotation>
+        + Orientation<Rotation = R>
         + AngularMomentum<AngularMomentum = <R as RotationalMotionTypes>::AngularMomentum>
         + MomentOfInertia<MomentOfInertia = <R as RotationalMotionTypes>::MomentOfInertia>
-        + NetTorque<NetTorque = <R as IntegrateRotation>::NetTorque>,
+        + NetTorque<NetTorque = <V as Wedge>::Bivector>,
     S: Position<Position = V> + Default,
     X: PointUpdate<V, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
@@ -589,14 +589,14 @@ pub(crate) fn integrate_rotation_half_step_two_with_filter<V, R, B, S, X, C, TR,
 )
 where
     V: Wedge + Copy,
-    R: IntegrateRotation<Rotation = R> + RotationalMotionTypes + Clone,
+    R: IntegrateRotation<Rotation = R, NetTorque = V::Bivector> + RotationalMotionTypes + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>
-        + Orientation<Rotation = <R as IntegrateRotation>::Rotation>
+        + Orientation<Rotation = R>
         + AngularMomentum<AngularMomentum = <R as RotationalMotionTypes>::AngularMomentum>
         + MomentOfInertia<MomentOfInertia = <R as RotationalMotionTypes>::MomentOfInertia>
-        + NetTorque<NetTorque = <R as IntegrateRotation>::NetTorque>,
+        + NetTorque<NetTorque = V::Bivector>,
     S: Position<Position = V> + Default,
     X: PointUpdate<V, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
@@ -679,14 +679,14 @@ impl<V, R, B, S, X, C, TT, TR, M> RotationalMotion<R, B, S, X, C, M>
     for ConstantVolume<TT, TR>
 where
     V: Wedge + Copy,
-    R: IntegrateRotation<Rotation = R> + RotationalMotionTypes + Clone,
+    R: IntegrateRotation<Rotation = R, NetTorque = <V as Wedge>::Bivector> + RotationalMotionTypes + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>
         + Orientation<Rotation = R>
         + AngularMomentum<AngularMomentum = <R as RotationalMotionTypes>::AngularMomentum>
         + MomentOfInertia<MomentOfInertia = <R as RotationalMotionTypes>::MomentOfInertia>
-        + NetTorque<NetTorque = <R as IntegrateRotation>::NetTorque>,
+        + NetTorque<NetTorque = <V as Wedge>::Bivector>,
     S: Position<Position = V> + Default,
     X: PointUpdate<V, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
