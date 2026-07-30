@@ -3,22 +3,21 @@
 
 //! Implement `Langevin`.
 
+use std::ops::{Add, AddAssign, MulAssign};
+
 use hoomd_simulation::macrostate::Temperature;
 use rand::{Rng, distr::Distribution};
 
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        AngularMomentum, Drag, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, NetVirial, Position, RotationalDrag
+        AngularMomentum, Drag, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, NetVirial, Orientation, Position, RotationalDrag, RotationalMotionTypes
     }
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Angle, Cartesian, Outer, Versor};
+use hoomd_vector::{Angle, Cartesian, Outer, Versor, Wedge};
 use rand_distr::Uniform;
 use crate::{
-    RotationalMotion,
-    TranslationalKineticEnergy,
-    TranslationalMotion,
-    thermostat::NoThermostat
+    RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, method::IntegrateRotation, thermostat::NoThermostat
 };
 
 /// Integrate bodies' degrees of freedom in the microstate according to
@@ -195,103 +194,137 @@ impl Langevin {
     }
 }
 
-/// Langevin torques in 3-dimensional cartesian space.
-impl Langevin {
-    /// Apply drag and random torques to selected bodies in the microstate.
+/// Calculate drag and random torque.
+/// 
+/// This trait binds drag and random torque calculation to the types that
+/// represent orientation and its associated quantities. Implement this trait on
+/// an orientation type to enable its use with [`Langevin`].
+pub trait DragAndRandomTorque
+where
+    <Self as DragAndRandomTorque>::Rotation: RotationalMotionTypes,
+{
+    /// Type that represents a body's orientation.
+    type Rotation;
+
+    /// Type that represents a body's net torque.
+    type NetTorque;
+
+    /// Calculate drag and random torque.
     /// 
-    /// Drag torques are parameterized by `gamma_r` and oppose the direction of
-    /// motion. Random torques are uniform and have magnitudes that scale with
-    /// drag and temperature. For details, see [above](Langevin).
-    #[inline]
-    pub fn apply_drag_and_random_torques_3d<B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
-        &self,
+    /// Drag torques are parameterized by `rotational_drag` and oppose the
+    /// direction of motion. Random torques are uniform and have magnitudes that
+    /// scale with drag and temperature. For details, see [`Langevin`].
+    fn drag_and_random_torque<R: Rng + ?Sized>(
+        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
+        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        temperature: f64,
+        delta_t: f64,
         rng: &mut R,
-        microstate: &mut Microstate<B, S, X, C>,
-        macrostate: &M,
-        should_update_body: F,
-    )
-    where
-        B: Transform<S>
-            + Clone
-            + AngularMomentum<AngularMomentum = Cartesian<3>>
-            + MomentOfInertia<MomentOfInertia = [f64; 3]>
-            + NetTorque<NetTorque = Cartesian<3>>
-            + RotationalDrag<RotationalDrag = [f64; 3]>,
-        S: Position<Position = Cartesian<3>> + Default,
-        X: PointUpdate<Cartesian<3>, SiteKey>,
-        C: Wrap<B>
-            + Wrap<S>
-            + GenerateGhosts<S>,
-        M: Temperature,
-        R: Rng + ?Sized,
-    {       
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_update_body(body) {
-                continue;
-            }
-            let mut body_properties = body.item.properties.clone();
+    ) -> (Self::NetTorque, Self::NetTorque);
+}
 
-            // Calculate the drag torque
-            let g_r = body_properties.rotational_drag();
-            let moi = body_properties.moment_of_inertia();
-            let angular_momentum = body_properties.angular_momentum();
-            let w = Cartesian::<3>::from(
-                core::array::from_fn(|i| angular_momentum[i] / moi[i])
-            );
-            let t_drag = Cartesian::<3>::from(
-                core::array::from_fn(|i| w[i] * g_r[i] * -1.0)
-            );
+impl DragAndRandomTorque for Angle {
+    type Rotation = Angle;
+    type NetTorque = <Cartesian<2> as Wedge>::Bivector;
 
-            // Pick a random torque
-            let uniform = Uniform::new_inclusive(-1.0, 1.0).unwrap();
-            let t_rand = Cartesian::<3>::from(
-                core::array::from_fn(|i| {
-                    let magnitude = 
-                        if moi[i] > 0.0 {
-                            (6.0 * macrostate.temperature() * g_r[i] / self.delta_t).sqrt()
-                        } else {
-                            0.0
-                        };
-                    magnitude * uniform.sample(rng)
-                })
-            );
+    fn drag_and_random_torque<R: Rng + ?Sized>(
+        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
+        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        temperature: f64,
+        delta_t: f64,
+        rng: &mut R,
+    ) -> (Self::NetTorque, Self::NetTorque) {
+        // Calculate the drag torque
+        let angular_velocity = angular_momentum / moment_of_inertia;
+        let t_drag = angular_velocity * rotational_drag * -1.0;
 
-            // Apply drag and random torques
-            *body_properties.net_torque_mut() += t_drag + t_rand;
-        }
+        // Pick a random torque
+        let uniform = Uniform::new_inclusive(-1.0, 1.0).unwrap();
+        let magnitude = 
+            if *moment_of_inertia > 0.0 {
+                (6.0 * temperature * rotational_drag / delta_t).sqrt()
+            } else {
+                0.0
+            };
+        let t_rand = magnitude * uniform.sample(rng);
+
+        (t_drag, t_rand)
     }
 }
 
-/// Langevin torques in 2-dimensional cartesian space.
+impl DragAndRandomTorque for Versor {
+    type Rotation = Versor;
+    type NetTorque = <Cartesian<3> as Wedge>::Bivector;
+
+    fn drag_and_random_torque<R: Rng + ?Sized>(
+        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
+        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        temperature: f64,
+        delta_t: f64,
+        rng: &mut R,
+    ) -> (Self::NetTorque, Self::NetTorque) {
+        // Calculate the drag torque
+        let angular_velocity = Cartesian::<3>::from(
+            core::array::from_fn(|i| angular_momentum[i] / moment_of_inertia[i])
+        );
+        let t_drag = Cartesian::<3>::from(
+            core::array::from_fn(|i| angular_velocity[i] * rotational_drag[i] * -1.0)
+        );
+
+        // Pick a random torque
+        let uniform = Uniform::new_inclusive(-1.0, 1.0).unwrap();
+        let t_rand = Cartesian::<3>::from(
+            core::array::from_fn(|i| {
+                let magnitude = 
+                    if moment_of_inertia[i] > 0.0 {
+                        (6.0 * temperature * rotational_drag[i] / delta_t).sqrt()
+                    } else {
+                        0.0
+                    };
+                magnitude * uniform.sample(rng)
+            })
+        );
+
+        (t_drag, t_rand)
+    }
+}
+
+/// Langevin torques in 2 and 3-dimensional cartesian space.
 impl Langevin {
     /// Apply drag and random torques to selected bodies in the microstate.
     /// 
-    /// Drag torques are parameterized by `gamma_r` and oppose the direction of
-    /// motion. Random torques are uniform and have magnitudes that scale with
-    /// drag and temperature. For details, see [above](Langevin).
+    /// Drag torques are parameterized by `rotational_drag` and oppose the
+    /// direction of motion. Random torques are uniform and have magnitudes that
+    /// scale with drag and temperature. For details, see [above](Langevin).
     #[inline]
-    pub fn apply_drag_and_random_torques_2d<B, S, X, C, M, R, F: Fn(&Tagged<Body<B, S>>) -> bool>(
+    pub fn apply_drag_and_random_torques<V, R, B, S, X, C, M, RNG, F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
-        rng: &mut R,
+        rng: &mut RNG,
         microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_update_body: F,
     )
     where
+        V: Wedge,
+        R: DragAndRandomTorque<Rotation = R, NetTorque = V::Bivector> + RotationalMotionTypes,
         B: Transform<S>
             + Clone
-            + AngularMomentum<AngularMomentum = f64>
-            + MomentOfInertia<MomentOfInertia = f64>
-            + NetTorque<NetTorque = f64>
-            + RotationalDrag<RotationalDrag = f64>,
-        S: Position<Position = Cartesian<2>> + Default,
-        X: PointUpdate<Cartesian<2>, SiteKey>,
+            + Orientation<Rotation = R>
+            + AngularMomentum<AngularMomentum = <R as RotationalMotionTypes>::AngularMomentum>
+            + MomentOfInertia<MomentOfInertia = <R as RotationalMotionTypes>::MomentOfInertia>
+            + NetTorque<NetTorque = V::Bivector>
+            + RotationalDrag<RotationalDrag = <R as RotationalMotionTypes>::RotationalDrag>,
+        S: Position<Position = V> + Default,
+        X: PointUpdate<V, SiteKey>,
         C: Wrap<B>
             + Wrap<S>
             + GenerateGhosts<S>,
         M: Temperature,
-        R: Rng + ?Sized,
+        RNG: Rng + ?Sized,
+        V::Bivector: Add<Output = V::Bivector> + AddAssign<V::Bivector>,
     {       
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
@@ -300,22 +333,14 @@ impl Langevin {
             }
             let mut body_properties = body.item.properties.clone();
 
-            // Calculate the drag torque
-            let g_r = body_properties.rotational_drag();
-            let moi = body_properties.moment_of_inertia();
-            let angular_momentum = body_properties.angular_momentum();
-            let w = angular_momentum / moi;
-            let t_drag = w * g_r * -1.0;
-
-            // Pick a random torque
-            let uniform = Uniform::new_inclusive(-1.0, 1.0).unwrap();
-            let magnitude = 
-                if *moi > 0.0 {
-                    (6.0 * macrostate.temperature() * g_r / self.delta_t).sqrt()
-                } else {
-                    0.0
-                };
-            let t_rand = magnitude * uniform.sample(rng);
+            let (t_drag, t_rand) = <R as DragAndRandomTorque>::drag_and_random_torque(
+                body_properties.rotational_drag(),
+                body_properties.moment_of_inertia(),
+                body_properties.angular_momentum(),
+                *macrostate.temperature(),
+                self.delta_t,
+                rng
+            );
 
             // Apply drag and random torques
             *body_properties.net_torque_mut() += t_drag + t_rand;
@@ -376,6 +401,7 @@ where
         should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
+        microstate.increment_substep();
         self.apply_drag_and_random_forces_and_virials(
             &mut rng,
             microstate,
@@ -393,30 +419,41 @@ where
     }
 }
 
-/// Rotational motion in 3-dimensional cartesian space.
-impl<S, X, C, M> RotationalMotion<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C, M>
-    for Langevin
+impl<V, R, B, S, X, C, M> RotationalMotion<R, B, S, X, C, M> for Langevin
 where
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>>
-        + Wrap<S>
-        + GenerateGhosts<S>,
+    V: Wedge + Copy,
+    R: IntegrateRotation<Rotation = R, NetTorque = V::Bivector>
+        + DragAndRandomTorque<Rotation = R, NetTorque = V::Bivector>
+        + RotationalMotionTypes
+        + Clone,
+    B: Copy
+        + Transform<S>
+        + Position<Position = V>
+        + Orientation<Rotation = R>
+        + AngularMomentum<AngularMomentum = <R as RotationalMotionTypes>::AngularMomentum>
+        + MomentOfInertia<MomentOfInertia = <R as RotationalMotionTypes>::MomentOfInertia>
+        + NetTorque<NetTorque = V::Bivector>
+        + RotationalDrag<RotationalDrag = <R as RotationalMotionTypes>::RotationalDrag>,
+    S: Position<Position = V> + Default,
+    X: PointUpdate<V, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     M: Temperature,
-    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
+    Microstate<B, S, X, C>: RotationalKineticEnergy<B, S>,
+    <R as RotationalMotionTypes>::AngularMomentum: MulAssign<f64> + Clone,
+    V::Bivector: Add<Output = V::Bivector> + AddAssign<V::Bivector>,
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///
     /// This method is identical to `ConstantVolume::integrate_rotation_half_step_one_with_filter`.
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool
+        F: Fn(&Tagged<Body<B, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
-        crate::method::constant_volume::integrate_rotation_half_step_one_with_filter_cartesian3(
+        crate::method::constant_volume::integrate_rotation_half_step_one_with_filter::<V, R, B, S, X, C, NoThermostat, M, F>(
             self.delta_t,
             microstate,
             &mut NoThermostat,
@@ -431,84 +468,23 @@ where
     /// Aside from the application of drag and random torques, this method is
     /// identical to `ConstantVolume::integrate_rotation_half_step_two_with_filter`.
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool
+        F: Fn(&Tagged<Body<B, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
-        self.apply_drag_and_random_torques_3d(
-            &mut rng,
-            microstate,
-            macrostate,
-            &should_integrate_body,
-        );
-        crate::method::constant_volume::integrate_rotation_half_step_two_with_filter_cartesian3(
-            self.delta_t,
-            microstate,
-            &mut NoThermostat,
-            macrostate,
-            should_integrate_body
-        );
-    }
-}
-
-/// Rotational motion in 2-dimensional cartesian space.
-impl<S, X, C, M> RotationalMotion<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C, M>
-    for Langevin
-where
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>>
-        + Wrap<S>
-        + GenerateGhosts<S>,
-    M: Temperature,
-    DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>,
-{
-    /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
-    ///
-    /// This method is identical to `ConstantVolume::integrate_rotation_half_step_one_with_filter`.
-    fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool
-    >(
-        &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
-        macrostate: &M,
-        should_integrate_body: F,
-    ) {
-        crate::method::constant_volume::integrate_rotation_half_step_one_with_filter_cartesian2(
-            self.delta_t,
-            microstate,
-            &mut NoThermostat,
-            macrostate,
-            should_integrate_body
-        );
-    }
-
-    /// Apply drag and random torques to bodies, then integrate selected body
-    /// angular momenta forward a half step.
-    ///
-    /// Aside from the application of drag and random torques, this method is
-    /// identical to `ConstantVolume::integrate_rotation_half_step_two_with_filter`.
-    fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool
-    >(
-        &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
-        macrostate: &M,
-        should_integrate_body: F,
-    ) {
-        let mut rng = microstate.counter().make_rng();
-        self.apply_drag_and_random_torques_2d(
+        microstate.increment_substep();
+        self.apply_drag_and_random_torques(
             &mut rng,
             microstate,
             macrostate,
             &should_integrate_body,
         );
 
-        crate::method::constant_volume::integrate_rotation_half_step_two_with_filter_cartesian2(
+        crate::method::constant_volume::integrate_rotation_half_step_two_with_filter(
             self.delta_t,
             microstate,
             &mut NoThermostat,
