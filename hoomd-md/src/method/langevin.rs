@@ -17,7 +17,7 @@ use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, Outer, Versor, Wedge};
 use rand_distr::Uniform;
 use crate::{
-    RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, method::IntegrateRotation, thermostat::NoThermostat
+    RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, method::SymplecticIntegrateRotation, thermostat::NoThermostat
 };
 
 /// Integrate bodies' degrees of freedom in the microstate according to
@@ -422,7 +422,7 @@ where
 impl<V, R, B, S, X, C, M> RotationalMotion<R, B, S, X, C, M> for Langevin
 where
     V: Wedge + Copy,
-    R: IntegrateRotation<Rotation = R, NetTorque = V::Bivector>
+    R: SymplecticIntegrateRotation<Rotation = R, NetTorque = V::Bivector>
         + DragAndRandomTorque<Rotation = R, NetTorque = V::Bivector>
         + RotationalMotionTypes
         + Clone,

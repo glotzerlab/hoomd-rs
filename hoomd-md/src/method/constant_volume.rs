@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{array, ops::MulAssign};
 
 use crate::{
-    RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, method::IntegrateRotation, thermostat::NoThermostat,
+    RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, method::SymplecticIntegrateRotation, thermostat::NoThermostat,
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
@@ -498,7 +498,7 @@ where
 /// This function is defined outside of [`ConstantVolume`] because it
 /// is also used by [`Langevin`](crate::method::Langevin).
 /// 
-/// Note: The actual algorithm is used in [`crate::method::IntegrateRotation`]
+/// Note: The actual algorithm is used in [`crate::method::SymplecticIntegrateRotation`]
 /// in order to provide separate implementations for 2D and 3D.
 pub(crate) fn integrate_rotation_half_step_one_with_filter<V, R, B, S, X, C, TR, M, F> (
     delta_t: f64,
@@ -509,7 +509,7 @@ pub(crate) fn integrate_rotation_half_step_one_with_filter<V, R, B, S, X, C, TR,
 )
 where
     V: Wedge + Copy,
-    R: IntegrateRotation<Rotation = R, NetTorque = <V as Wedge>::Bivector> + RotationalMotionTypes + Clone,
+    R: SymplecticIntegrateRotation<Rotation = R, NetTorque = <V as Wedge>::Bivector> + RotationalMotionTypes + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>
@@ -523,7 +523,7 @@ where
     TR: Thermostat<M>,
     F: Fn(&Tagged<Body<B, S>>) -> bool,
     Microstate<B, S, X, C>: RotationalKineticEnergy<B, S>,
-    <R as IntegrateRotation>::Rotation: Clone,
+    <R as SymplecticIntegrateRotation>::Rotation: Clone,
     <R as RotationalMotionTypes>::AngularMomentum: MulAssign<f64> + Clone,
 {
     let mut rng = microstate.counter().make_rng();
@@ -548,7 +548,7 @@ where
 
         let mut orientation = body_properties.orientation().clone();
         let mut angular_momentum = body_properties.angular_momentum().clone();
-        <R as IntegrateRotation>::step1(
+        <R as SymplecticIntegrateRotation>::step1(
             delta_t,
             body_properties.net_torque(),
             &mut angular_momentum,
@@ -578,7 +578,7 @@ where
 /// This function is defined outside of [`ConstantVolume`] because it
 /// is also used by [`Langevin`](crate::method::Langevin).
 /// 
-/// Note: The actual algorithm is used in [`crate::method::IntegrateRotation`]
+/// Note: The actual algorithm is used in [`crate::method::SymplecticIntegrateRotation`]
 /// in order to provide separate implementations for 2D and 3D.
 pub(crate) fn integrate_rotation_half_step_two_with_filter<V, R, B, S, X, C, TR, M, F> (
     delta_t: f64,
@@ -589,7 +589,7 @@ pub(crate) fn integrate_rotation_half_step_two_with_filter<V, R, B, S, X, C, TR,
 )
 where
     V: Wedge + Copy,
-    R: IntegrateRotation<Rotation = R, NetTorque = V::Bivector> + RotationalMotionTypes + Clone,
+    R: SymplecticIntegrateRotation<Rotation = R, NetTorque = V::Bivector> + RotationalMotionTypes + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>
@@ -616,7 +616,7 @@ where
         let mut body_properties = body.item.properties;
 
         let mut angular_momentum = body_properties.angular_momentum().clone();
-        <R as IntegrateRotation>::step2(
+        <R as SymplecticIntegrateRotation>::step2(
             delta_t,
             body_properties.net_torque(),
             &mut angular_momentum,
@@ -679,7 +679,7 @@ impl<V, R, B, S, X, C, TT, TR, M> RotationalMotion<R, B, S, X, C, M>
     for ConstantVolume<TT, TR>
 where
     V: Wedge + Copy,
-    R: IntegrateRotation<Rotation = R, NetTorque = <V as Wedge>::Bivector> + RotationalMotionTypes + Clone,
+    R: SymplecticIntegrateRotation<Rotation = R, NetTorque = <V as Wedge>::Bivector> + RotationalMotionTypes + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>
@@ -700,7 +700,7 @@ where
     /// skipped.
     /// 
     /// For details, see the documentation for the implementations of
-    /// [`IntegrateRotation`](crate::method::IntegrateRotation).
+    /// [`SymplecticIntegrateRotation`](crate::method::SymplecticIntegrateRotation).
     #[inline]
     fn integrate_rotation_half_step_one_with_filter<
         F: Fn(&Tagged<Body<B, S>>) -> bool,
@@ -725,7 +725,7 @@ where
     /// skipped.
     /// 
     /// For details, see the documentation for the implementations of
-    /// [`IntegrateRotation`](crate::method::IntegrateRotation).
+    /// [`SymplecticIntegrateRotation`](crate::method::SymplecticIntegrateRotation).
     #[inline]
     fn integrate_rotation_half_step_two_with_filter<
         F: Fn(&Tagged<Body<B, S>>) -> bool,

@@ -22,9 +22,9 @@ pub use brownian::Brownian;
 /// represent orientation and its associated quantities: angular momentum and
 /// net torque. Implement this trait on a type to enable its use with
 /// [`ConstantVolume`] and other MD integration methods.
-pub trait IntegrateRotation
+pub trait SymplecticIntegrateRotation // TODO: rename to "SymplecticRotation"
 where
-    <Self as IntegrateRotation>::Rotation: RotationalMotionTypes,
+    <Self as SymplecticIntegrateRotation>::Rotation: RotationalMotionTypes,
 {
     /// Type that represents a body's orientation.
     type Rotation;
@@ -52,7 +52,7 @@ where
 }
 
 /// Rotational integration for bodies in 2-dimensional cartesian space.
-impl IntegrateRotation for Angle {
+impl SymplecticIntegrateRotation for Angle {
     type Rotation = Angle;
     type NetTorque = <Cartesian<2> as Wedge>::Bivector;
 
@@ -152,7 +152,7 @@ impl IntegrateRotation for Angle {
     }
 }
 
-impl IntegrateRotation for Versor {
+impl SymplecticIntegrateRotation for Versor {
     type Rotation = Versor;
     type NetTorque = <Cartesian<3> as Wedge>::Bivector;
 
