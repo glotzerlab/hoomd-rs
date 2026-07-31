@@ -246,6 +246,7 @@ where
     ) -> (Self::NetTorque, Self::NetTorque);
 }
 
+// TODO: documentation?
 impl DragAndRandomTorque for Angle {
     type Rotation = Angle;
     type NetTorque = <Cartesian<2> as Wedge>::Bivector;
