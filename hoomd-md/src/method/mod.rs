@@ -19,10 +19,13 @@ pub use brownian::Brownian;
 /// Symplecticly integrate rotational degrees of freedom.
 /// 
 /// This trait binds symplectic rotational integration schemes to the types that
-/// represent orientation and its associated quantities: angular momentum and
-/// net torque. Implement this trait on a type to enable its use with
-/// [`ConstantVolume`] and other MD integration methods.
-pub trait SymplecticIntegrateRotation // TODO: rename to "SymplecticRotation"
+/// represent orientation and its associated quantities: angular momentum,
+/// moment of inertia, and net torque. Implement this trait on a type that
+/// represents body orientation to make a [`Microstate`] containing such bodies
+/// integrateable with [`ConstantVolume`] and [`Langevin`].
+/// 
+/// [`Microstate`]: hoomd_microstate::Microstate
+pub trait SymplecticIntegrateRotation
 where
     <Self as SymplecticIntegrateRotation>::Rotation: RotationalMotionTypes,
 {
