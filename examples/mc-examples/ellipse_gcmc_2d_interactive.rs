@@ -1,11 +1,10 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, Settings,
-    representation::RectangularBoundary, representation::ellipse,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, ParametersWindowState, Settings, representation::{RectangularBoundary, ellipse}
 };
 
 use anyhow::Context;
 use bevy::prelude::*;
-use bevy_egui::EguiPlugin;
+use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
 use super::HardEllipseGCMC;
 
@@ -64,8 +63,39 @@ pub(crate) fn main() -> anyhow::Result<()> {
             .run_if(resource_changed::<HardEllipseGCMC>)
             .after(AdvanceSet),
     );
+    app.add_systems(EguiPrimaryContextPass, ui_system);
 
     app.run();
+
+    Ok(())
+}
+
+fn ui_system(
+    mut simulation: ResMut<HardEllipseGCMC>,
+    mut contexts: EguiContexts,
+    mut parameters_window_state: ResMut<ParametersWindowState>,
+) -> Result {
+    let window = egui::Window::new("")
+        .id(egui::Id::new("Parameters"))
+        .auto_sized()
+        .open(&mut parameters_window_state.0)
+        .collapsible(false);
+
+    window.show(contexts.ctx_mut()?, |ui| {
+        ui.vertical(|ui| {
+            ui.horizontal(|ui| {
+                ui.add(
+                    egui::Slider::new(
+                        &mut simulation.macrostate.fugacity,
+                        0.0..=100.0,
+                    )
+                    .text("fugacity")
+                    .update_while_editing(false),
+                );
+            });
+            ui.label(format!("N: {}", simulation.microstate.bodies().len()));
+         });
+    });
 
     Ok(())
 }

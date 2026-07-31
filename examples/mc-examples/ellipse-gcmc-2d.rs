@@ -49,7 +49,7 @@ impl HardEllipseGCMC {
         let aspect = 5.0;
         let macrostate = IsothermalIsofugacity {
             temperature: 1.0,
-            fugacity: 1000.0,
+            fugacity: 50.0,
         };
         assert!(aspect >= 1.0);
 
