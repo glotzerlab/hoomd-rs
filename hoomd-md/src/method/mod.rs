@@ -10,10 +10,10 @@ pub use constant_volume::{ConstantVolume, ConstantVolumeBuilder};
 
 use hoomd_microstate::property::RotationalMotionTypes;
 use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Versor, Wedge};
-mod langevin;
+pub mod langevin;
 pub use langevin::Langevin;
 
-mod brownian;
+pub mod brownian;
 pub use brownian::Brownian;
 
 // TODO: fix the katex build problem...
