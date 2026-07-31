@@ -159,7 +159,7 @@ pub struct Isobaric {
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct IsothermalIsobaric {
-    /// Kinetic temperature of the system.
+    /// Temperature of the system.
     pub temperature: f64,
     /// Pressure of the system.
     pub pressure: f64,
@@ -207,7 +207,7 @@ impl Pressure for IsothermalIsobaric {
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct IsothermalIsofugacity {
-    /// Kinetic temperature of the system.
+    /// Temperature of the system.
     pub temperature: f64,
     /// Pressure of the system.
     pub fugacity: f64,
