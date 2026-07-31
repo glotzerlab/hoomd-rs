@@ -1,5 +1,7 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, ParametersWindowState, Settings, representation::{RectangularBoundary, ellipse}
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR,
+    ParametersWindowState, Settings,
+    representation::{RectangularBoundary, ellipse},
 };
 
 use anyhow::Context;
@@ -94,7 +96,7 @@ fn ui_system(
                 );
             });
             ui.label(format!("N: {}", simulation.microstate.bodies().len()));
-         });
+        });
     });
 
     Ok(())
