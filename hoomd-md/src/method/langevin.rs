@@ -9,15 +9,37 @@ use hoomd_simulation::macrostate::Temperature;
 use rand::{Rng, distr::Distribution};
 
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        AngularMomentum, Drag, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, NetVirial, Orientation, Position, RotationalDrag, RotationalMotionTypes
+    Body,
+    Microstate,
+    SiteKey,
+    Tagged,
+    Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{
+        AngularMomentum,
+        Drag,
+        Mass,
+        MomentOfInertia,
+        Momentum,
+        NetForce,
+        NetTorque,
+        NetVirial,
+        Orientation,
+        Position,
+        RotationalDrag,
+        RotationalMotionTypes
     }
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, Outer, Versor, Wedge};
 use rand_distr::Uniform;
 use crate::{
-    RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, method::SymplecticIntegrateRotation, thermostat::NoThermostat
+    RotationalKineticEnergy,
+    RotationalMotion,
+    TranslationalKineticEnergy,
+    TranslationalMotion,
+    method::SymplecticIntegrateRotation,
+    thermostat::NoThermostat
 };
 
 /// Integrate bodies' degrees of freedom in the microstate according to
