@@ -556,8 +556,8 @@ where
             body_properties.moment_of_inertia(),
         );
 
-        *body_properties.orientation_mut() = orientation;           // TODO: check clone ok
-        *body_properties.angular_momentum_mut() = angular_momentum; // TODO: check clone ok
+        *body_properties.orientation_mut() = orientation;
+        *body_properties.angular_momentum_mut() = angular_momentum;
 
         microstate
             .update_body_properties(body_index, body_properties)
@@ -633,7 +633,7 @@ where
         // 
         // *body_properties.angular_momentum_mut() = ((q.conjugate() * p) * 0.5).vector;
 
-        *body_properties.angular_momentum_mut() = angular_momentum; // TODO: check clone ok
+        *body_properties.angular_momentum_mut() = angular_momentum;
 
         microstate
             .update_body_properties(body_index, body_properties)
