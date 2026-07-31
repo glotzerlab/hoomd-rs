@@ -170,7 +170,7 @@ where
         }
 
         // insert
-        if move_type_r > 0.5 || microstate.bodies().is_empty() {
+        if move_type_r > 0.5 {
             let new_body = self.0.sample(0, &mut rng);
 
             let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
@@ -187,7 +187,7 @@ where
             }
         }
         // remove
-        else {
+        else if n > 0 {
             let index = rng.random_range(..n);
             let delta_energy = hamiltonian.delta_energy_remove(microstate, index);
 
