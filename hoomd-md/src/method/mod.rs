@@ -16,6 +16,8 @@ pub use langevin::Langevin;
 mod brownian;
 pub use brownian::Brownian;
 
+// TODO: fix the katex build problem...
+
 /// Symplecticly integrate rotational degrees of freedom.
 /// 
 /// This trait binds symplectic rotational integration schemes to the types that
@@ -61,39 +63,23 @@ impl SymplecticIntegrateRotation for Angle {
 
     /// Integrate orientation forward a full step and angular momentum forward a half step.
     ///
-    /// The first half step of the symplectic integration procedure in
-    /// 2-dimensional cartesian space is given by the equations below, which are
-    /// applied to each body *i*. In each step, the marker $`'`$ is used when a
-    /// variable's value changes during a step to distinguish the value before
-    /// ( $`'`$ is present) from the value after ( $`'`$ is absent). Bodies
-    /// which have ``moment_of_inertia = 0.0`` are skipped.
+    /// The first half step of the symplectic rotational integration procedure
+    /// in 2-dimensional cartesian space is given by the equations below, which
+    /// are applied to each body *i*. Bodies which have
+    /// `moment_of_inertia = 0.0` are skipped.
     ///
-    /// 1. The rotational thermostat is integrated forward a half-step and then
-    ///    angular momentum is rescaled accordingly:
-    ///
-    ///    ```math
-    ///    L_i(t) = L'_i(t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_one}\left(\sum_{j \in \mathrm{selection}} K'_{rot,j}(t) \right)
-    ///    ```
-    ///
-    ///    where the summation represents the total [rotational kinetic energy]
-    ///    of the selected bodies at the start of the step, and
-    ///    `rotational_thermostat.integrate_half_step_one()` is the first half
-    ///    step method implemented by `TR`.
-    ///
-    /// 2. Angular momentum is integrated forward a half step.
+    /// 1. Angular momentum is integrated forward a half step.
     ///
     ///    ```math
     ///    L_i\left(t + \frac{\Delta t}{2} \right) = L_i(t) + \tau_i(t) \frac{\Delta t}{2}
     ///    ```
     ///
-    /// 3. Orientation is integrated forward a full step using the new angular
+    /// 2. Orientation is integrated forward a full step using the new angular
     ///    momentum.
     ///
     ///    ```math
     ///    \theta_i(t + \Delta t) = \theta_i(t) + \frac{L_i\left( t + \frac{\Delta t}{2} \right)}{I_i} \Delta t
     ///    ```
-    ///
-    /// [rotational kinetic energy]: crate::compute::RotationalKineticEnergy
     fn half_step_one(
         delta_t: f64,
         net_torque: &Self::NetTorque,
@@ -114,31 +100,13 @@ impl SymplecticIntegrateRotation for Angle {
     /// Integrate angular momentum forward a half step.
     ///
     /// The second half step of the symplectic integration procedure in
-    /// 2-dimensional cartesian space is given by the equations below, which are
-    /// applied to each body *i*. In each step, the marker $`'`$ is used when a
-    /// variable's value changes during a step to distinguish the value before
-    /// ( $`'`$ is present) from the value after ( $`'`$ is absent). Bodies
-    /// which have ``moment_of_inertia = 0.0`` are skipped.
+    /// 2-dimensional cartesian space is given by the equation below, which is
+    /// applied to each body *i*. Bodies which have `moment_of_inertia = 0.0`
+    /// are skipped.
     ///
-    /// 1. Angular momentum is integrated forward a half step.
-    ///
-    ///    ```math
-    ///    L_i(t + \Delta t) = L_i\left( t + \frac{\Delta t}{2} \right) + \tau_i \left(t + \frac{\Delta t}{2} \right) \frac{\Delta t}{2}
-    ///    ```
-    ///
-    /// 2. The rotational thermostat is integrated forward a half step and then
-    ///    angular momentum is rescaled accordingly.
-    ///
-    ///    ```math
-    ///    L_i(t + \Delta t) = L'_i(t + \Delta t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_two}\left(\sum_{j \in \mathrm{selection}}K'_{rot,j}(t + \Delta t) \right)
-    ///    ```
-    ///
-    ///    where the summation represents the total [rotational kinetic energy]
-    ///    of the selected bodies at the start of the step, and
-    ///    `rotational_thermostat.integrate_half_step_two()` is the second half
-    ///    step method implemented by `TR`.
-    ///
-    /// [rotational kinetic energy]: crate::compute::RotationalKineticEnergy
+    /// ```math
+    /// L_i(t + \Delta t) = L_i\left( t + \frac{\Delta t}{2} \right) + \tau_i \left(t + \frac{\Delta t}{2} \right) \frac{\Delta t}{2}
+    /// ```
     fn half_step_two(
         delta_t: f64,
         net_torque: &Self::NetTorque,
@@ -162,27 +130,15 @@ impl SymplecticIntegrateRotation for Versor {
 
     /// Integrate orientation forward a full step and angular momentum forward a half step.
     ///
-    /// The first half step of the symplectic integration procedure in
-    /// 3-dimensional cartesian space is given by the equations below, which are
-    /// applied to each body *i*. In each step, the marker $`'`$ is used when a
-    /// variable's value changes during a step to distinguish the value before
-    /// ( $`'`$ is present) from the value after ( $`'`$ is absent). Rotational
-    /// degrees of freedom with a moment of inertia component of zero are
-    /// skipped.
+    /// The first half step of the symplectic rotational integration procedure
+    /// in 2-dimensional cartesian space is given by the equations below, which
+    /// are applied to each body *i*. In each step, the marker $`'`$ is used
+    /// when a variable's value changes during a step to distinguish the value
+    /// before ( $`'`$ is present) from the value after ( $`'`$ is absent).
+    /// Rotational degrees of freedom with a moment of inertia component of zero
+    /// are skipped.
     ///
-    /// 1. The rotational thermostat is integrated forward a half-step and then
-    ///    angular momentum is rescaled accordingly:
-    ///
-    ///    ```math
-    ///    \vec{L}_i(t) = \vec{L}'_i(t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_one}\left(\sum_{j \in \mathrm{selection}} K'_{rot,j}(t) \right)
-    ///    ```
-    ///
-    ///    where the summation represents the total [rotational kinetic energy]
-    ///    of the selected bodies at the start of the step, and
-    ///    `rotational_thermostat.integrate_half_step_one()` is the first half
-    ///    step method implemented by `TR`.
-    ///
-    /// 2. Angular momentum $`\vec{L}`$ and orientation $`\mathbf{q}`$ are
+    /// 1. Angular momentum $`\vec{L}`$ and orientation $`\mathbf{q}`$ are
     ///    integrated forward. These integrations follow a complex, multi-step
     ///    process, so a fuller explanation is provided below. In each step, the
     ///    body index *i* and time *t* are implicit on every variable unless
@@ -401,12 +357,10 @@ impl SymplecticIntegrateRotation for Versor {
     ///
     /// The second half step of the symplectic integration procedure in
     /// 3-dimensional cartesian space is given by the equations below, which are
-    /// applied to each body *i*. In each step, the marker $`'`$ is used when a
-    /// variable's value changes during a step to distinguish the value before
-    /// ( $`'`$ is present) from the value after ( $`'`$ is absent). The time
-    /// $`t + \frac{\Delta t}{2}`$ is implicit on every variable unless
-    /// otherwise specified. Rotational degrees of freedom with a moment of
-    /// inertia component of zero are skipped.
+    /// applied to each body *i*. The time $`t + \frac{\Delta t}{2}`$ is
+    /// implicit on every variable unless otherwise specified. Rotational
+    /// degrees of freedom with a moment of inertia component of zero are
+    /// skipped.
     ///
     /// 1. Angular momentum and net torque are converted to quaternions
     ///    $`\mathbf{p}`$ and $`\mathbf{f}`$, respectively:
@@ -459,22 +413,6 @@ impl SymplecticIntegrateRotation for Versor {
     ///    \vec{L} &= (L_x, L_y, L_z)
     ///    \end{align*}
     ///    ```
-    ///
-    /// 4. The rotational thermostat is integrated forward a half-step and then
-    ///    angular momentum is rescaled accordingly. (Note:
-    ///    `rotational_thermostat.integrate_half_step_two()` is the first half
-    ///    step method implemented by `TR`.)
-    ///
-    ///    ```math
-    ///    \vec{L}_i(t + \Delta t) = \vec{L}'_i(t + \Delta t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_two}\left(\sum_{i \in \mathrm{selection}} K'_{rot,j}(t + \Delta t) \right)
-    ///    ```
-    ///
-    ///    where the summation represents the total [rotational kinetic energy]
-    ///    of the selected bodies at the start of the step, and
-    ///    `rotational_thermostat.integrate_half_step_two()` is the second half
-    ///    step method implemented by `TR`.
-    /// 
-    /// [rotational kinetic energy]: crate::compute::RotationalKineticEnergy
     fn half_step_two(
         delta_t: f64,
         net_torque: &Self::NetTorque,

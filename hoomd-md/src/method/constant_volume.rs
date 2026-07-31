@@ -699,8 +699,31 @@ where
     /// If a selected body has no active rotational degrees of freedom, it is
     /// skipped.
     /// 
-    /// For details, see the documentation for the implementations of
-    /// [`SymplecticIntegrateRotation`](crate::method::SymplecticIntegrateRotation).
+    /// The first half step of the symplectic integration procedure follows the
+    /// sequence of operations described below, which are applied to each body
+    /// *i*. In each step, the marker $`'`$ is used when a variable's value
+    /// changes during a step to distinguish the value before ( $`'`$ is
+    /// present) from the value after ( $`'`$ is absent).
+    /// 
+    /// 1. The rotational thermostat is integrated forward a half-step and then
+    ///    angular momentum is rescaled accordingly:
+    ///
+    ///    ```math
+    ///    L_i(t) = L'_i(t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_one}\left(\sum_{j \in \mathrm{selection}} K'_{rot,j}(t) \right)
+    ///    ```
+    ///
+    ///    where the summation represents the total [rotational kinetic energy]
+    ///    of the selected bodies at the start of the step, and
+    ///    `rotational_thermostat.integrate_half_step_one()` is the first half
+    ///    step method implemented by `TR`.
+    /// 
+    /// 2. Angular momentum is integrated forward a half step. (See
+    ///    [`SymplecticIntegrateRotation`] for details.)
+    /// 
+    /// 3. Orientation is integrated forward a full step using the new
+    ///    angular momentum. (See [`SymplecticIntegrateRotation`] for details.)
+    /// 
+    /// [`SymplecticIntegrateRotation`]: crate::method::SymplecticIntegrateRotation
     #[inline]
     fn integrate_rotation_half_step_one_with_filter<
         F: Fn(&Tagged<Body<B, S>>) -> bool,
@@ -724,8 +747,28 @@ where
     /// If a selected body has no active rotational degrees of freedom, it is
     /// skipped.
     /// 
-    /// For details, see the documentation for the implementations of
-    /// [`SymplecticIntegrateRotation`](crate::method::SymplecticIntegrateRotation).
+    /// The second half step of the symplectic integration procedure follows the
+    /// sequence of operations described below, which are applied to each body
+    /// *i*. In each step, the marker $`'`$ is used when a variable's value
+    /// changes during a step to distinguish the value before ( $`'`$ is
+    /// present) from the value after ( $`'`$ is absent).
+    /// 
+    /// 1. Angular momentum is integrated forward a half step. (See
+    ///    [`SymplecticIntegrateRotation`] for details.)
+    /// 
+    /// 2. The rotational thermostat is integrated forward a half step and then
+    ///    angular momentum is rescaled accordingly.
+    ///
+    ///    ```math
+    ///    L_i(t + \Delta t) = L'_i(t + \Delta t) \cdot \mathrm{rotational\_thermostat.integrate\_half\_step\_two}\left(\sum_{j \in \mathrm{selection}}K'_{rot,j}(t + \Delta t) \right)
+    ///    ```
+    ///
+    ///    where the summation represents the total [rotational kinetic energy]
+    ///    of the selected bodies at the start of the step, and
+    ///    `rotational_thermostat.integrate_half_step_two()` is the second half
+    ///    step method implemented by `TR`.
+    ///
+    /// [rotational kinetic energy]: crate::compute::RotationalKineticEnergy
     #[inline]
     fn integrate_rotation_half_step_two_with_filter<
         F: Fn(&Tagged<Body<B, S>>) -> bool,
