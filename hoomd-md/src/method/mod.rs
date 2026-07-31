@@ -33,7 +33,7 @@ where
     type NetTorque;
 
     /// Integrate orientation forward a full step and angular momentum forward a half step.
-    fn step1(
+    fn half_step_one(
         delta_t: f64,
         net_torque: &Self::NetTorque,
         angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
@@ -42,7 +42,7 @@ where
     );
 
     /// Integrate angular momentum forward a half step.
-    fn step2(
+    fn half_step_two(
         delta_t: f64,
         net_torque: &Self::NetTorque,
         angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
@@ -91,7 +91,7 @@ impl SymplecticIntegrateRotation for Angle {
     ///    ```
     ///
     /// [rotational kinetic energy]: crate::compute::RotationalKineticEnergy
-    fn step1(
+    fn half_step_one(
         delta_t: f64,
         net_torque: &Self::NetTorque,
         angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
@@ -136,7 +136,7 @@ impl SymplecticIntegrateRotation for Angle {
     ///    step method implemented by `TR`.
     ///
     /// [rotational kinetic energy]: crate::compute::RotationalKineticEnergy
-    fn step2(
+    fn half_step_two(
         delta_t: f64,
         net_torque: &Self::NetTorque,
         angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
@@ -292,7 +292,7 @@ impl SymplecticIntegrateRotation for Versor {
     ///        ```
     ///
     /// [rotational kinetic energy]: crate::compute::RotationalKineticEnergy
-    fn step1(
+    fn half_step_one(
         delta_t: f64,
         net_torque: &Self::NetTorque,
         angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
@@ -471,7 +471,7 @@ impl SymplecticIntegrateRotation for Versor {
     ///    step method implemented by `TR`.
     /// 
     /// [rotational kinetic energy]: crate::compute::RotationalKineticEnergy
-    fn step2(
+    fn half_step_two(
         delta_t: f64,
         net_torque: &Self::NetTorque,
         angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,

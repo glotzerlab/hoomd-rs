@@ -548,7 +548,7 @@ where
 
         let mut orientation = body_properties.orientation().clone();
         let mut angular_momentum = body_properties.angular_momentum().clone();
-        <R as SymplecticIntegrateRotation>::step1(
+        <R as SymplecticIntegrateRotation>::half_step_one(
             delta_t,
             body_properties.net_torque(),
             &mut angular_momentum,
@@ -616,7 +616,7 @@ where
         let mut body_properties = body.item.properties;
 
         let mut angular_momentum = body_properties.angular_momentum().clone();
-        <R as SymplecticIntegrateRotation>::step2(
+        <R as SymplecticIntegrateRotation>::half_step_two(
             delta_t,
             body_properties.net_torque(),
             &mut angular_momentum,
