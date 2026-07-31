@@ -8,4 +8,5 @@ The following people have contributed to *hoomd-rs*:
 * Joseph Burkhart, University of Michigan
 * Joshua A. Anderson, University of Michigan
 * Michelle Thran, University of Michigan
+* Suraj Kannur, University of Michigan
 * Tobias Dwyer, University of Michigan
