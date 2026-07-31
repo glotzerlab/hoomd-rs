@@ -1286,7 +1286,7 @@ impl GsdFile {
     fn get_index(&self, i: u64) -> Result<IndexEntry, DecodeError> {
         // get_index is an internal method, assume that any caller has already
         // called remap() if needed. Verify this in debug builds.
-        debug_assert!(self.mmap.len() as u64 == self.file_len);
+        debug_assert_eq!(self.mmap.len() as u64, self.file_len);
 
         let start = self.header.index_location + i * INDEX_ENTRY_SIZE;
         let end = start + INDEX_ENTRY_SIZE;
@@ -1439,10 +1439,7 @@ impl GsdFile {
             return None;
         }
 
-        let id = match self.name_list.name_id.get(name) {
-            None => return None,
-            Some(id) => *id,
-        };
+        let id = self.name_list.name_id.get(name)?;
 
         // binary search for the index entry
         let mut l: u64 = 0;
@@ -1454,7 +1451,7 @@ impl GsdFile {
             // We can map an error to None here because the unaddressable index error
             // would have previously been caught on open or sync.
             if let Ok(index_entry_m) = self.get_index(m) {
-                match (index_entry_m.frame, index_entry_m.id).cmp(&(frame, id)) {
+                match (index_entry_m.frame, index_entry_m.id).cmp(&(frame, *id)) {
                     Ordering::Less => l = m + 1,
                     Ordering::Greater => r = m - 1,
                     Ordering::Equal => return Some(index_entry_m),

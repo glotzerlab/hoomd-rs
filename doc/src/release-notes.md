@@ -6,11 +6,16 @@
 
 *Changed:*
 
+* Build the documentation with mdBook 0.5.4 and KaTeX 0.18.1 (#376).
+
 *Deprecated:*
 
 *Removed:*
 
 *Fixed:*
+
+* `[hoomd-interaction]`: Fix typos in documentation (#358).
+* `[hoomd-microstate]`: Fix typos in documentation (#358).
 
 ## 1.2.0 (2026-07-07)
 

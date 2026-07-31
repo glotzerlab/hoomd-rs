@@ -320,7 +320,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -364,7 +364,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -412,7 +412,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -465,7 +465,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -505,7 +505,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -547,7 +547,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -612,7 +612,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -678,7 +678,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -747,7 +747,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -755,11 +755,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 0.0], [-1.0, 2.0, 0.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;
@@ -816,7 +816,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -824,11 +824,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 0.0], [-1.0, 2.0, 0.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;
@@ -864,7 +864,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -908,7 +908,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -967,7 +967,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -975,11 +975,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 4.0], [-1.0, 2.0, -2.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;
@@ -1036,7 +1036,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -1044,11 +1044,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 4.0], [-1.0, 2.0, -2.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;

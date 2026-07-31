@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Traits that describe body and/or site properties a a selection types that implement them.
+//! Traits that describe body and/or site properties as a selection types that implement them.
 //!
 //! See the [crate-level documentation](crate) for an overview of how body and site
 //! properties interact with [`Microstate`](crate::Microstate) and model methods.
