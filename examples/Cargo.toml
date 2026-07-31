@@ -148,3 +148,10 @@ path = "md-examples/patchy-body-2d.rs"
 
 [package.metadata.example.patchy-body-2d]
 path = "md-examples"
+
+[[example]]
+name = "ellipse-gcmc-2d"
+path = "mc-examples/ellipse-gcmc-2d.rs"
+
+[package.metadata.example.ellipse-gcmc-2d]
+path = "mc-examples"
