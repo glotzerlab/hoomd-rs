@@ -124,16 +124,17 @@ where
     ///
     /// let macrostate = IsothermalIsofugacity {
     ///     temperature: 1.0,
-    ///     fugacity: 1.0,
+    ///     fugacity: 100.0,
     /// };
     /// let mut microstate = Microstate::builder()
     ///     .boundary(Periodic::new(1.0, rectangle)?)
     ///     .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     ///     .try_build()?;
     ///
-    /// grand_canonical.apply(&mut microstate, &pairwise_cutoff, &macrostate);
-    ///
-    /// translate_sweep.apply(&mut microstate, &pairwise_cutoff, &macrostate);
+    /// for _ in 0..100 {
+    ///     grand_canonical.apply(&mut microstate, &hamiltonian, &macrostate);
+    ///     translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
+    /// }
     ///
     /// assert!(microstate.bodies().len() > 1);
     /// # Ok(())
