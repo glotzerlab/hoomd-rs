@@ -40,7 +40,7 @@ use hoomd_spatial::PointUpdate;
 ///     template_sites: vec![Point::<Cartesian<2>>::default()],
 /// };
 ///
-/// let gcmc = GrandCanonical(distribution);
+/// let grand_canonical = GrandCanonical(distribution);
 ///
 /// # Ok(())
 /// # }
@@ -269,10 +269,10 @@ mod tests {
         assert_eq!(microstate.bodies().len(), 11);
         assert_eq!(hamiltonian.total_energy(&microstate), 0.0);
 
-        let mut gcmc = GrandCanonical(distribution);
+        let mut grand_canonical = GrandCanonical(distribution);
 
         for _ in 0..100 {
-            gcmc.apply(&mut microstate, &hamiltonian, &macrostate);
+            grand_canonical.apply(&mut microstate, &hamiltonian, &macrostate);
         }
 
         assert_eq!(microstate.bodies().len(), 0);
@@ -282,7 +282,7 @@ mod tests {
             fugacity: 1.0,
         };
         for _ in 0..100 {
-            gcmc.apply(&mut microstate, &hamiltonian, &new_macrostate);
+            grand_canonical.apply(&mut microstate, &hamiltonian, &new_macrostate);
         }
 
         check!(microstate.bodies().len() > 0);
