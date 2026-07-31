@@ -4,25 +4,259 @@
 //! Implement `Brownian`.
 
 use core::array::from_fn;
+use std::ops::{Add, AddAssign};
 
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        AngularMomentum, Drag, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Orientation, Position, RotationalDrag
+    Body,
+    Microstate,
+    SiteKey,
+    Tagged,
+    Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{
+        AngularMomentum,
+        Drag,
+        Mass,
+        MomentOfInertia,
+        Momentum,
+        NetForce,
+        NetTorque,
+        Orientation,
+        Position,
+        RotationalDrag,
+        RotationalMotionTypes
     }
 };
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Angle, Cartesian, Quaternion, Rotate, Versor};
+use hoomd_vector::{Angle, Cartesian, Quaternion, Rotate, Versor, Wedge};
 
+use rand::Rng;
 use rand_distr::{Distribution, Normal, Uniform};
 
 use crate::{RotationalMotion, TranslationalMotion};
 
-/// Integrate bodies' degrees of freedom in the microstate according to
-/// Brownian equations of motion.
+/// Integrate bodies' degrees of freedom in the microstate according to Brownian equations of motion.
+/// 
+/// The `Brownian` implementation follows the integration scheme by [Snook 2007]
+/// (Section 6.2.5).
+/// 
+/// [Snook 2007]: https://dx.doi.org/10.1016/B978-0-444-52129-3.50028-6
 pub struct Brownian {
     /// The time step size.
     pub delta_t: f64,
+}
+
+/// Integrate rotational degrees of freedom according to Brownian dynamics.
+/// 
+/// This trait binds brownian rotational integration schemes to the types that
+/// represent orientation and its associated quantities: angular momentum,
+/// moment of inertia, net torque, and rotational drag. Implement this trait on
+/// a type that represents body orientation to make a [`Microstate`] containing
+/// such bodies integrateable with [`Brownian`].
+///
+/// [`Microstate`]: hoomd_microstate::Microstate
+pub trait BrownianIntegrateRotation
+where
+    <Self as BrownianIntegrateRotation>::Rotation: RotationalMotionTypes,
+{
+    /// Type that represents a body's orientation.
+    type Rotation;
+
+    /// Type that represents a body's net torque.
+    type NetTorque;
+
+    /// Integrate orientation and angular momentum forward a full step.
+    fn step<R: Rng + ?Sized>(
+        delta_t: f64,
+        net_torque: &Self::NetTorque,
+        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        orientation: &mut Self::Rotation,
+        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
+        temperature: f64,
+        rng: &mut R,
+    );
+}
+
+/// Brownian rotational integration for bodies in 2-dimensional cartesian space.
+impl BrownianIntegrateRotation for Angle {
+    type Rotation = Angle;
+    type NetTorque = <Cartesian<2> as Wedge>::Bivector;
+
+    /// Integrate orientation forward a full step and pick a new random angular momentum.
+    /// 
+    /// The brownian integration procedure in 2-dimensional cartesian space is
+    /// given by the equations below, which are applied to each body *i*. Bodies
+    /// which have `moment_of_inertia = 0.0` are skipped.
+    /// 
+    /// 1. Pick a new random torque. This random torque is zero-centered
+    /// 
+    ///    ```math
+    ///    \lang \tau_R \rang = 0
+    ///    ```
+    /// 
+    ///    and normally distributed, with a variance of
+    /// 
+    ///    ```math
+    ///    \lang \tau_R \cdot \tau_R \rang = 2 k T \gamma_R / \Delta t
+    ///    ```
+    /// 
+    ///    where $` \gamma_R `$ is the rotational drag coefficient.
+    /// 
+    /// 2. Integrate orientation forward using the conventional and random
+    ///    torques.
+    /// 
+    ///    ```math
+    ///    \begin{align*}
+    ///    \frac{d \theta_i}{dt} &= \frac{\tau_{C,i} + \tau_R}{\gamma_R} \\
+    ///    \theta_i(t + \Delta t) &= \theta_i(t) + \frac{d \theta_i}{dt} \cdot \Delta t \\
+    ///    \end{align*}
+    ///    ```
+    /// 
+    /// 3. Pick a new random angular momentum. This random angular momentum is
+    ///    zero-centered
+    /// 
+    ///    ```math
+    ///    \lang L_i(t + \Delta t) \rang = 0
+    ///    ```
+    /// 
+    ///    and normally distributed, with a variance of
+    /// 
+    ///    ```math
+    ///    \lang L_i(t + \Delta t) \cdot L_i(t + \Delta t) \rang = k T I
+    ///    ```
+    fn step<R: Rng + ?Sized>(
+        delta_t: f64,
+        net_torque: &Self::NetTorque,
+        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        orientation: &mut Self::Rotation,
+        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
+        temperature: f64,
+        rng: &mut R,
+    ) {
+        // Pick a random torque in the body frame
+        let normal = Normal::new(
+            0.0,
+            (2.0 * rotational_drag * temperature / delta_t).sqrt(),
+        ).unwrap();
+        let t_rand = if *moment_of_inertia == 0.0 { 0.0 } else { normal.sample(rng) };
+        
+        // Update orientation using the net and random torques
+        // TODO: check math (HOOMD-blue had this all in quaternion form)
+        let dq_dt = (t_rand + net_torque) / rotational_drag;
+        let current_theta = orientation.theta;
+        let new_theta = current_theta + (dq_dt * delta_t);
+        *orientation = Angle::from(new_theta).to_reduced();
+
+        // Pick a new random angular momentum
+        let normal = Normal::new(
+            0.0,
+            (moment_of_inertia * temperature).sqrt(),
+        ).unwrap();
+        *angular_momentum = if *moment_of_inertia == 0.0 { 0.0 } else { normal.sample(rng) };
+    }
+}
+
+/// Brownian rotational integration for bodies in 3-dimensional cartesian space.
+impl BrownianIntegrateRotation for Versor {
+    type Rotation = Versor;
+    type NetTorque = <Cartesian<3> as Wedge>::Bivector;
+
+    /// Integrate orientation forward a full step and pick a new random angular momentum.
+    /// 
+    /// The brownian integration procedure in 3-dimensional cartesian space is
+    /// given by the equations below, which are applied to each body *i*.
+    /// Rotational degrees of freedom with a moment of inertia component of zero
+    /// are skipped.
+    /// 
+    /// 1. Pick a new random torque. This random torque is zero-centered
+    /// 
+    ///    ```math
+    ///    \lang \vec{\tau}_R \rang = \vec{0}
+    ///    ```
+    /// 
+    ///    and normally distributed, with a variance of
+    /// 
+    ///    ```math
+    ///    \lang \tau_{R,j} \cdot \tau_{R,j} \rang = 2 k T \gamma_{R,j} / \Delta t
+    ///    ```
+    /// 
+    ///    for each component $` j `$ of the torque bivector, where
+    ///    $` \gamma_R `$ are the rotational drag coefficients.
+    /// 
+    /// 2. Integrate orientation forward using the conventional and random
+    ///    torques.
+    /// 
+    ///    ```math
+    ///    \begin{align*}
+    ///    \frac{d \mathbf{q}_i}{dt} &= \frac{\tau_{C,i} + \tau_R}{\gamma_R} \\
+    ///    \mathbf{q}_i(t + \Delta t) &= \mathbf{q}_i(t) + \frac{d \mathbf{q}_i}{dt} \cdot \Delta t \\
+    ///    \end{align*}
+    ///    ```
+    /// 
+    /// 3. Pick a new random angular momentum. This random angular momentum is
+    ///    zero-centered
+    /// 
+    ///    ```math
+    ///    \lang \vec{L}_i(t + \Delta t) \rang = 0
+    ///    ```
+    /// 
+    ///    and normally distributed, with a variance of
+    /// 
+    ///    ```math
+    ///    \lang L_{i,j}(t + \Delta t) \cdot L_{i,j}(t + \Delta t) \rang = k T I_j
+    ///    ```
+    ///    for each component $` j `$ of the angular momentum vector.
+    fn step<R: Rng + ?Sized>(
+        delta_t: f64,
+        net_torque: &Self::NetTorque,
+        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        orientation: &mut Self::Rotation,
+        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
+        temperature: f64,
+        rng: &mut R,
+    ) {
+        // Pick a random torque in the body frame
+        let t_rand = Cartesian::<3>::from(from_fn(|i| {
+            let normal = Normal::new(
+                0.0,
+                (2.0 * rotational_drag[i] * temperature / delta_t).sqrt(),
+            ).unwrap();
+            let is_zero = if moment_of_inertia[i] == 0.0 { 0.0 } else { 1.0 };
+            normal.sample(rng) * is_zero
+        }));
+
+        // Rotate the torque to the system frame
+        let t_rand_sys = orientation.rotate(&t_rand);
+        
+        // Update orientation using the net and random torques
+        // TODO: check this math
+        let dq_dt = Cartesian::<3>::from(from_fn(|i| {
+            (t_rand_sys[i] + net_torque[i]) / rotational_drag[i]
+        }));
+        *orientation = (
+            *orientation.get()
+            + (
+                *orientation.get()
+                * Quaternion::pure(dq_dt)
+                * 0.5
+                * delta_t
+            )
+        ).to_versor_unchecked();
+
+        // Pick a new random angular momentum
+        *angular_momentum = Cartesian::<3>::from(from_fn(|i| {
+            let normal = Normal::new(
+                0.0,
+                (moment_of_inertia[i] * temperature).sqrt(),
+            ).unwrap();
+            let is_zero = if moment_of_inertia[i] == 0.0 { 0.0 } else { 1.0 };
+            normal.sample(rng) * is_zero
+        }));
+    }
 }
 
 impl<const N: usize, B, S, X, C, M> TranslationalMotion<B, S, X, C, M> for Brownian
@@ -39,7 +273,49 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     M: Temperature,
 {
-    /// Integrate selected bodies forward a whole step. [TODO]
+    /// Integrate position forward a full step and pick a new random momentum.
+    /// 
+    /// The brownian integration procedure in cartesian space is given by the
+    /// equations below, which are applied to each body *i*.
+    /// 
+    /// 1. Pick a new random force. This random force is zero-centered
+    /// 
+    ///    ```math
+    ///    \lang \vec{F}_R \rang = \vec{0}
+    ///    ```
+    /// 
+    ///    and normally distributed, with a variance of
+    /// 
+    ///    ```math
+    ///    \lang \vec{F}_{R,j} \cdot \vec{F}_{R,j} \rang = 2 k T \gamma / \Delta t
+    ///    ```
+    /// 
+    ///    for each component $` j `$ of the force vector, where $` \gamma `$ is
+    ///    the drag coefficient.
+    /// 
+    /// 2. Integrate position forward using the conventional and random
+    ///    forces.
+    /// 
+    ///    ```math
+    ///    \begin{align*}
+    ///    \frac{d \vec{r}_i}{dt} &= \frac{\vec{F}_{C,i} + \vec{F}_R}{\gamma} \\
+    ///    \vec{r}_i(t + \Delta t) &= \vec{r}_i(t) + \frac{d \vec{r}_i}{dt} \cdot \Delta t \\
+    ///    \end{align*}
+    ///    ```
+    /// 
+    /// 3. Pick a new random momentum. This random momentum is zero-centered
+    /// 
+    ///    ```math
+    ///    \lang \vec{p}_i(t + \Delta t) \rang = 0
+    ///    ```
+    /// 
+    ///    and normally distributed, with a variance of
+    /// 
+    ///    ```math
+    ///    \lang \vec{p}_{i,j}(t + \Delta t) \cdot \vec{p}_{i,j}(t + \Delta t) \rang = k T m
+    ///    ```
+    /// 
+    ///    for each component $` j `$ of the momentum vector.
     fn integrate_translation_half_step_one_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
@@ -60,7 +336,9 @@ where
             let g = body_properties.drag().clone();
             let uniform = Uniform::new_inclusive(-1.0, 1.0).unwrap();
             let magnitude = (6.0 * macrostate.temperature() * g / self.delta_t).sqrt();
-            let f_rand = Cartesian::<N>::from(from_fn(|_| magnitude * uniform.sample(&mut rng)));
+            let f_rand = Cartesian::<N>::from(
+                from_fn(|_| magnitude * uniform.sample(&mut rng))
+            );
 
             // Update position using the net and random forces
             let net_force = body_properties.net_force().clone();
@@ -71,7 +349,9 @@ where
                 0.0,
                 (macrostate.temperature() * body_properties.mass()).sqrt(),
             ).unwrap();
-            *body_properties.momentum_mut() = Cartesian::<N>::from(from_fn(|_| normal.sample(&mut rng)));
+            *body_properties.momentum_mut() = Cartesian::<N>::from(
+                from_fn(|_| normal.sample(&mut rng))
+            );
 
             microstate
                 .update_body_properties(body_index, body_properties)
@@ -91,28 +371,40 @@ where
     ) {}
 }
 
-/// Rotational motion in 3-dimensional cartesian space.
-impl<S, X, C, M> RotationalMotion<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C, M>
-    for Brownian
+impl<V, R, B, S, X, C, M> RotationalMotion<R, B, S, X, C, M> for Brownian
 where
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>>
-        + Wrap<S>
-        + GenerateGhosts<S>,
+    V: Wedge + Copy,
+    R: BrownianIntegrateRotation<Rotation = R, NetTorque = V::Bivector>
+        + RotationalMotionTypes
+        + Clone,
+    B: Copy
+        + Transform<S>
+        + Position<Position = V>
+        + Orientation<Rotation = R>
+        + AngularMomentum<AngularMomentum = <R as RotationalMotionTypes>::AngularMomentum>
+        + MomentOfInertia<MomentOfInertia = <R as RotationalMotionTypes>::MomentOfInertia>
+        + NetTorque<NetTorque = V::Bivector>
+        + RotationalDrag<RotationalDrag = <R as RotationalMotionTypes>::RotationalDrag>,
+    S: Position<Position = V> + Default,
+    X: PointUpdate<V, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     M: Temperature,
-    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
+    V::Bivector: Add<Output = V::Bivector> + AddAssign<V::Bivector>,
+    <R as RotationalMotionTypes>::AngularMomentum: Clone,
 {
-    /// Integrate selected bodies forward a whole step. [TODO]
+    /// Integrate selected body orientations and angular momenta forward a whole step.
+    /// 
+    /// For details, see the implementations for [`BrownianIntegrateRotation`].
     fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool
+        F: Fn(&Tagged<Body<B, S>>) -> bool
     >(
         &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         macrostate: &M,
         should_integrate_body: F,
     ) {
         let mut rng = microstate.counter().make_rng();
+        microstate.increment_substep();
 
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
@@ -120,128 +412,23 @@ where
                 continue;
             }
             
-            let mut body_properties = body.item.properties.clone();
+            let mut body_properties = body.item.properties;
 
-            // Pick a random torque in the body frame
-            let g_r = body_properties.rotational_drag();
-            let moi = *body_properties.moment_of_inertia();
-            let t_rand = Cartesian::<3>::from(from_fn(|i| {
-                let normal = Normal::new(
-                    0.0,
-                    (2.0 * g_r[i] * macrostate.temperature() / self.delta_t).sqrt(),
-                ).unwrap();
-                let is_zero = if moi[i] == 0.0 { 0.0 } else { 1.0 };
-                normal.sample(&mut rng) * is_zero
-            }));
-
-            // Rotate the torque to the system frame
-            let t_rand_sys = body_properties.orientation().rotate(&t_rand);
-            
-            // Update orientation using the net and random torques
-            // TODO: check this math
-            let net_torque = *body_properties.net_torque();
-            let dq_dt = Cartesian::<3>::from(from_fn(|i| {
-                (t_rand_sys[i] + net_torque[i]) / g_r[i]
-            }));
-            *body_properties.orientation_mut() = (
-                *body_properties.orientation().get()
-                + (
-                    *body_properties.orientation().get()
-                    * Quaternion::pure(dq_dt)
-                    * 0.5
-                    * self.delta_t
-                )
-            ).to_versor_unchecked();
-
-            // Pick a new random angular momentum
-            *body_properties.angular_momentum_mut() = Cartesian::<3>::from(from_fn(|i| {
-                let normal = Normal::new(
-                    0.0,
-                    (moi[i] * macrostate.temperature()).sqrt(),
-                ).unwrap();
-                let is_zero = if moi[i] == 0.0 { 0.0 } else { 1.0 };
-                normal.sample(&mut rng) * is_zero
-            }));
-
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect(
-                    "Bodies and sites should remain in simulation boundary.\n
-                Add interactions that prevent sites from moving outside the boundary.",
-                );
-        }
-    }
-
-    /// Do nothing. (There is no second step in brownian dynamics.)
-    fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool
-    >(
-        &mut self,
-        _microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>,
-        _macrostate: &M,
-        _should_integrate_body: F,
-    ) {}
-}
-
-/// Rotational motion in 2-dimensional cartesian space.
-impl<S, X, C, M> RotationalMotion<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C, M>
-    for Brownian
-where
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>>
-        + Wrap<S>
-        + GenerateGhosts<S>,
-    M: Temperature,
-    DynamicOrientedPoint<Cartesian<2>, Angle>: Transform<S>
-{
-    /// Integrate selected bodies forward a whole step. [TODO]
-    fn integrate_rotation_half_step_one_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool
-    >(
-        &mut self,
-        microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
-        macrostate: &M,
-        should_integrate_body: F,
-    ) {
-        let mut rng = microstate.counter().make_rng();
-
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
-            if !should_integrate_body(body) {
-                continue;
-            }
-            
-            let mut body_properties = body.item.properties.clone();
-
-            // Pick a random torque in the body frame
-            let g_r = body_properties.rotational_drag();
-            let moi = *body_properties.moment_of_inertia();
-            let normal = Normal::new(
-                0.0,
-                (2.0 * g_r * macrostate.temperature() / self.delta_t).sqrt(),
-            ).unwrap();
-            let t_rand = if moi == 0.0 { 0.0 } else { normal.sample(&mut rng) };
-            
-            // Update orientation using the net and random torques
-            // TODO: check math
-            let net_torque = *body_properties.net_torque();
-            let dq_dt = (t_rand + net_torque) / g_r;
-            let current_theta = body_properties.orientation().theta;
-            let new_theta = current_theta + (
-                current_theta
-                * 0.5
-                * self.delta_t
-                * dq_dt
+            let mut orientation = body_properties.orientation().clone();
+            let mut angular_momentum = body_properties.angular_momentum().clone();
+            <R as BrownianIntegrateRotation>::step(
+                self.delta_t,
+                body_properties.net_torque(),
+                &mut angular_momentum,
+                &mut orientation,
+                body_properties.moment_of_inertia(),
+                body_properties.rotational_drag(),
+                *macrostate.temperature(),
+                &mut rng,
             );
-            *body_properties.orientation_mut() = Angle::from(new_theta).to_reduced();
 
-            // Pick a new random angular momentum
-            let normal = Normal::new(
-                0.0,
-                (moi * macrostate.temperature()).sqrt(),
-            ).unwrap();
-            *body_properties.angular_momentum_mut() = if moi == 0.0 { 0.0 } else { normal.sample(&mut rng) };
+            *body_properties.angular_momentum_mut() = angular_momentum;
+            *body_properties.orientation_mut() = orientation;
 
             microstate
                 .update_body_properties(body_index, body_properties)
@@ -254,10 +441,10 @@ where
 
     /// Do nothing. (There is no second step in brownian dynamics.)
     fn integrate_rotation_half_step_two_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool
+        F: Fn(&Tagged<Body<B, S>>) -> bool
     >(
         &mut self,
-        _microstate: &mut Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>,
+        _microstate: &mut Microstate<B, S, X, C>,
         _macrostate: &M,
         _should_integrate_body: F,
     ) {}
