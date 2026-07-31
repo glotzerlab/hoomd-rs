@@ -100,10 +100,7 @@ where
     ///
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
-    /// use hoomd_interaction::{
-    ///     PairwiseCutoff,
-    ///     pairwise::HardSphere,
-    /// };
+    /// use hoomd_interaction::{PairwiseCutoff, pairwise::HardSphere};
     /// use hoomd_mc::{GrandCanonical, Sweep, Translate, Trial, UniformIn};
     /// use hoomd_microstate::{
     ///     Body, Microstate, boundary::Periodic, property::Point,
@@ -173,7 +170,8 @@ where
 
             let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
             if delta_energy.is_finite() {
-                let p_insert = (volume * fugacity * (-delta_energy / temperature).exp()) / (n as f64 + 1.0);
+                let p_insert =
+                    (volume * fugacity * (-delta_energy / temperature).exp()) / (n as f64 + 1.0);
 
                 if p_insert > rng.random() && microstate.add_body(new_body).is_ok() {
                     count.insert_accepted += 1;
@@ -183,8 +181,7 @@ where
             } else {
                 count.insert_rejected += 1;
             }
-        }
-        else if n > 0 {
+        } else if n > 0 {
             let index = rng.random_range(..n);
             let delta_energy = hamiltonian.delta_energy_remove(microstate, index);
 
