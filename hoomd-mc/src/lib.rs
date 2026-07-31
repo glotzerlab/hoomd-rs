@@ -54,8 +54,9 @@
 //!
 //! ## Body insertion/removal
 //!
-//! A future release of *hoomd-rs* will implement moves that insert and remove
-//! bodies.
+//! [`GrandCanonical`] randomly inserts and removes bodies from the microstate,
+//! holding the system at constant chemical potential, volume, and temperature
+//! ($` \mu, V, T`$).
 //!
 //! ## Tuning trial moves
 //!

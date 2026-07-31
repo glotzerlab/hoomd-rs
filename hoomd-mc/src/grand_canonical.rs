@@ -2,6 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement Grand Canonical ensemble simulation
+
 use serde::{Deserialize, Serialize};
 
 use hoomd_interaction::{DeltaEnergyInsert, DeltaEnergyRemove};
@@ -18,10 +19,10 @@ use crate::BodyDistribution;
 use hoomd_geometry::Volume;
 use hoomd_spatial::PointUpdate;
 
-/// Setup trial moves in the microstate that insert or remove bodies
+/// Insert bodies into and remove bodies from the microstate.
 ///
-/// The first field in the tuple struct is the `BodyDistribution`.
-/// [`GrandCanonical::apply`] applies the insert/remove trial move to the microstate.
+/// [`GrandCanonical::apply`] applies both insertion and removal moves
+/// (chosen randomly) to the microstate.
 ///
 /// # Example
 ///
@@ -47,7 +48,8 @@ use hoomd_spatial::PointUpdate;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GrandCanonical<D>(pub D);
 
-/// Accepted and rejected counts of insert and remove moves
+/// The number of accepted and rejected insertion and removal trial moves.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct InsertRemoveCount {
     /// The number of insert accepted moves.
     pub insert_accepted: u64,
@@ -72,36 +74,35 @@ where
 {
     type Count = InsertRemoveCount;
 
-    /// Apply the insert/remove moves to a microstate at constant
-    /// temperature and fugacity set using [`hoomd_simulation::macrostate::IsothermalIsofugacity`].
+    /// Randomly select either a body insertion or removal trial move and apply it
+    /// to the microstate.
     ///
     /// Combine [`GrandCanonical::apply`] with local trial moves that translate and/or
-    /// rotate bodies by small amounts to sample the grand cannonical ensemble.
+    /// rotate bodies by small amounts to sample the grand canonical ensemble.
     ///
-    /// Insert move is accepted when:
+    /// An insertion move draws a new random body from the wrapped
+    /// [`BodyDistribution`] and is accepted when:
     /// ```math
     /// r < \frac{V f}{n + 1} \exp\left(\frac{-\Delta H}{kT}\right)
     /// ```
     ///
-    /// Remove moves are accepted when:
+    /// A removal move randomly chooses a body in the microstate and is accepted when:
     /// ```math
     /// r < \frac{n}{V f} \exp\left(\frac{-\Delta H}{kT}\right)
     /// ```
-    ///
-    /// where `r` is a random value uniformly distributed in `[0,1)`, $`V`$ is the volume, $`f`$ is the fugacity, $`n`$ is the number of particles, $`\Delta H`$ is
-    /// the change in energy computed by the given `hamiltonian` and $`kT`$ is the
-    /// `temperature` given in `macrostate`.
+    /// where `r` is a random value uniformly distributed in `[0,1)`, $`V`$ is
+    /// the boundary's volume, $`f`$ is the macrostate's `fugacity`, $`n`$ is
+    /// the number of particles, $`\Delta H`$ is the change in energy computed
+    /// by the given `hamiltonian` and $`kT`$ is the macrostate's `temperature`.
     ///
     ///
     /// # Example
     ///
-    /// Hard spheres
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_interaction::{
     ///     PairwiseCutoff,
-    ///     pairwise::Isotropic,
-    ///     univariate::{Expanded, OverlapPenalty},
+    ///     pairwise::HardSphere,
     /// };
     /// use hoomd_mc::{GrandCanonical, Sweep, Translate, Trial, UniformIn};
     /// use hoomd_microstate::{
@@ -117,18 +118,12 @@ where
     ///     boundary: rectangle.clone(),
     ///     template_sites: vec![Point::default()],
     /// };
-    /// let mut gcmc = GrandCanonical(distribution);
+    /// let mut grand_canonical = GrandCanonical(distribution);
     ///
     /// let translate = Translate::with_maximum_distance(0.1.try_into()?);
     /// let mut translate_sweep = Sweep(translate);
     ///
-    /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
-    ///     interaction: Expanded {
-    ///         delta: 1.0,
-    ///         f: OverlapPenalty::default(),
-    ///     },
-    ///     r_cut: 1.0,
-    /// });
+    /// let hamiltonian = PairwiseCutoff(HardSphere { diameter: 1.0 });
     ///
     /// let macrostate = IsothermalIsofugacity {
     ///     temperature: 1.0,
@@ -139,7 +134,7 @@ where
     ///     .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     ///     .try_build()?;
     ///
-    /// gcmc.apply(&mut microstate, &pairwise_cutoff, &macrostate);
+    /// grand_canonical.apply(&mut microstate, &pairwise_cutoff, &macrostate);
     ///
     /// translate_sweep.apply(&mut microstate, &pairwise_cutoff, &macrostate);
     ///
@@ -154,10 +149,10 @@ where
         hamiltonian: &H,
         macrostate: &MA,
     ) -> Self::Count {
-        let kt = *macrostate.temperature();
+        let temperature = *macrostate.temperature();
         let fugacity = *macrostate.fugacity();
         let n = microstate.bodies().len();
-        let vol = microstate.boundary().volume();
+        let volume = microstate.boundary().volume();
         let mut rng = microstate.counter().make_rng();
         let mut count = InsertRemoveCount {
             insert_accepted: 0,
@@ -180,7 +175,7 @@ where
 
             let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
             if delta_energy.is_finite() {
-                let p_insert = (vol * fugacity * (-delta_energy / kt).exp()) / (n as f64 + 1.0);
+                let p_insert = (volume * fugacity * (-delta_energy / temperature).exp()) / (n as f64 + 1.0);
 
                 if p_insert > rng.random() && microstate.add_body(new_body).is_ok() {
                     count.insert_accepted += 1;
@@ -199,7 +194,7 @@ where
             let p_remove = if fugacity <= 0.0 {
                 1.0
             } else {
-                (n as f64 * (-delta_energy / kt).exp()) / (vol * fugacity)
+                (n as f64 * (-delta_energy / temperature).exp()) / (volume * fugacity)
             };
 
             if p_remove > rng.random() {
