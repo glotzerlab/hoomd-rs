@@ -54,7 +54,7 @@ where
     );
 }
 
-/// Rotational integration for bodies in 2-dimensional cartesian space.
+/// Symplectic rotational integration for bodies in 2-dimensional cartesian space.
 impl SymplecticIntegrateRotation for Angle {
     type Rotation = Angle;
     type NetTorque = <Cartesian<2> as Wedge>::Bivector;
@@ -155,6 +155,7 @@ impl SymplecticIntegrateRotation for Angle {
     }
 }
 
+/// Symplectic rotational integration for bodies in 3-dimensional cartesian space.
 impl SymplecticIntegrateRotation for Versor {
     type Rotation = Versor;
     type NetTorque = <Cartesian<3> as Wedge>::Bivector;
