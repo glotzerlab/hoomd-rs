@@ -47,7 +47,7 @@ use crate::{
 /// 
 /// The `Langevin` implementation follows the same symplectic integration scheme
 /// used in [`ConstantVolume`], but with drag and random forces and torques
-/// applied to each body *i*:
+/// applied to each body *i*,
 /// 
 /// ```math
 /// \begin{align*}
