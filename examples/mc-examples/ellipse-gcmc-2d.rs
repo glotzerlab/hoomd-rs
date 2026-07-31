@@ -1,5 +1,4 @@
 // ANCHOR: all
-// ANCHOR: use
 use hoomd_geometry::{
     Volume,
     shape::{Ellipse, Rectangle},
