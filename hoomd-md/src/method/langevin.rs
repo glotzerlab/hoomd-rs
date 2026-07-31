@@ -246,11 +246,15 @@ where
     ) -> (Self::NetTorque, Self::NetTorque);
 }
 
-// TODO: documentation?
 impl DragAndRandomTorque for Angle {
     type Rotation = Angle;
     type NetTorque = <Cartesian<2> as Wedge>::Bivector;
 
+    /// Calculate drag and random torque.
+    /// 
+    /// Drag torques are parameterized by `rotational_drag` and oppose the
+    /// direction of motion. Random torques are uniform and have magnitudes that
+    /// scale with drag and temperature. For details, see [`Langevin`].
     fn drag_and_random_torque<R: Rng + ?Sized>(
         rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
         moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
@@ -281,6 +285,11 @@ impl DragAndRandomTorque for Versor {
     type Rotation = Versor;
     type NetTorque = <Cartesian<3> as Wedge>::Bivector;
 
+    /// Calculate drag and random torque.
+    /// 
+    /// Drag torques are parameterized by `rotational_drag` and oppose the
+    /// direction of motion. Random torques are uniform and have magnitudes that
+    /// scale with drag and temperature. For details, see [`Langevin`].
     fn drag_and_random_torque<R: Rng + ?Sized>(
         rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
         moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
