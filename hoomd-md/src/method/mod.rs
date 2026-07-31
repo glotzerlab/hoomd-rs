@@ -131,7 +131,7 @@ impl SymplecticIntegrateRotation for Versor {
     /// Integrate orientation forward a full step and angular momentum forward a half step.
     ///
     /// The first half step of the symplectic rotational integration procedure
-    /// in 2-dimensional cartesian space is given by the equations below, which
+    /// in 3-dimensional cartesian space is given by the equations below, which
     /// are applied to each body *i*. In each step, the marker $`'`$ is used
     /// when a variable's value changes during a step to distinguish the value
     /// before ( $`'`$ is present) from the value after ( $`'`$ is absent).
