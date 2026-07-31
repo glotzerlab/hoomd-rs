@@ -189,9 +189,7 @@ impl Pressure for IsothermalIsobaric {
 
 /// Constant temperature, constant fugacity macrostate.
 ///
-/// Use [`IsothermalIsofugacity`] to set both the system temperature and fugacity
-/// using a thermostat or Monte
-/// Carlo trial moves.
+/// Use [`IsothermalIsofugacity`] to set both the system temperature and fugacity.
 ///
 /// * Temperature is given in units of $` [\mathrm{energy}] `$:
 ///   $` \mathrm{temperature} = kT `$.
