@@ -161,16 +161,14 @@ where
             remove_rejected: 0,
         };
 
-        let move_type_r: f64 = rng.random();
-
-        // in case n is zero and f is zero, no moves can be attempted
+        // in case n is zero and f is zero, no moves will be accepted
         if n == 0 && fugacity <= 0.0 {
             microstate.increment_substep();
             return count;
         }
 
-        // insert
-        if move_type_r > 0.5 {
+        let move_type_insert: bool = rng.random();
+        if move_type_insert {
             let new_body = self.0.sample(0, &mut rng);
 
             let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
@@ -186,7 +184,6 @@ where
                 count.insert_rejected += 1;
             }
         }
-        // remove
         else if n > 0 {
             let index = rng.random_range(..n);
             let delta_energy = hamiltonian.delta_energy_remove(microstate, index);
