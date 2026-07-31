@@ -7,6 +7,10 @@
 * `[hoomd-geometry]`: Add `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` shapes (#88).
 * `[hoomd-linear-algebra]` Add `matrix::qr` module with methods to compute the QR factorization of matrices (#88).
 * `[hoomd-linear-algebra]` Add methods `iter_column_slice`, `iter_column_slice_mut`, `iter_submatrix`, to `Matrix<N, M>` (#88).
+* `[hoomd-macrostate]`: Add `Fugacity` trait that access the fugacity of a macrostate (#354).
+* `[hoomd-macrostate]`: Add `IsothermoalIsofugacity` type that stores the system's temperature and fugacity (#354).
+* `[hoomd-mc]`: Add `GrandCanonical` trial move type. It inserts and removes bodies and samples from the constant chemical potential, constant volume, constant temperature ensemble (#354).
+* `[hoomd-mc`]: Add `InsertReMoveCount` type that counts the accepted and rejected insertion and removal moves (#354).
 * `[hoomd-microstate`]: Implement all traits necessary to use `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` as simulation boundaries (#88).
 * `[hoomd-microstate`]: Implement `AppendMicrostate` for microstates with `Triclinic` and `Rhomboid` boundaries (#88).
 * `[hoomd-vector`]: Implement `Mul<Cartesian<N>> for f64`, `Mul<PositiveReal> for Cartesian<N>`, `Mul<Cartesian<N>> for PositiveReal`, `MulAssign<f64> for Cartesian<N>`, and `MulAssign<PositiveReal> for Cartesian<N>` (#88).
@@ -23,6 +27,7 @@
 
 * `[hoomd-interaction]`: Fix typos in documentation (#358).
 * `[hoomd-microstate]`: Fix typos in documentation (#358).
+* *examples*: Properly auto size egui parameter windows (#354).
 
 ## 1.2.0 (2026-07-07)
 
