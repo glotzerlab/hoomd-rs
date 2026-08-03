@@ -16,7 +16,7 @@
 )]
 
 use proc_macro::TokenStream;
-use syn::{DeriveInput, Fields, ItemStruct, Type, parse_macro_input, parse_quote};
+use syn::{DeriveInput, Fields, ItemStruct, Type, WhereClause, parse_macro_input, parse_quote};
 use quote::quote;
 
 mod angular_momentum;
@@ -332,6 +332,7 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
     
     // Parse the target struct
     let mut target_struct = parse_macro_input!(annotated_item as ItemStruct);
+    let (impl_generics, ty_generics, where_clause) = target_struct.generics.split_for_impl();
 
     // Parse the original user fields
     let target_fields = match &mut target_struct.fields {
@@ -347,18 +348,19 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
     };
     
     // Add where-clause requirements
-    target_struct
-        .generics
-        .make_where_clause()
-        .predicates
-        .push(parse_quote!(#vector_type: Default + hoomd_vector::Outer));
+    let mut other_where: WhereClause = syn::parse_quote! {
+        where
+            #vector_type: Default + hoomd_vector::Outer,
+            <#vector_type as hoomd_vector::Outer>::Tensor: Default
+    };
+    let final_where_clause = match where_clause {
+        Some(original) => {
+            other_where.predicates.extend(original.predicates.clone());
+            other_where
+        }
+        None => other_where
+    };
     
-    target_struct
-        .generics
-        .make_where_clause()
-        .predicates
-        .push(parse_quote!(<#vector_type as hoomd_vector::Outer>::Tensor: Default));
-
     // Fields to add to the target struct
     let position: syn::Field = parse_quote! { pub position: #vector_type };
     let mass: syn::Field = parse_quote! { pub mass: f64 };
@@ -379,8 +381,6 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
         .iter()
         .map(|field| field.ty.clone())
         .collect();
-
-    // let abc = syn::parse_quote!( <#position as Default>::default() );
 
     let original_default_values: Vec<syn::Expr> = original_field_types
         .iter()
@@ -421,7 +421,7 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
     TokenStream::from(quote! {
         #target_struct
 
-        impl Default for #struct_name {
+        impl #impl_generics Default for #struct_name #ty_generics #final_where_clause {
             #[inline]
             fn default() -> Self {
                 Self {
