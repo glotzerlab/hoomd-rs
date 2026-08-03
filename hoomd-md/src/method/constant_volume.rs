@@ -4,18 +4,38 @@
 //! Implement `ConstantVolume`.
 
 use serde::{Deserialize, Serialize};
-use std::{array, ops::MulAssign};
+use std::{ops::MulAssign};
 
 use crate::{
-    RotationalKineticEnergy, RotationalMotion, Thermostat, TranslationalKineticEnergy, TranslationalMotion, method::SymplecticIntegrateRotation, thermostat::NoThermostat,
+    RotationalKineticEnergy,
+    RotationalMotion,
+    Thermostat,
+    TranslationalKineticEnergy,
+    TranslationalMotion,
+    method::SymplecticIntegrateRotation,
+    thermostat::NoThermostat,
 };
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        AngularMomentum, DynamicOrientedPoint, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Orientation, Position, RotationalMotionTypes,
+    Body,
+    Microstate,
+    SiteKey,
+    Tagged,
+    Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{
+        AngularMomentum,
+        Mass,
+        MomentOfInertia,
+        Momentum,
+        NetForce,
+        NetTorque,
+        Orientation,
+        Position,
+        RotationalMotionTypes,
     },
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Versor, Wedge};
+use hoomd_vector::{InnerProduct, Wedge};
 
 /// Integrate bodies' degrees of freedom in the microstate, modelling the NVE or NVT ensemble.
 ///
@@ -800,7 +820,7 @@ mod tests {
         Body,
         property::{DynamicOrientedPoint, DynamicPoint, Point},
     };
-    use hoomd_vector::Outer;
+    use hoomd_vector::{Outer, Cartesian, Angle};
 
     use approxim::assert_relative_eq;
 
