@@ -16,8 +16,8 @@
 )]
 
 use proc_macro::TokenStream;
-use syn::{DeriveInput, Fields, ItemStruct, Type, WhereClause, parse_macro_input, parse_quote};
-use quote::quote;
+use syn::{Data, DeriveInput, Fields, ItemStruct, Token, Type, WhereClause, parse::{Parse, ParseStream}, parse_macro_input, parse_quote};
+use quote::{quote, quote_spanned};
 
 mod angular_momentum;
 mod delta_energy_insert;
@@ -50,7 +50,6 @@ pub fn angular_momentum_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     angular_momentum::angular_momentum(input)
 }
-
 
 /// Automatically implement the `hoomd_interaction::DeltaEnergyInsert` trait.
 ///
@@ -324,13 +323,19 @@ pub fn total_energy_derive(input: TokenStream) -> TokenStream {
 
 // }
 
-// Automatically implement all property traits implemented on the DynamicPoint type.
+/// Automatically add all fields and implement all property traits for `hoomd_microstate::property::DynamicPoint`.
+///
+/// Args:
+/// * v: The vector type to use for position, etc. Example: `Cartesian::<2>`.
+/// 
+/// Valid on:
+/// * Structs with named fields.
 #[proc_macro_attribute]
 pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> TokenStream {
     // Parse the input to get the vector type. The type must implement `Outer`.
     let vector_type = parse_macro_input!(input as Type);
     
-    // Parse the target struct
+    // Parse the target struct, ensuring it has named fields
     let mut target_struct = parse_macro_input!(annotated_item as ItemStruct);
     let (impl_generics, ty_generics, where_clause) = target_struct.generics.split_for_impl();
 
@@ -402,7 +407,7 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
     target_fields.named = new_fields;
 
     // Add derive macro calls for position
-    // TODO: fix need to use these traits in main code
+    // TODO: fix need for user to import Mass
     target_struct.attrs.push(syn::parse_quote! {
         #[derive(
             hoomd_microstate::property::Position,
@@ -439,6 +444,165 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
     })
 }
 
-// Automatically implement all property traits implemented on the DynamicOrientedPoint type.
-// #[proc_macro_attribute]
-// pub fn derive_dynamic_point(input: TokenStream) {}
+/// Automatically add all fields and implement all property traits for `hoomd_microstate::property::DynamicPoint`.
+///
+/// Args:
+/// * v: The vector type to use for position, etc. Example: `Cartesian::<2>`.
+/// * r: The rotation type to use for orientation. Example: `Angle`.
+/// 
+/// Valid on:
+/// * Structs with named fields.
+#[proc_macro_attribute]
+pub fn derive_dynamic_oriented_point(input: TokenStream, annotated_item: TokenStream) -> TokenStream {
+    // Parse the input to get the vector and rotation types.
+    struct TypePair {
+        first: Type,
+        _comma: Token![,],
+        second: Type,
+    }
+
+    // 2. Implement the Parse trait for your struct
+    impl Parse for TypePair {
+        fn parse(input: ParseStream) -> Result<Self, syn::Error> {
+            Ok(TypePair {
+                first: input.parse()?,
+                _comma: input.parse()?,
+                second: input.parse()?,
+            })
+        }
+    }
+    let input_types = parse_macro_input!(input as TypePair);
+    let vector_type = input_types.first;
+    let rotation_type = input_types.second;
+    
+    // Parse the target struct, ensuring it has named fields
+    let mut target_struct = parse_macro_input!(annotated_item as ItemStruct);
+    let (impl_generics, ty_generics, where_clause) = target_struct.generics.split_for_impl();
+
+    // Parse the original user fields
+    let target_fields = match &mut target_struct.fields {
+        Fields::Named(fields) => fields,
+        Fields::Unnamed(_) | Fields::Unit => {
+            return syn::Error::new_spanned(
+                target_struct,
+                "#[derive_dynamic_oriented_point(...)] only supports structs with named fields"
+            )
+            .to_compile_error()
+            .into();
+        }
+    };
+    
+    // Add where-clause requirements
+    let mut other_where: WhereClause = syn::parse_quote! {
+        where
+            #vector_type: Default + hoomd_vector::Outer + hoomd_vector::Wedge,
+            <#vector_type as hoomd_vector::Outer>::Tensor: Default,
+            <#vector_type as hoomd_vector::Wedge>::Bivector: Default,
+            #rotation_type: hoomd_microstate::property::RotationalMotionTypes,
+    };
+    let final_where_clause = match where_clause {
+        Some(original) => {
+            other_where.predicates.extend(original.predicates.clone());
+            other_where
+        }
+        None => other_where
+    };
+    
+    // Fields to add to the target struct
+    let position: syn::Field = parse_quote! { pub position: #vector_type };
+    let orientation: syn::Field = parse_quote! { pub orientation: #rotation_type };
+    let mass: syn::Field = parse_quote! { pub mass: f64 };
+    let momentum: syn::Field = parse_quote! { pub momentum: #vector_type };
+    let net_force: syn::Field = parse_quote! { pub net_force: #vector_type };
+    let net_virial: syn::Field = parse_quote! { pub net_virial: <#vector_type as hoomd_vector::Outer>::Tensor };
+    let moment_of_inertia: syn::Field = parse_quote! { pub moment_of_inertia: <#rotation_type as hoomd_microstate::property::RotationalMotionTypes>::MomentOfInertia };
+    let angular_momentum: syn::Field = parse_quote! { pub angular_momentum: <#rotation_type as hoomd_microstate::property::RotationalMotionTypes>::AngularMomentum };
+    let net_torque: syn::Field = parse_quote! { pub net_torque: <#vector_type as hoomd_vector::Wedge>::Bivector };
+    let drag: syn::Field = parse_quote! { pub drag: f64 };
+    let rotational_drag: syn::Field = parse_quote! { pub rotational_drag: <#rotation_type as hoomd_microstate::property::RotationalMotionTypes>::RotationalDrag };
+
+    // Prepend the fields created above before the existing fields
+    let old_fields = std::mem::take(&mut target_fields.named);
+
+    let original_field_idents: Vec<_> = old_fields
+        .iter()
+        .map(|field| field.ident.as_ref().unwrap().clone())
+        .collect();
+
+    let original_field_types: Vec<_> = old_fields
+        .iter()
+        .map(|field| field.ty.clone())
+        .collect();
+
+    let original_default_values: Vec<syn::Expr> = original_field_types
+        .iter()
+        .map(|field_type| syn::parse_quote!( <#field_type as Default>::default() ))
+        .collect();
+
+    let mut new_fields = syn::punctuated::Punctuated::new();
+    new_fields.push(position);
+    new_fields.push(orientation);
+    new_fields.push(mass);
+    new_fields.push(momentum);
+    new_fields.push(net_force);
+    new_fields.push(net_virial);
+    new_fields.push(moment_of_inertia);
+    new_fields.push(angular_momentum);
+    new_fields.push(net_torque);
+    new_fields.push(drag);
+    new_fields.push(rotational_drag);
+
+    for field in old_fields {
+        new_fields.push(field);
+    };
+
+    target_fields.named = new_fields;
+
+    // Add derive macro calls for position
+    // TODO: fix need for user to import Mass
+    target_struct.attrs.push(syn::parse_quote! {
+        #[derive(
+            hoomd_microstate::property::Position,
+            hoomd_microstate::property::Orientation,
+            hoomd_microstate::property::Mass,
+            hoomd_microstate::property::Momentum,
+            hoomd_microstate::property::NetForce,
+            hoomd_microstate::property::NetVirial,
+            hoomd_microstate::property::MomentOfInertia,
+            hoomd_microstate::property::AngularMomentum,
+            hoomd_microstate::property::NetTorque,
+            hoomd_microstate::property::Drag,
+            hoomd_microstate::property::RotationalDrag,
+        )]
+    });
+
+    // Get the name of the target struct
+    let struct_name = &target_struct.ident;
+
+    // Output the modified target struct
+    // TODO: fix differences vs DynamicOrientedPoint for default moi and rot_drag
+    TokenStream::from(quote! {
+        #target_struct
+
+        impl #impl_generics Default for #struct_name #ty_generics #final_where_clause {
+            #[inline]
+            fn default() -> Self {
+                Self {
+                    position: Default::default(),
+                    orientation: Default::default(),
+                    mass: 1.0,
+                    momentum: Default::default(),
+                    net_force: Default::default(),
+                    net_virial: <#vector_type as hoomd_vector::Outer>::Tensor::default(),
+                    moment_of_inertia: Default::default(),  // ???
+                    angular_momentum: Default::default(),
+                    net_torque: Default::default(),
+                    drag: 1.0,
+                    rotational_drag: Default::default(),    // ???
+                    #(#original_field_idents: #original_default_values),*
+                }
+            }
+        }
+
+    })
+}
