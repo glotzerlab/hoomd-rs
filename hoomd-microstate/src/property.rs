@@ -194,7 +194,19 @@ pub use dynamic_oriented_point::DynamicOrientedPoint;
 mod oriented_hyperbolic_point;
 pub use oriented_hyperbolic_point::OrientedHyperbolicPoint;
 
-pub use hoomd_derive::{Orientation, Position};
+pub use hoomd_derive::{
+    AngularMomentum,
+    Drag,
+    Mass,
+    MomentOfInertia,
+    Momentum,
+    NetForce,
+    NetTorque,
+    NetVirial,
+    Orientation,
+    Position,
+    RotationalDrag,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::Transform;
