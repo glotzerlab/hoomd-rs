@@ -16,8 +16,18 @@
 )]
 
 use proc_macro::TokenStream;
-use syn::{Data, DeriveInput, Fields, ItemStruct, Token, Type, WhereClause, parse::{Parse, ParseStream}, parse_macro_input, parse_quote};
-use quote::{quote, quote_spanned};
+use syn::{
+    DeriveInput,
+    Fields,
+    ItemStruct,
+    Token,
+    Type,
+    WhereClause,
+    parse::{Parse, ParseStream},
+    parse_macro_input,
+    parse_quote
+};
+use quote::quote;
 
 mod angular_momentum;
 mod delta_energy_insert;
