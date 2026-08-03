@@ -177,9 +177,6 @@
 //! ```
 
 mod point;
-use std::ops::{Div, Mul};
-
-use hoomd_vector::{Angle, Cartesian, Outer, Versor, Wedge};
 pub use point::Point;
 
 mod oriented_point;
@@ -207,9 +204,6 @@ pub use hoomd_derive::{
     Position,
     RotationalDrag,
 };
-use serde::{Deserialize, Serialize};
-
-use crate::Transform;
 
 /// Locate a site or body in space: $` \vec{r} `$
 ///
