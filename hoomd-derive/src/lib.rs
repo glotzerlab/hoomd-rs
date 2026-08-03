@@ -16,7 +16,8 @@
 )]
 
 use proc_macro::TokenStream;
-use syn::{DeriveInput, parse_macro_input};
+use syn::{DeriveInput, Fields, ItemStruct, Type, parse_macro_input, parse_quote};
+use quote::quote;
 
 mod angular_momentum;
 mod delta_energy_insert;
@@ -290,3 +291,154 @@ pub fn total_energy_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     total_energy::total_energy(input).into()
 }
+
+// Automatically add all fields from one struct to another.
+// #[proc_macro_attribute]
+// pub fn inherit_fields(args: TokenStream, input: TokenStream) -> TokenStream {
+//     // Parse the macro argument to find the source strut definition.
+//     let source_struct = parse_macro_input!(args as ItemStruct);
+
+//     // Parse the target struct
+//     let mut target_struct = parse_macro_input!(input as ItemStruct);
+
+//     // Extract fields from source struct
+//     let source_fields = match source_struct.fields {
+//         Fields::Named(fields) => fields.named,
+//         _ => panic!("Source must be a struct with named fields!")
+//     };
+
+//     // Inject source fields into target struct
+//     match &mut target_struct.fields {
+//         Fields::Named(fields) => {
+//             for field in source_fields {
+//                 fields.named.push(field);
+//             }
+//         }
+//         _ => panic!("Target must be a struct with named fields!")
+//     }
+
+//     // Output the modified target struct
+//     TokenStream::from(quote! {
+//         #target_struct
+//     })
+
+// }
+
+// Automatically implement all property traits implemented on the DynamicPoint type.
+#[proc_macro_attribute]
+pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> TokenStream {
+    // Parse the input to get the vector type. The type must implement `Outer`.
+    let vector_type = parse_macro_input!(input as Type);
+    
+    // Parse the target struct
+    let mut target_struct = parse_macro_input!(annotated_item as ItemStruct);
+
+    // Parse the original user fields
+    let target_fields = match &mut target_struct.fields {
+        Fields::Named(fields) => fields,
+        Fields::Unnamed(_) | Fields::Unit => {
+            return syn::Error::new_spanned(
+                target_struct,
+                "#[derive_dynamic_point(...)] only supports structs with named fields"
+            )
+            .to_compile_error()
+            .into();
+        }
+    };
+    
+    // Add where-clause requirements
+    target_struct
+        .generics
+        .make_where_clause()
+        .predicates
+        .push(parse_quote!(#vector_type: Default + hoomd_vector::Outer));
+    
+    target_struct
+        .generics
+        .make_where_clause()
+        .predicates
+        .push(parse_quote!(<#vector_type as hoomd_vector::Outer>::Tensor: Default));
+
+    // Fields to add to the target struct
+    let position: syn::Field = parse_quote! { pub position: #vector_type };
+    let mass: syn::Field = parse_quote! { pub mass: f64 };
+    let momentum: syn::Field = parse_quote! { pub momentum: #vector_type };
+    let net_force: syn::Field = parse_quote! { pub net_force: #vector_type };
+    let net_virial: syn::Field = parse_quote! { pub net_virial: <#vector_type as hoomd_vector::Outer>::Tensor };
+    let drag: syn::Field = parse_quote! { pub drag: f64 };
+
+    // Prepend the fields created above before the existing fields
+    let old_fields = std::mem::take(&mut target_fields.named);
+
+    let original_field_idents: Vec<_> = old_fields
+        .iter()
+        .map(|field| field.ident.as_ref().unwrap().clone())
+        .collect();
+
+    let original_field_types: Vec<_> = old_fields
+        .iter()
+        .map(|field| field.ty.clone())
+        .collect();
+
+    // let abc = syn::parse_quote!( <#position as Default>::default() );
+
+    let original_default_values: Vec<syn::Expr> = original_field_types
+        .iter()
+        .map(|field_type| syn::parse_quote!( <#field_type as Default>::default() ))
+        .collect();
+
+    let mut new_fields = syn::punctuated::Punctuated::new();
+    new_fields.push(position);
+    new_fields.push(mass);
+    new_fields.push(momentum);
+    new_fields.push(net_force);
+    new_fields.push(net_virial);
+    new_fields.push(drag);
+
+    for field in old_fields {
+        new_fields.push(field);
+    };
+
+    target_fields.named = new_fields;
+
+    // Add derive macro calls for position
+    // TODO: fix need to use these traits in main code
+    target_struct.attrs.push(syn::parse_quote! {
+        #[derive(
+            hoomd_microstate::property::Position,
+            hoomd_microstate::property::Mass,
+            hoomd_microstate::property::Momentum,
+            hoomd_microstate::property::NetForce,
+            hoomd_microstate::property::NetVirial,
+            hoomd_microstate::property::Drag,
+        )]
+    });
+
+    // Get the name of the target struct
+    let struct_name = &target_struct.ident;
+
+    // Output the modified target struct
+    TokenStream::from(quote! {
+        #target_struct
+
+        impl Default for #struct_name {
+            #[inline]
+            fn default() -> Self {
+                Self {
+                    position: Default::default(),
+                    mass: 1.0,
+                    momentum: Default::default(),
+                    net_force: Default::default(),
+                    net_virial: <#vector_type as hoomd_vector::Outer>::Tensor::default(),
+                    drag: 1.0,
+                    #(#original_field_idents: #original_default_values),*
+                }
+            }
+        }
+
+    })
+}
+
+// Automatically implement all property traits implemented on the DynamicOrientedPoint type.
+// #[proc_macro_attribute]
+// pub fn derive_dynamic_point(input: TokenStream) {}
