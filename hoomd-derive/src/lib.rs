@@ -301,38 +301,6 @@ pub fn total_energy_derive(input: TokenStream) -> TokenStream {
     total_energy::total_energy(input).into()
 }
 
-// Automatically add all fields from one struct to another.
-// #[proc_macro_attribute]
-// pub fn inherit_fields(args: TokenStream, input: TokenStream) -> TokenStream {
-//     // Parse the macro argument to find the source strut definition.
-//     let source_struct = parse_macro_input!(args as ItemStruct);
-
-//     // Parse the target struct
-//     let mut target_struct = parse_macro_input!(input as ItemStruct);
-
-//     // Extract fields from source struct
-//     let source_fields = match source_struct.fields {
-//         Fields::Named(fields) => fields.named,
-//         _ => panic!("Source must be a struct with named fields!")
-//     };
-
-//     // Inject source fields into target struct
-//     match &mut target_struct.fields {
-//         Fields::Named(fields) => {
-//             for field in source_fields {
-//                 fields.named.push(field);
-//             }
-//         }
-//         _ => panic!("Target must be a struct with named fields!")
-//     }
-
-//     // Output the modified target struct
-//     TokenStream::from(quote! {
-//         #target_struct
-//     })
-
-// }
-
 /// Automatically add all fields and implement all property traits for `hoomd_microstate::property::DynamicPoint`.
 ///
 /// Args:
