@@ -16,12 +16,27 @@ impl RotationalMotionTypes for Angle {
     type MomentOfInertia = f64;
     type AngularMomentum = f64;
     type RotationalDrag = f64;
+
+    fn default_moment_of_inertia() -> Self::MomentOfInertia {
+        1.0
+    }
+    fn default_rotational_drag() -> Self::RotationalDrag {
+        1.0
+    }
 }
 
 impl RotationalMotionTypes for Versor {
     type MomentOfInertia = [f64; 3];
     type AngularMomentum = Cartesian<3>;
     type RotationalDrag = [f64; 3];
+
+    fn default_moment_of_inertia() -> Self::MomentOfInertia {
+        [1.0; 3]
+    }
+
+    fn default_rotational_drag() -> Self::RotationalDrag {
+        [1.0; 3]
+    }
 }
 
 /// A position in space with the properties necessary for translational and
@@ -125,14 +140,14 @@ where
             position: Default::default(),
             orientation: Angle::default(),
             mass: 1.0,
-            moment_of_inertia: 1.0,
+            moment_of_inertia: Angle::default_moment_of_inertia(),
             momentum: Default::default(),
             angular_momentum: Default::default(),
             net_force: Default::default(),
             net_virial: V::Tensor::default(),
             net_torque: Default::default(),
             drag: 1.0,
-            rotational_drag: 1.0,
+            rotational_drag: Angle::default_rotational_drag(),
         }
     }
 }
@@ -170,14 +185,14 @@ where
             position: Default::default(),
             orientation: Versor::default(),
             mass: 1.0,
-            moment_of_inertia: [1.0, 1.0, 1.0],
+            moment_of_inertia: Versor::default_moment_of_inertia(),
             momentum: Default::default(),
             angular_momentum: Cartesian::default(),
             net_force: Default::default(),
             net_virial: V::default().outer(&V::default()),
             net_torque: Default::default(),
             drag: 1.0,
-            rotational_drag: [1.0; 3],
+            rotational_drag: Versor::default_rotational_drag(),
         }
     }
 }
