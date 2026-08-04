@@ -3,7 +3,6 @@
 
 //! Test derive_dynamic_oriented_point
 
-use hoomd_microstate::property::Mass;
 use hoomd_derive::derive_dynamic_oriented_point;
 use hoomd_vector::{Cartesian, Outer, Angle};
 
@@ -58,11 +57,11 @@ fn test_derive_dynamic_oriented_point() {
     assert_eq!(mdop1.momentum, Cartesian::<2>::default());
     assert_eq!(mdop1.net_force, Cartesian::<2>::default());
     assert_eq!(mdop1.net_virial, <Cartesian<2> as Outer>::Tensor::default());
-    assert_eq!(mdop1.moment_of_inertia, 0.0);
+    assert_eq!(mdop1.moment_of_inertia, 1.0);
     assert_eq!(mdop1.angular_momentum, 0.0);
     assert_eq!(mdop1.net_torque, 0.0);
     assert_eq!(mdop1.drag, 1.0);
-    assert_eq!(mdop1.rotational_drag, 0.0);
+    assert_eq!(mdop1.rotational_drag, 1.0);
     assert_eq!(mdop1.int, 0 as i32);
     assert_eq!(mdop1.float, 0.0 as f64);
     assert_eq!(mdop1.arr, [0.0, 0.0, 0.0]);

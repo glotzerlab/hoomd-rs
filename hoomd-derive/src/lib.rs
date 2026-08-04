@@ -385,7 +385,6 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
     target_fields.named = new_fields;
 
     // Add derive macro calls for position
-    // TODO: fix need for user to import Mass
     target_struct.attrs.push(syn::parse_quote! {
         #[derive(
             hoomd_microstate::property::Position,
@@ -418,7 +417,6 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
                 }
             }
         }
-
     })
 }
 
@@ -439,7 +437,6 @@ pub fn derive_dynamic_oriented_point(input: TokenStream, annotated_item: TokenSt
         second: Type,
     }
 
-    // 2. Implement the Parse trait for your struct
     impl Parse for TypePair {
         fn parse(input: ParseStream) -> Result<Self, syn::Error> {
             Ok(TypePair {
@@ -537,7 +534,6 @@ pub fn derive_dynamic_oriented_point(input: TokenStream, annotated_item: TokenSt
     target_fields.named = new_fields;
 
     // Add derive macro calls for position
-    // TODO: fix need for user to import Mass
     target_struct.attrs.push(syn::parse_quote! {
         #[derive(
             hoomd_microstate::property::Position,
@@ -558,7 +554,6 @@ pub fn derive_dynamic_oriented_point(input: TokenStream, annotated_item: TokenSt
     let struct_name = &target_struct.ident;
 
     // Output the modified target struct
-    // TODO: fix differences vs DynamicOrientedPoint for default moi and rot_drag
     TokenStream::from(quote! {
         #target_struct
 
@@ -572,15 +567,14 @@ pub fn derive_dynamic_oriented_point(input: TokenStream, annotated_item: TokenSt
                     momentum: Default::default(),
                     net_force: Default::default(),
                     net_virial: <#vector_type as hoomd_vector::Outer>::Tensor::default(),
-                    moment_of_inertia: Default::default(),  // ???
+                    moment_of_inertia: <#rotation_type as hoomd_microstate::property::RotationalMotionTypes>::default_moment_of_inertia(),
                     angular_momentum: Default::default(),
                     net_torque: Default::default(),
                     drag: 1.0,
-                    rotational_drag: Default::default(),    // ???
+                    rotational_drag: <#rotation_type as hoomd_microstate::property::RotationalMotionTypes>::default_rotational_drag(),
                     #(#original_field_idents: #original_default_values),*
                 }
             }
         }
-
     })
 }
