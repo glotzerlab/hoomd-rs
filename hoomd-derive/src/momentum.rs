@@ -36,11 +36,9 @@ pub(crate) fn momentum(input: DeriveInput) -> TokenStream {
 
     let mut other_where: WhereClause = syn::parse_quote! { 
         where
-            Self: hoomd_microstate::property::Mass,
             #momentum_type: std::ops::Mul<f64, Output = #momentum_type>
             + std::ops::Div<f64, Output = #momentum_type>
             + Copy
-            + hoomd_vector::Outer
     };
 
     let final_where_clause = match where_clause {
@@ -67,12 +65,12 @@ pub(crate) fn momentum(input: DeriveInput) -> TokenStream {
 
             #[inline]
             fn velocity(&self) -> Self::Momentum {
-                self.momentum / self.mass()
+                self.momentum / <Self as hoomd_microstate::property::Mass>::mass(&self)
             }
 
             #[inline]
             fn set_velocity(&mut self, velocity: Self::Momentum) {
-                *self.momentum_mut() = velocity * self.mass();
+                *self.momentum_mut() = velocity * <Self as hoomd_microstate::property::Mass>::mass(&self);
             }
         }
     };
