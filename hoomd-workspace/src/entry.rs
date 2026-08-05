@@ -122,7 +122,7 @@ pub trait Entry {
     #[inline]
     fn path(&self) -> Result<PathBuf, Error> {
         Ok(Path::new("workspace").join(self.identifier()?))
-    } 
+    }
 }
 
 impl<T> Entry for T

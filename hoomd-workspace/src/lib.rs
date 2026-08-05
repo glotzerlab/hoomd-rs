@@ -33,7 +33,7 @@
 //! If you want to work with unstructured data, you can use [`serde_json::Map`] directly.
 //!
 //! Every state point has an [`identifier`] and a [`path`]. The identifier is a hash
-//! of the state point's JSON representation. The path is `workspace/{identifier}`. 
+//! of the state point's JSON representation. The path is `workspace/{identifier}`.
 //!
 //! ```
 //! use std::path::Path;
@@ -54,7 +54,7 @@
 //! # Ok(())
 //! # }
 //! ```
-//! 
+//!
 //! # Create a state point directory
 //!
 //! Call [`add`] to create a state point directory on the filesystem.
@@ -108,7 +108,7 @@
 //! # Ok(())
 //! # }
 //! ```
-//! 
+//!
 //! [`signac`]: https://signac.readthedocs.io
 //! [`identifier`]: Entry::identifier
 //! [`path`]: Entry::path
@@ -200,7 +200,7 @@ pub fn add<T: Entry + Serialize>(state_point: &T) -> Result<(), Error> {
         .map_err(|e| Error::Create(identifier_path.clone(), e))?;
 
     let state_point_json = entry::formatted(state_point)?;
-    
+
     let state_point_path = identifier_path.join("signac_statepoint.json");
     fs::write(&state_point_path, state_point_json)
         .map_err(|e| Error::Write(state_point_path.clone(), e))?;
@@ -285,7 +285,7 @@ pub fn state_point<T: for<'a> Deserialize<'a>>(identifier: &Path) -> Result<Opti
             _ => return Err(Error::Read(state_point_path, error)),
         }
     };
-       
+
     let state_point: T = serde_json::from_slice(&state_point_bytes)
         .map_err(|e| Error::Parse(state_point_path, e))?;
     Ok(Some(state_point))
