@@ -3,7 +3,6 @@
 
 //! Test derive_dynamic_point
 
-use hoomd_microstate::property::Mass;
 use hoomd_derive::derive_dynamic_point;
 use hoomd_vector::{Cartesian, Outer};
 
