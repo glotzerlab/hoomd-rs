@@ -1,44 +1,68 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
-<!-- From: https://github.com/rust-lang/rust/pull/95691#issuecomment-1089080597 -->
+<!-- Adapted from https://github.com/rust-lang/rust/pull/95691#issuecomment-1089080597 -->
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    // Make a list of all replacements to make. Otherwise, the for loops
-    // fail to iterate over all elements that need to be replaced.
-    let to_do = [];
+    document.addEventListener("DOMContentLoaded", function () {
+        // Render block equations, which in markdown have the form
+        //
+        // ```math
+        // equation
+        // ```
+        //
+        // and which rustdoc translates directly to
+        //
+        // <div class="example-wrap">
+        //     <pre class="language-math">
+        //         <code>
+        //             equation
+        //         </code>
+        //     </pre>
+        // </div>
+        let pre_array = Array.from(document.getElementsByTagName('pre'));
+        for (let pre of pre_array) {
+            if (pre.classList.contains('language-math')) {
+                let rendered = document.createElement('p');
+                let code = pre.getElementsByTagName("code")[0];
+                katex.render(
+                    code.textContent,
+                    rendered,
+                    { displayMode: true, throwOnError: false }
+                );
+                pre.parentNode.parentNode.replaceChild(rendered, pre.parentNode);
+            }
+        }
 
-    // Render
-    // ```math
-    // equation
-    // ```
-    // blocks as display mode equations with katex. Markdown translates this to
-    // <pre class="language-math"><code>equation</code></pre>
-    for (let e of document.getElementsByTagName('pre')) {
-        if (e.classList.contains('language-math')) {
-            to_do.push(function () {
-                let x = document.createElement('p');
-                katex.render(e.innerText, x, {displayMode: true, throwOnError: false});
-                e.parentNode.parentNode.replaceChild(x, e.parentNode);
-            });
+        // Render inline equations, which in markdown have the form $` equation `$,
+        // and which rustdoc translates directly to
+        //
+        // <p>
+        //     ...$
+        //     <code>
+        //         equation
+        //     </code>
+        //     $...
+        // </p>
+        let code_array = Array.from(document.getElementsByTagName('code'));
+        for (let code of code_array) {
+            let before_code = code.previousSibling;
+            let after_code = code.nextSibling;
+            if (
+                before_code
+                && after_code
+                && /\$$/.test(before_code.data)
+                && /^\$/.test(after_code.data)
+            ) {
+                let rendered = document.createElement('span');
+                katex.render(
+                    code.textContent,
+                    rendered,
+                    { throwOnError: false }
+                );
+                code.parentNode.replaceChild(rendered, code);
+                after_code.splitText(1);
+                after_code.remove();
+                before_code.splitText(before_code.data.length - 1).remove();
+            }
         }
-    }
-    // Render $`equation`$ elements as inline equations with katex. Markdown
-    // translates this to <p>...$<code>equation</code>$...</p>. Also remove the
-    // extra $ characters.
-    // <pre class="language-math"><code>equation</code></pre>
-    for (let e of document.getElementsByTagName('code')) {
-        let n = e.nextSibling; let p = e.previousSibling;
-        if (n && p && /^\$/.test(n.data) && /\$$/.test(p.data)) {
-            to_do.push(function () {
-                let n = e.nextSibling; let p = e.previousSibling;
-                let x = document.createElement('span');
-                katex.render(e.innerText, x, {throwOnError: false});
-                e.parentNode.replaceChild(x, e);
-                n.splitText(1); n.remove();
-                p.splitText(p.data.length - 1).remove();
-            });
-        }
-    }
-    for (let f of to_do) f();
-});
+    });
 </script>
