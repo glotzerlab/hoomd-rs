@@ -391,10 +391,13 @@ impl<B, S> Body<B, S> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_microstate::Body;
+    /// use hoomd_microstate::{Body, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
-    /// let body = Body::point(Cartesian::from([-3.0, 5.0]));
+    /// let body = Body::single_site(
+    ///     Point::new(Cartesian::from([-3.0, 5.0])),
+    ///     Point::new(Cartesian::from([0.0, 0.0])),
+    /// );
     /// assert_eq!(body.properties.position, [-3.0, 5.0].into());
     /// assert_eq!(body.sites.len(), 1);
     /// assert_eq!(body.sites[0].position, [0.0, 0.0].into());

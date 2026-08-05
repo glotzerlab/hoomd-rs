@@ -852,10 +852,10 @@ mod tests {
             Complex::new(1.0, 0.0),
             Complex::new(1.0, 0.0),
         ]);
-        assert!(q.components[0] == Complex::new(-1.0, 0.0));
-        assert!(q.components[1] == Complex::new(0.0, 1.0));
-        assert!(q.components[2] == Complex::new(1.0, 0.0));
-        assert!(q.components[3] == Complex::new(1.0, 0.0));
+        assert_eq!(q.components[0], Complex::new(-1.0, 0.0));
+        assert_eq!(q.components[1], Complex::new(0.0, 1.0));
+        assert_eq!(q.components[2], Complex::new(1.0, 0.0));
+        assert_eq!(q.components[3], Complex::new(1.0, 0.0));
     }
 
     #[test]

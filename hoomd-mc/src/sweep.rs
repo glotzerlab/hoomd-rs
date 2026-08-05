@@ -21,10 +21,9 @@ use super::{Adjust, Count, LocalTrial, Trial, Tune, TuneOptions, tune_local::tun
 
 /// Apply a local trial move to bodies in the microstate.
 ///
-/// The first field in the tuple struct determines what trial moves `Sweep`
-/// attempts. [`Sweep::apply`] applies the trial move to each body in the
-/// microstate once. [`Sweep::apply_with_filter`] applies the trial move
-/// to select bodies.
+/// The wrapped type determines what trial moves `Sweep` attempts.
+/// [`Sweep::apply`] applies the trial move to each body in the microstate once.
+/// [`Sweep::apply_with_filter`] applies the trial move to select bodies.
 ///
 /// # Example
 ///

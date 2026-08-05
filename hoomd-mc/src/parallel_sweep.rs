@@ -189,7 +189,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
         self.spaces
             .resize_with(self.checkerboard.num_spaces(), Vec::default);
         for space in &mut self.spaces {
-            space.truncate(0);
+            space.clear();
         }
         for (body_index, body) in microstate.bodies().iter().enumerate() {
             let space_index = self

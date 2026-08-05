@@ -4,13 +4,24 @@
 
 *Added:*
 
+* `[hoomd-macrostate]`: Add `Fugacity` trait that access the fugacity of a macrostate (#354).
+* `[hoomd-macrostate]`: Add `IsothermoalIsofugacity` type that stores the system's temperature and fugacity (#354).
+* `[hoomd-mc]`: Add `GrandCanonical` trial move type. It inserts and removes bodies and samples from the constant chemical potential, constant volume, constant temperature ensemble (#354).
+* `[hoomd-mc`]: Add `InsertReMoveCount` type that counts the accepted and rejected insertion and removal moves (#354).
+
 *Changed:*
+
+* Build the documentation with mdBook 0.5.4 and KaTeX 0.18.1 (#376).
 
 *Deprecated:*
 
 *Removed:*
 
 *Fixed:*
+
+* `[hoomd-interaction]`: Fix typos in documentation (#358).
+* `[hoomd-microstate]`: Fix typos in documentation (#358).
+* *examples*: Properly auto size egui parameter windows (#354).
 
 ## 1.2.0 (2026-07-07)
 
