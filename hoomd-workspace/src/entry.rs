@@ -129,14 +129,6 @@ impl<T> Entry for T
 where
     T: ?Sized + Serialize
     {
-
-    /// Compute the job identifier.
-    ///
-    /// TODO
-    ///
-    /// # Errors
-    ///
-    /// Returns [`serde_json::Error`] when `state_point` cannot be serialized to JSON.
     #[inline]
     fn identifier(&self) -> Result<String, Error> {
         let formatted = formatted(&self)?;

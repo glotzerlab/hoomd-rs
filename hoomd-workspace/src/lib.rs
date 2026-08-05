@@ -1,7 +1,118 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! TODO: Docs
+//! `hoomd_workspace` allows you to create and access state point directories
+//! in a workspace that are compatible with the [`signac`] framework.
+//! `hoomd_workspace` is *NOT* a full replacement for [`signac`]. It only provides
+//! a small set of methods that enable the most common use-cases for simulation
+//! workflows.
+//!
+//! # The workspace
+//!
+//! The workspace is a directory on the filesystem named `workspace`.
+//! `hoomd_workspace` *always* assumes that the `workspace` directory
+//! is in the current working directory.
+//!
+//! # State points
+//!
+//! Each entry in the workspace has a unique **state point** associated with it.
+//! In [`signac`], a state point is a dictionary. In `hoomd-workflow`, a state point
+//! is any type that can be serialized to JSON. Derive serde's `Deserialize` and
+//! `Serialize` traits to make any struct a valid state point:
+//!
+//! ```
+//! use serde::{Deserialize, Serialize};
+//!
+//! #[derive(Deserialize, Serialize)]
+//! struct MyStatePoint {
+//!     temperature: f64,
+//!     pressure: f64,
+//! }
+//! ```
+//!
+//! If you want to work with unstructured data, you can use [`serde_json::Map`] directly.
+//!
+//! Every state point has an [`identifier`] and a [`path`]. The identifier is a hash
+//! of the state point's JSON representation. The path is `workspace/{identifier}`. 
+//!
+//! ```
+//! use std::path::Path;
+//! use serde::Serialize;
+//! use hoomd_workspace::Entry;
+//!
+//! #[derive(Serialize)]
+//! struct MyStatePoint {
+//!     temperature: f64,
+//!     pressure: f64,
+//! }
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let my_state_point = MyStatePoint { temperature: 1.0, pressure: 2.0 };
+//!
+//! let identifier = my_state_point.identifier()?;
+//! let path = my_state_point.path()?;
+//! # Ok(())
+//! # }
+//! ```
+//! 
+//! # Create a state point directory
+//!
+//! Call [`add`] to create a state point directory on the filesystem.
+//! ```
+//! use serde::{Deserialize, Serialize};
+//! use hoomd_workspace::Entry;
+//!
+//! #[derive(Deserialize, Serialize)]
+//! struct MyStatePoint {
+//!     temperature: f64,
+//!     pressure: f64,
+//! }
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # use tempfile::tempdir;
+//! # let tmp_dir = tempdir().expect("temp dir should be created");
+//! # std::env::set_current_dir(&tmp_dir).expect("should be able to switch to temporary directory");
+//! let my_state_point = MyStatePoint { temperature: 1.0, pressure: 2.0 };
+//!
+//! hoomd_workspace::add(&my_state_point)?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Read the state point from a directory
+//!
+//! In simulation workflows, you often start with the *directory name* itself and not the
+//! state point. Call [`state_point`] to read the state point that is associated with
+//! the given directory (identifier).
+//! ```
+//! use serde::{Deserialize, Serialize};
+//! use std::path::Path;
+//! use anyhow::anyhow;
+//!
+//! #[derive(Deserialize, Serialize)]
+//! struct MyStatePoint {
+//!     temperature: f64,
+//!     pressure: f64,
+//! }
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # use tempfile::tempdir;
+//! # let tmp_dir = tempdir().expect("temp dir should be created");
+//! # std::env::set_current_dir(&tmp_dir).expect("should be able to switch to temporary directory");
+//! # let create_state_point = MyStatePoint { temperature: 1.0, pressure: 2.0 };
+//! # hoomd_workspace::add(&create_state_point)?;
+//!
+//! let identifier = Path::new("bb97883a3a70ccfc0840d49a8c794342");
+//! let my_state_point: MyStatePoint = hoomd_workspace::state_point(identifier)?
+//!     .ok_or(anyhow!("state point not found"))?;
+//! # Ok(())
+//! # }
+//! ```
+//! 
+//! [`signac`]: https://signac.readthedocs.io
+//! [`identifier`]: Entry::identifier
+//! [`path`]: Entry::path
+
 use std::{fs, io, path::{Path, PathBuf}};
 
 use serde::{Deserialize, Serialize};
@@ -49,6 +160,31 @@ pub enum Error {
 ///
 /// [`signac`]: https://signac.readthedocs.io
 ///
+/// # Example
+///
+/// ```
+/// use serde::{Deserialize, Serialize};
+/// use hoomd_workspace::Entry;
+///
+/// #[derive(Deserialize, Serialize)]
+/// struct MyStatePoint {
+///     temperature: f64,
+///     pressure: f64,
+/// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # use tempfile::tempdir;
+/// # let tmp_dir = tempdir().expect("temp dir should be created");
+/// # std::env::set_current_dir(&tmp_dir).expect("should be able to switch to temporary directory");
+/// let my_state_point = MyStatePoint { temperature: 1.0, pressure: 2.0 };
+///
+/// hoomd_workspace::add(&my_state_point)?;
+///
+/// assert!(my_state_point.path()?.exists());
+/// # Ok(())
+/// # }
+/// ```
+///
 /// # Errors
 ///
 /// * [`Error::Serialize`] when `serde_json` cannot serialize `state_point` to JSON.
@@ -78,6 +214,62 @@ pub fn add<T: Entry + Serialize>(state_point: &T) -> Result<(), Error> {
 /// reads it, deserializes the JSON and returns `Ok(Some(state_point))`. When the file
 /// does not exist, [`state_point`] returns `Ok(None)`.
 ///
+/// # Examples
+///
+/// Read an existing state point or error:
+/// ```
+/// use serde::{Deserialize, Serialize};
+/// use std::path::Path;
+/// use anyhow::anyhow;
+///
+/// #[derive(Deserialize, Serialize)]
+/// struct MyStatePoint {
+///     temperature: f64,
+///     pressure: f64,
+/// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # use tempfile::tempdir;
+/// # let tmp_dir = tempdir().expect("temp dir should be created");
+/// # std::env::set_current_dir(&tmp_dir).expect("should be able to switch to temporary directory");
+/// # let create_state_point = MyStatePoint { temperature: 1.0, pressure: 2.0 };
+/// # hoomd_workspace::add(&create_state_point)?;
+///
+/// let identifier = Path::new("bb97883a3a70ccfc0840d49a8c794342");
+/// let my_state_point: MyStatePoint = hoomd_workspace::state_point(identifier)?
+///     .ok_or(anyhow!("state point not found"))?;
+///
+/// assert_eq!(my_state_point.pressure, 2.0);
+/// assert_eq!(my_state_point.temperature, 1.0);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Attempt to access a state point that does not exist:
+/// ```
+/// use serde::{Deserialize, Serialize};
+/// use std::path::Path;
+/// use anyhow::anyhow;
+///
+/// #[derive(Deserialize, Serialize)]
+/// struct MyStatePoint {
+///     temperature: f64,
+///     pressure: f64,
+/// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # use tempfile::tempdir;
+/// # let tmp_dir = tempdir().expect("temp dir should be created");
+/// # std::env::set_current_dir(&tmp_dir).expect("should be able to switch to temporary directory");
+///
+/// let identifier = Path::new("not a state point");
+/// let maybe_state_point: Option<MyStatePoint> = hoomd_workspace::state_point(identifier)?;
+///
+/// assert!(maybe_state_point.is_none());
+/// # Ok(())
+/// # }
+/// ```
+///
 /// # Errors
 ///
 /// * [`Error::Read`] when `workspace/{identifier}/signac_statepoint.json` exists and cannot be read.
@@ -98,5 +290,3 @@ pub fn state_point<T: for<'a> Deserialize<'a>>(identifier: &Path) -> Result<Opti
         .map_err(|e| Error::Parse(state_point_path, e))?;
     Ok(Some(state_point))
 }
-
-
