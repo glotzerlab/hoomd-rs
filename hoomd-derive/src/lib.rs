@@ -317,6 +317,12 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
     let mut target_struct = parse_macro_input!(annotated_item as ItemStruct);
     let (impl_generics, ty_generics, where_clause) = target_struct.generics.split_for_impl();
 
+    // Later on, an impl block for Transform<OrientedPoint> will require special
+    // trait bounds
+    let mut transform_generics = target_struct.generics.clone();
+    transform_generics.params.push(parse_quote!(__R: Copy));
+    let (transform_impl_generics, _, transform_where_clause) = transform_generics.split_for_impl();
+    
     // Parse the original user fields
     let target_fields = match &mut target_struct.fields {
         Fields::Named(fields) => fields,
@@ -331,15 +337,24 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
     };
     
     // Add where-clause requirements
-    let mut other_where: WhereClause = syn::parse_quote! {
+    let other_where: WhereClause = syn::parse_quote! {
         where
-            #vector_type: Default + hoomd_vector::Outer,
+            #vector_type: Default + hoomd_vector::Outer + hoomd_vector::Vector,
             <#vector_type as hoomd_vector::Outer>::Tensor: Default
     };
     let final_where_clause = match where_clause {
         Some(original) => {
-            other_where.predicates.extend(original.predicates.clone());
-            other_where
+            let mut local_other_where = other_where.clone();
+            local_other_where.predicates.extend(original.predicates.clone());
+            local_other_where
+        }
+        None => other_where.clone()
+    };
+    let final_transform_where_clause = match transform_where_clause {
+        Some(original) => {
+            let mut local_other_where = other_where.clone();
+            local_other_where.predicates.extend(original.predicates.clone());
+            local_other_where
         }
         None => other_where
     };
@@ -417,6 +432,31 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
                 }
             }
         }
+
+        impl #impl_generics hoomd_microstate::Transform<hoomd_microstate::property::Point<#vector_type>> for #struct_name #ty_generics #final_where_clause {
+            #[inline]
+            fn transform(
+                &self,
+                site_properties: &hoomd_microstate::property::Point<#vector_type>
+            ) -> hoomd_microstate::property::Point<#vector_type> {
+                hoomd_microstate::property::Point {
+                    position: self.position + site_properties.position,
+                }
+            }
+        }
+
+        impl #transform_impl_generics hoomd_microstate::Transform<hoomd_microstate::property::OrientedPoint<#vector_type, __R>> for #struct_name #ty_generics #final_transform_where_clause {
+            #[inline]
+            fn transform(
+                &self,
+                site_properties: &hoomd_microstate::property::OrientedPoint<#vector_type, __R>
+            ) -> hoomd_microstate::property::OrientedPoint<#vector_type, __R> {
+                hoomd_microstate::property::OrientedPoint {
+                    position: self.position + site_properties.position,
+                    ..*site_properties
+                }
+            }
+        }
     })
 }
 
@@ -470,10 +510,15 @@ pub fn derive_dynamic_oriented_point(input: TokenStream, annotated_item: TokenSt
     // Add where-clause requirements
     let mut other_where: WhereClause = syn::parse_quote! {
         where
-            #vector_type: Default + hoomd_vector::Outer + hoomd_vector::Wedge,
+            #vector_type: Default
+                + hoomd_vector::Outer
+                + hoomd_vector::Wedge
+                + hoomd_vector::Vector,
             <#vector_type as hoomd_vector::Outer>::Tensor: Default,
             <#vector_type as hoomd_vector::Wedge>::Bivector: Default,
-            #rotation_type: hoomd_microstate::property::RotationalMotionTypes,
+            #rotation_type: hoomd_microstate::property::RotationalMotionTypes
+                + hoomd_vector::Rotate<#vector_type>
+                + hoomd_vector::Rotation,
     };
     let final_where_clause = match where_clause {
         Some(original) => {
@@ -573,6 +618,45 @@ pub fn derive_dynamic_oriented_point(input: TokenStream, annotated_item: TokenSt
                     drag: 1.0,
                     rotational_drag: <#rotation_type as hoomd_microstate::property::RotationalMotionTypes>::default_rotational_drag(),
                     #(#original_field_idents: #original_default_values),*
+                }
+            }
+        }
+
+        impl #impl_generics hoomd_microstate::Transform<hoomd_microstate::property::Point<#vector_type>> for #struct_name #ty_generics #final_where_clause {
+            #[inline]
+            fn transform(
+                &self,
+                site_properties: &hoomd_microstate::property::Point<#vector_type>
+            ) -> hoomd_microstate::property::Point<#vector_type> {
+                hoomd_microstate::property::Point {
+                    position:
+                        self.position
+                        + <#rotation_type as hoomd_vector::Rotate<#vector_type>>::rotate(
+                            <Self as hoomd_microstate::property::Orientation>::orientation(&self),
+                            &site_properties.position
+                        ),
+                }
+            }
+        }
+
+        impl #impl_generics hoomd_microstate::Transform<hoomd_microstate::property::OrientedPoint<#vector_type, #rotation_type>> for #struct_name #ty_generics #final_where_clause {
+            #[inline]
+            fn transform(
+                &self,
+                site_properties: &hoomd_microstate::property::OrientedPoint<#vector_type, #rotation_type>
+            ) -> hoomd_microstate::property::OrientedPoint<#vector_type, #rotation_type> {
+                hoomd_microstate::property::OrientedPoint {
+                    position:
+                        self.position
+                        + <#rotation_type as hoomd_vector::Rotate<#vector_type>>::rotate(
+                            <Self as hoomd_microstate::property::Orientation>::orientation(&self),
+                            &site_properties.position
+                        ),
+                    orientation:
+                        <#rotation_type as hoomd_vector::Rotation>::combine(
+                            <Self as hoomd_microstate::property::Orientation>::orientation(&self),
+                            &site_properties.orientation
+                        ),
                 }
             }
         }
