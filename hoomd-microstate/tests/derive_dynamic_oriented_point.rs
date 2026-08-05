@@ -35,7 +35,6 @@ use hoomd_vector::{Cartesian, Outer, Angle};
 
 #[derive_dynamic_oriented_point(Cartesian::<2>, Angle)]
 struct MyDynamicOrientedPoint<'a> {
-// struct MyBodyProperties{
     int: i32,
     float: f64,
     arr: [f64; 3],
