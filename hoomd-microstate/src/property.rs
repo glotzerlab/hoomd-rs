@@ -452,7 +452,7 @@ pub trait Drag {
     fn drag_mut(&mut self) -> &mut f64;
 }
 
-/// A body's rotational drag coefficient. [TODO]
+/// A body's rotational drag coefficient.
 ///
 /// Rotational drag is used for `Langevin` and `Brownian` integration.
 /// 
