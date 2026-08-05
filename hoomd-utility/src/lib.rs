@@ -21,4 +21,3 @@
 
 pub mod data;
 pub mod valid;
-pub mod signac;

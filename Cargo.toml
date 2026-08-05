@@ -17,6 +17,7 @@ members = ["benchmarks",
            "hoomd-spatial",
            "hoomd-utility",
            "hoomd-vector",
+           "hoomd-workspace",
            "tools/build-wasm-doc-examples",
            "hoomd-rand"
           ]
@@ -39,6 +40,7 @@ default-members = ["examples",
                    "hoomd-spatial",
                    "hoomd-utility",
                    "hoomd-vector",
+                   "hoomd-workspace",
                    "hoomd-rand"
                   ]
 
