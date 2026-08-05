@@ -8,6 +8,7 @@
 * `[hoomd-macrostate]`: Add `IsothermoalIsofugacity` type that stores the system's temperature and fugacity (#354).
 * `[hoomd-mc]`: Add `GrandCanonical` trial move type. It inserts and removes bodies and samples from the constant chemical potential, constant volume, constant temperature ensemble (#354).
 * `[hoomd-mc`]: Add `InsertReMoveCount` type that counts the accepted and rejected insertion and removal moves (#354).
+* `[hoomd-workspace`]: Add the `hoomd-workspace` crate. Use it to initialize and read state points in a signac workspace (#359).
 
 *Changed:*
 
