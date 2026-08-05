@@ -5,28 +5,29 @@
 
 use std::path::{Path, PathBuf};
 
+use super::Error;
 use md5::{Digest, Md5};
 use serde::Serialize;
 use serde_json_fmt::JsonFormat;
-use super::Error;
 
 /// Create the Python-compatible JSON formatted string.
 ///
 /// Sort keys and add spaces after `:` and `,`.
 pub(crate) fn formatted<T: ?Sized + Serialize>(state_point: &T) -> Result<String, Error> {
-        // This implementation is compatible with the Python implementation of signac:
-        // https://github.com/glotzerlab/signac/blob/43655eeb22c25aba4ddd4421f702d5352cd29ca8/signac/job.py#L34-L54
+    // This implementation is compatible with the Python implementation of signac:
+    // https://github.com/glotzerlab/signac/blob/43655eeb22c25aba4ddd4421f702d5352cd29ca8/signac/job.py#L34-L54
 
-        let mut value = serde_json::to_value(state_point).map_err(Error::Serialize)?;
-        value.sort_all_objects();
+    let mut value = serde_json::to_value(state_point).map_err(Error::Serialize)?;
+    value.sort_all_objects();
 
-        JsonFormat::new()
-            .comma(", ")
-            .expect("format should be valid")
-            .colon(": ")
-            .expect("format should be valid")
-            .format_to_string(&value).map_err(Error::Format)
-    }
+    JsonFormat::new()
+        .comma(", ")
+        .expect("format should be valid")
+        .colon(": ")
+        .expect("format should be valid")
+        .format_to_string(&value)
+        .map_err(Error::Format)
+}
 
 /// Compute properties of entries in the workspace
 ///
@@ -52,7 +53,10 @@ pub(crate) fn formatted<T: ?Sized + Serialize>(state_point: &T) -> Result<String
 /// }
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let my_state_point = MyStatePoint { temperature: 1.0, pressure: 2.0 };
+/// let my_state_point = MyStatePoint {
+///     temperature: 1.0,
+///     pressure: 2.0,
+/// };
 /// # Ok(())
 /// # }
 /// ```
@@ -75,7 +79,10 @@ pub trait Entry {
     /// }
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let my_state_point = MyStatePoint { temperature: 1.0, pressure: 2.0 };
+    /// let my_state_point = MyStatePoint {
+    ///     temperature: 1.0,
+    ///     pressure: 2.0,
+    /// };
     ///
     /// let identifier = my_state_point.identifier()?;
     ///
@@ -95,9 +102,9 @@ pub trait Entry {
     /// # Example
     ///
     /// ```
-    /// use std::path::Path;
     /// use hoomd_workspace::Entry;
     /// use serde::Serialize;
+    /// use std::path::Path;
     ///
     /// #[derive(Serialize)]
     /// struct MyStatePoint {
@@ -106,11 +113,17 @@ pub trait Entry {
     /// }
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let my_state_point = MyStatePoint { temperature: 1.0, pressure: 2.0 };
+    /// let my_state_point = MyStatePoint {
+    ///     temperature: 1.0,
+    ///     pressure: 2.0,
+    /// };
     ///
     /// let path = my_state_point.path()?;
     ///
-    /// assert_eq!(path, Path::new("workspace").join("bb97883a3a70ccfc0840d49a8c794342"));
+    /// assert_eq!(
+    ///     path,
+    ///     Path::new("workspace").join("bb97883a3a70ccfc0840d49a8c794342")
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -127,8 +140,8 @@ pub trait Entry {
 
 impl<T> Entry for T
 where
-    T: ?Sized + Serialize
-    {
+    T: ?Sized + Serialize,
+{
     #[inline]
     fn identifier(&self) -> Result<String, Error> {
         let formatted = formatted(&self)?;
@@ -195,9 +208,12 @@ mod tests {
 
     #[test]
     fn test_path() -> anyhow::Result<()> {
-        let state_point = Test1 { a: 1};
+        let state_point = Test1 { a: 1 };
 
-        assert_eq!(state_point.path()?, Path::new("workspace/42b7b4f2921788ea14dac5566e6f06d0"));
+        assert_eq!(
+            state_point.path()?,
+            Path::new("workspace/42b7b4f2921788ea14dac5566e6f06d0")
+        );
 
         Ok(())
     }

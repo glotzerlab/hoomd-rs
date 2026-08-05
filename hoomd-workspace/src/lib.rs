@@ -36,9 +36,9 @@
 //! of the state point's JSON representation. The path is `workspace/{identifier}`.
 //!
 //! ```
-//! use std::path::Path;
-//! use serde::Serialize;
 //! use hoomd_workspace::Entry;
+//! use serde::Serialize;
+//! use std::path::Path;
 //!
 //! #[derive(Serialize)]
 //! struct MyStatePoint {
@@ -47,7 +47,10 @@
 //! }
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let my_state_point = MyStatePoint { temperature: 1.0, pressure: 2.0 };
+//! let my_state_point = MyStatePoint {
+//!     temperature: 1.0,
+//!     pressure: 2.0,
+//! };
 //!
 //! let identifier = my_state_point.identifier()?;
 //! let path = my_state_point.path()?;
@@ -113,7 +116,10 @@
 //! [`identifier`]: Entry::identifier
 //! [`path`]: Entry::path
 
-use std::{fs, io, path::{Path, PathBuf}};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -196,8 +202,7 @@ pub enum Error {
 pub fn add<T: Entry + Serialize>(state_point: &T) -> Result<(), Error> {
     let identifier_path = state_point.path()?;
 
-    fs::create_dir_all(&identifier_path)
-        .map_err(|e| Error::Create(identifier_path.clone(), e))?;
+    fs::create_dir_all(&identifier_path).map_err(|e| Error::Create(identifier_path.clone(), e))?;
 
     let state_point_json = entry::formatted(state_point)?;
 
@@ -277,13 +282,19 @@ pub fn add<T: Entry + Serialize>(state_point: &T) -> Result<(), Error> {
 ///   `workspace/{identifier}/signac_statepoint.json` to `T`
 #[inline]
 pub fn state_point<T: for<'a> Deserialize<'a>>(identifier: &Path) -> Result<Option<T>, Error> {
-    let state_point_path = [Path::new("workspace"), identifier, Path::new("signac_statepoint.json")].iter().collect();
+    let state_point_path = [
+        Path::new("workspace"),
+        identifier,
+        Path::new("signac_statepoint.json"),
+    ]
+    .iter()
+    .collect();
     let state_point_bytes = match fs::read(&state_point_path) {
         Ok(state_point_bytes) => state_point_bytes,
         Err(error) => match error.kind() {
             io::ErrorKind::NotFound => return Ok(None),
             _ => return Err(Error::Read(state_point_path, error)),
-        }
+        },
     };
 
     let state_point: T = serde_json::from_slice(&state_point_bytes)
