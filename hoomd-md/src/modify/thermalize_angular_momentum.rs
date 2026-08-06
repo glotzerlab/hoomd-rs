@@ -7,159 +7,174 @@
 
 use super::ThermalizeAngularMomentum;
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{AngularMomentum, DynamicOrientedPoint, MomentOfInertia, Position, RotationalMotionTypes},
+    Body,
+    Microstate,
+    SiteKey,
+    Tagged,
+    Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{
+        AngularMomentum,
+        MomentOfInertia,
+        Orientation,
+        Position,
+        RotationalMotionTypes
+    },
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Angle, Cartesian, Versor};
+use hoomd_vector::{Angle, Versor};
+use rand::Rng;
 use rand_distr::{Distribution, Normal};
 
-#[inline]
-fn thermalize_angular_momentum_with_filter_cartesian2<
-    B, S, X, C, F: Fn(&Tagged<Body<B, S>>) -> bool,
->(
-    microstate: &mut Microstate<B, S, X, C>,
-    temperature: f64,
-    should_thermalize_body: F,
-)
+/// Thermalize rotational degrees of freedom.
+/// 
+/// This trait binds rotational thermalization schemes to the types that
+/// represent orientation and its associated quantities: angular momentum and
+/// moment of inertia. Implement this trait on a type that represents body
+/// orientation to make a [`Microstate`] containing such bodies thermalizeable
+/// with [`ThermalizeAngularMomentum`].
+pub trait ThermalizeRotation
 where
-    B: Clone
-        + Transform<S>
-        + Position<Position = Cartesian<2>>
-        + MomentOfInertia<MomentOfInertia = <Angle as RotationalMotionTypes>::MomentOfInertia>
-        + AngularMomentum<AngularMomentum = <Angle as RotationalMotionTypes>::AngularMomentum>,
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    <Self as ThermalizeRotation>::Rotation: RotationalMotionTypes
 {
-    let mut rng = microstate.counter().make_rng();
+    /// Type that represents a body's orientation.
+    type Rotation;
 
-    for body_index in 0..microstate.bodies().len() {
-        let body = &microstate.bodies()[body_index];
-        if !should_thermalize_body(body) {
-            continue;
-        }
-
-        let mut body_properties = body.item.properties.clone();
-
-        let moment_of_inertia = body_properties.moment_of_inertia();
-        let sigma = (temperature * moment_of_inertia).sqrt();
-        let normal = Normal::new(0.0, sigma).expect("Normal distribution should be valid");
-
-        *body_properties.angular_momentum_mut() = normal.sample(&mut rng);
-
-        microstate.update_body_properties(body_index, body_properties)
-            .expect("Bodies and sites should remain in simulation boundary.");
-    }
-
-    microstate.increment_substep();
+    /// Draw a new angular momentum from the thermal distribution.
+    fn thermalize<R: Rng + ?Sized>(
+        temperature: &f64,
+        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        rng: &mut R
+    );
 }
 
-#[inline]
-fn thermalize_angular_momentum_with_filter_cartesian3<
-    B, S, X, C, F: Fn(&Tagged<Body<B, S>>) -> bool,
->(
-    microstate: &mut Microstate<B, S, X, C>,
-    temperature: f64,
-    should_thermalize_body: F,
-)
-where
-    B: Clone
-        + Transform<S>
-        + Position<Position = Cartesian<3>>
-        + MomentOfInertia<MomentOfInertia = <Versor as RotationalMotionTypes>::MomentOfInertia>
-        + AngularMomentum<AngularMomentum = <Versor as RotationalMotionTypes>::AngularMomentum>,
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-{
-    let mut rng = microstate.counter().make_rng();
+/// Rotational thermalization for bodies in 2-dimensional cartesian space.
+impl ThermalizeRotation for Angle {
+    type Rotation = Angle;
 
-    for body_index in 0..microstate.bodies().len() {
-        let body = &microstate.bodies()[body_index];
-        if !should_thermalize_body(body) {
-            continue;
+    /// Draw a new angular momentum from the thermal distribution.
+    /// 
+    /// If the moment of inertia is zero, the angular momentum is not changed.
+    /// 
+    /// The new angular momentum is zero-centered
+    /// 
+    /// ```math
+    /// \lang L \rang = 0
+    /// ```
+    /// 
+    /// and normally distributed, with a variance of
+    /// 
+    /// ```math
+    /// \lang L \cdot L \rang = k T I
+    /// ```
+    fn thermalize<R: Rng + ?Sized>(
+        temperature: &f64,
+        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        rng: &mut R,
+    ) {
+        if *moment_of_inertia != 0.0 {
+            let sigma = (temperature * moment_of_inertia).sqrt();
+            let normal = Normal::new(0.0, sigma).expect("Normal distribution should be valid");
+            *angular_momentum = normal.sample(rng);
         }
+    }
+}
 
-        let mut body_properties = body.item.properties.clone();
+/// Rotational thermalization for bodies in 3-dimensional cartesian space.
+impl ThermalizeRotation for Versor {
+    type Rotation = Versor;
 
-        let moment_of_inertia = body_properties.moment_of_inertia();
-
+    /// Draw a new angular momentum from the thermal distribution.
+    /// 
+    /// Rotational degrees of freedom with a moment of inertia component of zero
+    /// are not changed.
+    /// 
+    /// The new angular momentum is zero-centered
+    /// 
+    /// ```math
+    /// \lang \vec{L} \rang = \vec{0}
+    /// ```
+    /// 
+    /// and normally distributed, with a variance of
+    /// 
+    /// ```math
+    /// \lang L_j \cdot L_j \rang = k T I_j
+    /// ```
+    /// 
+    /// for each component $` j `$ of the angular momentum vector and the
+    /// diagonalized moment of inertia.
+    fn thermalize<R: Rng + ?Sized>(
+        temperature: &f64,
+        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        rng: &mut R
+    ) {
         let x_nonzero = moment_of_inertia[0] > 0.0;
         let y_nonzero = moment_of_inertia[1] > 0.0;
         let z_nonzero = moment_of_inertia[2] > 0.0;
+        
         let sigma_x = (temperature * moment_of_inertia[0]).sqrt();
         let sigma_y = (temperature * moment_of_inertia[1]).sqrt();
         let sigma_z = (temperature * moment_of_inertia[2]).sqrt();
+
         let normal_x = Normal::new(0.0, sigma_x).expect("Normal distribution should be valid.");
         let normal_y = Normal::new(0.0, sigma_y).expect("Normal distribution should be valid.");
         let normal_z = Normal::new(0.0, sigma_z).expect("Normal distribution should be valid.");
 
-        let mut angular_momentum_new = Cartesian::<3>::default();
-
-        if x_nonzero {
-            angular_momentum_new[0] = normal_x.sample(&mut rng);
-        }
-        if y_nonzero {
-            angular_momentum_new[1] = normal_y.sample(&mut rng);
-        }
-        if z_nonzero {
-            angular_momentum_new[2] = normal_z.sample(&mut rng);
-        }
-
-        *body_properties.angular_momentum_mut() = angular_momentum_new;
-        microstate.update_body_properties(body_index, body_properties)
-            .expect("Bodies and sites should remain in simulation boundary.");
+        if x_nonzero { angular_momentum[0] = normal_x.sample(rng) };
+        if y_nonzero { angular_momentum[1] = normal_y.sample(rng) };
+        if z_nonzero { angular_momentum[2] = normal_z.sample(rng) };
     }
-
-    microstate.increment_substep();
 }
 
-/// Thermalize angular momentum for bodies in 2-dimensional cartesian space.
-impl<S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<Cartesian<2>, Angle>, S>
-    for Microstate<DynamicOrientedPoint<Cartesian<2>, Angle>, S, X, C>
+impl<V, R, B, S, X, C> ThermalizeAngularMomentum<B, S> for Microstate<B, S, X, C>
 where
-    DynamicOrientedPoint<Cartesian<2>, Angle>: Clone + Transform<S>,
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<2>, Angle>> + Wrap<S> + GenerateGhosts<S>,
+    V: Copy,
+    R: ThermalizeRotation<Rotation = R> + RotationalMotionTypes,
+    B: Copy
+        + Transform<S>
+        + Position<Position = V>
+        + Orientation<Rotation = R>
+        + MomentOfInertia<MomentOfInertia = <R as RotationalMotionTypes>::MomentOfInertia>
+        + AngularMomentum<AngularMomentum = <R as RotationalMotionTypes>::AngularMomentum>,
+    S: Position<Position = V> + Default,
+    X: PointUpdate<V, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    <R as RotationalMotionTypes>::AngularMomentum: Clone,
 {
     #[inline]
-    fn thermalize_angular_momentum_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, Angle>, S>>) -> bool,
-    >(
+    fn thermalize_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         temperature: f64,
         should_thermalize_body: F,
     ) {
-        thermalize_angular_momentum_with_filter_cartesian2(
-            self,
-            temperature,
-            should_thermalize_body
-        );
-    }
-}
+        let mut rng = self.counter().make_rng();
 
-/// Thermalize angular momentum for bodies in 3-dimensional cartesian space.
-impl<S, X, C> ThermalizeAngularMomentum<DynamicOrientedPoint<Cartesian<3>, Versor>, S>
-    for Microstate<DynamicOrientedPoint<Cartesian<3>, Versor>, S, X, C>
-where
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<3>, Versor>> + Wrap<S> + GenerateGhosts<S>,
-    DynamicOrientedPoint<Cartesian<3>, Versor>: Transform<S>,
-{
-    #[inline]
-    fn thermalize_angular_momentum_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, Versor>, S>>) -> bool,
-    >(
-        &mut self,
-        temperature: f64,
-        should_thermalize_body: F,
-    ) {
-        thermalize_angular_momentum_with_filter_cartesian3(
-            self,
-            temperature,
-            should_thermalize_body
-        );
+        for body_index in 0..self.bodies().len() {
+            let body = &self.bodies()[body_index];
+            if !should_thermalize_body(body) {
+                continue;
+            }
+
+            let mut body_properties = body.item.properties;
+
+            let moment_of_inertia = body_properties.moment_of_inertia();
+            let mut angular_momentum = body_properties.angular_momentum().clone();
+
+            <R as ThermalizeRotation>::thermalize(
+                &temperature,
+                moment_of_inertia,
+                &mut angular_momentum,
+                &mut rng
+            );
+
+            *body_properties.angular_momentum_mut() = angular_momentum;
+            self.update_body_properties(body_index, body_properties)
+                .expect("Bodies and sites should remain in simulation boundary.");
+        }
+
+        self.increment_substep();
     }
 }
