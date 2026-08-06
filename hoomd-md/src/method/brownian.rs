@@ -208,7 +208,8 @@ impl BrownianIntegrateRotation for Versor {
     ///    ```math
     ///    \lang L_{i,j}(t + \Delta t) \cdot L_{i,j}(t + \Delta t) \rang = k T I_j
     ///    ```
-    ///    for each component $` j `$ of the angular momentum vector.
+    ///    for each component $` j `$ of the angular momentum vector and the
+    ///    diagonalized moment of inertia.
     fn step<R: Rng + ?Sized>(
         delta_t: f64,
         net_torque: &Self::NetTorque,
@@ -464,6 +465,7 @@ mod tests {
         ZeroCenterMomentum,
         ZeroCenterAngularMomentum
     };
+    use hoomd_derive::derive_dynamic_oriented_point;
 
     const R_CUT: f64 = 3.0;
 
@@ -523,9 +525,9 @@ mod tests {
         assert_eq!(delta_t, brownian.delta_t);
     }
 
-    /// Ensure that custom 2D cartesian bodies move around.
+    /// Ensure that simple 2D cartesian bodies move around.
     #[test]
-    fn test_brownian_bodies_move_cartesian2() -> anyhow::Result<()> {
+    fn test_brownian_simple_bodies_move_cartesian2() -> anyhow::Result<()> {
         // Interaction model
         let interaction_model = make_lj();
 
@@ -554,6 +556,67 @@ mod tests {
         microstate.thermalize_momentum(temperature);
         microstate.thermalize_angular_momentum(temperature);
         microstate.zero_center_angular_momentum();
+        microstate.zero_center_momentum();
+
+        // Integrate.
+        let mut brownian = Brownian{ delta_t: 0.001 };
+        for _ in 0..5 {
+            brownian.integrate_translation(
+                &mut microstate,
+                &macrostate,
+                &interaction_model
+            );
+            microstate.increment_step();
+        }
+
+        // Ensure the positions have changed
+        assert_ne!(positions[0], microstate.bodies()[0].item.properties.position().clone());
+        assert_ne!(positions[1], microstate.bodies()[1].item.properties.position().clone());
+
+        Ok(())
+    }
+
+    /// Ensure that custom 2D cartesian bodies move around.
+    #[test]
+    fn test_brownian_custom_bodies_move_cartesian2() -> anyhow::Result<()> {
+        // Custom body properties type
+        #[derive_dynamic_oriented_point(Cartesian::<2>, Angle)]
+        #[derive(Clone)]
+        struct CustomDynamicOrientedPoint<'a> {
+            name: &'a str,
+        }
+        
+        // Interaction model
+        let interaction_model = make_lj();
+
+        // Build microstate
+        type BoxShape = Rectangle;
+        let boundary_shape = BoxShape::with_equal_edges((2.5 * R_CUT).try_into()?);
+        let mut positions = [
+            Cartesian::<2>::from([-2.0, 0.0]),
+            Cartesian::<2>::from([2.0, 0.0]),
+        ];
+        let body_template = Body::single_site(
+            CustomDynamicOrientedPoint {
+                name: "Jimothy",
+                ..Default::default()
+            },
+            Point::default(),
+        );
+        let mut microstate = make_microstate::<2, _, _, _, _, VecCell<SiteKey, 2>, Periodic<BoxShape>>(
+            boundary_shape,
+            &mut positions,
+            &interaction_model,
+            body_template
+        ).unwrap();
+
+        // Macrostate and related
+        let temperature = 1.5;
+        let macrostate = Isothermal { temperature };
+
+        microstate.thermalize_momentum(temperature);
+        // microstate.thermalize_angular_momentum(temperature);
+        // microstate.zero_center_angular_momentum();
         microstate.zero_center_momentum();
 
         // Integrate.
