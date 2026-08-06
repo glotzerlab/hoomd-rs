@@ -94,6 +94,9 @@ they do not. Use `PairwiseCutoff` with the `HardSphere` interaction as the Hamil
 
 #### Periodic Boundary Conditions
 
+Perform the hard disk simulation in a `Rhomboid` tilted to match the shape and
+aspect ratio of the hexagonal unit cell.
+
 Use **periodic boundary conditions** via the `Periodic` type to represent an
 infinitely repeating system. Provide the underlying shape and the **maximum
 interaction range** between sites to construct `Periodic`:

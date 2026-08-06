@@ -5,10 +5,15 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::fmt;
 
-use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
+use crate::{
+    Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix,
+    matrix::qr::qr_decomposition,
+};
 
 /// ``std::ops`` implementations for [`Matrix`]
 mod ops;
+/// ``qr`` decomposition for [`Matrix`] types.
+pub mod qr;
 
 pub use crate::diagonal::DiagonalMatrix;
 
@@ -417,7 +422,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// };
     /// assert_eq!(m.n_rows(), 2);
     /// ```
-    #[must_use]
     #[inline]
     pub const fn n_rows(&self) -> usize {
         N
@@ -433,10 +437,15 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// };
     /// assert_eq!(m.n_columns(), 3);
     /// ```
-    #[must_use]
     #[inline]
     pub const fn n_columns(&self) -> usize {
         M
+    }
+    /// Compute the QR decomposition of a matrix $`A`$ such that $`A = QR`$ where Q is orthogonal and R is upper triangular.
+    #[must_use]
+    #[inline]
+    pub fn qr(&self) -> (Matrix<N, M>, [f64; M]) {
+        qr_decomposition(self)
     }
 }
 impl<const N: usize> Matrix<N, N> {
@@ -459,7 +468,8 @@ impl<const N: usize> Matrix<N, N> {
     pub fn with_diagonal(diagonal: [f64; N]) -> Self {
         DiagonalMatrix { elements: diagonal }.to_dense()
     }
-
+}
+impl<const N: usize> Matrix<N, N> {
     /// Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
     ///
     /// This implementation uses the Laplace expansion, which is optimal for small
@@ -477,7 +487,6 @@ impl<const N: usize> Matrix<N, N> {
     /// let scaled = identity * 2.0;
     /// assert_eq!(scaled.determinant(), 2.0 * 2.0);
     /// ```
-    #[must_use]
     #[inline]
     pub fn determinant(&self) -> f64 {
         // Compute the determinant of a 2x2 minor.
@@ -562,7 +571,6 @@ impl<const N: usize> Matrix<N, N> {
     /// let scaled = identity * 3.0;
     /// assert_eq!(scaled.trace(), 3.0 + 3.0);
     /// ```
-    #[must_use]
     #[inline]
     pub fn trace(&self) -> f64 {
         std::array::from_fn::<_, N, _>(|i| self[(i, i)])
@@ -981,12 +989,50 @@ impl Matrix<3, 3> {
 }
 
 #[cfg(test)]
-mod tests {
+/// Helpers for matrix tests
+pub mod test_utils {
     use std::{fmt::Debug, ops::Index};
 
-    use super::*;
+    use approxim::{assert_ulps_eq, ulps_eq};
+
+    const EPS: f64 = 1e-13;
+    pub(crate) fn assert_matrices_ulps_eq<
+        const N: usize,
+        const M: usize,
+        T0: Index<(usize, usize), Output = f64> + Debug,
+        T1: Index<(usize, usize), Output = f64> + Debug,
+    >(
+        m0: &T0,
+        m1: &T1,
+    ) {
+        for i in 0..N {
+            for j in 0..M {
+                if !ulps_eq!(m0[(i, j)], m1[(i, j)], epsilon = EPS) {
+                    assert_ulps_eq!(m0[(i, j)], m1[(i, j)], epsilon = EPS);
+                }
+            }
+        }
+    }
+
+    pub(crate) fn assert_diags_ulps_eq<const N: usize, T0, T1>(m0: &T0, m1: &T1)
+    where
+        T0: Index<usize, Output = f64> + ?Sized,
+        T1: Index<usize, Output = f64> + ?Sized,
+    {
+        for i in 0..N {
+            assert_ulps_eq!(m0[i], m1[i], epsilon = EPS);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        test_utils::{assert_diags_ulps_eq, assert_matrices_ulps_eq},
+        *,
+    };
     use crate::matrix::{Matrix, Matrix22, Matrix33, Matrix44};
-    use approxim::{assert_relative_eq, assert_ulps_eq, ulps_eq};
+    use approxim::assert_relative_eq;
 
     use faer::Mat;
     use rstest::rstest;
@@ -1009,31 +1055,7 @@ mod tests {
         }
         faer_matrix
     }
-    fn assert_matrices_ulps_eq<
-        const N: usize,
-        const M: usize,
-        T0: Index<(usize, usize), Output = f64> + Debug,
-        T1: Index<(usize, usize), Output = f64> + Debug,
-    >(
-        m0: &T0,
-        m1: &T1,
-    ) {
-        for i in 0..N {
-            for j in 0..M {
-                if !ulps_eq!(m0[(i, j)], m1[(i, j)], epsilon = EPS) {
-                    assert_ulps_eq!(m0[(i, j)], m1[(i, j)], epsilon = EPS);
-                }
-            }
-        }
-    }
-    fn assert_diags_ulps_eq<const N: usize>(
-        m0: &DiagonalMatrix<N>,
-        m1: &impl std::ops::Index<usize, Output = f64>,
-    ) {
-        for i in 0..N {
-            assert_ulps_eq!(m0[i], m1[i], epsilon = EPS);
-        }
-    }
+
     #[rstest(
         rows,
         case([[-9.0]]),
@@ -1050,6 +1072,7 @@ mod tests {
         case(Matrix::<5, 5>::full(3.6).diagonal().to_dense().rows),
         case(Matrix::<8, 8>::identity().rows),
     )]
+
     fn test_determinant<const N: usize>(rows: [[f64; N]; N]) {
         let matrix = Matrix { rows };
         let faer_matrix = fill_faer(rows);
@@ -1163,7 +1186,7 @@ mod tests {
         }
 
         assert_matrices_ulps_eq::<2, 2, _, _>(&u, &faeru);
-        assert_diags_ulps_eq(&s, &faers);
+        assert_diags_ulps_eq::<2, _, _>(&s, &faers);
         // Note that faer returns V, not Vt
         assert_matrices_ulps_eq::<2, 2, _, _>(&vt, &faerv.transpose());
     }
@@ -1197,7 +1220,7 @@ mod tests {
         let (nau, nas, navt) = (nasvd.u.unwrap(), nasvd.singular_values, nasvd.v_t.unwrap());
 
         assert_matrices_ulps_eq::<2, 2, _, _>(&u, &nau);
-        assert_diags_ulps_eq::<2>(&s, &nas);
+        assert_diags_ulps_eq::<2, _, _>(&s, &nas);
         assert_matrices_ulps_eq::<2, 2, _, _>(&vt, &navt);
     }
 
@@ -1230,7 +1253,7 @@ mod tests {
 
         let faers = faersvd.S();
         // Our implementation allows negative singular value
-        assert_diags_ulps_eq(
+        assert_diags_ulps_eq::<3, _, _>(
             &DiagonalMatrix {
                 elements: s.elements.map(f64::abs),
             },
@@ -1306,7 +1329,7 @@ mod tests {
         let expected_diag = DiagonalMatrix {
             elements: [1.0, 5.0, 9.0],
         };
-        assert_diags_ulps_eq(&diag, &expected_diag);
+        assert_diags_ulps_eq::<3, _, _>(&diag, &expected_diag);
 
         let from_diag = diag.to_dense();
         let expected_from_diag = Matrix {
