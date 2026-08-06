@@ -4798,7 +4798,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35bd024e8b2ff75562e5f34e7f4905839deb4b22955ef5e73d2fea1b9813cb23"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.4.8",
  "num-complex",
  "num-integer",
  "num-iter",
@@ -4815,6 +4815,16 @@ dependencies = [
  "num-integer",
  "num-traits",
  "serde",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93e7820bc0a80a0238e650327316f929ba18d5be054b647490a3a6a339f3e7c0"
+dependencies = [
+ "num-integer",
+ "num-traits",
 ]
 
 [[package]]
@@ -4859,7 +4869,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f83d14da390562dca69fc84082e73e548e1ad308d24accdedd2720017cb37824"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.4.8",
  "num-integer",
  "num-traits",
  "serde",
@@ -5326,33 +5336,31 @@ dependencies = [
 
 [[package]]
 name = "parquet"
-version = "59.1.0"
+version = "59.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5302d4da74d6596a1f11f9928767995b53bca657cbeea1e4e8c5074f8a1157dd"
+checksum = "7065842956a20c2a536924ce8e4d9955f7422451511b9eb7500d7bfe5077e59c"
 dependencies = [
  "ahash",
  "bytes",
  "chrono",
  "half",
  "hashbrown 0.17.1",
- "num-bigint",
+ "num-bigint 0.5.1",
  "num-integer",
  "num-traits",
- "paste",
  "seq-macro",
  "twox-hash",
 ]
 
 [[package]]
 name = "parquet_derive"
-version = "59.1.0"
+version = "59.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbc385c96649f10624ac3bb896fd1242c4b5a0ace271dd1424531d4e5efb9e7c"
+checksum = "7fc06f7e587ee831445bd3e730953fa6f31d4d3c9b79d77cd329e45576fb68d9"
 dependencies = [
- "parquet",
  "proc-macro2",
  "quote",
- "syn 2.0.119",
+ "syn 3.0.3",
 ]
 
 [[package]]
