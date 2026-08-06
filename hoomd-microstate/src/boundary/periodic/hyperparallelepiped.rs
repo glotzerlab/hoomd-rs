@@ -78,7 +78,6 @@ where
         }
         .transpose();
 
-        // TODO: Can this use the pre-computed qr?
         let fractional = qr::qr_solve(&a, &r.to_column_matrix());
 
         let position_offset = a.matmul(&fractional.map_elements(f64::round));

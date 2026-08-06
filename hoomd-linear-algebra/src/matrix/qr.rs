@@ -104,12 +104,10 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
         if x_norm_2 != 0.0 {
             let alpha = qr[(i, i)];
             beta = -alpha.signum() * (x_norm_2 + alpha * alpha).sqrt();
-            // TODO: scale beta in extreme cases to avoid overflow
             tau = (beta - alpha) / beta;
             for j in (i + 1)..N {
                 qr[(j, i)] /= alpha - beta;
             }
-            // TODO: unscale beta
             qr[(i, i)] = 1.0; // Temporary; rescaled to beta below
         }
 
