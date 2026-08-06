@@ -14,7 +14,6 @@ use crate::{
 use hoomd_geometry::{IsPointInside, shape::Triclinic};
 
 use hoomd_vector::Cartesian;
-use itertools::Itertools;
 
 impl MaximumAllowableInteractionRange for Triclinic {
     /// The largest value that the maximum interaction range can take.
