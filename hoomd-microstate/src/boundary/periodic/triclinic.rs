@@ -121,7 +121,6 @@ where
         self.maximum_interaction_range
     }
 
-    #[inline]
     /// Generate periodic images of sites near the edge of the periodic boundary. Ghosts
     /// are generated based on a `maximum_interaction_range`, the particle position, and
     /// box geometry.
@@ -166,44 +165,114 @@ where
     /// # Ok(())
     /// # }
     /// ```
+    #[expect(
+        clippy::too_many_lines,
+        reason = "There are many (literal) corner cases."
+    )]
+    #[inline]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
         let r: &Cartesian<3> = site_properties.position();
         if !self.shape.is_point_inside(r) {
             return result;
         }
+        let edge_vectors = self.shape.edge_vectors();
+        let new_site = |x, y, z| {
+            let mut new_site = *site_properties;
+            *new_site.position_mut() += x * edge_vectors[0];
+            *new_site.position_mut() += y * edge_vectors[1];
+            *new_site.position_mut() += z * edge_vectors[2];
+            new_site
+        };
 
         let plane_distances = self.shape.nearest_plane_distance();
         let frac = self.shape.fractional(r);
 
-        // For each axis, determine if the particle is near the negative or positive face.
-        // Use -(i+1) for negative face and +(i+1) for positive face to avoid -0 encoding issues.
-        let mut ghost_directions: ArrayVec<i32, 3> = ArrayVec::new();
-        for i in 0..3 {
-            let cutoff = self.maximum_interaction_range / plane_distances[i].get();
-            if frac[i] < -0.5 + cutoff {
-                ghost_directions
-                    .push(-i32::try_from(i).expect("Could not convert face dim to i32") - 1);
-            } else if frac[i] > 0.5 - cutoff {
-                ghost_directions
-                    .push(i32::try_from(i).expect("Could not convert face dim to i32") + 1);
-            }
-        }
+        let near_right = frac[0] > 0.5 - self.maximum_interaction_range / plane_distances[0].get();
+        let near_left = frac[0] < -0.5 + self.maximum_interaction_range / plane_distances[0].get();
+        let near_top = frac[1] > 0.5 - self.maximum_interaction_range / plane_distances[1].get();
+        let near_bottom =
+            frac[1] < -0.5 + self.maximum_interaction_range / plane_distances[1].get();
+        let near_front = frac[2] > 0.5 - self.maximum_interaction_range / plane_distances[2].get();
+        let near_back = frac[2] < -0.5 + self.maximum_interaction_range / plane_distances[2].get();
 
-        // Generate ghosts for every non-empty subset of the relevant directions.
-        for subset in ghost_directions.iter().powerset().filter(|s| !s.is_empty()) {
-            let mut offset = Cartesian::<3>::default();
-            let edge_vectors = self.shape.edge_vectors();
-            for &&direction in &subset {
-                let axis = (direction.unsigned_abs() - 1) as usize;
-                // Negative direction (near negative face) means ADD the edge vector (image on positive side).
-                // Positive direction (near positive face) means SUBTRACT the edge vector (image on negative side).
-                let sign = if direction.is_negative() { 1.0 } else { -1.0 };
-                offset += edge_vectors[axis] * sign;
-            }
-            let mut ghost_site = *site_properties;
-            *ghost_site.position_mut() += offset;
-            result.push(ghost_site);
+        if near_right {
+            result.push(new_site(-1.0, 0.0, 0.0));
+        }
+        if near_left {
+            result.push(new_site(1.0, 0.0, 0.0));
+        }
+        if near_top {
+            result.push(new_site(0.0, -1.0, 0.0));
+        }
+        if near_bottom {
+            result.push(new_site(0.0, 1.0, 0.0));
+        }
+        if near_front {
+            result.push(new_site(0.0, 0.0, -1.0));
+        }
+        if near_back {
+            result.push(new_site(0.0, 0.0, 1.0));
+        }
+        if near_right && near_top {
+            result.push(new_site(-1.0, -1.0, 0.0));
+        }
+        if near_right && near_bottom {
+            result.push(new_site(-1.0, 1.0, 0.0));
+        }
+        if near_right && near_front {
+            result.push(new_site(-1.0, 0.0, -1.0));
+        }
+        if near_right && near_back {
+            result.push(new_site(-1.0, 0.0, 1.0));
+        }
+        if near_left && near_top {
+            result.push(new_site(1.0, -1.0, 0.0));
+        }
+        if near_left && near_bottom {
+            result.push(new_site(1.0, 1.0, 0.0));
+        }
+        if near_left && near_front {
+            result.push(new_site(1.0, 0.0, -1.0));
+        }
+        if near_left && near_back {
+            result.push(new_site(1.0, 0.0, 1.0));
+        }
+        if near_top && near_front {
+            result.push(new_site(0.0, -1.0, -1.0));
+        }
+        if near_bottom && near_front {
+            result.push(new_site(0.0, 1.0, -1.0));
+        }
+        if near_top && near_back {
+            result.push(new_site(0.0, -1.0, 1.0));
+        }
+        if near_bottom && near_back {
+            result.push(new_site(0.0, 1.0, 1.0));
+        }
+        if near_right && near_top && near_front {
+            result.push(new_site(-1.0, -1.0, -1.0));
+        }
+        if near_right && near_top && near_back {
+            result.push(new_site(-1.0, -1.0, 1.0));
+        }
+        if near_right && near_bottom && near_front {
+            result.push(new_site(-1.0, 1.0, -1.0));
+        }
+        if near_right && near_bottom && near_back {
+            result.push(new_site(-1.0, 1.0, 1.0));
+        }
+        if near_left && near_top && near_front {
+            result.push(new_site(1.0, -1.0, -1.0));
+        }
+        if near_left && near_top && near_back {
+            result.push(new_site(1.0, -1.0, 1.0));
+        }
+        if near_left && near_bottom && near_front {
+            result.push(new_site(1.0, 1.0, -1.0));
+        }
+        if near_left && near_bottom && near_back {
+            result.push(new_site(1.0, 1.0, 1.0));
         }
 
         result
