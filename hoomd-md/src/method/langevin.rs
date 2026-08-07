@@ -528,6 +528,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use hoomd_derive::derive_dynamic_oriented_point;
     use hoomd_geometry::shape::{Cuboid, Rectangle};
     use hoomd_interaction::{MaximumInteractionRange, PairwiseCutoff, Rigid, pairwise::Isotropic, univariate::LennardJones};
     use hoomd_microstate::{boundary::{MaximumAllowableInteractionRange, Periodic}, property::{DynamicOrientedPoint, Point}};
@@ -584,9 +585,8 @@ mod tests {
 
         for p in positions {
             let mut body = body_template.clone();
-            let mut body_position = body.properties.position_mut();
-            body_position = p;
-            microstate.add_body(body);
+            *body.properties.position_mut() = *p;
+            microstate.add_body(body).unwrap();
         }
 
         Ok(microstate)
@@ -599,9 +599,9 @@ mod tests {
         assert_eq!(delta_t, langevin.delta_t);
     }
 
-    /// Ensure that 2D cartesian bodies move around.
+    /// Ensure that simple 2D cartesian bodies move around.
     #[test]
-    fn test_langevin_bodies_move_cartesian2() -> anyhow::Result<()> {
+    fn test_langevin_simple_bodies_move_cartesian2() -> anyhow::Result<()> {
         // Interaction model
         let interaction_model = make_lj();
 
@@ -650,9 +650,73 @@ mod tests {
         Ok(())
     }
 
-    /// Ensure that custom 3D cartesian bodies move around.
+    /// Ensure that custom 2D cartesian bodies move around.
     #[test]
-    fn test_langevin_bodies_move_cartesian3() -> anyhow::Result<()> {
+    fn test_langevin_custom_bodies_move_cartesian2() -> anyhow::Result<()> {
+        // Custom body properties type
+        #[derive_dynamic_oriented_point(Cartesian::<2>, Angle)]
+        struct CustomDynamicOrientedPoint<'a> {
+            name: &'a str,
+        }
+        
+        // Interaction model
+        let interaction_model = make_lj();
+
+        // Build microstate
+        type BoxShape = Rectangle;
+        let boundary_shape = BoxShape::with_equal_edges((2.5 * R_CUT).try_into()?);
+        let mut positions = [
+            Cartesian::from([-2.0, 0.0]),
+            Cartesian::from([2.0, 0.0]),
+        ];
+        let body_template = Body::single_site(
+            CustomDynamicOrientedPoint {
+                name: "Jimothy",
+                ..Default::default()
+            },
+            Point::default(),
+        );
+        let mut microstate = make_microstate::<2, _, _, _, _, VecCell<SiteKey, 2>, Periodic<BoxShape>>(
+            boundary_shape,
+            &mut positions,
+            &interaction_model,
+            body_template
+        ).unwrap();
+
+        // Macrostate and related
+        let temperature = 1.5;
+        let macrostate = Isothermal { temperature };
+
+        microstate.thermalize_momentum(temperature);
+        microstate.thermalize_angular_momentum(temperature);
+        microstate.zero_center_angular_momentum();
+        microstate.zero_center_momentum();
+
+        // Integrate.
+        let mut langevin = Langevin{ delta_t: 0.001 };
+        for _ in 0..5 {
+            langevin.integrate_translation(
+                &mut microstate,
+                &macrostate,
+                &interaction_model
+            );
+            microstate.increment_step();
+        }
+
+        // Ensure the positions have changed
+        assert_ne!(positions[0], microstate.bodies()[0].item.properties.position().clone());
+        assert_ne!(positions[1], microstate.bodies()[1].item.properties.position().clone());
+
+        // Ensure the extra data is still there
+        assert_eq!("Jimothy", microstate.bodies()[0].item.properties.name);
+        assert_eq!("Jimothy", microstate.bodies()[1].item.properties.name);
+
+        Ok(())
+    }
+
+    /// Ensure that simple 3D cartesian bodies move around.
+    #[test]
+    fn test_langevin_simple_bodies_move_cartesian3() -> anyhow::Result<()> {
         // Interaction model
         let interaction_model = make_lj();
 
@@ -697,6 +761,72 @@ mod tests {
         // Ensure the positions have changed
         assert_ne!(positions[0], microstate.bodies()[0].item.properties.position().clone());
         assert_ne!(positions[1], microstate.bodies()[1].item.properties.position().clone());
+
+        Ok(())
+    }
+
+
+    /// Ensure that custom 3D cartesian bodies move around.
+    #[test]
+    fn test_langevin_custom_bodies_move_cartesian3() -> anyhow::Result<()> {
+        // Custom body properties type
+        #[derive_dynamic_oriented_point(Cartesian::<3>, Versor)]
+        // #[derive(Clone)]
+        struct CustomDynamicOrientedPoint<'a> {
+            name: &'a str,
+        }
+        
+        // Interaction model
+        let interaction_model = make_lj();
+
+        // Build microstate
+        type BoxShape = Cuboid;
+        let boundary_shape = BoxShape::with_equal_edges((2.5 * R_CUT).try_into()?);
+        let mut positions = [
+            Cartesian::from([-2.0, 0.0, 0.0]),
+            Cartesian::from([2.0, 0.0, 0.0]),
+        ];
+        let body_template = Body::single_site(
+            CustomDynamicOrientedPoint {
+                name: "Jimothy",
+                ..Default::default()
+            },
+            Point::default(),
+        );
+        let mut microstate = make_microstate::<3, _, _, _, _, VecCell<SiteKey, 3>, Periodic<BoxShape>>(
+            boundary_shape,
+            &mut positions,
+            &interaction_model,
+            body_template
+        ).unwrap();
+
+        // Macrostate and related
+        let temperature = 1.5;
+        let macrostate = Isothermal { temperature };
+
+        microstate.thermalize_momentum(temperature);
+        microstate.thermalize_angular_momentum(temperature);
+        microstate.zero_center_angular_momentum();
+        microstate.zero_center_momentum();
+
+        // Integrate.
+        let mut langevin = Langevin{ delta_t: 0.001 };
+        for _ in 0..5 {
+            langevin.integrate_translation(
+                &mut microstate,
+                &macrostate,
+                &interaction_model
+            );
+            microstate.increment_step();
+        }
+
+        // Ensure the positions have changed
+        assert_ne!(positions[0], microstate.bodies()[0].item.properties.position().clone());
+        assert_ne!(positions[1], microstate.bodies()[1].item.properties.position().clone());
+
+        // Ensure the extra data is still there
+        assert_eq!("Jimothy", microstate.bodies()[0].item.properties.name);
+        assert_eq!("Jimothy", microstate.bodies()[1].item.properties.name);
 
         Ok(())
     }
