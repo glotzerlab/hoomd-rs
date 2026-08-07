@@ -31,12 +31,13 @@ pub(crate) fn formatted<T: ?Sized + Serialize>(state_point: &T) -> Result<String
 
 /// Compute properties of entries in the workspace
 ///
-/// Each entry in the workspace (called a "job" in *signac*) is uniquely identified
-/// by a state point and stored in the [`path`] `workspace/{identifier}`. The state
-/// point contains all the parameters (name and value) that are needed to uniquely
-/// identify the point. The state point type (`Self`) must be serializable to JSON.
-/// The entry's [`identifier`] is the *md5* hash of the JSON representation of the
-/// state point.
+/// Each entry in the workspace (called a "job" in the [signac framework]) is
+/// uniquely identified by a state point and stored in a directory with the
+/// [path] `workspace/{identifier}`. The state point contains all the parameters
+/// (name and value) that are needed to uniquely identify the point. The state
+/// point type (`Self`) must be serializable to JSON. The entry's
+/// [identifier] is the *md5* hash of the JSON representation of the state
+/// point.
 ///
 /// [`Entry`] is implemented for all types that implement [`Serialize`].
 ///
@@ -61,8 +62,9 @@ pub(crate) fn formatted<T: ?Sized + Serialize>(state_point: &T) -> Result<String
 /// # }
 /// ```
 ///
-/// [`path`]: Self::path
-/// [`identifier`]: Self::identifier
+/// [signac framework]: https://signac.readthedocs.io
+/// [path]: Self::path
+/// [identifier]: Self::identifier
 pub trait Entry {
     /// Compute the state point's identifier.
     ///

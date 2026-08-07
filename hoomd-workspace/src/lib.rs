@@ -2,10 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! `hoomd_workspace` allows you to create and access state point directories
-//! in a workspace that are compatible with the [`signac`] framework.
-//! `hoomd_workspace` is *NOT* a full replacement for [`signac`]. It only provides
-//! a small set of methods that enable the most common use-cases for simulation
-//! workflows.
+//! in a workspace that is compatible with the [signac framework].
+//! This crate offers a minimal API that covers only the most common use-cases
+//! of the signac framework for simulation workflows. For a much more
+//! comprehensive interface, use the [signac Python package].
 //!
 //! # The workspace
 //!
@@ -16,9 +16,9 @@
 //! # State points
 //!
 //! Each entry in the workspace has a unique **state point** associated with it.
-//! In [`signac`], a state point is a dictionary. In `hoomd-workflow`, a state point
-//! is any type that can be serialized to JSON. Derive serde's `Deserialize` and
-//! `Serialize` traits to make any struct a valid state point:
+//! In the signac framework, a state point is a dictionary. In `hoomd-workspace`,
+//! a state point is any type that can be serialized to JSON. Derive serde's
+//! `Deserialize` and `Serialize` traits to make any struct a valid state point:
 //!
 //! ```
 //! use serde::{Deserialize, Serialize};
@@ -30,10 +30,12 @@
 //! }
 //! ```
 //!
-//! If you want to work with unstructured data, you can use [`serde_json::Map`] directly.
+//! If you want to work with unstructured data, you can use [`serde_json::Map`]
+//! directly.
 //!
-//! Every state point has an [`identifier`] and a [`path`]. The identifier is a hash
-//! of the state point's JSON representation. The path is `workspace/{identifier}`.
+//! `hoomd-workspace` gives every state point an [`identifier`] and a [`path`].
+//! The identifier is a hash of the state point's JSON representation. The path
+//! is `workspace/{identifier}`.
 //!
 //! ```
 //! use hoomd_workspace::Entry;
@@ -60,7 +62,7 @@
 //!
 //! # Create a state point directory
 //!
-//! Call [`add`] to create a state point directory on the filesystem.
+//! Call [`add`] to create a state point directory.
 //! ```
 //! use serde::{Deserialize, Serialize};
 //! use hoomd_workspace::Entry;
@@ -112,7 +114,8 @@
 //! # }
 //! ```
 //!
-//! [`signac`]: https://signac.readthedocs.io
+//! [signac framework]: https://signac.readthedocs.io
+//! [signac Python package]: https://signac.readthedocs.io/projects/core/en/latest/
 //! [`identifier`]: Entry::identifier
 //! [`path`]: Entry::path
 
@@ -157,14 +160,16 @@ pub enum Error {
     Write(PathBuf, #[source] io::Error),
 }
 
-/// Add a new state point to the on-disk workspace.
+/// Add a new state point to the workspace.
 ///
-/// [`add`] creates the directory `workspace/{state_point.identifier()}` and serializes
-/// `state_point` to `signac_statepoint.json`. Once a state point has been added
-/// to the workspace, [`state_point`] may be called to read the state point and
-/// the [`signac`] Python package will find it.
-///
-/// [`signac`]: https://signac.readthedocs.io
+/// `add` creates the directory `workspace/{state_point.identifier()}` and
+/// serializes `state_point` to `signac_statepoint.json`. The state point's
+/// identifier and JSON representation meet the specifications of the
+/// [signac framework], making the workspace fully interoperable with the
+/// [signac Python package].
+/// 
+/// [signac framework]: https://signac.readthedocs.io
+/// [signac Python package]: https://signac.readthedocs.io/projects/core/en/latest/
 ///
 /// # Example
 ///
@@ -213,7 +218,7 @@ pub fn add<T: Entry + Serialize>(state_point: &T) -> Result<(), Error> {
     Ok(())
 }
 
-/// Determine the state point of a given identifier (a directory in `workspace/`).
+/// Determine the state point of a given identifier pointing to a directory in `workspace/`.
 ///
 /// When the file `workspace/{identifier}/signac_statepoint.json` exists, [`state_point`]
 /// reads it, deserializes the JSON and returns `Ok(Some(state_point))`. When the file
@@ -221,7 +226,7 @@ pub fn add<T: Entry + Serialize>(state_point: &T) -> Result<(), Error> {
 ///
 /// # Examples
 ///
-/// Read an existing state point or error:
+/// Read an existing state point:
 /// ```
 /// use serde::{Deserialize, Serialize};
 /// use std::path::Path;
@@ -232,7 +237,7 @@ pub fn add<T: Entry + Serialize>(state_point: &T) -> Result<(), Error> {
 ///     temperature: f64,
 ///     pressure: f64,
 /// }
-///
+/// #
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # use tempfile::tempdir;
 /// # let tmp_dir = tempdir().expect("temp dir should be created");
@@ -240,6 +245,7 @@ pub fn add<T: Entry + Serialize>(state_point: &T) -> Result<(), Error> {
 /// # let create_state_point = MyStatePoint { temperature: 1.0, pressure: 2.0 };
 /// # hoomd_workspace::add(&create_state_point)?;
 ///
+/// // This hash matches the state point created in the example for `add`
 /// let identifier = Path::new("bb97883a3a70ccfc0840d49a8c794342");
 /// let my_state_point: MyStatePoint = hoomd_workspace::state_point(identifier)?
 ///     .ok_or(anyhow!("state point not found"))?;
