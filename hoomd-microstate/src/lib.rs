@@ -437,6 +437,10 @@ pub enum Error {
     /// Failed to update a body in a [`Microstate`].
     #[error("failed to update body (tag={0})")]
     UpdateBody(usize, #[source] boundary::Error),
+
+    /// Cannot replicate 0 times in any direction.
+    #[error("requested invalid replication amount")]
+    NoReplication(#[source] hoomd_utility::valid::Error),
 }
 
 /// Write a frame to a GSD file with the contents of a microstate.
@@ -552,4 +556,52 @@ pub trait AppendMicrostate<B, S, X, C> {
         &mut self,
         microstate: &Microstate<B, S, X, C>,
     ) -> Result<Frame<'_>, AppendError>;
+}
+
+/// Make a new microstate with the original bodies repeated following the periodic
+/// boundary conditions.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_geometry::shape::Hypercuboid;
+/// use hoomd_microstate::{
+///     Body, Microstate, Replicate, boundary::Periodic
+/// };
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let cuboid = Hypercuboid {
+///     edge_lengths: [
+///        10.0.try_into()?,
+///        20.0.try_into()?,
+///        30.0.try_into()?,
+///     ],
+/// };
+///
+/// let periodic = Periodic::new(1.0, cuboid)?;
+/// let microstate = Microstate::builder()
+///     .boundary(periodic)
+///     .bodies([
+///         Body::point(Cartesian::from([0.0, 0.0, 0.0])),
+///     ])
+///     .try_build()?;
+///
+/// let replicated = microstate.replicate([2, 2, 2])?;
+/// # Ok(())
+/// # }
+/// ```
+pub trait Replicate<const N: usize, B, S, X, C> {
+    /// Replicate the bodies in self count[0] x count[1] x ... count[N-1] times and
+    /// expand the periodic boundary accordingly.
+    ///
+    /// The new microstate is built with the same step, seed, and spatial data
+    /// structure, as if it were cloned. The new microstate's boundary keeps
+    /// the same interaction range, but is extended by `counts[i]` along each
+    /// relevant (shape-dependent) axis.
+    ///
+    /// # Errors
+    ///
+    /// * [`Error::NoReplication`] when any of the counts is 0.
+    fn replicate(&self, counts: [usize; N]) -> Result<Microstate<B, S, X, C>, Error>;
 }

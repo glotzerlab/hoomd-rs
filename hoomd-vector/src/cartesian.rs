@@ -542,6 +542,23 @@ impl<const N: usize> Cartesian<N> {
         }
         x
     }
+
+    /// Construct the i'th Cartesian basis vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let e_1 = Cartesian::<3>::basis(1);
+    ///
+    /// assert_eq!(e_1, [0.0, 1.0, 0.0].into());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn basis(i: usize) -> Self{
+        array::from_fn(|j| if i == j {1.0} else {0.0}).into()
+    }
 }
 
 impl Cross for Cartesian<3> {
