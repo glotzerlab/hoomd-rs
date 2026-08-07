@@ -20,6 +20,11 @@ impl RotationalMotionTypes for Angle {
     fn default_moment_of_inertia() -> Self::MomentOfInertia {
         1.0
     }
+
+    fn default_angular_momentum() -> Self::AngularMomentum {
+        0.0
+    }
+
     fn default_rotational_drag() -> Self::RotationalDrag {
         1.0
     }
@@ -32,6 +37,10 @@ impl RotationalMotionTypes for Versor {
 
     fn default_moment_of_inertia() -> Self::MomentOfInertia {
         [1.0; 3]
+    }
+
+    fn default_angular_momentum() -> Self::AngularMomentum {
+        Cartesian::from([0.0; 3])
     }
 
     fn default_rotational_drag() -> Self::RotationalDrag {

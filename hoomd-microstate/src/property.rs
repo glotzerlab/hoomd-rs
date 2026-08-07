@@ -485,6 +485,9 @@ pub trait RotationalMotionTypes {
     /// Return a default value for the moment of inertia.
     fn default_moment_of_inertia() -> Self::MomentOfInertia;
 
+    /// Return a default value for the angular momentum.
+    fn default_angular_momentum() -> Self::AngularMomentum;
+
     /// Return a default value for the rotational drag.
     fn default_rotational_drag() -> Self::RotationalDrag;
 }
