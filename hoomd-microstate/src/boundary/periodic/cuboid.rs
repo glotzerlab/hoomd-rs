@@ -576,6 +576,8 @@ mod tests {
                 .bodies([
                     Body::point(Cartesian::from([0.0, 0.0])),
                 ])
+                .step(1001)
+                .seed(5264)
                 .try_build()?;
 
             let replicated = microstate.replicate([1, 1])?;
