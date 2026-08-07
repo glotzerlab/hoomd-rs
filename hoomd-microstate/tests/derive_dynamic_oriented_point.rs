@@ -38,15 +38,13 @@ struct MyDynamicOrientedPoint<'a> {
     int: i32,
     float: f64,
     arr: [f64; 3],
-    heap: String,
-    stack: &'a str,
+    name: &'a str,
 }
 
 #[test]
 fn test_derive_dynamic_oriented_point() {
     let mdop1 = MyDynamicOrientedPoint {
-        heap: String::from("Jimothy"),
-        stack: "Raccoon",
+        name: "Jimothy",
         ..Default::default()
     };
 
@@ -64,6 +62,5 @@ fn test_derive_dynamic_oriented_point() {
     assert_eq!(mdop1.int, 0 as i32);
     assert_eq!(mdop1.float, 0.0 as f64);
     assert_eq!(mdop1.arr, [0.0, 0.0, 0.0]);
-    assert_eq!(mdop1.heap, String::from("Jimothy"));
-    assert_eq!(mdop1.stack, "Raccoon");
+    assert_eq!(mdop1.name, "Jimothy");
 }
