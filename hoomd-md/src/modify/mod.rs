@@ -133,7 +133,7 @@ pub trait ZeroCenterMomentum<B, S> {
     );
 }
 
-/// Remove angular motion about the system's center of mass.
+/// Remove rotational motion about the system's center of mass.
 ///
 /// [`ZeroCenterAngularMomentum`] adjusts the translational momentum of every body in order to zero
 /// out the total angular momentum of the system about the center of mass (ignoring
