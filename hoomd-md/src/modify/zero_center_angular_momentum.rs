@@ -3,166 +3,242 @@
 
 //! Implement `ZeroCenterAngularMomentum`
 
+use std::ops::{AddAssign, DivAssign, Mul, Sub};
+
 use super::ZeroCenterAngularMomentum;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Tagged, Transform, boundary::{GenerateGhosts, Wrap}, property::{
-        DynamicOrientedPoint, DynamicPoint, Mass, Momentum, Position, RotationalMotionTypes,
+    Body,
+    Microstate,
+    SiteKey,
+    Tagged,
+    Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::{
+        Mass,
+        Momentum,
+        Orientation,
+        Position,
+        RotationalMotionTypes,
     },
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Cartesian, InnerProduct, Outer, Wedge};
+use hoomd_vector::{Angle, Cartesian, InnerProduct, Outer, Versor, Wedge};
 
-/// Zero a 3D microstate's angular momentum.
-#[inline]
-fn zero_angular_momentum_cartesian3<B, S, X, C, F>(
-    microstate: &mut Microstate<B, S, X, C>,
-    should_zero_body: F,
-) where
-    B: Position<Position = Cartesian<3>>
-        + Mass
-        + Momentum<Momentum = Cartesian<3>>
-        + Transform<S>
-        + Clone,
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    F: Fn(&Tagged<Body<B, S>>) -> bool,
+/// When we require this trait in the bounds for the impl block for
+/// ZeroCenterAngularMomentum on Microstate, there is a problem if we use the
+/// same pattern as before, where this trait is implemented on rotation types
+/// that are then bound to body orientation. If we do that, then this
+/// functionality is only available for microstates with oriented bodies. What
+/// else can we do?
+/// 
+/// Options:
+/// 1. Add R to this trait's generics
+/// 2. Create a binding between Vector type and Orientation type. Cartesian<2>
+/// would then always be bound to Angle, likewise for Cartesian<3> and Versor.
+/// The orientation type would then be inferred from the position type.
+/// 3. Design this trait to instead be implemented on vector types, rather than
+/// orientation types.
+/// 
+/// I'll try option 3 first.
+pub trait ZeroCenterRotation
+where
+    <Self as ZeroCenterRotation>::Rotation: RotationalMotionTypes,
+    <Self as ZeroCenterRotation>::FullMomentOfInertia: Default,
 {
-    let mut center_of_mass = Cartesian::default();
-    let mut total_mass = 0.0;
+    /// Type that represents a body's orientation.
+    type Rotation;
 
-    for body in microstate.bodies() {
-        if !should_zero_body(body) {
-            continue;
-        }
+    /// Type that represents a body's position.
+    type Position;
 
-        let position = body.item.properties.position();
-        let mass = body.item.properties.mass();
+    /// Type that represents a body's momentum.
+    type Momentum;
 
-        center_of_mass += *position * mass;
-        total_mass += mass;
-    }
-    center_of_mass /= total_mass;
+    /// Type that represents the system's full (non-diagonalized) moment of inertia.
+    type FullMomentOfInertia;
 
-    let mut angular_momentum_center = Cartesian::default();
-    let mut moment_of_inertia_center = Matrix::<3, 3>::zeros();
-    for body in microstate.bodies() {
-        if !should_zero_body(body) {
-            continue;
-        }
+    /// Calculate the contribution of a body to the system's overall moment of inertia.
+    fn body_contribution_to_center_moment_of_inertia(
+        body_position_relative_to_center: &Self::Position,
+        mass: &f64,
+    ) -> Self::FullMomentOfInertia;
 
-        let position = body.item.properties.position();
-        let momentum = body.item.properties.momentum();
-        let mass = body.item.properties.mass();
+    /// Calculate the system's overall angular velocity.
+    fn system_center_angular_velocity(
+        center_angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        center_moment_of_inertia: &Self::FullMomentOfInertia,
+    ) -> <Self::Rotation as RotationalMotionTypes>::AngularMomentum;
 
-        let r = *position - center_of_mass;
-        angular_momentum_center += r.wedge(momentum);
+    /// Calculate the correction term for a body's momentum.
+    /// 
+    /// Cumulatively, once all bodies are corrected, the system's overall
+    /// angular momentum will be zero.
+    fn body_momentum_correction(
+        body_position_relative_to_center: &Self::Position,
+        center_angular_velocity: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        mass: &f64,
+    ) -> Self::Momentum;
+}
 
-        moment_of_inertia_center +=
-            (Matrix::with_diagonal([r.norm_squared(); 3]) - r.outer(&r)) * mass;
-    }
+impl ZeroCenterRotation for Angle {
+    type Rotation = Angle;
+    type Position = Cartesian<2>;
+    type Momentum = Cartesian<2>;
+    type FullMomentOfInertia = f64;
 
-    let center_angular_momentum_matrix = angular_momentum_center.to_row_matrix();
-    let (u, s, vt) = moment_of_inertia_center.svd();
-
-    // If the system do not rotate w. r. t. the principle axis (I_principal=0),
-    // set the omega component to 0 by setting the corresponding s^-1 to 0.
-    let mut s_inv_dense = Matrix::<3, 3>::zeros();
-    if s[0] > 0.0 {
-        s_inv_dense.rows[0][0] = 1.0 / s[0];
-    }
-    if s[1] > 0.0 {
-        s_inv_dense.rows[1][1] = 1.0 / s[1];
-    }
-    if s[2] > 0.0 {
-        s_inv_dense.rows[2][2] = 1.0 / s[2];
+    fn body_contribution_to_center_moment_of_inertia(
+        body_position_relative_to_center: &Self::Position,
+        mass: &f64,
+    ) -> Self::FullMomentOfInertia {
+        body_position_relative_to_center.norm_squared() * mass
     }
 
-    // omega = L * v * s^-1 * u^t (omega and L are row matrices)
-    let omega = center_angular_momentum_matrix
-        .matmul(&vt.transpose())
-        .matmul(&s_inv_dense)
-        .matmul(&u.transpose());
-    let center_angular_velocity = Cartesian::from(omega.rows[0]);
+    fn system_center_angular_velocity(
+        center_angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        center_moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+    ) -> <Self::Rotation as RotationalMotionTypes>::AngularMomentum {
+        center_angular_momentum / center_moment_of_inertia
+    }
 
-    for body_index in 0..microstate.bodies().len() {
-        let body = &microstate.bodies()[body_index];
-        if !should_zero_body(body) {
-            continue;
-        }
-
-        let mut body_properties = body.item.properties.clone();
-
-        let position = body_properties.position();
-        let mass = body_properties.mass();
-
-        let r = *position - center_of_mass;
-
-        *body_properties.momentum_mut() -= center_angular_velocity.wedge(&r) * mass;
-
-        microstate
-            .update_body_properties(body_index, body_properties)
-            .expect("Bodies and sites should remain in simulation boundary.");
+    fn body_momentum_correction(
+        body_position_relative_to_center: &Self::Position,
+        center_angular_velocity: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        mass: &f64,
+    ) -> Self::Momentum {
+        body_position_relative_to_center.perpendicular() * *center_angular_velocity * *mass
     }
 }
 
-/// Zero a 2D microstate's angular momentum.
-#[inline]
-fn zero_angular_momentum_cartesian2<B, S, X, C, F>(
-    microstate: &mut Microstate<B, S, X, C>,
-    should_zero_body: F,
-) where
-    B: Position<Position = Cartesian<2>>
-        + Mass
-        + Momentum<Momentum = Cartesian<2>>
+impl ZeroCenterRotation for Versor {
+    type Rotation = Versor;
+    type Position = Cartesian<3>;
+    type FullMomentOfInertia = Matrix<3,3>;
+    type Momentum = Cartesian<3>;
+
+    fn body_contribution_to_center_moment_of_inertia(
+        body_position_relative_to_center: &Self::Position,
+        mass: &f64,
+    ) -> Self::FullMomentOfInertia {
+        let r = *body_position_relative_to_center;
+        (Matrix::with_diagonal([r.norm_squared(); 3]) - r.outer(&r)) * *mass
+    }
+
+    fn system_center_angular_velocity(
+        center_angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        center_moment_of_inertia: &Self::FullMomentOfInertia,
+    ) -> <Self::Rotation as RotationalMotionTypes>::AngularMomentum {
+        let (u, s, vt) = center_moment_of_inertia.svd();
+
+        // If the system do not rotate w. r. t. the principle axis (I_principal=0),
+        // set the omega component to 0 by setting the corresponding s^-1 to 0.
+        let mut s_inv_dense = Matrix::<3, 3>::zeros();
+        if s[0] > 0.0 {
+            s_inv_dense.rows[0][0] = 1.0 / s[0];
+        }
+        if s[1] > 0.0 {
+            s_inv_dense.rows[1][1] = 1.0 / s[1];
+        }
+        if s[2] > 0.0 {
+            s_inv_dense.rows[2][2] = 1.0 / s[2];
+        }
+
+        // omega = L * v * s^-1 * u^t (omega and L are row matrices)
+        let omega = center_angular_momentum
+            .to_row_matrix()
+            .matmul(&vt.transpose())
+            .matmul(&s_inv_dense)
+            .matmul(&u.transpose());
+        let center_angular_velocity = Cartesian::from(omega.rows[0]);
+
+        center_angular_velocity
+    }
+
+    fn body_momentum_correction(
+        body_position_relative_to_center: &Self::Position,
+        center_angular_velocity: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        mass: &f64,
+    ) -> Self::Momentum {
+        center_angular_velocity.wedge(body_position_relative_to_center) * *mass * -1.0
+    }
+}
+
+impl<V, R, B, S, X, C> ZeroCenterAngularMomentum<B, S> for Microstate<B, S, X, C>
+where
+    V: Default
+        + Copy
+        + AddAssign
+        + DivAssign<f64>
+        + Mul<f64, Output = V>
+        + Sub<Output = V>
+        + Wedge,
+    R: RotationalMotionTypes
+        + ZeroCenterRotation<Position = V, Rotation = R, Momentum = V>,
+    B: Clone
         + Transform<S>
-        + Clone,
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
+        + Position<Position = V>
+        + Momentum<Momentum = V>
+        + Mass,
+    S: Default + Position<Position = V>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    F: Fn(&Tagged<Body<B, S>>) -> bool,
+    X: PointUpdate<V, SiteKey>,
+    <R as ZeroCenterRotation>::FullMomentOfInertia: AddAssign,
+    <R as RotationalMotionTypes>::AngularMomentum: Wedge
+        + AddAssign<<V as Wedge>::Bivector>,
 {
-    let mut center_of_mass = Cartesian::default();
-    let mut total_mass = 0.0;
+    fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
+        &mut self,
+        should_zero_body: F,
+    ) {
+        // Calculate the system's total mass and center of mass
+        let mut center_of_mass = V::default();
+        let mut total_mass = 0.0;
 
-    for body in microstate.bodies() {
-        if !should_zero_body(body) {
-            continue;
+        for body in self.bodies() {
+            if !should_zero_body(body) {
+                continue;
+            }
+
+            let position = body.item.properties.position();
+            let mass = body.item.properties.mass();
+
+            center_of_mass += *position * mass;
+            total_mass += mass;
+        }
+        center_of_mass /= total_mass;
+
+        // Calculate the system's overall moment of inertia and angular momentum
+        let mut center_angular_momentum = <R as RotationalMotionTypes>::default_angular_momentum();
+        let mut center_moment_of_inertia = <R as ZeroCenterRotation>::FullMomentOfInertia::default();
+
+        for body in self.bodies() {
+            if !should_zero_body(body) {
+                continue;
+            }
+
+            let body_position_relative_to_center = *body.item.properties.position()
+                - center_of_mass;
+            
+            center_angular_momentum += body_position_relative_to_center.wedge(
+                body.item.properties.momentum()
+            );
+            
+            center_moment_of_inertia += <R as ZeroCenterRotation>::body_contribution_to_center_moment_of_inertia(
+                &body_position_relative_to_center,
+                &body.item.properties.mass()
+            );
         }
 
-        let position = body.item.properties.position();
-        let mass = body.item.properties.mass();
+        // Calculate the system's overall angular velocity
+        let center_angular_velocity = <R as ZeroCenterRotation>::system_center_angular_velocity(
+            &center_angular_momentum,
+            &center_moment_of_inertia
+        );
 
-        center_of_mass += *position * mass;
-        total_mass += mass;
-    }
-    center_of_mass /= total_mass;
-
-    let mut angular_momentum_center = 0.0;
-    let mut moment_of_inertia_center = 0.0;
-
-    for body in microstate.bodies() {
-        if !should_zero_body(body) {
-            continue;
-        }
-
-        let position = body.item.properties.position();
-        let momentum = body.item.properties.momentum();
-        let mass = body.item.properties.mass();
-
-        let r = *position - center_of_mass;
-
-        angular_momentum_center += r.wedge(momentum);
-
-        moment_of_inertia_center += r.norm_squared() * mass;
-    }
-
-    if moment_of_inertia_center > 0.0 {
-        let angular_velocity_center = angular_momentum_center / moment_of_inertia_center;
-
-        for body_index in 0..microstate.bodies().len() {
-            let body = &microstate.bodies()[body_index];
+        // Using the system's overall angular velocity, modify each body's momentum
+        // to effectively zero out the system's angular momentum
+        for body_index in 0..self.bodies().len() {
+            let body = &self.bodies()[body_index];
             if !should_zero_body(body) {
                 continue;
             }
@@ -172,91 +248,18 @@ fn zero_angular_momentum_cartesian2<B, S, X, C, F>(
             let position = body_properties.position();
             let mass = body_properties.mass();
 
-            let r = *position - center_of_mass;
+            let body_position_relative_to_center = *position - center_of_mass;
 
-            *body_properties.momentum_mut() -= r.perpendicular() * angular_velocity_center * mass;
+            *body_properties.momentum_mut() += <R as ZeroCenterRotation>::body_momentum_correction(
+                &body_position_relative_to_center,
+                &center_angular_velocity,
+                &mass,
+            );
 
-            microstate
+            // Update the microstate
+            self
                 .update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
-    }
-}
-
-impl<R, S, X, C> ZeroCenterAngularMomentum<DynamicOrientedPoint<Cartesian<3>, R>, S>
-    for Microstate<DynamicOrientedPoint<Cartesian<3>, R>, S, X, C>
-where
-    R: RotationalMotionTypes,
-    DynamicOrientedPoint<Cartesian<3>, R>: Transform<S> + Clone,
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<3>, R>> + Wrap<S> + GenerateGhosts<S>,
-{
-    #[inline]
-    fn zero_center_angular_momentum_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<3>, R>, S>>) -> bool,
-    >(
-        &mut self,
-        should_zero_body: F,
-    ) {
-        zero_angular_momentum_cartesian3(self, should_zero_body);
-    }
-}
-
-impl<S, X, C> ZeroCenterAngularMomentum<DynamicPoint<Cartesian<3>>, S>
-    for Microstate<DynamicPoint<Cartesian<3>>, S, X, C>
-where
-    DynamicPoint<Cartesian<3>>: Transform<S>,
-    S: Position<Position = Cartesian<3>> + Default,
-    X: PointUpdate<Cartesian<3>, SiteKey>,
-    C: Wrap<DynamicPoint<Cartesian<3>>> + Wrap<S> + GenerateGhosts<S>,
-{
-    #[inline]
-    fn zero_center_angular_momentum_with_filter<
-        F: Fn(&Tagged<Body<DynamicPoint<Cartesian<3>>, S>>) -> bool,
-    >(
-        &mut self,
-        should_zero_body: F,
-    ) {
-        zero_angular_momentum_cartesian3(self, should_zero_body);
-    }
-}
-
-impl<R, S, X, C> ZeroCenterAngularMomentum<DynamicOrientedPoint<Cartesian<2>, R>, S>
-    for Microstate<DynamicOrientedPoint<Cartesian<2>, R>, S, X, C>
-where
-    R: RotationalMotionTypes,
-    DynamicOrientedPoint<Cartesian<2>, R>: Transform<S> + Clone,
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<DynamicOrientedPoint<Cartesian<2>, R>> + Wrap<S> + GenerateGhosts<S>,
-{
-    #[inline]
-    fn zero_center_angular_momentum_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<Cartesian<2>, R>, S>>) -> bool,
-    >(
-        &mut self,
-        should_zero_body: F,
-    ) {
-        zero_angular_momentum_cartesian2(self, should_zero_body);
-    }
-}
-
-impl<S, X, C> ZeroCenterAngularMomentum<DynamicPoint<Cartesian<2>>, S>
-    for Microstate<DynamicPoint<Cartesian<2>>, S, X, C>
-where
-    DynamicPoint<Cartesian<2>>: Transform<S>,
-    S: Position<Position = Cartesian<2>> + Default,
-    X: PointUpdate<Cartesian<2>, SiteKey>,
-    C: Wrap<DynamicPoint<Cartesian<2>>> + Wrap<S> + GenerateGhosts<S>,
-{
-    #[inline]
-    fn zero_center_angular_momentum_with_filter<
-        F: Fn(&Tagged<Body<DynamicPoint<Cartesian<2>>, S>>) -> bool,
-    >(
-        &mut self,
-        should_zero_body: F,
-    ) {
-        zero_angular_momentum_cartesian2(self, should_zero_body);
     }
 }
