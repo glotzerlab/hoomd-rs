@@ -41,19 +41,27 @@ use hoomd_vector::{Angle, Cartesian, InnerProduct, Outer, Versor, Wedge};
 /// orientation types.
 /// 
 /// I'll try option 3 first.
-pub trait ZeroCenterRotation
-where
-    <Self as ZeroCenterRotation>::Rotation: RotationalMotionTypes,
-    <Self as ZeroCenterRotation>::FullMomentOfInertia: Default,
-{
-    /// Type that represents a body's orientation.
-    type Rotation;
 
+/// Negate the overall rotational motion of the system's center of mass.
+/// 
+/// This trait binds the center of mass rotational negation scheme to the type
+/// that represents position. Implement this trait on a type that represents
+/// body position to make a [`Microstate`] containing such bodies compatible
+/// with [`ZeroCenterAngularMomentum`].
+///
+/// [`Microstate`]: hoomd_microstate::Microstate
+pub trait ZeroCenterRotation {
     /// Type that represents a body's position.
     type Position;
 
     /// Type that represents a body's momentum.
     type Momentum;
+
+    /// Type that represents the system's angular momentum about its center of mass.
+    type AngularMomentum;
+
+    /// Type that represents the system's moment of inertia.
+    type MomentOfInertia;
 
     /// Type that represents the system's full (non-diagonalized) moment of inertia.
     type FullMomentOfInertia;
@@ -66,9 +74,9 @@ where
 
     /// Calculate the system's overall angular velocity.
     fn system_center_angular_velocity(
-        center_angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        center_angular_momentum: &Self::AngularMomentum,
         center_moment_of_inertia: &Self::FullMomentOfInertia,
-    ) -> <Self::Rotation as RotationalMotionTypes>::AngularMomentum;
+    ) -> Self::AngularMomentum;
 
     /// Calculate the correction term for a body's momentum.
     /// 
@@ -76,15 +84,16 @@ where
     /// angular momentum will be zero.
     fn body_momentum_correction(
         body_position_relative_to_center: &Self::Position,
-        center_angular_velocity: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        center_angular_velocity: &Self::AngularMomentum,
         mass: &f64,
     ) -> Self::Momentum;
 }
 
-impl ZeroCenterRotation for Angle {
-    type Rotation = Angle;
+impl ZeroCenterRotation for Cartesian<2> {
     type Position = Cartesian<2>;
     type Momentum = Cartesian<2>;
+    type AngularMomentum = f64;
+    type MomentOfInertia = f64;
     type FullMomentOfInertia = f64;
 
     fn body_contribution_to_center_moment_of_inertia(
@@ -95,26 +104,27 @@ impl ZeroCenterRotation for Angle {
     }
 
     fn system_center_angular_velocity(
-        center_angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
-        center_moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
-    ) -> <Self::Rotation as RotationalMotionTypes>::AngularMomentum {
+        center_angular_momentum: &Self::AngularMomentum,
+        center_moment_of_inertia: &Self::MomentOfInertia,
+    ) -> Self::AngularMomentum {
         center_angular_momentum / center_moment_of_inertia
     }
 
     fn body_momentum_correction(
         body_position_relative_to_center: &Self::Position,
-        center_angular_velocity: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        center_angular_velocity: &Self::AngularMomentum,
         mass: &f64,
     ) -> Self::Momentum {
         body_position_relative_to_center.perpendicular() * *center_angular_velocity * *mass
     }
 }
 
-impl ZeroCenterRotation for Versor {
-    type Rotation = Versor;
+impl ZeroCenterRotation for Cartesian<3> {
     type Position = Cartesian<3>;
-    type FullMomentOfInertia = Matrix<3,3>;
     type Momentum = Cartesian<3>;
+    type AngularMomentum = Cartesian<3>;
+    type MomentOfInertia = [f64; 3];
+    type FullMomentOfInertia = Matrix<3,3>;
 
     fn body_contribution_to_center_moment_of_inertia(
         body_position_relative_to_center: &Self::Position,
@@ -125,9 +135,9 @@ impl ZeroCenterRotation for Versor {
     }
 
     fn system_center_angular_velocity(
-        center_angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        center_angular_momentum: &Self::AngularMomentum,
         center_moment_of_inertia: &Self::FullMomentOfInertia,
-    ) -> <Self::Rotation as RotationalMotionTypes>::AngularMomentum {
+    ) -> Self::AngularMomentum {
         let (u, s, vt) = center_moment_of_inertia.svd();
 
         // If the system do not rotate w. r. t. the principle axis (I_principal=0),
@@ -156,35 +166,34 @@ impl ZeroCenterRotation for Versor {
 
     fn body_momentum_correction(
         body_position_relative_to_center: &Self::Position,
-        center_angular_velocity: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        center_angular_velocity: &Self::AngularMomentum,
         mass: &f64,
     ) -> Self::Momentum {
         center_angular_velocity.wedge(body_position_relative_to_center) * *mass * -1.0
     }
 }
 
-impl<V, R, B, S, X, C> ZeroCenterAngularMomentum<B, S> for Microstate<B, S, X, C>
+impl<V, B, S, X, C> ZeroCenterAngularMomentum<B, S> for Microstate<B, S, X, C>
 where
     V: Default
         + Copy
-        + AddAssign
-        + DivAssign<f64>
-        + Mul<f64, Output = V>
-        + Sub<Output = V>
-        + Wedge,
-    R: RotationalMotionTypes
-        + ZeroCenterRotation<Position = V, Rotation = R, Momentum = V>,
+        + Wedge
+        + ZeroCenterRotation<Position = V, Momentum = V, AngularMomentum = V::Bivector>
+        + std::ops::AddAssign
+        + std::ops::DivAssign<f64>
+        + std::ops::Mul<f64, Output = V>
+        + std::ops::Sub<Output = V>,
     B: Clone
         + Transform<S>
         + Position<Position = V>
         + Momentum<Momentum = V>
         + Mass,
     S: Default + Position<Position = V>,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     X: PointUpdate<V, SiteKey>,
-    <R as ZeroCenterRotation>::FullMomentOfInertia: AddAssign,
-    <R as RotationalMotionTypes>::AngularMomentum: Wedge
-        + AddAssign<<V as Wedge>::Bivector>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    V::Bivector: AddAssign,
+    <V as ZeroCenterRotation>::FullMomentOfInertia: Default + AddAssign,
+    <V as ZeroCenterRotation>::AngularMomentum: Default,
 {
     fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
@@ -208,8 +217,8 @@ where
         center_of_mass /= total_mass;
 
         // Calculate the system's overall moment of inertia and angular momentum
-        let mut center_angular_momentum = <R as RotationalMotionTypes>::default_angular_momentum();
-        let mut center_moment_of_inertia = <R as ZeroCenterRotation>::FullMomentOfInertia::default();
+        let mut center_angular_momentum = <V as ZeroCenterRotation>::AngularMomentum::default();
+        let mut center_moment_of_inertia = <V as ZeroCenterRotation>::FullMomentOfInertia::default();
 
         for body in self.bodies() {
             if !should_zero_body(body) {
@@ -223,14 +232,14 @@ where
                 body.item.properties.momentum()
             );
             
-            center_moment_of_inertia += <R as ZeroCenterRotation>::body_contribution_to_center_moment_of_inertia(
+            center_moment_of_inertia += <V as ZeroCenterRotation>::body_contribution_to_center_moment_of_inertia(
                 &body_position_relative_to_center,
                 &body.item.properties.mass()
             );
         }
 
         // Calculate the system's overall angular velocity
-        let center_angular_velocity = <R as ZeroCenterRotation>::system_center_angular_velocity(
+        let center_angular_velocity = <V as ZeroCenterRotation>::system_center_angular_velocity(
             &center_angular_momentum,
             &center_moment_of_inertia
         );
@@ -250,7 +259,7 @@ where
 
             let body_position_relative_to_center = *position - center_of_mass;
 
-            *body_properties.momentum_mut() += <R as ZeroCenterRotation>::body_momentum_correction(
+            *body_properties.momentum_mut() += <V as ZeroCenterRotation>::body_momentum_correction(
                 &body_position_relative_to_center,
                 &center_angular_velocity,
                 &mass,
