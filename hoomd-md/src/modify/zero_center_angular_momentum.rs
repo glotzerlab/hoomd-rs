@@ -25,22 +25,22 @@ use hoomd_microstate::{
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, InnerProduct, Outer, Versor, Wedge};
 
-/// When we require this trait in the bounds for the impl block for
-/// ZeroCenterAngularMomentum on Microstate, there is a problem if we use the
-/// same pattern as before, where this trait is implemented on rotation types
-/// that are then bound to body orientation. If we do that, then this
-/// functionality is only available for microstates with oriented bodies. What
-/// else can we do?
-/// 
-/// Options:
-/// 1. Add R to this trait's generics
-/// 2. Create a binding between Vector type and Orientation type. Cartesian<2>
-/// would then always be bound to Angle, likewise for Cartesian<3> and Versor.
-/// The orientation type would then be inferred from the position type.
-/// 3. Design this trait to instead be implemented on vector types, rather than
-/// orientation types.
-/// 
-/// I'll try option 3 first.
+// When we require this trait in the bounds for the impl block for
+// ZeroCenterAngularMomentum on Microstate, there is a problem if we use the
+// same pattern as before, where this trait is implemented on rotation types
+// that are then bound to body orientation. If we do that, then this
+// functionality is only available for microstates with oriented bodies. What
+// else can we do?
+// 
+// Options:
+// 1. Add R to this trait's generics
+// 2. Create a binding between Vector type and Orientation type. Cartesian<2>
+// would then always be bound to Angle, likewise for Cartesian<3> and Versor.
+// The orientation type would then be inferred from the position type.
+// 3. Design this trait to instead be implemented on vector types, rather than
+// orientation types.
+// 
+// I'll try option 3 first.
 
 /// Negate the overall rotational motion of the system's center of mass.
 /// 
@@ -66,13 +66,13 @@ pub trait ZeroCenterRotation {
     /// Type that represents the system's full (non-diagonalized) moment of inertia.
     type FullMomentOfInertia;
 
-    /// Calculate the contribution of a body to the system's overall moment of inertia.
+    /// Calculate the contribution of a body to the system's moment of inertia.
     fn body_contribution_to_center_moment_of_inertia(
         body_position_relative_to_center: &Self::Position,
         mass: &f64,
     ) -> Self::FullMomentOfInertia;
 
-    /// Calculate the system's overall angular velocity.
+    /// Calculate the system's angular velocity.
     fn system_center_angular_velocity(
         center_angular_momentum: &Self::AngularMomentum,
         center_moment_of_inertia: &Self::FullMomentOfInertia,
@@ -80,7 +80,7 @@ pub trait ZeroCenterRotation {
 
     /// Calculate the correction term for a body's momentum.
     /// 
-    /// Cumulatively, once all bodies are corrected, the system's overall
+    /// Cumulatively, once all bodies are corrected, the system's
     /// angular momentum will be zero.
     fn body_momentum_correction(
         body_position_relative_to_center: &Self::Position,
@@ -89,6 +89,8 @@ pub trait ZeroCenterRotation {
     ) -> Self::Momentum;
 }
 
+
+/// Rotational motion negation for systems in 2-dimensional cartesian space.
 impl ZeroCenterRotation for Cartesian<2> {
     type Position = Cartesian<2>;
     type Momentum = Cartesian<2>;
@@ -96,6 +98,16 @@ impl ZeroCenterRotation for Cartesian<2> {
     type MomentOfInertia = f64;
     type FullMomentOfInertia = f64;
 
+    /// Calculate the contribution of a body to the system's moment of inertia.
+    /// 
+    /// The contribution of body $` i `$ is given by
+    /// 
+    /// ```math
+    /// \Delta I_{sys} = m_i \cdot \left| \vec{r}_i' \right|^2
+    /// ```
+    /// 
+    /// where $` \vec{r}_i' = \vec{r}_i - \vec{r}_{com} `$ is the position of
+    /// the body relative to the system's center of mass.
     fn body_contribution_to_center_moment_of_inertia(
         body_position_relative_to_center: &Self::Position,
         mass: &f64,
@@ -103,6 +115,13 @@ impl ZeroCenterRotation for Cartesian<2> {
         body_position_relative_to_center.norm_squared() * mass
     }
 
+    /// Calculate the system's angular velocity about its center of mass.
+    /// 
+    /// The system's angular velocity is given by
+    /// 
+    /// ```math
+    /// \omega_{sys} = L_{sys} / I_{sys}
+    /// ```
     fn system_center_angular_velocity(
         center_angular_momentum: &Self::AngularMomentum,
         center_moment_of_inertia: &Self::MomentOfInertia,
@@ -110,6 +129,20 @@ impl ZeroCenterRotation for Cartesian<2> {
         center_angular_momentum / center_moment_of_inertia
     }
 
+    /// Calculate the correction term for a body's momentum.
+    /// 
+    /// Cumulatively, once all bodies are corrected, the system's
+    /// angular momentum will be zero.
+    /// 
+    /// The correction term is given by
+    /// 
+    /// ```math
+    /// \Delta \vec{p}_i = m_i \omega_{sys} \cdot \vec{r}_i' \begin{bmatrix} 0 & -1 \\ 1 & 0\end{bmatrix}
+    /// ```
+    /// 
+    /// where $` \vec{r}_i' = \vec{r}_i - \vec{r}_{com} `$ is the position of
+    /// the body relative to the system's center of mass and the matrix rotates
+    /// the vector counterclockwise by $` \pi/2 `$ radians.
     fn body_momentum_correction(
         body_position_relative_to_center: &Self::Position,
         center_angular_velocity: &Self::AngularMomentum,
@@ -119,6 +152,7 @@ impl ZeroCenterRotation for Cartesian<2> {
     }
 }
 
+/// Rotational motion negation for systems in 3-dimensional cartesian space.
 impl ZeroCenterRotation for Cartesian<3> {
     type Position = Cartesian<3>;
     type Momentum = Cartesian<3>;
@@ -126,6 +160,23 @@ impl ZeroCenterRotation for Cartesian<3> {
     type MomentOfInertia = [f64; 3];
     type FullMomentOfInertia = Matrix<3,3>;
 
+    /// Calculate the contribution of a body to the system's moment of inertia.
+    /// 
+    /// The contribution of body $` i `$ is given by
+    /// 
+    /// ```math
+    /// \Delta \mathbf{I}_{sys} = m_i \cdot \left[
+    /// \begin{bmatrix}
+    /// \left|\vec{r}_i'\right|^2 &                         0 &                         0 \\
+    ///                         0 & \left|\vec{r}_i'\right|^2 &                         0 \\
+    ///                         0 &                         0 & \left|\vec{r}_i'\right|^2
+    /// \end{bmatrix}
+    /// - \left( \vec{r}_i' \otimes \vec{r}_i' \right)
+    /// \right]
+    /// ```
+    /// 
+    /// where $` \vec{r}_i' = \vec{r}_i - \vec{r}_{com} `$ is the position of
+    /// the body relative to the system's center of mass.
     fn body_contribution_to_center_moment_of_inertia(
         body_position_relative_to_center: &Self::Position,
         mass: &f64,
@@ -134,13 +185,32 @@ impl ZeroCenterRotation for Cartesian<3> {
         (Matrix::with_diagonal([r.norm_squared(); 3]) - r.outer(&r)) * *mass
     }
 
+    /// Calculate the system's angular velocity about its center of mass.
+    /// 
+    /// Given the [singular value decomposition] of the system's moment of
+    /// inertia
+    /// 
+    /// ```math
+    /// \mathbf{I}_{sys} = \mathbf{U} \mathbf{\Sigma} \mathbf{V}^*
+    /// ```
+    /// 
+    /// the system's angular velocity is given by
+    /// 
+    /// ```math
+    /// \vec{\omega}_{sys} = \mathbf{L}_{sys}^T \mathbf{V}^{*T} \mathbf{\Sigma}^{-1} \mathbf{U}^T
+    /// ```
+    /// 
+    /// where $` \mathbf{L}_{sys}^T `$ is the row-matrix form of the system's
+    /// angular momentum vector.
+    /// 
+    /// [singular value decomposition]: https://en.wikipedia.org/wiki/Singular_value_decomposition
     fn system_center_angular_velocity(
         center_angular_momentum: &Self::AngularMomentum,
         center_moment_of_inertia: &Self::FullMomentOfInertia,
     ) -> Self::AngularMomentum {
         let (u, s, vt) = center_moment_of_inertia.svd();
 
-        // If the system do not rotate w. r. t. the principle axis (I_principal=0),
+        // If the system does not rotate w. r. t. the principle axis (I_principal=0),
         // set the omega component to 0 by setting the corresponding s^-1 to 0.
         let mut s_inv_dense = Matrix::<3, 3>::zeros();
         if s[0] > 0.0 {
@@ -164,6 +234,19 @@ impl ZeroCenterRotation for Cartesian<3> {
         center_angular_velocity
     }
 
+    /// Calculate the correction term for a body's momentum.
+    /// 
+    /// Cumulatively, once all bodies are corrected, the system's
+    /// angular momentum will be zero.
+    /// 
+    /// The correction term is given by
+    /// 
+    /// ```math
+    /// \Delta \vec{p}_i = - m_i \cdot (\vec{\omega}_{sys} \wedge \vec{r}_i')
+    /// ```
+    /// 
+    /// where $` \vec{r}_i' = \vec{r}_i - \vec{r}_{com} `$ is the position of
+    /// the body relative to the system's center of mass.
     fn body_momentum_correction(
         body_position_relative_to_center: &Self::Position,
         center_angular_velocity: &Self::AngularMomentum,
