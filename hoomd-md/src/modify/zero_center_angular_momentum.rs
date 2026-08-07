@@ -3,8 +3,6 @@
 
 //! Implement `ZeroCenterAngularMomentum`
 
-use std::ops::{AddAssign, DivAssign, Mul, Sub};
-
 use super::ZeroCenterAngularMomentum;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_microstate::{
@@ -17,13 +15,11 @@ use hoomd_microstate::{
     property::{
         Mass,
         Momentum,
-        Orientation,
         Position,
-        RotationalMotionTypes,
     },
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{Angle, Cartesian, InnerProduct, Outer, Versor, Wedge};
+use hoomd_vector::{Cartesian, InnerProduct, Outer, Wedge};
 
 // When we require this trait in the bounds for the impl block for
 // ZeroCenterAngularMomentum on Microstate, there is a problem if we use the
@@ -274,8 +270,9 @@ where
     S: Default + Position<Position = V>,
     X: PointUpdate<V, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    V::Bivector: AddAssign,
-    <V as ZeroCenterRotation>::FullMomentOfInertia: Default + AddAssign,
+    V::Bivector: std::ops::AddAssign,
+    <V as ZeroCenterRotation>::FullMomentOfInertia: Default
+        + std::ops::AddAssign,
     <V as ZeroCenterRotation>::AngularMomentum: Default,
 {
     fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
