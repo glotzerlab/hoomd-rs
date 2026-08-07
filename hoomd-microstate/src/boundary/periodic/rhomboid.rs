@@ -8,7 +8,6 @@ use std::array;
 use arrayvec::ArrayVec;
 use hoomd_spatial::PointUpdate;
 use hoomd_utility::valid::PositiveReal;
-use itertools::Itertools;
 
 use crate::{
     Body, Microstate, Replicate, SiteKey, Transform, boundary::{
@@ -275,28 +274,7 @@ where
             .map(|(i, &v)| -v/2.0 * (checked_counts[i].get() - 1.0))
             .sum();
         
-        let mut microstate = Microstate::builder()
-            .step(self.step())
-            .seed(self.seed())
-            .spatial_data(self.spatial_data().clone())
-            .boundary(new_boundary)
-            .try_build()?;
-        
-        let count_ranges = array::from_fn::<_, 2, _>(|i| 0..counts[i]);
-        for indices in count_ranges.into_iter().multi_cartesian_product() {
-            let mut offset = base_offset;
-            for (i,x) in indices.iter().enumerate() {
-                offset += (*x as f64) * basis_vectors[i];
-            }
-
-            for body in self.iter_bodies_tag_order() {
-                let mut new_body = body.item.clone();
-                *new_body.properties.position_mut() += offset;
-                microstate.add_body(new_body)?;
-            }
-        }
-
-        Ok(microstate)
+        self.build_replicate(counts, new_boundary, basis_vectors, base_offset)
     }
 }
 
