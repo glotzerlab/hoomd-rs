@@ -3,13 +3,17 @@
 
 //! Implement periodic boundary conditions for triclinic boxes in cartesian space.
 
+use std::array;
+
 use arrayvec::ArrayVec;
+use hoomd_spatial::PointUpdate;
+use hoomd_utility::valid::PositiveReal;
+use itertools::Itertools;
 
 use crate::{
-    boundary::{
+    Body, Microstate, Replicate, SiteKey, Transform, boundary::{
         Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
-    },
-    property::Position,
+    }, property::Position
 };
 use hoomd_geometry::{IsPointInside, shape::Triclinic};
 
@@ -278,6 +282,104 @@ where
     }
 }
 
+impl<B, S, X> Replicate<3, B, S, X, Periodic<Triclinic>> for Microstate<B, S, X, Periodic<Triclinic>>
+where
+    B: Transform<S> + Position<Position = Cartesian<3>>,
+    S: Position<Position = Cartesian<3>> + Default,
+    Body<B, S>: Clone,
+    Periodic<Triclinic>: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    X: PointUpdate<Cartesian<3>, SiteKey> + Clone,
+{
+    /// Replicate the bodies in self `counts[0]` x `counts[1]` x `counts[2]` times and
+    /// expand the periodic boundary accordingly.
+    ///
+    /// The new microstate is built with the same step, seed, and spatial data
+    /// structure, as if it were cloned. The new microstate's boundary keeps
+    /// the same interaction range, but is extended by `counts[i]` along each
+    /// edge vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Triclinic;
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, Replicate, boundary::Periodic
+    /// };
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let triclinic = Triclinic {
+    ///     extents: [
+    ///         10.0.try_into()?,
+    ///         20.0.try_into()?,
+    ///         30.0.try_into()?,
+    ///     ],
+    ///     tilt_factors: [1.0, 1.0, 1.0],
+    /// };
+    ///
+    /// let periodic = Periodic::new(1.0, triclinic)?;
+    /// let microstate = Microstate::builder()
+    ///     .boundary(periodic)
+    ///     .bodies([
+    ///         Body::point(Cartesian::from([0.0, 0.0, 0.0])),
+    ///     ])
+    ///     .try_build()?;
+    ///
+    /// let replicated = microstate.replicate([2, 2, 2])?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// * [`Error::NoReplication`] when any of the counts is 0.
+    #[inline]
+    fn replicate(&self, counts: [usize; 3]) -> Result<Microstate<B, S, X, Periodic<Triclinic>>, crate::Error> {
+        // try_from_fn would be a cleaner way to write this, but it is not stable:
+        // https://doc.rust-lang.org/std/array/fn.try_from_fn.html
+        let mut checked_counts = [PositiveReal::default(); 3];
+        for i in 0..3 {
+            checked_counts[i] = PositiveReal::try_from(counts[i] as f64).map_err(crate::Error::NoReplication)?;
+        }
+
+        let old_extents = array::from_fn::<_, 3, _>(|i| self.boundary().shape.extents[i]);
+        let new_boundary = Periodic::new(self.boundary().maximum_interaction_range(),
+            Triclinic { extents: array::from_fn(|i| old_extents[i] * checked_counts[i]),
+                .. self.boundary().shape})
+            .expect("replicated boxes should always satisfy the maximum interaction range");
+
+        let basis_vectors = self.boundary().shape.edge_vectors();
+        let base_offset: Cartesian<3> = basis_vectors
+            .iter()
+            .enumerate()
+            .map(|(i, &v)| -v/2.0 * (checked_counts[i].get() - 1.0))
+            .sum();
+        
+        let mut microstate = Microstate::builder()
+            .step(self.step())
+            .seed(self.seed())
+            .spatial_data(self.spatial_data().clone())
+            .boundary(new_boundary)
+            .try_build()?;
+        
+        let count_ranges = array::from_fn::<_, 3, _>(|i| 0..counts[i]);
+        for indices in count_ranges.into_iter().multi_cartesian_product() {
+            let mut offset = base_offset;
+            for (i,x) in indices.iter().enumerate() {
+                offset += (*x as f64) * basis_vectors[i];
+            }
+
+            for body in self.iter_bodies_tag_order() {
+                let mut new_body = body.item.clone();
+                *new_body.properties.position_mut() += offset;
+                microstate.add_body(new_body)?;
+            }
+        }
+
+        Ok(microstate)
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -515,4 +617,72 @@ mod tests {
             );
         }
     }
+     #[test]
+        fn replicate_222_cubic() -> anyhow::Result<()>{
+            let cuboid = Triclinic::cuboid(10.0.try_into()?,
+                    20.0.try_into()?,
+                    30.0.try_into()?,
+                );
+
+            let periodic = Periodic::new(1.0, cuboid)?;
+            let microstate = Microstate::builder()
+                .boundary(periodic)
+                .bodies([
+                    Body::point(Cartesian::from([0.0, 0.0, 0.0])),
+                ])
+                .try_build()?;
+
+            let replicated = microstate.replicate([2, 2, 2])?;
+
+            assert_eq!(replicated.bodies().len(), 8);
+            assert_eq!(replicated.boundary().shape.extents[0].get(), 20.0);
+            assert_eq!(replicated.boundary().shape.extents[1].get(), 40.0);
+            assert_eq!(replicated.boundary().shape.extents[2].get(), 60.0);
+            assert_eq!(replicated.boundary().shape.tilt_factors, microstate.boundary().shape().tilt_factors);
+            assert_eq!(replicated.bodies()[0].item.properties.position, [-5.0, -10.0, -15.0].into());
+            assert_eq!(replicated.bodies()[1].item.properties.position, [-5.0, -10.0, 15.0].into());
+            assert_eq!(replicated.bodies()[2].item.properties.position, [-5.0, 10.0, -15.0].into());
+            assert_eq!(replicated.bodies()[3].item.properties.position, [-5.0, 10.0, 15.0].into());
+            assert_eq!(replicated.bodies()[4].item.properties.position, [5.0, -10.0, -15.0].into());
+            assert_eq!(replicated.bodies()[5].item.properties.position, [5.0, -10.0, 15.0].into());
+            assert_eq!(replicated.bodies()[6].item.properties.position, [5.0, 10.0, -15.0].into());
+            assert_eq!(replicated.bodies()[7].item.properties.position, [5.0, 10.0, 15.0].into());
+
+            Ok(())
+        }
+
+     #[test]
+        fn replicate_222_sheared() -> anyhow::Result<()>{
+            let triclinic = Triclinic { extents: [10.0.try_into()?,
+                    20.0.try_into()?,
+                    30.0.try_into()?,],
+                    tilt_factors: [1.0, 0.5, 0.25],
+                };
+
+            let periodic = Periodic::new(1.0, triclinic)?;
+            let microstate = Microstate::builder()
+                .boundary(periodic)
+                .bodies([
+                    Body::point(Cartesian::from([0.0, 0.0, 0.0])),
+                ])
+                .try_build()?;
+
+            let replicated = microstate.replicate([2, 2, 2])?;
+
+            assert_eq!(replicated.bodies().len(), 8);
+            assert_eq!(replicated.boundary().shape.extents[0].get(), 20.0);
+            assert_eq!(replicated.boundary().shape.extents[1].get(), 40.0);
+            assert_eq!(replicated.boundary().shape.extents[2].get(), 60.0);
+            assert_eq!(replicated.boundary().shape.tilt_factors, microstate.boundary().shape().tilt_factors);
+            assert_eq!(replicated.bodies()[0].item.properties.position, [-22.5, -13.75, -15.0].into());
+            assert_eq!(replicated.bodies()[1].item.properties.position, [-7.5, -6.25, 15.0].into());
+            assert_eq!(replicated.bodies()[2].item.properties.position, [-2.5, 6.25, -15.0].into());
+            assert_eq!(replicated.bodies()[3].item.properties.position, [12.5, 13.75, 15.0].into());
+            assert_eq!(replicated.bodies()[4].item.properties.position, [-12.5, -13.75, -15.0].into());
+            assert_eq!(replicated.bodies()[5].item.properties.position, [2.5, -6.25, 15.0].into());
+            assert_eq!(replicated.bodies()[6].item.properties.position, [7.5, 6.25, -15.0].into());
+            assert_eq!(replicated.bodies()[7].item.properties.position, [22.5, 13.75, 15.0].into());
+
+            Ok(())
+        }
 }

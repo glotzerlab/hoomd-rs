@@ -296,7 +296,7 @@ where
     Periodic<Hypercuboid<N>>: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     X: PointUpdate<Cartesian<N>, SiteKey> + Clone,
 {
-    /// Replicate the bodies in self count[0] x count[1] x ... count[N-1] times and
+    /// Replicate the bodies in self `counts[0]` x `counts[1]` x ... `counts[N-1]` times and
     /// expand the periodic boundary accordingly.
     ///
     /// The new microstate is built with the same step, seed, and spatial data

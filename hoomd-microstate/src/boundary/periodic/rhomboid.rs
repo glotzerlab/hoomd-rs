@@ -211,15 +211,13 @@ where
     Periodic<Rhomboid>: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     X: PointUpdate<Cartesian<2>, SiteKey> + Clone,
 {
-    /// Replicate the bodies in self count[0] x count[1] times and
+    /// Replicate the bodies in self `counts[0]` x `counts[1]` times and
     /// expand the periodic boundary accordingly.
     ///
     /// The new microstate is built with the same step, seed, and spatial data
     /// structure, as if it were cloned. The new microstate's boundary keeps
     /// the same interaction range, but is extended by `counts[i]` along each
     /// edge vector.
-    ///
-    /// # Example
     ///
     /// # Example
     ///
