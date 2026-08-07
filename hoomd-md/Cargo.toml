@@ -31,6 +31,7 @@ hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 hoomd-simulation.workspace = true
 hoomd-geometry.workspace = true
+hoomd-derive.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
