@@ -133,7 +133,7 @@ pub mod thermostat;
 mod compute;
 pub use compute::{RotationalKineticEnergy, TranslationalKineticEnergy};
 
-mod modify;
+pub mod modify;
 pub use modify::{
     ThermalizeAngularMomentum, ThermalizeMomentum, ZeroCenterAngularMomentum, ZeroCenterMomentum,
 };
