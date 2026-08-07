@@ -399,9 +399,12 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
 
     target_fields.named = new_fields;
 
-    // Add derive macro calls for position
+    // Add derive macro calls
     target_struct.attrs.push(syn::parse_quote! {
         #[derive(
+            Clone, Copy, Debug, PartialEq,
+            serde::Serialize,
+            serde::Deserialize,
             hoomd_microstate::property::Position,
             hoomd_microstate::property::Mass,
             hoomd_microstate::property::Momentum,
@@ -578,9 +581,12 @@ pub fn derive_dynamic_oriented_point(input: TokenStream, annotated_item: TokenSt
 
     target_fields.named = new_fields;
 
-    // Add derive macro calls for position
+    // Add derive macro calls
     target_struct.attrs.push(syn::parse_quote! {
         #[derive(
+            Clone, Copy, Debug, PartialEq,
+            serde::Serialize,
+            serde::Deserialize,
             hoomd_microstate::property::Position,
             hoomd_microstate::property::Orientation,
             hoomd_microstate::property::Mass,
