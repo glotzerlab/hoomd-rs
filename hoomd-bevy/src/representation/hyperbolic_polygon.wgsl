@@ -75,7 +75,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vec4<f32>(vertex.position, 1.0)
     );
     out.position = mesh_functions::mesh2d_position_world_to_clip(out.world_position);
-    out.n_sides = polygon.n_sides;
+    out.n_sides = n_sides;
 #endif
 
 #ifdef VERTEX_NORMALS
@@ -99,7 +99,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let pos1 = in.disk_center;
     let pos2 = in.world_position.xy;
-    let n = 4.0;
+    let n = in.n_sides;
     let arg = 1.0 + 2.0*dot((pos1 - pos2),(pos1 - pos2))/((1.0-dot(pos1,pos1))*(1.0-dot(pos2,pos2)));
     let r = acosh(arg); //distance from the center
     //let a = sqrt(pow(pos1.x,2.0) + pow(pos1.y, 2.0));
@@ -134,8 +134,9 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let R = tanh(rapidity);                 // Klein circumradius
     let bound = R * cos(PI / n);
 
-    for (var k = 0; k < 4; k = k + 1) {
-        let phi = 2.0 * PI * f32(k) / n - PI/n;
+    let n_i = i32(round(n));
+    for (var k = 0; k < n_i; k = k + 1) {
+        let phi = 2.0 * PI * f32(k) / n - PI / n;
         let nx = cos(phi);
         let ny = sin(phi);
         if (u * nx + v * ny > bound) {
