@@ -1,26 +1,66 @@
-# Release notes
+# Release Notes
 
 ## Next release
 
 *Added:*
 
+* `[hoomd-geometry]`: Add `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` shapes (#88).
+* `[hoomd-linear-algebra]` Add `matrix::qr` module with methods to compute the QR factorization of matrices (#88).
+* `[hoomd-linear-algebra]` Add methods `iter_column_slice`, `iter_column_slice_mut`, `iter_submatrix`, to `Matrix<N, M>` (#88).
+* `[hoomd-macrostate]`: Add `Fugacity` trait that access the fugacity of a macrostate (#354).
+* `[hoomd-macrostate]`: Add `IsothermoalIsofugacity` type that stores the system's temperature and fugacity (#354).
+* `[hoomd-mc]`: Add `GrandCanonical` trial move type. It inserts and removes bodies and samples from the constant chemical potential, constant volume, constant temperature ensemble (#354).
+* `[hoomd-mc`]: Add `InsertReMoveCount` type that counts the accepted and rejected insertion and removal moves (#354).
+* `[hoomd-microstate`]: Implement all traits necessary to use `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` as simulation boundaries (#88).
+* `[hoomd-microstate`]: Implement `AppendMicrostate` for microstates with `Triclinic` and `Rhomboid` boundaries (#88).
+* `[hoomd-vector`]: Implement `Mul<Cartesian<N>> for f64`, `Mul<PositiveReal> for Cartesian<N>`, `Mul<Cartesian<N>> for PositiveReal`, `MulAssign<f64> for Cartesian<N>`, and `MulAssign<PositiveReal> for Cartesian<N>` (#88).
+
+*Changed:*
+
+* Build the documentation with mdBook 0.5.4 and KaTeX 0.18.1 (#376).
+
+*Deprecated:*
+
+*Removed:*
+
+*Fixed:*
+
+* `[hoomd-interaction]`: Fix typos in documentation (#358).
+* `[hoomd-microstate]`: Fix typos in documentation (#358).
+* *examples*: Properly auto size egui parameter windows (#354).
+
+## 1.2.0 (2026-07-07)
+
+*Highlights:*
+
+**hoomd-rs** 1.2 can perform molecular dynamics simulations with the new `hoomd-md` crate! The release also expands the Monte Carlo capabilities of high dimensional and curved space simulations.
+
+*Added:*
+
+* `[hoomd-derive`]: Derive macros for `NetSiteForceAndVirial` and `NetSiteForceVirialAndTorque` (#222).
 * `[hoomd-geometry]`: Add `TwelveTwelve` hyperbolic space boundary condition (#296).
+* `[hoomd-interaction]`: Add `SiteForceAndVirial`, `SiteForceVirialAndTorque`, `NetSiteForceAndVirial`, and `NetSiteForceVirialAndTorque` traits. Implement them for all applicable types (#222).
+* `[hoomd-interaction]`: Add `NetBodyForceAndVirial` and `NetBodyForceVirialAndTorque` traits. Implement them for the new `Rigid` force interaction model type (#222).
+* `[hoomd-interaction]`: Add `ConstantForce` and `ConstantTorque` types that apply a constant force or torque to all sites (#222).
 * `[hoomd-manifold]`: Add `Spherical<4>::from_versor` and the corresponding `::to_versor` (#285).
 * `[hoomd-mc]`: Implement translation moves for `Point<Spherical<4>>` (#287).
+* `[hoomd-mc]`: Implement `BodyDistribution` for `DynamicPoint` and `DynamicOrientedPoint` (#222).
+* `[hoomd-md]`: Add the `hoomd-md` crate that implements constant volume integration for translational and rotational degrees of freedom, momentum scaling thermostats, and methods to thermalize and zero system momentum (#222).
 * `[hoomd-microstate]`: Implement `AppendMicrostate` for the site types `Point<Spherical<3>>`, `Point<Spherical<4>>`, `OrientedHyperbolicPoint<3, Angle>`, and `Point<Hyperbolic<3>>` (#286).
+* `[hoomd-microstate]`: Add `Mass`, `Momentum`, `MomentOfInertia`, `AngularMomentum`, `NetForce`, and `NetTorque` traits (#222).
+* `[hoomd-microstate`]: Add `DynamicPoint` and `DynamicOrientedPoint` body property types. Implement boundary and transform traits for them (#222).
 * `[hoomd-utility]`: Implement `Eq`, `PartialOrd`, and `Ord` for `PositiveReal` (#287).
 * `[hoomd-vector]`: Implement `Cartesian<4>::counary_cross` (#305).
+* `[hoomd-vector]`: Implement wedge and outer product traits (#222).
+* `[hoomd-vector]`: Add `Quaternion::pure` constructor that forms a pure quaternion from a vector (#222).
 
 *Changed:*
 
 * `[hoomd-mc]`: Improve the numerical stability of translation moves for `Point<Spherical<3>>` (#287).
 * `[hoomd-geometry`]: Improve performance `ConvexPolytope` intersection tests (#332).
 * `[hoomd-mc]`: `HypercuboidCheckerboard` now builds in an arbitrary number of dimensions (#318).
+* `[hoomd-vector]`: `n_dimensions` is now an associated method (#222).
 * Build the documentation with mdBook 0.5.3 (#295).
-
-*Deprecated:*
-
-*Removed:*
 
 *Fixed:*
 

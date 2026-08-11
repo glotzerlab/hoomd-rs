@@ -11,6 +11,7 @@ members = ["benchmarks",
            "hoomd-linear-algebra",
            "hoomd-manifold",
            "hoomd-mc",
+           "hoomd-md",
            "hoomd-microstate",
            "hoomd-simulation",
            "hoomd-spatial",
@@ -32,6 +33,7 @@ default-members = ["examples",
                    "hoomd-linear-algebra",
                    "hoomd-manifold",
                    "hoomd-mc",
+                   "hoomd-md",
                    "hoomd-microstate",
                    "hoomd-simulation",
                    "hoomd-spatial",
@@ -41,9 +43,9 @@ default-members = ["examples",
                   ]
 
 [workspace.package]
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
-rust-version = "1.91"
+rust-version = "1.95"
 homepage = "https://glotzerlab.engin.umich.edu"
 documentation = "https://hoomd-rs.readthedocs.io"
 repository = "https://github.com/glotzerlab/hoomd-rs"
@@ -54,20 +56,21 @@ categories = ["science"]
 [workspace.dependencies]
 # hooomd-rs crates
 # These lines must have 'version = "X.Y.Z", path' *in that order* to work with bump-my-version.
-hoomd-bevy = { version = "1.1.0", path = "hoomd-bevy" }
-hoomd-derive = { version = "1.1.0", path = "hoomd-derive" }
-hoomd-geometry = { version = "1.1.0", path = "hoomd-geometry" }
-hoomd-gsd = { version = "1.1.0", path = "hoomd-gsd" }
-hoomd-interaction = { version = "1.1.0", path = "hoomd-interaction" }
-hoomd-linear-algebra = { version = "1.1.0", path = "hoomd-linear-algebra" }
-hoomd-manifold = { version = "1.1.0", path = "hoomd-manifold" }
-hoomd-mc = { version = "1.1.0", path = "hoomd-mc" }
-hoomd-microstate = { version = "1.1.0", path = "hoomd-microstate" }
-hoomd-simulation = { version = "1.1.0", path = "hoomd-simulation" }
-hoomd-spatial = { version = "1.1.0", path = "hoomd-spatial" }
-hoomd-utility = { version = "1.1.0", path = "hoomd-utility" }
-hoomd-vector = { version = "1.1.0", path = "hoomd-vector" }
-hoomd-rand = { version = "1.1.0", path = "hoomd-rand" }
+hoomd-bevy = { version = "1.2.0", path = "hoomd-bevy" }
+hoomd-derive = { version = "1.2.0", path = "hoomd-derive" }
+hoomd-geometry = { version = "1.2.0", path = "hoomd-geometry" }
+hoomd-gsd = { version = "1.2.0", path = "hoomd-gsd" }
+hoomd-interaction = { version = "1.2.0", path = "hoomd-interaction" }
+hoomd-linear-algebra = { version = "1.2.0", path = "hoomd-linear-algebra" }
+hoomd-manifold = { version = "1.2.0", path = "hoomd-manifold" }
+hoomd-mc = { version = "1.2.0", path = "hoomd-mc" }
+hoomd-md = { version = "1.2.0", path = "hoomd-md"}
+hoomd-microstate = { version = "1.2.0", path = "hoomd-microstate" }
+hoomd-simulation = { version = "1.2.0", path = "hoomd-simulation" }
+hoomd-spatial = { version = "1.2.0", path = "hoomd-spatial" }
+hoomd-utility = { version = "1.2.0", path = "hoomd-utility" }
+hoomd-vector = { version = "1.2.0", path = "hoomd-vector" }
+hoomd-rand = { version = "1.2.0", path = "hoomd-rand" }
 
 # Dev dependencies
 assert2 = "=0.4.0"
@@ -75,6 +78,7 @@ divan = "=0.1.21"
 paste = "=1.0.15"
 rand_sfc = "=0.2.0"
 rstest = "=0.26.1"
+rstest_reuse = "=0.7.0"
 tempfile = "=3.27.0"
 strum = "=0.28.0"
 strum_macros = "=0.28.0"
@@ -105,7 +109,7 @@ serde = { version = "1.0.228", features = ["derive"]}
 thiserror = "2.0.12"
 
 # Bevy and bevy-adjacent dependencies
-bevy_egui = "0.40.0"
+bevy_egui = "0.41.0"
 wayland-sys = "0.31.8"
 
 [workspace.dependencies.bevy]
@@ -151,6 +155,7 @@ cast_precision_loss = "allow"
 float_cmp = "allow"
 similar_names = "allow"
 inline_always = "allow"
+must_use_candidate = "allow"
 
 # opt-in to restrictions
 allow_attributes_without_reason = "warn"

@@ -67,7 +67,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HarmonicRepulsion {
-    /// Potential strength $`[\mathrm{energy}] [\mathrm{length}]^{-1}`$.
+    /// Potential strength $`[\mathrm{energy}] \cdot [\mathrm{length}]^{-1}`$.
     pub a: f64,
     /// Distance cut-off  $`[\mathrm{length}]`$.
     pub r_cut: f64,

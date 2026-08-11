@@ -12,12 +12,13 @@ use std::{
 };
 
 use approxim::approx_derive::RelativeEq;
+use hoomd_utility::valid::PositiveReal;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
 
-use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
+use crate::{Cross, Error, InnerProduct, Metric, Outer, Rotate, Unit, Vector, Wedge};
 use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
@@ -312,15 +313,13 @@ impl<const N: usize> Metric for Cartesian<N> {
     /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let vec2 = Cartesian::<2>::default();
-    /// let vec3 = Cartesian::<3>::default();
-    /// assert_eq!(2, vec2.n_dimensions());
-    /// assert_eq!(3, vec3.n_dimensions());
+    /// assert_eq!(2, Cartesian::<2>::n_dimensions());
+    /// assert_eq!(3, Cartesian::<3>::n_dimensions());
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         N
     }
 }
@@ -380,10 +379,50 @@ impl<const N: usize> Mul<f64> for Cartesian<N> {
     }
 }
 
+impl<const N: usize> Mul<Cartesian<N>> for f64 {
+    type Output = Cartesian<N>;
+
+    #[inline]
+    fn mul(self, rhs: Cartesian<N>) -> Self::Output {
+        Self::Output {
+            coordinates: rhs.coordinates.map(|x| x * self),
+        }
+    }
+}
+
+impl<const N: usize> Mul<PositiveReal> for Cartesian<N> {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: PositiveReal) -> Self {
+        Self {
+            coordinates: self.coordinates.map(|x| x * rhs.get()),
+        }
+    }
+}
+
+impl<const N: usize> Mul<Cartesian<N>> for PositiveReal {
+    type Output = Cartesian<N>;
+
+    #[inline]
+    fn mul(self, rhs: Cartesian<N>) -> Self::Output {
+        Self::Output {
+            coordinates: rhs.coordinates.map(|x| x * self.get()),
+        }
+    }
+}
+
 impl<const N: usize> MulAssign<f64> for Cartesian<N> {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
         self.coordinates = self.coordinates.map(|x| x * rhs);
+    }
+}
+
+impl<const N: usize> MulAssign<PositiveReal> for Cartesian<N> {
+    #[inline]
+    fn mul_assign(&mut self, rhs: PositiveReal) {
+        self.coordinates = self.coordinates.map(|x| x * rhs.get());
     }
 }
 
@@ -437,6 +476,74 @@ impl<const N: usize> Neg for Cartesian<N> {
     }
 }
 
+impl<const N: usize> Cartesian<N> {
+    /// Apply a scalar function to all coordinates of the vector.
+    ///
+    /// The provided closure is called once for each component, and the returned
+    /// vector has the same dimensionality as the original.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let a = Cartesian::from([1.0, 2.0, 3.0]);
+    /// let b = a.map(|x| x * 2.0);
+    ///
+    /// assert_eq!(b, [2.0, 4.0, 6.0].into())
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn map<F>(self, f: F) -> Cartesian<N>
+    where
+        F: FnMut(f64) -> f64,
+    {
+        self.coordinates.map(f).into()
+    }
+
+    /// Create a Cartesian vector from a row matrix.
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let m: Matrix<1, 3> = Matrix {
+    ///     rows: [[1.0, 2.0, 3.0]],
+    /// };
+    /// let v = Cartesian::<3>::from_row_matrix(&m);
+    /// assert_eq!(v, [1.0, 2.0, 3.0].into());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn from_row_matrix(matrix: &Matrix<1, N>) -> Self {
+        Self {
+            coordinates: matrix.rows[0],
+        }
+    }
+
+    /// Create a Cartesian vector from a row matrix.
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let m: Matrix<3, 1> = Matrix {
+    ///     rows: [[1.0], [2.0], [3.0]],
+    /// };
+    /// let v = Cartesian::<3>::from_column_matrix(&m);
+    /// assert_eq!(v, [1.0, 2.0, 3.0].into());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn from_column_matrix(matrix: &Matrix<N, 1>) -> Self {
+        let mut x = Cartesian::<N>::default();
+        for i in 0..N {
+            x[i] = matrix[(i, 0)];
+        }
+        x
+    }
+}
+
 impl Cross for Cartesian<3> {
     #[inline]
     fn cross(&self, other: &Self) -> Self {
@@ -445,6 +552,30 @@ impl Cross for Cartesian<3> {
             self[2] * other[0] - self[0] * other[2],
             self[0] * other[1] - self[1] * other[0],
         ))
+    }
+}
+
+impl Wedge for Cartesian<3> {
+    type Bivector = Cartesian<3>;
+
+    #[inline]
+    /// Compute the wedge product of two vectors.
+    ///
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, Wedge};
+    ///
+    /// let a = Cartesian::from([1.0, 0.0, 0.0]);
+    /// let b = Cartesian::from([0.0, 1.0, 0.0]);
+    /// assert_eq!(a.wedge(&b), [0.0, 0.0, 1.0].into());
+    /// ```
+    fn wedge(&self, other: &Self) -> Self::Bivector {
+        self.cross(other)
     }
 }
 
@@ -568,6 +699,40 @@ impl Cartesian<2> {
     #[must_use]
     pub fn perpendicular(self) -> Self {
         Cartesian::from([-self[1], self[0]])
+    }
+}
+
+impl Wedge for Cartesian<2> {
+    type Bivector = f64;
+
+    /// Compute the wedge product of two vectors.
+    ///
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, Wedge};
+    ///
+    /// let a = Cartesian::from([2.0, 1.0]);
+    /// let b = Cartesian::from([3.0, 1.0]);
+    ///
+    /// assert_eq!(a.wedge(&b), -1.0);
+    /// ```
+    #[inline]
+    fn wedge(&self, other: &Self) -> Self::Bivector {
+        self[0] * other[1] - self[1] * other[0]
+    }
+}
+
+impl<const N: usize> Outer for Cartesian<N> {
+    type Tensor = Matrix<N, N>;
+
+    #[inline]
+    fn outer(&self, other: &Self) -> Self::Tensor {
+        self.to_column_matrix().matmul(&other.to_row_matrix())
     }
 }
 
@@ -816,13 +981,6 @@ impl<const N: usize> Cartesian<N> {
         Matrix {
             rows: std::array::from_fn(|i| [self[i]]),
         }
-    }
-}
-
-impl<const N: usize> From<Matrix<1, N>> for Cartesian<N> {
-    #[inline]
-    fn from(value: Matrix<1, N>) -> Self {
-        value.rows[0].into()
     }
 }
 

@@ -9,9 +9,11 @@ use super::{Orientation, Point, Position};
 use crate::Transform;
 use hoomd_vector::{Rotate, Rotation, Vector};
 
-/// The position and orientation of an extended body.
+/// A position in space with an orientation.
 ///
-/// Use [`OrientedPoint`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
+/// In general, use `OrientedPoint` as a [`Body`](crate::Body) property type
+/// with [`Point`](crate::Point) as the property type for its sites. Rarely
+/// `OrientedPoint` be used as a [`Site`](crate::Site) property type.
 ///
 /// # Example
 ///
@@ -32,7 +34,6 @@ pub struct OrientedPoint<V, R> {
     pub orientation: R,
 }
 
-/// Treat [`Point`] sites as constituents of oriented rigid bodies.
 impl<V, R> Transform<Point<V>> for OrientedPoint<V, R>
 where
     V: Vector,
@@ -70,13 +71,12 @@ where
     }
 }
 
-/// Treat [`OrientedPoint`] sites as constituents of oriented rigid bodies.
 impl<V, R> Transform<OrientedPoint<V, R>> for OrientedPoint<V, R>
 where
     V: Vector,
     R: Rotate<V> + Rotation,
 {
-    /// Move [`Point`] properties from the local body frame to the system frame.
+    /// Move [`OrientedPoint`] properties from the local body frame to the system frame.
     ///
     /// ```math
     /// \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})

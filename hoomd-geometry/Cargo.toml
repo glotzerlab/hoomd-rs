@@ -37,6 +37,7 @@ assert2.workspace = true
 approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true
+rstest_reuse.workspace = true
 
 [[bench]]
 name = "overlaps"

@@ -404,7 +404,7 @@ where
             return result;
         }
 
-        // Face test and vertex replacement (dimension-specific) TODO
+        // Face test and vertex replacement (dimension-specific)
         Cartesian::<N>::narrow_portal(&v0, &mut portal, v_new);
 
         if count >= XENOCOLLIDE_MAX_ITER {

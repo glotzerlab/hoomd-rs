@@ -3,6 +3,7 @@
 
 //! Implement `UniformIn`
 
+use hoomd_vector::{Outer, Wedge};
 use rand::{
     Rng, RngExt,
     distr::{Distribution, StandardUniform},
@@ -11,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::{
     Body,
-    property::{OrientedPoint, Point},
+    property::{DynamicOrientedPoint, DynamicPoint, OrientedPoint, Point, RotationalMotionTypes},
 };
 
 use crate::BodyDistribution;
@@ -123,6 +124,31 @@ where
     }
 }
 
+/// Randomly place dynamic point bodies in a given boundary.
+///
+/// `sample` chooses the *body's* position randomly in the given boundary. Sites,
+/// therefore, may be placed outside the boundary. Callers should reject insertions
+/// appropriately when `add_body` fails.
+///
+/// Mass, momentum, and `net_force` are set to defaults.
+impl<V, S, C> BodyDistribution<Body<DynamicPoint<V>, S>> for UniformIn<S, C>
+where
+    S: Clone,
+    C: Distribution<V>,
+    V: Default + Outer,
+    V::Tensor: Default,
+{
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, _index: usize, rng: &mut R) -> Body<DynamicPoint<V>, S> {
+        let properties = DynamicPoint {
+            position: self.boundary.sample(rng),
+            ..Default::default()
+        };
+        let sites = self.template_sites.clone();
+        Body { properties, sites }
+    }
+}
+
 /// Randomly place oriented bodies in a given boundary.
 ///
 /// `sample` chooses the *body's* position randomly in the given boundary and also
@@ -140,6 +166,40 @@ where
         let properties = OrientedPoint {
             position: self.boundary.sample(rng),
             orientation: rng.random(),
+        };
+        let sites = self.template_sites.clone();
+        Body { properties, sites }
+    }
+}
+
+/// Randomly place dynamic oriented bodies in a given boundary.
+///
+/// `sample` chooses the *body's* position randomly in the given boundary and also
+/// assigns a *uniform random orientation*. Sites, therefore, may be placed outside
+/// the boundary. Callers should reject insertions appropriately when `add_body`
+/// fails.
+///
+/// Mass, moment of inertia, momentum, angular momentum, `net_force`, and `net_torque`
+/// are set to defaults.
+impl<V, O, S, C> BodyDistribution<Body<DynamicOrientedPoint<V, O>, S>> for UniformIn<S, C>
+where
+    S: Clone,
+    C: Distribution<V>,
+    StandardUniform: Distribution<O>,
+    V: Default + Wedge + Outer,
+    O: RotationalMotionTypes,
+    DynamicOrientedPoint<V, O>: Default,
+{
+    #[inline]
+    fn sample<R: Rng + ?Sized>(
+        &self,
+        _index: usize,
+        rng: &mut R,
+    ) -> Body<DynamicOrientedPoint<V, O>, S> {
+        let properties = DynamicOrientedPoint {
+            position: self.boundary.sample(rng),
+            orientation: rng.random(),
+            ..Default::default()
         };
         let sites = self.template_sites.clone();
         Body { properties, sites }
