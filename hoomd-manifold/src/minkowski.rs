@@ -550,8 +550,16 @@ impl<const N: usize> Hyperbolic<N> {
     #[must_use]
     #[inline]
     #[allow(
+        clippy::cast_sign_loss,
+        reason = "last coordinate on hyperboloid is always positive"
+    )]
+    #[allow(
         clippy::cast_possible_truncation,
-        reason = "truncation to relax precision"
+        reason = "truncation to get a fast approximate value"
+    )]
+    #[allow(
+        clippy::cast_possible_wrap,
+        reason = "possible wrap well beyond values for reasonable simulations"
     )]
     pub fn from_minkowski_coordinates(point: Minkowski<N>) -> Hyperbolic<N> {
         let pt = point.coordinates;
@@ -569,7 +577,10 @@ impl<const N: usize> Hyperbolic<N> {
             .fold(pt[N - 1] * pt[N - 1], |sum, (_, x)| {
                 f64::mul_add(-x, *x, sum)
             });
-        let tolerance = 9_i32 - 2_i32 * (point.coordinates[N - 1].log10().trunc() as i32);
+
+        let zed = std::cmp::max(point.coordinates[N - 1] as u64, 1);
+        let decade = (zed).ilog10() as i32;
+        let tolerance = 9 - 2 * decade;
         assert_relative_eq!(lhs, rhs, epsilon = 10.0_f64.powi(-tolerance));
         Hyperbolic { point }
     }
