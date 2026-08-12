@@ -44,7 +44,8 @@ use hoomd_vector::Quaternion;
 ///     Complex::new(3.0, 2.0),
 ///     Complex::new(4.0, 1.0),
 /// ]);
-/// assert_eq!(4.0, q.components[0].im);
+/// assert_eq!(4.0, q.vector[0].im);
+/// assert_eq!(4.0, q.scalar.re);
 /// ```
 ///
 /// ## Operations with Biquaternions.
@@ -69,7 +70,7 @@ use hoomd_vector::Quaternion;
 /// ]);
 /// b /= 2.0;
 /// let mut c = a + b;
-/// assert_eq!(Complex::new(1.0, 2.0), c.components[0]);
+/// assert_eq!(Complex::new(1.0, 2.0), c.vector[0]);
 /// ```
 ///
 /// Biquaternions also support the following operations:
@@ -189,8 +190,10 @@ use hoomd_vector::Quaternion;
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Biquaternion {
-    /// Components of the biquaternion, in the order `[i,j,k,1]`.
-    pub components: [Complex<f64>; 4],
+    /// Vector component
+    pub vector: [Complex<f64>; 3],
+    /// Scalar component
+    pub scalar: Complex<f64>,
 }
 
 impl Biquaternion {
@@ -222,10 +225,10 @@ impl Biquaternion {
     #[must_use]
     pub fn bar(&self) -> Self {
         Biquaternion::from([
-            (self.components[0]).scale(-1.0),
-            (self.components[1]).scale(-1.0),
-            (self.components[2]).scale(-1.0),
-            (self.components[3]),
+            (self.vector[0]).scale(-1.0),
+            (self.vector[1]).scale(-1.0),
+            (self.vector[2]).scale(-1.0),
+            (self.scalar),
         ])
     }
     /// Compute the complex conjugate of a biquaternion.
@@ -256,10 +259,10 @@ impl Biquaternion {
     #[must_use]
     pub fn conj(&self) -> Self {
         Biquaternion::from([
-            (self.components[0]).conj(),
-            (self.components[1]).conj(),
-            (self.components[2]).conj(),
-            (self.components[3]).conj(),
+            (self.vector[0]).conj(),
+            (self.vector[1]).conj(),
+            (self.vector[2]).conj(),
+            (self.scalar).conj(),
         ])
     }
     /// Compute the squared norm of a biquaternion.
@@ -342,22 +345,22 @@ impl Biquaternion {
     #[must_use]
     pub fn dot(&self, other: &Self) -> Self {
         Biquaternion::from([
-            self.components[3] * other.components[0]
-                + other.components[3] * self.components[0]
-                + self.components[1] * other.components[2]
-                - other.components[1] * self.components[2],
-            self.components[3] * other.components[1]
-                + other.components[3] * self.components[1]
-                + self.components[2] * other.components[0]
-                - other.components[2] * self.components[0],
-            self.components[3] * other.components[2]
-                + other.components[3] * self.components[2]
-                + self.components[0] * other.components[1]
-                - other.components[0] * self.components[1],
-            self.components[3] * other.components[3]
-                - self.components[0] * other.components[0]
-                - self.components[1] * other.components[1]
-                - self.components[2] * other.components[2],
+            self.scalar * other.vector[0]
+                + other.scalar * self.vector[0]
+                + self.vector[1] * other.vector[2]
+                - other.vector[1] * self.vector[2],
+            self.scalar * other.vector[1]
+                + other.scalar * self.vector[1]
+                + self.vector[2] * other.vector[0]
+                - other.vector[2] * self.vector[0],
+            self.scalar * other.vector[2]
+                + other.scalar * self.vector[2]
+                + self.vector[0] * other.vector[1]
+                - other.vector[0] * self.vector[1],
+            self.scalar * other.scalar
+                - self.vector[0] * other.vector[0]
+                - self.vector[1] * other.vector[1]
+                - self.vector[2] * other.vector[2],
         ])
     }
     /// Compute the scalar product of two biquaternions.
@@ -387,8 +390,8 @@ impl Biquaternion {
     #[inline]
     #[must_use]
     pub fn scalar_product(&self, other: &Self) -> Complex<f64> {
-        zip(self.components.iter(), other.components.iter())
-            .fold(Complex::new(0.0, 0.0), |product, x| product + x.0 * x.1)
+        zip(self.vector.iter(), other.vector.iter())
+            .fold(self.scalar * other.scalar, |product, x| product + x.0 * x.1)
     }
 
     /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion.
@@ -418,8 +421,10 @@ impl Default for Biquaternion {
     /// Create a biquaternion with all zeros.
     #[inline]
     fn default() -> Self {
+        let zero = Complex::new(0.0, 0.0);
         Self {
-            components: array::from_fn(|_| Complex::new(0.0, 0.0)),
+            vector: array::from_fn(|_| zero),
+            scalar: zero,
         }
     }
 }
@@ -440,20 +445,23 @@ impl From<[Complex<f64>; 4]> for Biquaternion {
     ///     Complex::new(1.0, 1.0),
     /// ]);
     /// assert_eq!(
-    ///     q.components,
+    ///     q.vector,
     ///     [
     ///         Complex::new(1.0, 0.0),
     ///         Complex::new(0.0, 0.1),
     ///         Complex::new(1.0, 0.0),
-    ///         Complex::new(1.0, 1.0)
     ///     ]
     /// );
+    /// assert_eq!(q.scalar, Complex::new(1.0, 1.0));
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     fn from(value: [Complex<f64>; 4]) -> Self {
-        Self { components: value }
+        Self {
+            scalar: value[3],
+            vector: [value[0], value[1], value[2]],
+        }
     }
 }
 
@@ -463,7 +471,7 @@ impl fmt::Display for Biquaternion {
         write!(
             f,
             "[{}, {}, {}, {}]",
-            self.components[0], self.components[1], self.components[2], self.components[3]
+            self.vector[0], self.vector[1], self.vector[2], self.scalar
         )
     }
 }
@@ -474,7 +482,8 @@ impl Add for Biquaternion {
     #[inline]
     fn add(self, rhs: Self) -> Self {
         Self {
-            components: array::from_fn(|i| self.components[i] + rhs.components[i]),
+            vector: array::from_fn(|i| self.vector[i] + rhs.vector[i]),
+            scalar: self.scalar + rhs.scalar,
         }
     }
 }
@@ -482,9 +491,10 @@ impl Add for Biquaternion {
 impl AddAssign for Biquaternion {
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
-        for n in 0..4 {
-            self.components[n] += rhs.components[n];
+        for n in 0..3 {
+            self.vector[n] += rhs.vector[n];
         }
+        self.scalar += rhs.scalar;
     }
 }
 
@@ -494,7 +504,8 @@ impl Sub for Biquaternion {
     #[inline]
     fn sub(self, rhs: Self) -> Self {
         Self {
-            components: array::from_fn(|i| self.components[i] - rhs.components[i]),
+            vector: array::from_fn(|i| self.vector[i] - rhs.vector[i]),
+            scalar: self.scalar - rhs.scalar,
         }
     }
 }
@@ -502,9 +513,10 @@ impl Sub for Biquaternion {
 impl SubAssign for Biquaternion {
     #[inline]
     fn sub_assign(&mut self, rhs: Self) {
-        for n in 0..4 {
-            self.components[n] -= rhs.components[n];
+        for n in 0..3 {
+            self.vector[n] -= rhs.vector[n];
         }
+        self.scalar -= rhs.scalar;
     }
 }
 
@@ -514,7 +526,8 @@ impl Mul<f64> for Biquaternion {
     #[inline]
     fn mul(self, rhs: f64) -> Self {
         Self {
-            components: array::from_fn(|i| (self.components[i]).scale(rhs)),
+            vector: array::from_fn(|i| (self.vector[i]).scale(rhs)),
+            scalar: self.scalar * rhs,
         }
     }
 }
@@ -525,7 +538,8 @@ impl Mul<Complex<f64>> for Biquaternion {
     #[inline]
     fn mul(self, rhs: Complex<f64>) -> Self {
         Self {
-            components: array::from_fn(|i| self.components[i] * rhs),
+            vector: array::from_fn(|i| self.vector[i] * rhs),
+            scalar: self.scalar * rhs,
         }
     }
 }
@@ -533,18 +547,26 @@ impl Mul<Complex<f64>> for Biquaternion {
 impl MulAssign<f64> for Biquaternion {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
-        for n in 0..4 {
-            self.components[n] *= Complex::new(rhs, 0.0);
+        let rhs_complex = Complex::new(rhs, 0.0);
+        for n in 0..3 {
+            self.vector[n] *= rhs_complex;
         }
+        self.scalar *= rhs_complex;
     }
 }
 impl Div<f64> for Biquaternion {
     type Output = Self;
 
     #[inline]
+    #[allow(
+        clippy::suspicious_arithmetic_impl,
+        reason = "division is multiplication by reciprocal"
+    )]
     fn div(self, rhs: f64) -> Self {
+        let rhs_recip = rhs.recip();
         Self {
-            components: array::from_fn(|i| (self.components[i]).scale(1.0 / rhs)),
+            vector: array::from_fn(|i| (self.vector[i]).scale(rhs_recip)),
+            scalar: self.scalar * rhs_recip,
         }
     }
 }
@@ -553,9 +575,15 @@ impl Div<Complex<f64>> for Biquaternion {
     type Output = Self;
 
     #[inline]
+    #[allow(
+        clippy::suspicious_arithmetic_impl,
+        reason = "division is multiplication by reciprocal"
+    )]
     fn div(self, rhs: Complex<f64>) -> Self {
+        let rhs_recip = rhs.inv();
         Self {
-            components: array::from_fn(|i| self.components[i] / rhs),
+            vector: array::from_fn(|i| self.vector[i] * rhs_recip),
+            scalar: self.scalar * rhs_recip,
         }
     }
 }
@@ -563,9 +591,11 @@ impl Div<Complex<f64>> for Biquaternion {
 impl DivAssign<f64> for Biquaternion {
     #[inline]
     fn div_assign(&mut self, rhs: f64) {
-        for n in 0..4 {
-            self.components[n] /= Complex::new(rhs, 0.0);
+        let rhs_complex = Complex::new(rhs, 0.0);
+        for n in 0..3 {
+            self.vector[n] /= rhs_complex;
         }
+        self.scalar /= rhs_complex;
     }
 }
 
@@ -708,9 +738,9 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
                 product + Complex::new((x.0).powi(2) - (x.1).powi(2), 2.0_f64 * (x.1) * (x.0))
             });
         scale = scale.sqrt();
-        UnitBiquaternion(Biquaternion {
-            components: array::from_fn(|i| Complex::new(array_re[i], array_im[i]) / scale),
-        })
+        UnitBiquaternion(Biquaternion::from(array::from_fn(|i| {
+            Complex::new(array_re[i], array_im[i]) / scale
+        })))
     }
 }
 
@@ -719,7 +749,8 @@ impl From<UnitBiquaternion> for HyperbolicRotationMatrix<4> {
     #[expect(clippy::many_single_char_names, reason = "dummy variables")]
     fn from(q: UnitBiquaternion) -> HyperbolicRotationMatrix<4> {
         let UnitBiquaternion(biquaternion) = q;
-        let [a, b, c, d]: [Complex<f64>; 4] = array::from_fn(|i| biquaternion.components[i]);
+        let [a, b, c]: [Complex<f64>; 3] = array::from_fn(|i| biquaternion.vector[i]);
+        let d = biquaternion.scalar;
 
         HyperbolicRotationMatrix {
             rows: [
@@ -828,10 +859,10 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
         ]);
         let x_transformed = (biquaternion.conj()).dot(&x.dot(&(biquaternion.bar())));
         Minkowski::from([
-            x_transformed.components[0].re,
-            x_transformed.components[1].re,
-            x_transformed.components[2].re,
-            x_transformed.components[3].im,
+            x_transformed.vector[0].re,
+            x_transformed.vector[1].re,
+            x_transformed.vector[2].re,
+            x_transformed.scalar.im,
         ])
     }
 }
@@ -852,10 +883,10 @@ mod tests {
             Complex::new(1.0, 0.0),
             Complex::new(1.0, 0.0),
         ]);
-        assert_eq!(q.components[0], Complex::new(-1.0, 0.0));
-        assert_eq!(q.components[1], Complex::new(0.0, 1.0));
-        assert_eq!(q.components[2], Complex::new(1.0, 0.0));
-        assert_eq!(q.components[3], Complex::new(1.0, 0.0));
+        assert_eq!(q.vector[0], Complex::new(-1.0, 0.0));
+        assert_eq!(q.vector[1], Complex::new(0.0, 1.0));
+        assert_eq!(q.vector[2], Complex::new(1.0, 0.0));
+        assert_eq!(q.scalar, Complex::new(1.0, 0.0));
     }
 
     #[test]
