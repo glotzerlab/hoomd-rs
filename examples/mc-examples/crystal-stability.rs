@@ -2,15 +2,16 @@
 use std::f64::consts::PI;
 
 use hoomd_geometry::{
-    Scale, Volume, shape::{ConvexPolygon, ConvexSurfaceMesh2d, Rhomboid}
+    Scale, Volume,
+    shape::{ConvexPolygon, ConvexSurfaceMesh2d, Rhomboid},
 };
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff,
-    pairwise::HardShape,
+    MaximumInteractionRange, PairwiseCutoff, pairwise::HardShape,
 };
 use hoomd_mc::{Rotate, Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, Replicate, SiteKey, boundary::Periodic, property::OrientedPoint
+    Body, Microstate, Replicate, SiteKey, boundary::Periodic,
+    property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
@@ -54,11 +55,12 @@ impl HardHexagonMelt {
         let hamiltonian = PairwiseCutoff(HardShape(mesh.clone()));
 
         let unit_cell_volume = mesh.volume() / initial_packing_fraction;
-        let unit_cell_edge_length = (unit_cell_volume / (PI/3.0).sin()).sqrt();
+        let unit_cell_edge_length =
+            (unit_cell_volume / (PI / 3.0).sin()).sqrt();
         let unit_cell_rhomboid = Rhomboid {
             extents: [
                 unit_cell_edge_length.try_into()?,
-                (unit_cell_edge_length *  (PI/3.0).sin()).try_into()?,
+                (unit_cell_edge_length * (PI / 3.0).sin()).try_into()?,
             ],
             xy: 1.0 / 3.0f64.sqrt(),
         };
@@ -77,12 +79,17 @@ impl HardHexagonMelt {
             .boundary(periodic_unit_cell)
             .spatial_data(vec_cell)
             .bodies([Body::single_site(
-                OrientedPoint { position: Cartesian::default(), orientation: Angle { theta: PI / 6.0} },
+                OrientedPoint {
+                    position: Cartesian::default(),
+                    orientation: Angle { theta: PI / 6.0 },
+                },
                 OrientedPoint::default(),
-)])
+            )])
             .try_build()?
-            .replicate_with_maximum_interaction_range([n_replicates_side; 2], hamiltonian.maximum_interaction_range())?;
-            
+            .replicate_with_maximum_interaction_range(
+                [n_replicates_side; 2],
+                hamiltonian.maximum_interaction_range(),
+            )?;
 
         let translate =
             Translate::with_maximum_distance(maximum_distance.try_into()?);
@@ -106,10 +113,13 @@ impl Simulation for HardHexagonMelt {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         if self.step().is_multiple_of(10_000) {
-            let expanded_boundary = self.microstate.boundary().scale_volume(1.04.try_into()?);
-            self.microstate = self.microstate.clone_with_boundary(expanded_boundary, |_| true)?;
+            let expanded_boundary =
+                self.microstate.boundary().scale_volume(1.04.try_into()?);
+            self.microstate = self
+                .microstate
+                .clone_with_boundary(expanded_boundary, |_| true)?;
         }
-    
+
         self.equilibrate();
         self.microstate.increment_step();
 
@@ -145,8 +155,7 @@ fn main() -> anyhow::Result<()> {
     use hoomd_microstate::AppendMicrostate;
 
     let mut simulation = HardHexagonMelt::new()?;
-    let mut hoomd_gsd_file =
-        HoomdGsdFile::create("crystal-stability.gsd")?;
+    let mut hoomd_gsd_file = HoomdGsdFile::create("crystal-stability.gsd")?;
 
     for _ in 0..100_000 {
         simulation.advance()?;

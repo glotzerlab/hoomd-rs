@@ -1,5 +1,6 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, PRIMARY_COLOR, Settings, representation::plane_mesh
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, PRIMARY_COLOR,
+    Settings, representation::plane_mesh,
 };
 
 use anyhow::Context;
@@ -34,12 +35,19 @@ pub(crate) fn main() -> anyhow::Result<()> {
 
     let regular_hexagon = hoomd_geometry::shape::ConvexPolygon::regular(6);
     let hoomd_mesh = ConvexSurfaceMesh2d::try_from(regular_hexagon)?;
-    let bevy_mesh = ConvexPolygon::new(hoomd_mesh.vertices().iter().map(|v| Vec2::new(v[0] as f32, v[1] as f32)))?;
+    let bevy_mesh = ConvexPolygon::new(
+        hoomd_mesh
+            .vertices()
+            .iter()
+            .map(|v| Vec2::new(v[0] as f32, v[1] as f32)),
+    )?;
     let bevy_mesh2 = bevy_mesh.clone();
-    
+
     app.add_systems(
         Startup,
-        (move || (bevy_mesh.mesh().build(), ColorMaterial::from(PRIMARY_COLOR)))
+        (move || {
+            (bevy_mesh.mesh().build(), ColorMaterial::from(PRIMARY_COLOR))
+        })
             .pipe(plane_mesh::PlaneMesh::<A>::setup),
     );
     app.add_systems(
@@ -88,7 +96,10 @@ fn sync_sites(
 fn sync_ghosts(
     mut commands: Commands,
     ghost_representation: Res<plane_mesh::Representation<Ghost>>,
-    ghost_query: Query<(Entity, &mut Transform), With<plane_mesh::PlaneMesh<Ghost>>>,
+    ghost_query: Query<
+        (Entity, &mut Transform),
+        With<plane_mesh::PlaneMesh<Ghost>>,
+    >,
     simulation: Res<HardHexagonMelt>,
 ) {
     let ghosts = simulation.microstate.ghosts();
