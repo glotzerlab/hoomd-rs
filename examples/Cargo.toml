@@ -155,3 +155,10 @@ path = "mc-examples/ellipse-gcmc-2d.rs"
 
 [package.metadata.example.ellipse-gcmc-2d]
 path = "mc-examples"
+
+[[example]]
+name = "crystal-stability"
+path = "mc-examples/crystal-stability.rs"
+
+[package.metadata.example.crystal-stability]
+path = "mc-examples"
