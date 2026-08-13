@@ -357,7 +357,7 @@ where
             .enumerate()
             .map(|(i, &v)| -v/2.0 * (checked_counts[i].get() - 1.0))
             .sum();
-        
+
         self.build_replicate(counts, new_boundary, basis_vectors, base_offset)
     }
 
@@ -570,7 +570,7 @@ mod tests {
 
             assert_eq!(replicated.step(), microstate.step());
             assert_eq!(replicated.seed(), microstate.seed());
-            
+
             assert_eq!(replicated.bodies().len(), 1);
             assert_eq!(replicated.boundary(), microstate.boundary());
             assert_eq!(replicated.bodies()[0].item.properties.position, [0.0, 0.0].into());

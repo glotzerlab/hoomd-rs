@@ -353,7 +353,7 @@ where
             .enumerate()
             .map(|(i, &v)| -v/2.0 * (checked_counts[i].get() - 1.0))
             .sum();
-        
+
         self.build_replicate(counts, new_boundary, basis_vectors, base_offset)
     }
 

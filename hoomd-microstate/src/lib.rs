@@ -604,7 +604,7 @@ pub trait Replicate<const N: usize, B, S, X, C> {
     ///
     /// * [`Error::NoReplication`] when any of the counts is 0.
     fn replicate(&self, counts: [usize; N]) -> Result<Microstate<B, S, X, C>, Error>;
-    
+
     /// Replicate the bodies in self count[0] x count[1] x ... count[N-1] times and
     /// expand the periodic boundary accordingly.
     ///
