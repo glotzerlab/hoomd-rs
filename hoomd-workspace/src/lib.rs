@@ -163,9 +163,9 @@ pub enum Error {
 /// Add a new state point to the workspace.
 ///
 /// `add` creates the directory `workspace/{state_point.identifier()}` and
-/// serializes `state_point` to `signac_statepoint.json`. The state point's
-/// identifier and JSON representation meet the specifications of the
-/// [signac framework], making the workspace fully interoperable with the
+/// serializes `state_point` to `signac_statepoint.json` in that directory. The
+/// state point's identifier and JSON representation meet the specifications of
+/// the [signac framework], making the workspace fully interoperable with the
 /// [signac Python package].
 /// 
 /// [signac framework]: https://signac.readthedocs.io
