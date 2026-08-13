@@ -1,7 +1,7 @@
 [package]
-name = "hoomd-utility"
+name = "hoomd-workspace"
 categories.workspace = true
-description = "Types and methods commonly used in hoomd-rs."
+description = "Interoperate with signac workspaces."
 edition.workspace = true
 homepage.workspace = true
 documentation.workspace = true
@@ -18,12 +18,14 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 workspace = true
 
 [dependencies]
-parquet.workspace = true
-parquet_derive.workspace = true
+hex.workspace = true
+md-5.workspace = true
 serde.workspace = true
+serde_json.workspace = true
+serde-json-fmt.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
-assert2.workspace = true
+rstest.workspace = true
 tempfile.workspace = true

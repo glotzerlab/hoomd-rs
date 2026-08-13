@@ -14,6 +14,7 @@
 * `[hoomd-microstate`]: Implement all traits necessary to use `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` as simulation boundaries (#88).
 * `[hoomd-microstate`]: Implement `AppendMicrostate` for microstates with `Triclinic` and `Rhomboid` boundaries (#88).
 * `[hoomd-vector`]: Implement `Mul<Cartesian<N>> for f64`, `Mul<PositiveReal> for Cartesian<N>`, `Mul<Cartesian<N>> for PositiveReal`, `MulAssign<f64> for Cartesian<N>`, and `MulAssign<PositiveReal> for Cartesian<N>` (#88).
+* `[hoomd-workspace`]: Add the `hoomd-workspace` crate. Use it to initialize and read state points in a signac workspace (#359).
 
 *Changed:*
 
