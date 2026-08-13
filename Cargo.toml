@@ -98,7 +98,7 @@ rand_distr = "0.6.0"
 rayon = "1.11.0"
 robust = "1.2.0"
 rustc-hash = "2.1.1"
-serde-json-fmt = "0.1.0"
+serde-json-fmt = "0.2.0"
 serde_with = "3.16.1"
 wildmatch = "2.4.0"
 parquet = { version = "59.0.0", default-features=false }
