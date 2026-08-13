@@ -658,7 +658,7 @@ impl DivAssign<f64> for Biquaternion {
 ///
 /// However, biquaternions also generate boosts via
 /// ```math
-/// q = \cosh(v) + \mathbf{i}h\sinh(v)
+/// q = \cosh(v/2) + \mathbf{i}h\sinh(v/2)
 /// ```
 /// which represents a boost of rapidity $`v`$ in the $`\mathbf{i}`$ direction:
 /// ```

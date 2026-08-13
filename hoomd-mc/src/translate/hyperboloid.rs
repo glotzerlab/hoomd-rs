@@ -3,13 +3,17 @@
 
 //! Implement Translation moves on curved surfaces
 
-use rand::{Rng, distr::Distribution};
+use num::complex::Complex;
+use rand::{
+    Rng, RngExt,
+    distr::{Distribution, Uniform},
+};
 
 use crate::{LocalTrial, Translate};
-use hoomd_manifold::{Hyperbolic, HyperbolicDisk};
+use hoomd_manifold::{Biquaternion, Hyperbolic, HyperbolicDisk, HyperbolicRotate, Minkowski};
 use hoomd_microstate::property::{Orientation, OrientedHyperbolicPoint, Point, Position};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::Angle;
+use hoomd_vector::{Angle, Cartesian, Rotate, Versor};
 
 impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
     /// Propose local trial moves for a body on a hyperbolic surface.
@@ -79,6 +83,55 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
     }
 }
 
+impl LocalTrial<Point<Hyperbolic<4>>> for Translate<Point<Hyperbolic<4>>> {
+    /// Propose local trial moves for a body in three-dimensional
+    /// hyperbolic space.
+    #[inline]
+    fn propose<R: Rng>(
+        &self,
+        rng: &mut R,
+        body_properties: Point<Hyperbolic<4>>,
+    ) -> Point<Hyperbolic<4>> {
+        let mut trial = body_properties;
+
+        // convert body coordinates to biquaternion operator
+        let body_array = trial.position.coordinates();
+        let eta = body_array[3].acosh();
+        let (sh, ch) = (
+            (eta / 2.0).sinh() / (eta.sinh()),
+            (eta / 2.0).cosh() / (eta.cosh()),
+        );
+        let body_quat_operator = Biquaternion::from([
+            Complex::new(0.0, body_array[0] * sh),
+            Complex::new(0.0, body_array[1] * sh),
+            Complex::new(0.0, body_array[2] * sh),
+            Complex::new(body_array[3] * ch, 0.0),
+        ])
+        .to_unit_unchecked();
+
+        // generate random displacement and direction, relative to cusp
+        let trial_boost = Uniform::new(0.0, 1.0).expect("r is positive and real");
+        let v1: f64 = trial_boost.sample(rng);
+        let v = v1.sqrt() * self.maximum_distance.get() * 0.9;
+        let (snh, csh) = (v.sinh(), v.cosh());
+
+        let trial_versor: Versor = rng.random();
+        let north_pole = Cartesian::from([0.0, 0.0, 1.0]);
+        let trial_direction = trial_versor.rotate(&north_pole);
+        // trial displacement, in Minkowski coordinates centered at cusp
+        let trial_coords: Minkowski<4> = Minkowski::from([
+            snh * trial_direction[0],
+            snh * trial_direction[1],
+            snh * trial_direction[2],
+            csh,
+        ]);
+
+        let transformed_point = body_quat_operator.hyperbolic_rotate(&trial_coords);
+        *trial.position_mut() = Hyperbolic::<4>::from_minkowski_coordinates(transformed_point);
+        trial
+    }
+}
+
 impl LocalTrial<OrientedHyperbolicPoint<3, Angle>>
     for Translate<OrientedHyperbolicPoint<3, Angle>>
 {
@@ -130,7 +183,7 @@ mod tests {
     const NSTEPS: usize = 1000;
 
     #[rstest]
-    fn translate_hyperbolic_point(#[values(0.01, 0.1, 1.0)] d: f64) {
+    fn translate_2d_hyperbolic_point(#[values(0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
             [1.0, 0.0, (2.0_f64).sqrt()].into(),
@@ -165,7 +218,43 @@ mod tests {
     }
 
     #[rstest]
-    fn translate_hyperbolic_point_chain(#[values(0.001, 0.01, 0.1, 0.25)] d: f64) {
+    fn translate_3d_hyperbolic_point(#[values(0.01, 0.1, 1.0)] d: f64) {
+        let mut rng = StdRng::seed_from_u64(42);
+        let body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
+            [1.0, 0.0, 0.0, (2.0_f64).sqrt()].into(),
+        ));
+        let translate =
+            Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
+
+        for _ in 0..N {
+            let new_body_properties = translate.propose(&mut rng, body_properties);
+
+            // Translation move keeps the point on the Hyperboloid
+            assert_relative_eq!(
+                new_body_properties
+                    .position()
+                    .point()
+                    .distance_squared(&Minkowski::from([0.0, 0.0, 0.0, 0.0])),
+                -1.0,
+                epsilon = 1e-8
+            );
+
+            // Translation move does not move the point more than a distance d
+            let dist =
+                new_body_properties
+                    .position()
+                    .distance(&Hyperbolic::from_minkowski_coordinates(Minkowski::from([
+                        1.0,
+                        0.0,
+                        0.0,
+                        (2.0_f64).sqrt(),
+                    ])));
+            assert!(d > dist);
+        }
+    }
+
+    #[rstest]
+    fn translate_2d_hyperbolic_point_chain(#[values(0.001, 0.01, 0.1, 0.25)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
             [-1.0, 1.0, (3.0_f64).sqrt()].into(),
@@ -205,7 +294,47 @@ mod tests {
     }
 
     #[rstest]
-    fn translate_oriented_hyperbolic_point(#[values(0.001, 0.01, 0.1, 1.0)] d: f64) {
+    fn translate_3d_hyperbolic_point_chain(#[values(0.001, 0.01, 0.1, 0.25)] d: f64) {
+        let mut rng = StdRng::seed_from_u64(42);
+        let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
+            [-1.0, 1.0, 1.0, 2.0].into(),
+        ));
+        let translate =
+            Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
+
+        for _ in 0..NSTEPS {
+            let new_body_properties = translate.propose(&mut rng, body_properties);
+
+            // Translation move keeps the point on the Hyperboloid
+            #[allow(
+                clippy::cast_possible_truncation,
+                reason = "float is truncated before converting to i32"
+            )]
+            let tolerance = 8_i32
+                - (new_body_properties.position.coordinates()[2]
+                    .log10()
+                    .trunc() as i32);
+            assert_relative_eq!(
+                new_body_properties
+                    .position()
+                    .point()
+                    .distance_squared(&Minkowski::from([0.0, 0.0, 0.0, 0.0])),
+                -1.0,
+                epsilon = 10.0_f64.powi(-tolerance)
+            );
+
+            // Translation move does not move the point more than a distance d
+            let dist = new_body_properties
+                .position()
+                .distance(&body_properties.position);
+            assert!(d > dist);
+
+            body_properties.position = new_body_properties.position;
+        }
+    }
+
+    #[rstest]
+    fn translate_2d_oriented_hyperbolic_point(#[values(0.001, 0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let body_properties = OrientedHyperbolicPoint {
             position: Hyperbolic::from_minkowski_coordinates([1.0, 0.0, (2.0_f64).sqrt()].into()),
@@ -249,7 +378,7 @@ mod tests {
     }
 
     #[rstest]
-    fn translate_oriented_hyperbolic_point_chain(#[values(0.001, 0.01, 0.1, 0.25)] d: f64) {
+    fn translate_2d_oriented_hyperbolic_point_chain(#[values(0.001, 0.01, 0.1, 0.25)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let mut body_properties = OrientedHyperbolicPoint {
             position: Hyperbolic::from_minkowski_coordinates([1.0, 0.0, (2.0_f64).sqrt()].into()),
@@ -289,8 +418,7 @@ mod tests {
     }
 
     #[rstest]
-    fn translate_hyperbolic_point_far_from_cusp(#[values(0.001)] d: f64) {
-        //, 0.01, 0.1, 0.25)] d: f64) {
+    fn translate_2d_hyperbolic_point_far_from_cusp(#[values(0.001, 0.01, 0.1)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
             [10_000.0, 10_000.0, (200_000_001.0_f64).sqrt()].into(),
@@ -328,8 +456,49 @@ mod tests {
             body_properties.position = new_body_properties.position;
         }
     }
+
     #[rstest]
-    fn translate_oriented_hyperbolic_point_far_from_cusp(#[values(0.001, 0.01, 0.1)] d: f64) {
+    fn translate_3d_hyperbolic_point_far_from_cusp(#[values(0.001, 0.01, 0.1, 0.25)] d: f64) {
+        let mut rng = StdRng::seed_from_u64(42);
+        let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
+            [10_000.0, 10_000.0, 10_000.0, (300_000_001.0_f64).sqrt()].into(),
+        ));
+        let translate =
+            Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
+
+        for _ in 0..NSTEPS {
+            let new_body_properties = translate.propose(&mut rng, body_properties);
+
+            // Translation move keeps the point on the Hyperboloid
+            #[allow(
+                clippy::cast_possible_truncation,
+                reason = "float is truncated before converting to i32"
+            )]
+            let tolerance = 8_i32
+                - (new_body_properties.position.coordinates()[2]
+                    .log10()
+                    .trunc() as i32);
+            assert_relative_eq!(
+                new_body_properties
+                    .position()
+                    .point()
+                    .distance_squared(&Minkowski::from([0.0, 0.0, 0.0, 0.0])),
+                -1.0,
+                epsilon = 10.0_f64.powi(-tolerance)
+            );
+
+            // Translation move does not move the point more than a distance d
+            let dist = new_body_properties
+                .position()
+                .distance(&body_properties.position);
+            // when far away from cusp, small displacements are unstable
+            assert!(d > dist);
+            body_properties.position = new_body_properties.position;
+        }
+    }
+
+    #[rstest]
+    fn translate_2d_oriented_hyperbolic_point_far_from_cusp(#[values(0.001, 0.01, 0.1)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let mut body_properties = OrientedHyperbolicPoint {
             position: Hyperbolic::from_minkowski_coordinates(

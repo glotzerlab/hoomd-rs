@@ -3884,6 +3884,7 @@ dependencies = [
  "hoomd-vector",
  "itertools 0.15.0",
  "log",
+ "num",
  "rand 0.10.2",
  "rand_distr",
  "rayon",

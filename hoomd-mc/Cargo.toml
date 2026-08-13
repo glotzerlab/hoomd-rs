@@ -20,6 +20,7 @@ workspace = true
 [dependencies]
 itertools.workspace = true
 log.workspace = true
+num.workspace = true
 rand.workspace = true
 rand_distr.workspace = true
 rayon.workspace = true
