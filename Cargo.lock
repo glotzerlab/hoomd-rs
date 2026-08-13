@@ -475,7 +475,7 @@ dependencies = [
  "parquet",
  "parquet_derive",
  "postcard",
- "rand",
+ "rand 0.10.2",
  "rayon",
  "serde",
  "wildmatch",
@@ -1265,7 +1265,7 @@ dependencies = [
  "glam 0.32.1",
  "itertools 0.14.0",
  "libm",
- "rand",
+ "rand 0.10.2",
  "rand_distr",
  "serde",
  "thiserror 2.0.19",
@@ -2160,7 +2160,7 @@ checksum = "d524456ba66e72eb8b115ff89e01e497f8e6d11d78b70b1aa13c0fbd97540a81"
 dependencies = [
  "cfg-if",
  "cpufeatures",
- "rand_core",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -3054,7 +3054,7 @@ dependencies = [
  "itertools 0.15.0",
  "parquet",
  "parquet_derive",
- "rand",
+ "rand 0.10.2",
  "strum",
  "strum_macros",
  "thiserror 2.0.19",
@@ -3498,7 +3498,7 @@ dependencies = [
  "bytemuck",
  "encase",
  "libm",
- "rand",
+ "rand 0.10.2",
  "serde_core",
 ]
 
@@ -3816,9 +3816,10 @@ dependencies = [
  "hoomd-utility",
  "hoomd-vector",
  "itertools 0.15.0",
- "rand",
+ "rand 0.10.2",
  "robust",
  "rstest",
+ "rstest_reuse",
  "serde",
  "serde_with",
  "thiserror 2.0.19",
@@ -3853,7 +3854,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
- "rand",
+ "rand 0.10.2",
  "rstest",
  "serde",
 ]
@@ -3866,7 +3867,7 @@ dependencies = [
  "divan",
  "faer",
  "nalgebra",
- "rand",
+ "rand 0.10.2",
  "rstest",
  "serde",
  "serde_with",
@@ -3882,7 +3883,7 @@ dependencies = [
  "hoomd-vector",
  "num",
  "paste",
- "rand",
+ "rand 0.10.2",
  "rstest",
  "serde",
  "serde_with",
@@ -3907,7 +3908,7 @@ dependencies = [
  "hoomd-vector",
  "itertools 0.15.0",
  "log",
- "rand",
+ "rand 0.10.2",
  "rand_distr",
  "rayon",
  "rstest",
@@ -3929,7 +3930,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
- "rand",
+ "rand 0.10.2",
  "rand_distr",
  "rayon",
  "rstest",
@@ -3956,7 +3957,7 @@ dependencies = [
  "hoomd-vector",
  "itertools 0.15.0",
  "log",
- "rand",
+ "rand 0.10.2",
  "robust",
  "rstest",
  "serde",
@@ -3973,7 +3974,7 @@ dependencies = [
  "chacha20",
  "clap",
  "divan",
- "rand",
+ "rand 0.10.2",
  "rand_sfc",
  "rstest",
  "serde",
@@ -3995,7 +3996,7 @@ dependencies = [
  "hoomd-utility",
  "hoomd-vector",
  "log",
- "rand",
+ "rand 0.10.2",
  "rstest",
  "rustc-hash 2.1.3",
  "serde",
@@ -4027,7 +4028,7 @@ dependencies = [
  "hoomd-rand",
  "hoomd-utility",
  "paste",
- "rand",
+ "rand 0.10.2",
  "rand_distr",
  "rstest",
  "serde",
@@ -4855,7 +4856,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35bd024e8b2ff75562e5f34e7f4905839deb4b22955ef5e73d2fea1b9813cb23"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.4.8",
  "num-complex",
  "num-integer",
  "num-iter",
@@ -4872,6 +4873,16 @@ dependencies = [
  "num-integer",
  "num-traits",
  "serde",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93e7820bc0a80a0238e650327316f929ba18d5be054b647490a3a6a339f3e7c0"
+dependencies = [
+ "num-integer",
+ "num-traits",
 ]
 
 [[package]]
@@ -4916,7 +4927,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f83d14da390562dca69fc84082e73e548e1ad308d24accdedd2720017cb37824"
 dependencies = [
- "num-bigint",
+ "num-bigint 0.4.8",
  "num-integer",
  "num-traits",
  "serde",
@@ -5383,33 +5394,31 @@ dependencies = [
 
 [[package]]
 name = "parquet"
-version = "59.1.0"
+version = "59.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5302d4da74d6596a1f11f9928767995b53bca657cbeea1e4e8c5074f8a1157dd"
+checksum = "7065842956a20c2a536924ce8e4d9955f7422451511b9eb7500d7bfe5077e59c"
 dependencies = [
  "ahash",
  "bytes",
  "chrono",
  "half",
  "hashbrown 0.17.1",
- "num-bigint",
+ "num-bigint 0.5.1",
  "num-integer",
  "num-traits",
- "paste",
  "seq-macro",
  "twox-hash",
 ]
 
 [[package]]
 name = "parquet_derive"
-version = "59.1.0"
+version = "59.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbc385c96649f10624ac3bb896fd1242c4b5a0ace271dd1424531d4e5efb9e7c"
+checksum = "7fc06f7e587ee831445bd3e730953fa6f31d4d3c9b79d77cd329e45576fb68d9"
 dependencies = [
- "parquet",
  "proc-macro2",
  "quote",
- "syn 2.0.119",
+ "syn 3.0.3",
 ]
 
 [[package]]
@@ -5589,6 +5598,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ppv-lite86"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85eae3c4ed2f50dcfe72643da4befc30deadb458a9b590d720cde2f2b1e97da9"
+dependencies = [
+ "zerocopy",
+]
+
+[[package]]
 name = "presser"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5715,13 +5733,43 @@ checksum = "019b4b213425016d7d84a153c4c73afb0946fbb4840e4eece7ba8848b9d6da22"
 
 [[package]]
 name = "rand"
+version = "0.8.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22f6172bdec972074665ed81ed53b71da00bfc44b65a753cfde883ec4c702a1a"
+dependencies = [
+ "libc",
+ "rand_chacha",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "rand"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7f5fa3a058cd35567ef9bfa5e75732bee0f9e4c55fa90477bef2dfcdbc4be80"
 dependencies = [
  "chacha20",
  "getrandom 0.4.3",
- "rand_core",
+ "rand_core 0.10.1",
+]
+
+[[package]]
+name = "rand_chacha"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
+dependencies = [
+ "ppv-lite86",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "rand_core"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
+dependencies = [
+ "getrandom 0.2.17",
 ]
 
 [[package]]
@@ -5737,7 +5785,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d431c2703ccf129de4d45253c03f49ebb22b97d6ad79ee3ecfc7e3f4862c1d8"
 dependencies = [
  "num-traits",
- "rand",
+ "rand 0.10.2",
 ]
 
 [[package]]
@@ -5746,7 +5794,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a429a4b60b543f61ddd5a55f31d39a2ece77617cb40bf83ceedef1c3e6e514a9"
 dependencies = [
- "rand_core",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -5982,6 +6030,17 @@ dependencies = [
  "rustc_version",
  "syn 2.0.119",
  "unicode-ident",
+]
+
+[[package]]
+name = "rstest_reuse"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3a8fb4672e840a587a66fc577a5491375df51ddb88f2a2c2a792598c326fe14"
+dependencies = [
+ "quote",
+ "rand 0.8.7",
+ "syn 2.0.119",
 ]
 
 [[package]]

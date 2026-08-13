@@ -12,7 +12,7 @@ rust-version.workspace = true
 version.workspace = true
 
 [package.metadata.docs.rs]
-rustdoc-args = [ "--html-in-header", "katex.html" ]
+rustdoc-args = ["--html-in-header", "katex.html"]
 
 [lints]
 workspace = true
@@ -23,9 +23,11 @@ rand.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 robust.workspace = true
+itertools.workspace = true
 
 hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
+hoomd-linear-algebra.workspace = true
 hoomd-gsd.workspace = true
 hoomd-manifold.workspace = true
 hoomd-spatial.workspace = true
@@ -39,7 +41,6 @@ hoomd-linear-algebra.workspace = true
 anyhow.workspace = true
 approxim.workspace = true
 divan.workspace = true
-itertools.workspace = true
 log.workspace = true
 rand.workspace = true
 rstest.workspace = true
