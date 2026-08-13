@@ -565,26 +565,18 @@ pub trait AppendMicrostate<B, S, X, C> {
 ///
 /// ```
 /// use hoomd_geometry::shape::Hypercuboid;
-/// use hoomd_microstate::{
-///     Body, Microstate, Replicate, boundary::Periodic
-/// };
+/// use hoomd_microstate::{Body, Microstate, Replicate, boundary::Periodic};
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let cuboid = Hypercuboid {
-///     edge_lengths: [
-///        10.0.try_into()?,
-///        20.0.try_into()?,
-///        30.0.try_into()?,
-///     ],
+///     edge_lengths: [10.0.try_into()?, 20.0.try_into()?, 30.0.try_into()?],
 /// };
 ///
 /// let periodic = Periodic::new(1.0, cuboid)?;
 /// let microstate = Microstate::builder()
 ///     .boundary(periodic)
-///     .bodies([
-///         Body::point(Cartesian::from([0.0, 0.0, 0.0])),
-///     ])
+///     .bodies([Body::point(Cartesian::from([0.0, 0.0, 0.0]))])
 ///     .try_build()?;
 ///
 /// let replicated = microstate.replicate([2, 2, 2])?;
@@ -616,5 +608,9 @@ pub trait Replicate<const N: usize, B, S, X, C> {
     /// # Errors
     ///
     /// * [`Error::NoReplication`] when any of the counts is 0.
-    fn replicate_with_maximum_interaction_range(&self, counts: [usize; N], maximum_interaction_range: f64) -> Result<Microstate<B, S, X, C>, Error>;
+    fn replicate_with_maximum_interaction_range(
+        &self,
+        counts: [usize; N],
+        maximum_interaction_range: f64,
+    ) -> Result<Microstate<B, S, X, C>, Error>;
 }

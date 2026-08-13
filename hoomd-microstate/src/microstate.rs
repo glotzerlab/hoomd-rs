@@ -606,7 +606,13 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     ///
     /// This helper method is used in the various `Replicate` implementations.
     #[inline]
-    pub(crate) fn build_replicate<const N: usize, V>(&self, counts: [usize; N], new_boundary: C, basis_vectors: [V; N], base_offset: V) -> Result<Microstate<B, S, X, C>, crate::Error>
+    pub(crate) fn build_replicate<const N: usize, V>(
+        &self,
+        counts: [usize; N],
+        new_boundary: C,
+        basis_vectors: [V; N],
+        base_offset: V,
+    ) -> Result<Microstate<B, S, X, C>, crate::Error>
     where
         V: Vector,
         B: Transform<S> + Position<Position = V>,
@@ -624,8 +630,8 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
         let count_ranges = array::from_fn::<_, N, _>(|i| 0..counts[i]);
         for indices in count_ranges.into_iter().multi_cartesian_product() {
             let mut offset = base_offset;
-            for (i,x) in indices.iter().enumerate() {
-                offset += basis_vectors[i] * (*x as f64) ;
+            for (i, x) in indices.iter().enumerate() {
+                offset += basis_vectors[i] * (*x as f64);
             }
 
             for body in self.iter_bodies_tag_order() {
@@ -1392,7 +1398,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// # }
     /// ```
     #[inline]
-    pub fn iter_bodies_tag_order(&self) -> impl Iterator<Item = &Tagged<Body<B,S>>> {
+    pub fn iter_bodies_tag_order(&self) -> impl Iterator<Item = &Tagged<Body<B, S>>> {
         self.bodies.iter_tag_order()
     }
 

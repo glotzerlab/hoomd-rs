@@ -48,7 +48,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
         (move || {
             (bevy_mesh.mesh().build(), ColorMaterial::from(PRIMARY_COLOR))
         })
-            .pipe(plane_mesh::PlaneMesh::<A>::setup),
+        .pipe(plane_mesh::PlaneMesh::<A>::setup),
     );
     app.add_systems(
         Startup,

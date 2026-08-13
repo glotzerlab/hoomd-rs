@@ -556,8 +556,8 @@ impl<const N: usize> Cartesian<N> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn basis(i: usize) -> Self{
-        array::from_fn(|j| if i == j {1.0} else {0.0}).into()
+    pub fn basis(i: usize) -> Self {
+        array::from_fn(|j| if i == j { 1.0 } else { 0.0 }).into()
     }
 }
 
