@@ -597,11 +597,24 @@ pub trait Replicate<const N: usize, B, S, X, C> {
     ///
     /// The new microstate is built with the same step, seed, and spatial data
     /// structure, as if it were cloned. The new microstate's boundary keeps
-    /// the same interaction range, but is extended by `counts[i]` along each
+    /// the same interaction range but is extended by `counts[i]` along each
     /// relevant (shape-dependent) axis.
     ///
     /// # Errors
     ///
     /// * [`Error::NoReplication`] when any of the counts is 0.
     fn replicate(&self, counts: [usize; N]) -> Result<Microstate<B, S, X, C>, Error>;
+    
+    /// Replicate the bodies in self count[0] x count[1] x ... count[N-1] times and
+    /// expand the periodic boundary accordingly.
+    ///
+    /// The new microstate is built with the same step, seed, and spatial data
+    /// structure, as if it were cloned. The new microstate's boundary sets
+    /// the given interaction range and is extended by `counts[i]` along each
+    /// relevant (shape-dependent) axis.
+    ///
+    /// # Errors
+    ///
+    /// * [`Error::NoReplication`] when any of the counts is 0.
+    fn replicate_with_maximum_interaction_range(&self, counts: [usize; N], maximum_interaction_range: f64) -> Result<Microstate<B, S, X, C>, Error>;
 }

@@ -299,8 +299,8 @@ where
     /// expand the periodic boundary accordingly.
     ///
     /// The new microstate is built with the same step, seed, and spatial data
-    /// structure, as if it were cloned. The new microstate's boundary keeps
-    /// the same interaction range, but is extended by `counts[i]` along each
+    /// structure, as if it were cloned. The new microstate's boundary sets the
+    /// given interaction range and is extended by `counts[i]` along each
     /// Cartesian axis.
     ///
     /// # Example
@@ -321,7 +321,7 @@ where
     ///     ],
     /// };
     ///
-    /// let periodic = Periodic::new(1.0, cuboid)?;
+    /// let periodic = Periodic::new(0.0, cuboid)?;
     /// let microstate = Microstate::builder()
     ///     .boundary(periodic)
     ///     .bodies([
@@ -329,7 +329,7 @@ where
     ///     ])
     ///     .try_build()?;
     ///
-    /// let replicated = microstate.replicate([2, 2, 2])?;
+    /// let replicated = microstate.replicate_with_maximum_interaction_range([2, 2, 2], 1.0)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -338,7 +338,7 @@ where
     ///
     /// * [`Error::NoReplication`] when any of the counts is 0.
     #[inline]
-    fn replicate(&self, counts: [usize; N]) -> Result<Microstate<B, S, X, Periodic<Hypercuboid<N>>>, crate::Error> {
+    fn replicate_with_maximum_interaction_range(&self, counts: [usize; N], maximum_interaction_range: f64) -> Result<Microstate<B, S, X, Periodic<Hypercuboid<N>>>, crate::Error> {
         // try_from_fn would be a cleaner way to write this, but it is not stable:
         // https://doc.rust-lang.org/std/array/fn.try_from_fn.html
         let mut checked_counts = [PositiveReal::default(); N];
@@ -347,7 +347,7 @@ where
         }
 
         let old_edge_lengths = array::from_fn::<_, N, _>(|i| self.boundary().shape.edge_lengths[i]);
-        let new_boundary = Periodic::new(self.boundary().maximum_interaction_range(),
+        let new_boundary = Periodic::new(maximum_interaction_range,
             Hypercuboid { edge_lengths: array::from_fn(|i| old_edge_lengths[i] * checked_counts[i]) })
             .expect("replicated boxes should always satisfy the maximum interaction range");
 
@@ -359,6 +359,14 @@ where
             .sum();
         
         self.build_replicate(counts, new_boundary, basis_vectors, base_offset)
+    }
+
+
+    /// Calls [`replicate_with_maximum_interaction_range`] with the current boundary's
+    /// maximum interaction range.
+    #[inline]
+    fn replicate(&self, counts: [usize; N]) -> Result<Microstate<B, S, X, Periodic<Hypercuboid<N>>>, crate::Error> {
+        self.replicate_with_maximum_interaction_range(counts, self.boundary().maximum_interaction_range())
     }
 }
 
@@ -592,6 +600,7 @@ mod tests {
             assert_eq!(replicated.bodies().len(), 2);
             assert_eq!(replicated.boundary().shape.edge_lengths[0].get(), 20.0);
             assert_eq!(replicated.boundary().shape.edge_lengths[1].get(), 20.0);
+            assert_eq!(replicated.boundary().maximum_interaction_range(), microstate.boundary().maximum_interaction_range());
             assert_eq!(replicated.bodies()[0].item.properties.position, [-5.0, 0.0].into());
             assert_eq!(replicated.bodies()[1].item.properties.position, [5.0, 0.0].into());
 
@@ -620,6 +629,7 @@ mod tests {
             assert_eq!(replicated.bodies().len(), 4);
             assert_eq!(replicated.boundary().shape.edge_lengths[0].get(), 20.0);
             assert_eq!(replicated.boundary().shape.edge_lengths[1].get(), 40.0);
+            assert_eq!(replicated.boundary().maximum_interaction_range(), microstate.boundary().maximum_interaction_range());
             assert_eq!(replicated.bodies()[0].item.properties.position, [-5.0, -10.0].into());
             assert_eq!(replicated.bodies()[1].item.properties.position, [-5.0, 10.0].into());
             assert_eq!(replicated.bodies()[2].item.properties.position, [5.0, -10.0].into());
@@ -650,6 +660,7 @@ mod tests {
             assert_eq!(replicated.bodies().len(), 3);
             assert_eq!(replicated.boundary().shape.edge_lengths[0].get(), 10.0);
             assert_eq!(replicated.boundary().shape.edge_lengths[1].get(), 60.0);
+            assert_eq!(replicated.boundary().maximum_interaction_range(), microstate.boundary().maximum_interaction_range());
             assert_eq!(replicated.bodies()[0].item.properties.position, [0.0, -20.0].into());
             assert_eq!(replicated.bodies()[1].item.properties.position, [0.0, 0.0].into());
             assert_eq!(replicated.bodies()[2].item.properties.position, [0.0, 20.0].into());
@@ -1046,6 +1057,7 @@ mod tests {
             assert_eq!(replicated.boundary().shape.edge_lengths[0].get(), 20.0);
             assert_eq!(replicated.boundary().shape.edge_lengths[1].get(), 40.0);
             assert_eq!(replicated.boundary().shape.edge_lengths[2].get(), 60.0);
+            assert_eq!(replicated.boundary().maximum_interaction_range(), microstate.boundary().maximum_interaction_range());
             assert_eq!(replicated.bodies()[0].item.properties.position, [-5.0, -10.0, -15.0].into());
             assert_eq!(replicated.bodies()[1].item.properties.position, [-5.0, -10.0, 15.0].into());
             assert_eq!(replicated.bodies()[2].item.properties.position, [-5.0, 10.0, -15.0].into());
@@ -1054,6 +1066,35 @@ mod tests {
             assert_eq!(replicated.bodies()[5].item.properties.position, [5.0, -10.0, 15.0].into());
             assert_eq!(replicated.bodies()[6].item.properties.position, [5.0, 10.0, -15.0].into());
             assert_eq!(replicated.bodies()[7].item.properties.position, [5.0, 10.0, 15.0].into());
+
+            Ok(())
+        }
+
+        #[test]
+        fn replicate_with_maximum_interaction_range() -> anyhow::Result<()>{
+            let cuboid = Hypercuboid {
+                edge_lengths: [
+                    10.0.try_into()?,
+                    20.0.try_into()?,
+                    30.0.try_into()?,
+                ],
+            };
+
+            let periodic = Periodic::new(0.0, cuboid)?;
+            let microstate = Microstate::builder()
+                .boundary(periodic)
+                .bodies([
+                    Body::point(Cartesian::from([0.0, 0.0, 0.0])),
+                ])
+                .try_build()?;
+
+            let replicated = microstate.replicate_with_maximum_interaction_range([2, 2, 2], 3.0)?;
+
+            assert_eq!(replicated.bodies().len(), 8);
+            assert_eq!(replicated.boundary().shape.edge_lengths[0].get(), 20.0);
+            assert_eq!(replicated.boundary().shape.edge_lengths[1].get(), 40.0);
+            assert_eq!(replicated.boundary().shape.edge_lengths[2].get(), 60.0);
+            assert_eq!(replicated.boundary().maximum_interaction_range(), 3.0);
 
             Ok(())
         }
