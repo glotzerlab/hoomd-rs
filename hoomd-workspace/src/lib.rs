@@ -167,7 +167,7 @@ pub enum Error {
 /// state point's identifier and JSON representation meet the specifications of
 /// the [signac framework], making the workspace fully interoperable with the
 /// [signac Python package].
-/// 
+///
 /// [signac framework]: https://signac.readthedocs.io
 /// [signac Python package]: https://signac.readthedocs.io/projects/core/en/latest/
 ///
