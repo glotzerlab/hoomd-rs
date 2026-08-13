@@ -1,6 +1,7 @@
 // ANCHOR: all
 // ANCHOR: use
 use anyhow::{Context, anyhow};
+use std::f64::consts::PI;
 
 use hoomd_geometry::{
     Volume,
@@ -83,11 +84,11 @@ impl HardDiskSelfAssembly {
         };
         let initial_box_volume =
             n_disks as f64 * circle.volume() / initial_packing_fraction;
-        let initial_box_edge_length = initial_box_volume.sqrt();
+        let initial_box_edge_length = (initial_box_volume / (PI/3.0).sin()).sqrt();
         let rhomboid = Rhomboid {
             extents: [
                 initial_box_edge_length.try_into()?,
-                initial_box_edge_length.try_into()?,
+                (initial_box_edge_length * (PI/3.0).sin()).try_into()?,
             ],
             xy: 1.0 / 3.0f64.sqrt(),
         };
