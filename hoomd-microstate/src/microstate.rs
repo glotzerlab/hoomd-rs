@@ -4,9 +4,10 @@
 //! Implement [`Microstate`] and related types.
 
 use arrayvec::ArrayVec;
-use hoomd_vector::Outer;
+use hoomd_vector::{Outer, Vector};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::{cmp::Reverse, collections::BinaryHeap, fmt, mem};
+use std::{array, cmp::Reverse, collections::BinaryHeap, fmt, mem};
 
 use crate::{
     Body, Error, Site, Transform,
@@ -599,6 +600,47 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     #[inline]
     pub fn boundary(&self) -> &C {
         &self.boundary
+    }
+
+    /// Build a replicated microstate
+    ///
+    /// This helper method is used in the various `Replicate` implementations.
+    #[inline]
+    pub(crate) fn build_replicate<const N: usize, V>(
+        &self,
+        counts: [usize; N],
+        new_boundary: C,
+        basis_vectors: [V; N],
+        base_offset: V,
+    ) -> Result<Microstate<B, S, X, C>, crate::Error>
+    where
+        V: Vector,
+        B: Transform<S> + Position<Position = V>,
+        S: Position<Position = V> + Default,
+        Body<B, S>: Clone,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+        X: PointUpdate<V, SiteKey> + Clone,
+    {
+        let mut microstate = Microstate::builder()
+            .step(self.step())
+            .seed(self.seed())
+            .spatial_data(self.spatial_data().clone())
+            .boundary(new_boundary)
+            .try_build()?;
+        let count_ranges = array::from_fn::<_, N, _>(|i| 0..counts[i]);
+        for indices in count_ranges.into_iter().multi_cartesian_product() {
+            let mut offset = base_offset;
+            for (i, x) in indices.iter().enumerate() {
+                offset += basis_vectors[i] * (*x as f64);
+            }
+
+            for body in self.iter_bodies_tag_order() {
+                let mut new_body = body.item.clone();
+                *new_body.properties.position_mut() += offset;
+                microstate.add_body(new_body)?;
+            }
+        }
+        Ok(microstate)
     }
 }
 
@@ -1322,6 +1364,42 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     #[inline]
     pub fn iter_sites_tag_order(&self) -> impl Iterator<Item = &Site<S>> {
         self.sites.iter_tag_order()
+    }
+
+    /// Iterate over all bodies in monotonically increasing tag order.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::{Body, Microstate};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::builder()
+    ///     .bodies([
+    ///         Body::point(Cartesian::from([1.0, 0.0])),
+    ///         Body::point(Cartesian::from([-1.0, 2.0])),
+    ///     ])
+    ///     .try_build()?;
+    ///
+    /// microstate.remove_body(0);
+    /// microstate.add_body(Body::point(Cartesian::from([3.0, 1.0])))?;
+    ///
+    /// let body_positions_tag_order: Vec<_> = microstate
+    ///     .iter_bodies_tag_order()
+    ///     .map(|s| s.item.properties.position)
+    ///     .collect();
+    /// assert_eq!(
+    ///     body_positions_tag_order,
+    ///     vec![[3.0, 1.0].into(), [-1.0, 2.0].into()]
+    /// );
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn iter_bodies_tag_order(&self) -> impl Iterator<Item = &Tagged<Body<B, S>>> {
+        self.bodies.iter_tag_order()
     }
 
     /// Get the spatial data structure.

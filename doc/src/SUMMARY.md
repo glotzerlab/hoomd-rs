@@ -37,6 +37,7 @@
   - [Patchy Body (2D)](md-examples/patchy-body-2d.md)
 - [Monte Carlo Examples](mc-examples/index.md)
   - [Grandcanonical ensemble simulation of ellipses (2D)](mc-examples/ellipse-gcmc-2d.md)
+  - [Melt an ideal hexagonal structure of hexagons](mc-examples/crystal-stability.md)
 
 # Reference
 

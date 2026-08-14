@@ -115,7 +115,7 @@ pub const MUTED_COLOR: Color = Color::srgb(0.5, 0.5, 0.5);
 pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
 
 /// Camera zoom speed multiplier
-const CAMERA_ZOOM_SPEED: f32 = 50.0;
+const CAMERA_ZOOM_SPEED: f32 = 25.0;
 
 /// Interface *hoomd-rs* simulations with the Bevy game engine.
 ///
