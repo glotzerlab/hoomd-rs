@@ -38,6 +38,7 @@
 - [Monte Carlo Examples](mc-examples/index.md)
   - [Grandcanonical ensemble simulation of ellipses (2D)](mc-examples/ellipse-gcmc-2d.md)
   - [Melt an ideal hexagonal structure of hexagons](mc-examples/crystal-stability.md)
+  - [Multi-site patchy shapes](mc-examples/multi-site-patchy-shapes.md)
 
 # Reference
 
