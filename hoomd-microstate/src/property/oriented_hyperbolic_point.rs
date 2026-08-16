@@ -147,7 +147,7 @@ impl OrientedHyperbolicPoint<3, Angle> {
     #[inline]
     #[must_use]
     pub fn sample<R: Rng + ?Sized>(
-        disk: &HyperbolicDisk,
+        disk: &HyperbolicDisk<3>,
         rng: &mut R,
     ) -> (Hyperbolic<3>, f64, f64) {
         let max_boost = disk.disk_radius.get();
