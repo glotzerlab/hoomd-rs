@@ -603,12 +603,14 @@ impl Hyperbolic<3> {
 }
 
 impl Hyperbolic<4> {
-    /// Create a point on the surface of a four-dimensional hyperboloid from the spherical representation.
+    /// Create a point on the surface of a four-dimensional hyperboloid from
+    /// the spherical representation. `theta` ranges from $`[0, \pi)`$ and
+    /// `phi` ranges from $`[0, 2\pi)`$.
     #[must_use]
     #[inline]
     pub fn from_polar_coordinates(v: f64, theta: f64, phi: f64) -> Hyperbolic<4> {
-        let theta_mod = theta.rem_euclid(2.0 * PI);
-        let phi_mod = phi.rem_euclid(PI);
+        let theta_mod = theta.rem_euclid(PI);
+        let phi_mod = phi.rem_euclid(2.0 * PI);
         let v_sinh = v.sinh();
         let point = Minkowski::from([
             v_sinh * (theta_mod.cos()),

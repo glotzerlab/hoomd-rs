@@ -469,6 +469,24 @@ impl<B, X, C> AppendMicrostate<B, Point<Hyperbolic<3>>, X, C> for HoomdGsdFile {
     }
 }
 
+impl<B, X, C> AppendMicrostate<B, Point<Hyperbolic<4>>, X, C> for HoomdGsdFile {
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, Point<Hyperbolic<4>>, X, C>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box([2.0, 2.0, 0.0, 0.0, 0.0, 0.0])?
+            .configuration_dimensions(Dimensions::Two)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position.to_poincare())
+                    .map(|p| [p[0], p[1], p[2]].into()),
+            )
+    }
+}
+
 #[cfg(test)]
 mod test {
     use approxim::assert_relative_eq;
@@ -706,6 +724,58 @@ mod test {
         assert_relative_eq!(
             positions[1][1],
             (f32::sinh(0.6) * f32::sin(1.5)) / (1.0 + f32::cosh(0.6))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn point_hyperbolic_3d_open() -> anyhow::Result<()> {
+        let microstate = Microstate::builder()
+            .boundary(Open)
+            .bodies([
+                Body::point(Hyperbolic::<4>::from_polar_coordinates(1.2, PI / 2.0, 0.4)),
+                Body::point(Hyperbolic::<4>::from_polar_coordinates(0.6, 1.5, 6.0)),
+            ])
+            .step(1234)
+            .try_build()?;
+
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
+        hoomd_gsd_file.append_microstate(&microstate)?;
+
+        drop(hoomd_gsd_file);
+
+        let gsd_file = GsdFile::open(path, Mode::Read)?;
+
+        assert_eq!(gsd_file.n_frames(), 1);
+
+        let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
+        itertools::assert_equal(step, [1234]);
+
+        let positions: Vec<[f32; 3]> = gsd_file
+            .iter_arrays::<f32, 3>(0, "particles/position")?
+            .collect();
+        assert_relative_eq!(positions[0][0], 0.0);
+        assert_relative_eq!(
+            positions[0][1],
+            (f32::sinh(1.2) * f32::cos(0.4)) / (1.0 + f32::cosh(1.2))
+        );
+        assert_relative_eq!(
+            positions[0][2],
+            (f32::sinh(1.2) * f32::sin(0.4)) / (1.0 + f32::cosh(1.2))
+        );
+        assert_relative_eq!(
+            positions[1][0],
+            (f32::sinh(0.6) * f32::cos(1.5)) / (1.0 + f32::cosh(0.6))
+        );
+        assert_relative_eq!(
+            positions[1][1],
+            (f32::sinh(0.6) * f32::sin(1.5) * f32::cos(6.0)) / (1.0 + f32::cosh(0.6))
+        );
+        assert_relative_eq!(
+            positions[1][2],
+            (f32::sinh(0.6) * f32::sin(1.5) * f32::sin(6.0)) / (1.0 + f32::cosh(0.6))
         );
         Ok(())
     }
