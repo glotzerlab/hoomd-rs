@@ -8,7 +8,7 @@ import init from 'https://glotzerlab.github.io/hoomd-rs/mc-examples/multi-site-p
 
 ## Overview
 
-* Objective: Model bodies with a hard shape core with attractive patches placed
+* Objective: Model bodies with a hard shape core and attractive patches placed
   on its perimeter.
 * File: `hoomd-rs/examples/mc-examples/multi-site-patchy-shapes.rs`
 * Run (interactively):

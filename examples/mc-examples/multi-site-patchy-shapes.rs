@@ -179,9 +179,6 @@ impl MultiSitePatchyShape {
         let unit_cell_rectangle =
             Rectangle::with_equal_edges(unit_cell_edge_length.try_into()?);
 
-        // A single unit cell is too small to allow ghost sites. Start with
-        // no ghosts around the unit cell, then set the proper maximum
-        // interaction range while replicating.
         let periodic_unit_cell = Periodic::new(0.0, unit_cell_rectangle)?;
 
         let vec_cell = VecCell::builder()
