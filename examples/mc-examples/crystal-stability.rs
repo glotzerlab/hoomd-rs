@@ -42,7 +42,7 @@ struct HardHexagonMelt {
 }
 
 impl HardHexagonMelt {
-    /// Construct a new hard disk self-assembly simulation.
+    /// Construct a new hard hexagon melt simulation.
     fn new() -> anyhow::Result<HardHexagonMelt> {
         let initial_packing_fraction = 0.9;
         let n_replicates_side = 32;

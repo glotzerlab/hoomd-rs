@@ -162,3 +162,10 @@ path = "mc-examples/crystal-stability.rs"
 
 [package.metadata.example.crystal-stability]
 path = "mc-examples"
+
+[[example]]
+name = "multi-site-patchy-shapes"
+path = "mc-examples/multi-site-patchy-shapes.rs"
+
+[package.metadata.example.multi-site-patchy-shapes]
+path = "mc-examples"

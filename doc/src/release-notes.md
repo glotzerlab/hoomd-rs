@@ -19,7 +19,8 @@
 * `[hoomd-vector`]: Implement `Mul<Cartesian<N>> for f64`, `Mul<PositiveReal> for Cartesian<N>`, `Mul<Cartesian<N>> for PositiveReal`, `MulAssign<f64> for Cartesian<N>`, and `MulAssign<PositiveReal> for Cartesian<N>` (#88).
 * `[hoomd-vector`]: Add `Cartesian::basis` method that constructs Cartesian basis vectors (#393).
 * `[hoomd-workspace`]: Add the `hoomd-workspace` crate. Use it to initialize and read state points in a signac workspace (#359).
-* *examples*: Add "Melt an ideal hexagonal structure of hexagons" (#393).
+* *examples*: Add "Melt an ideal hexagonal structure of hexagons" example (#393).
+* *examples*: Add "Multi-site patchy shapes" example (#395).
 
 *Changed:*
 
