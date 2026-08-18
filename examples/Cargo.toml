@@ -39,6 +39,7 @@ hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 
+arrayvec.workspace = true
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
 bevy_egui = { workspace = true, optional = true }
@@ -168,4 +169,11 @@ name = "multi-site-patchy-shapes"
 path = "mc-examples/multi-site-patchy-shapes.rs"
 
 [package.metadata.example.multi-site-patchy-shapes]
+path = "mc-examples"
+
+[[example]]
+name = "capsules-on-a-plane"
+path = "mc-examples/capsules-on-a-plane.rs"
+
+[package.metadata.example.capsules-on-a-plane]
 path = "mc-examples"
