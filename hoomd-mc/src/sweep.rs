@@ -42,12 +42,13 @@ use super::{Adjust, Count, LocalTrial, Trial, Tune, TuneOptions, tune_local::tun
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sweep<L>(pub L);
 
-impl<P, B, S, X, C, L, H, MA> Trial<Microstate<B, S, X, C>, H, MA> for Sweep<L>
+impl<P1, P2, B, S, X, C, L, H, MA> Trial<Microstate<B, S, X, C>, H, MA> for Sweep<L>
 where
-    P: Copy,
-    B: Copy + Default + Transform<S> + Position<Position = P>,
-    S: Copy + Default + Position<Position = P>,
-    X: PointUpdate<P, SiteKey>,
+    P1: Copy,
+    P2: Copy,
+    B: Copy + Default + Transform<S> + Position<Position = P1>,
+    S: Copy + Default + Position<Position = P2>,
+    X: PointUpdate<P2, SiteKey>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, X, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
@@ -155,7 +156,7 @@ impl<L> Sweep<L> {
     /// # }
     /// ```
     #[inline]
-    pub fn apply_with_filter<P, B, S, X, C, H, MA, F>(
+    pub fn apply_with_filter<P1, P2, B, S, X, C, H, MA, F>(
         &self,
         microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
@@ -163,10 +164,11 @@ impl<L> Sweep<L> {
         should_move_body: F,
     ) -> Count
     where
-        P: Copy,
-        B: Copy + Default + Transform<S> + Position<Position = P>,
-        S: Copy + Default + Position<Position = P>,
-        X: PointUpdate<P, SiteKey>,
+        P1: Copy,
+        P2: Copy,
+        B: Copy + Default + Transform<S> + Position<Position = P1>,
+        S: Copy + Default + Position<Position = P2>,
+        X: PointUpdate<P2, SiteKey>,
         L: LocalTrial<B>,
         H: DeltaEnergyOne<B, S, X, C>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
@@ -268,7 +270,7 @@ impl<L> Sweep<L> {
     /// # }
     /// ```
     #[inline]
-    pub fn tune_with_options_and_filter<P, B, S, X, C, H, MA, F>(
+    pub fn tune_with_options_and_filter<P1, P2, B, S, X, C, H, MA, F>(
         &mut self,
         microstate: &Microstate<B, S, X, C>,
         hamiltonian: &H,
@@ -276,10 +278,11 @@ impl<L> Sweep<L> {
         options: &TuneOptions,
         should_move_body: F,
     ) where
-        P: Copy,
-        B: Copy + Default + Transform<S> + Position<Position = P>,
-        S: Copy + Default + Position<Position = P>,
-        X: PointUpdate<P, SiteKey>,
+        P1: Copy,
+        P2: Copy,
+        B: Copy + Default + Transform<S> + Position<Position = P1>,
+        S: Copy + Default + Position<Position = P2>,
+        X: PointUpdate<P2, SiteKey>,
         L: LocalTrial<B> + Adjust + Display,
         H: DeltaEnergyOne<B, S, X, C>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
@@ -297,12 +300,13 @@ impl<L> Sweep<L> {
     }
 }
 
-impl<P, B, S, X, C, L, H, MA> Tune<P, B, S, X, C, L, H, MA> for Sweep<L>
+impl<P1, P2, B, S, X, C, L, H, MA> Tune<P1, B, S, X, C, L, H, MA> for Sweep<L>
 where
-    P: Copy,
-    B: Copy + Default + Transform<S> + Position<Position = P>,
-    S: Copy + Default + Position<Position = P>,
-    X: PointUpdate<P, SiteKey>,
+    P1: Copy,
+    P2: Copy,
+    B: Copy + Default + Transform<S> + Position<Position = P1>,
+    S: Copy + Default + Position<Position = P2>,
+    X: PointUpdate<P2, SiteKey>,
     L: LocalTrial<B> + Adjust + Display,
     H: DeltaEnergyOne<B, S, X, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,

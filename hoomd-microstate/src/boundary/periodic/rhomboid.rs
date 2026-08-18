@@ -204,13 +204,14 @@ where
     }
 }
 
-impl<B, S, X> Replicate<2, B, S, X, Periodic<Rhomboid>> for Microstate<B, S, X, Periodic<Rhomboid>>
+impl<P, B, S, X> Replicate<2, B, S, X, Periodic<Rhomboid>> for Microstate<B, S, X, Periodic<Rhomboid>>
 where
+    P: Copy,
     B: Transform<S> + Position<Position = Cartesian<2>>,
-    S: Position<Position = Cartesian<2>> + Default,
+    S: Position<Position = P> + Default,
     Body<B, S>: Clone,
     Periodic<Rhomboid>: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    X: PointUpdate<Cartesian<2>, SiteKey> + Clone,
+    X: PointUpdate<P, SiteKey> + Clone,
 {
     /// Replicate the bodies in self `counts[0]` x `counts[1]` times and
     /// expand the periodic boundary accordingly.

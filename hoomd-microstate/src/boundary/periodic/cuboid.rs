@@ -289,14 +289,15 @@ where
     }
 }
 
-impl<const N: usize, B, S, X> Replicate<N, B, S, X, Periodic<Hypercuboid<N>>>
+impl<const N: usize, P, B, S, X> Replicate<N, B, S, X, Periodic<Hypercuboid<N>>>
     for Microstate<B, S, X, Periodic<Hypercuboid<N>>>
 where
+    P: Copy,
     B: Transform<S> + Position<Position = Cartesian<N>>,
-    S: Position<Position = Cartesian<N>> + Default,
+    S: Position<Position = P> + Default,
     Body<B, S>: Clone,
     Periodic<Hypercuboid<N>>: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    X: PointUpdate<Cartesian<N>, SiteKey> + Clone,
+    X: PointUpdate<P, SiteKey> + Clone,
 {
     /// Replicate the bodies in self `counts[0]` x `counts[1]` x ... `counts[N-1]` times and
     /// expand the periodic boundary accordingly.

@@ -61,13 +61,14 @@ pub struct InsertRemoveCount {
     pub remove_rejected: u64,
 }
 
-impl<D, P, B, S, X, C, H, MA> Trial<Microstate<B, S, X, C>, H, MA> for GrandCanonical<D>
+impl<D, P1, P2, B, S, X, C, H, MA> Trial<Microstate<B, S, X, C>, H, MA> for GrandCanonical<D>
 where
     D: BodyDistribution<Body<B, S>>,
-    P: Copy,
-    B: Copy + Default + Transform<S> + Position<Position = P>,
-    S: Copy + Default + Position<Position = P>,
-    X: PointUpdate<P, SiteKey>,
+    P1: Copy,
+    P2: Copy,
+    B: Copy + Default + Transform<S> + Position<Position = P1>,
+    S: Copy + Default + Position<Position = P2>,
+    X: PointUpdate<P2, SiteKey>,
     H: DeltaEnergyInsert<B, S, X, C> + DeltaEnergyRemove<B, S, X, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + Volume,
     MA: Temperature + Fugacity,

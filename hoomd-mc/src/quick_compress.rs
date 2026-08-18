@@ -441,18 +441,19 @@ impl<C> QuickCompress<C> {
         reason = "Panic would occur due to a bug in hoomd-rs."
     )]
     #[inline]
-    pub fn apply<P, B, S, X, H, F>(
+    pub fn apply<P1, P2, B, S, X, H, F>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
         should_map_body: F,
     ) where
-        P: Copy,
-        B: Clone + Position<Position = P> + Transform<S>,
-        S: Clone + Position<Position = P> + Default,
-        X: Clone + PointUpdate<P, SiteKey>,
+        P1: Copy,
+        P2: Copy,
+        B: Clone + Position<Position = P1> + Transform<S>,
+        S: Clone + Position<Position = P2> + Default,
+        X: Clone + PointUpdate<P2, SiteKey>,
         H: TotalEnergy<Microstate<B, S, X, C>>,
-        C: Clone + MapPoint<P> + Wrap<B> + Wrap<S> + GenerateGhosts<S> + Volume + Scale + PartialEq,
+        C: Clone + MapPoint<P1> + Wrap<B> + Wrap<S> + GenerateGhosts<S> + Volume + Scale + PartialEq,
         Microstate<B, S, X, C>: Clone,
         F: Fn(&Tagged<Body<B, S>>) -> bool,
     {
