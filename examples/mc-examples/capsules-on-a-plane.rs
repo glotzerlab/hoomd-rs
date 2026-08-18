@@ -3,7 +3,8 @@ use anyhow::{Context, anyhow};
 use arrayvec::ArrayVec;
 
 use hoomd_geometry::{
-    Convex, IsPointInside, MapPoint, Scale, Volume, shape::{Capsule, Rectangle}
+    Convex, MapPoint, Scale, Volume,
+    shape::{Capsule, Rectangle},
 };
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
@@ -11,10 +12,13 @@ use hoomd_interaction::{
     univariate::OverlapPenalty,
 };
 use hoomd_mc::{
-    QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune, TuneOptions, UniformIn
+    QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune,
+    TuneOptions, UniformIn,
 };
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, MAX_GHOSTS, Periodic, Wrap}, property::{Orientation, OrientedPoint, Position}
+    Microstate, SiteKey, Transform,
+    boundary::{GenerateGhosts, MAX_GHOSTS, Periodic, Wrap},
+    property::{Orientation, OrientedPoint, Point, Position},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
@@ -34,32 +38,43 @@ struct Boundary(Periodic<Rectangle>);
 impl Transform<SiteProperties> for OrientedPoint<Cartesian<2>, Versor> {
     fn transform(&self, site_properties: &SiteProperties) -> SiteProperties {
         SiteProperties {
-            position: Cartesian::from([self.position[0] + site_properties.position[0],
+            position: Cartesian::from([
+                self.position[0] + site_properties.position[0],
                 self.position[1] + site_properties.position[1],
-                site_properties.position[2]]),
+                site_properties.position[2],
+            ]),
             orientation: self.orientation,
         }
     }
 }
 
 impl Wrap<SiteProperties> for Boundary {
-    fn wrap(&self, properties: SiteProperties) -> Result<SiteProperties, hoomd_microstate::boundary::Error> {
-        let mut properties = properties;
-        let r = properties.position_mut();
-
-        for (coordinate, edge_length) in r.coordinates.iter_mut().zip(self.0.shape().edge_lengths).take(2) {
-            let edge_length = edge_length.get();
-            let lambda = *coordinate / edge_length;
-            let lambda = lambda - lambda.round();
-            let lambda = if lambda == 0.5 { -0.5 } else { lambda };
-            *coordinate = lambda * edge_length;
-        }
-        Ok(properties)
+    fn wrap(
+        &self,
+        properties: SiteProperties,
+    ) -> Result<SiteProperties, hoomd_microstate::boundary::Error> {
+        let wrapped_projection = self.0.wrap(Point {
+            position: Cartesian::from([
+                properties.position[0],
+                properties.position[1],
+            ]),
+        })?;
+        Ok(SiteProperties {
+            position: Cartesian::from([
+                wrapped_projection.position[0],
+                wrapped_projection.position[1],
+                properties.position[2],
+            ]),
+            ..properties
+        })
     }
 }
 
 impl Wrap<BodyProperties> for Boundary {
-    fn wrap(&self, properties: BodyProperties) -> Result<BodyProperties, hoomd_microstate::boundary::Error> {
+    fn wrap(
+        &self,
+        properties: BodyProperties,
+    ) -> Result<BodyProperties, hoomd_microstate::boundary::Error> {
         self.0.wrap(properties)
     }
 }
@@ -69,56 +84,28 @@ impl GenerateGhosts<SiteProperties> for Boundary {
         self.0.maximum_interaction_range()
     }
 
-    fn generate_ghosts(&self, site_properties: &SiteProperties) -> ArrayVec<SiteProperties, MAX_GHOSTS> {
-        let mut result = ArrayVec::new();
-
-        let r = site_properties.position();
-        let projected_r = Cartesian::from([r[0], r[1]]);
-        let max = self.0.shape().maximal_extents();
-        let min = self.0.shape().minimal_extents();
-
-        if !self.0.shape().is_point_inside(&projected_r) {
-            return result;
-        }
-
-        let new_site = |x, y| {
-            let mut new_site = *site_properties;
-            new_site.position_mut()[0] += x * self.0.shape().edge_lengths[0].get();
-            new_site.position_mut()[1] += y * self.0.shape().edge_lengths[1].get();
-            new_site
+    fn generate_ghosts(
+        &self,
+        site_properties: &SiteProperties,
+    ) -> ArrayVec<SiteProperties, MAX_GHOSTS> {
+        let projected_site = Point {
+            position: Cartesian::from([
+                site_properties.position[0],
+                site_properties.position[1],
+            ]),
         };
-
-        let near_left = r[0] < min[0] + self.0.maximum_interaction_range();
-        let near_right = r[0] > max[0] - self.0.maximum_interaction_range();
-        let near_top = r[1] > max[1] - self.0.maximum_interaction_range();
-        let near_bottom = r[1] < min[1] + self.0.maximum_interaction_range();
-
-        if near_right {
-            result.push(new_site(-1.0, 0.0));
-        }
-        if near_left {
-            result.push(new_site(1.0, 0.0));
-        }
-        if near_top {
-            result.push(new_site(0.0, -1.0));
-        }
-        if near_bottom {
-            result.push(new_site(0.0, 1.0));
-        }
-        if near_right && near_top {
-            result.push(new_site(-1.0, -1.0));
-        }
-        if near_right && near_bottom {
-            result.push(new_site(-1.0, 1.0));
-        }
-        if near_left && near_top {
-            result.push(new_site(1.0, -1.0));
-        }
-        if near_left && near_bottom {
-            result.push(new_site(1.0, 1.0));
-        }
-
-        result
+        let projected_ghosts = self.0.generate_ghosts(&projected_site);
+        projected_ghosts
+            .iter()
+            .map(|s| SiteProperties {
+                position: Cartesian::from([
+                    s.position[0],
+                    s.position[1],
+                    site_properties.position[2],
+                ]),
+                ..*site_properties
+            })
+            .collect()
     }
 }
 
@@ -129,7 +116,11 @@ impl Volume for Boundary {
 }
 
 impl MapPoint<Cartesian<2>> for Boundary {
-    fn map_point(&self, point: Cartesian<2>, other: &Self) -> Result<Cartesian<2>, hoomd_geometry::Error> {
+    fn map_point(
+        &self,
+        point: Cartesian<2>,
+        other: &Self,
+    ) -> Result<Cartesian<2>, hoomd_geometry::Error> {
         self.0.map_point(point, &other.0)
     }
 }
@@ -153,23 +144,27 @@ impl Distribution<Cartesian<2>> for Boundary {
 impl Quasi2dCapsuleSelfAssembly {
     /// Construct a new hard tetrahedron self-assembly simulation.
     fn new() -> anyhow::Result<Quasi2dCapsuleSelfAssembly> {
-        let initial_number_density = 0.1;
-        let target_number_density = 0.2;
+        let initial_number_density = 0.12;
+        let target_number_density = 0.22;
         let n_bodies = 256;
         let maximum_distance = 0.04;
         let maximum_rotation = 0.04;
         let macrostate = Isothermal { temperature: 1.0 };
 
-        let capsule = Capsule { radius: 1.0.try_into()?, height: 5.0.try_into()?};
+        let capsule = Capsule {
+            radius: 1.0.try_into()?,
+            height: 5.0.try_into()?,
+        };
         let hamiltonian = PairwiseCutoff(HardShape(capsule.clone()));
 
-        let initial_box_volume =
-            n_bodies as f64 / initial_number_density;
+        let initial_box_volume = n_bodies as f64 / initial_number_density;
         let initial_box_edge_length = initial_box_volume.sqrt();
         let rectangle =
             Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
-        let periodic_rectangle =
-            Boundary(Periodic::new(hamiltonian.maximum_interaction_range(), rectangle)?);
+        let periodic_rectangle = Boundary(Periodic::new(
+            hamiltonian.maximum_interaction_range(),
+            rectangle,
+        )?);
 
         let vec_cell = VecCell::builder()
             .nominal_search_radius(
@@ -195,8 +190,7 @@ impl Quasi2dCapsuleSelfAssembly {
         };
         let quick_insert = QuickInsert::new(distribution, n_bodies);
 
-        let target_box_volume =
-            n_bodies as f64 / target_number_density;
+        let target_box_volume = n_bodies as f64 / target_number_density;
         let quick_compress =
             QuickCompress::with_target_volume(target_box_volume.try_into()?);
 
