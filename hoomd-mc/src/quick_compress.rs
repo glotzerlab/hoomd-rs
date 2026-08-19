@@ -453,7 +453,14 @@ impl<C> QuickCompress<C> {
         S: Clone + Position<Position = P2> + Default,
         X: Clone + PointUpdate<P2, SiteKey>,
         H: TotalEnergy<Microstate<B, S, X, C>>,
-        C: Clone + MapPoint<P1> + Wrap<B> + Wrap<S> + GenerateGhosts<S> + Volume + Scale + PartialEq,
+        C: Clone
+            + MapPoint<P1>
+            + Wrap<B>
+            + Wrap<S>
+            + GenerateGhosts<S>
+            + Volume
+            + Scale
+            + PartialEq,
         Microstate<B, S, X, C>: Clone,
         F: Fn(&Tagged<Body<B, S>>) -> bool,
     {

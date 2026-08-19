@@ -204,7 +204,8 @@ where
     }
 }
 
-impl<P, B, S, X> Replicate<2, B, S, X, Periodic<Rhomboid>> for Microstate<B, S, X, Periodic<Rhomboid>>
+impl<P, B, S, X> Replicate<2, B, S, X, Periodic<Rhomboid>>
+    for Microstate<B, S, X, Periodic<Rhomboid>>
 where
     P: Copy,
     B: Transform<S> + Position<Position = Cartesian<2>>,

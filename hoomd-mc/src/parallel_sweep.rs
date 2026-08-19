@@ -312,7 +312,8 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
     }
 }
 
-impl<P1, P2, B, S, X, C, L, H, MA, K> Trial<Microstate<B, S, X, C>, H, MA> for ParallelSweep<L, K, B, S>
+impl<P1, P2, B, S, X, C, L, H, MA, K> Trial<Microstate<B, S, X, C>, H, MA>
+    for ParallelSweep<L, K, B, S>
 where
     P1: Copy,
     P2: Copy,

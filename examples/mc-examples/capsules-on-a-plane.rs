@@ -17,7 +17,9 @@ use hoomd_mc::{
     TuneOptions, UniformIn,
 };
 use hoomd_microstate::{
-    AppendMicrostate, Microstate, SiteKey, Transform, boundary::{GenerateGhosts, MAX_GHOSTS, Periodic, Wrap}, property::{Orientation, OrientedPoint, Point, Position}
+    AppendMicrostate, Microstate, SiteKey, Transform,
+    boundary::{GenerateGhosts, MAX_GHOSTS, Periodic, Wrap},
+    property::{Orientation, OrientedPoint, Point, Position},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
@@ -356,18 +358,20 @@ impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Boundary>
     #[inline]
     fn append_microstate(
         &mut self,
-        microstate: &Microstate<
-            BodyProperties,
-            SiteProperties,
-            X,
-            Boundary,
-        >,
+        microstate: &Microstate<BodyProperties, SiteProperties, X, Boundary>,
     ) -> Result<hoomd_gsd::hoomd::Frame<'_>, hoomd_gsd::hoomd::AppendError>
     {
-    let edge_lengths = microstate.boundary().0.shape().edge_lengths;
-    
+        let edge_lengths = microstate.boundary().0.shape().edge_lengths;
+
         self.append_frame(microstate.step())?
-            .configuration_box([edge_lengths[0].get(), edge_lengths[1].get(), 5.0, 0.0, 0.0, 0.0])?
+            .configuration_box([
+                edge_lengths[0].get(),
+                edge_lengths[1].get(),
+                5.0,
+                0.0,
+                0.0,
+                0.0,
+            ])?
             .configuration_dimensions(Dimensions::Three)?
             .particles_orientation(
                 microstate
@@ -389,8 +393,7 @@ fn main() -> anyhow::Result<()> {
     use hoomd_microstate::AppendMicrostate;
 
     let mut simulation = Quasi2dCapsuleSelfAssembly::new()?;
-    let mut hoomd_gsd_file =
-        HoomdGsdFile::create("capsules-on-a-plane.gsd")?;
+    let mut hoomd_gsd_file = HoomdGsdFile::create("capsules-on-a-plane.gsd")?;
 
     for _ in 0..40_000 {
         simulation.advance()?;

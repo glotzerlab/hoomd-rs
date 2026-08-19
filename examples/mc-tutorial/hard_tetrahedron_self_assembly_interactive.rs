@@ -57,10 +57,10 @@ pub(crate) fn main() -> anyhow::Result<()> {
         ],
     };
     let tetrahedron_material = StandardMaterial {
-                    base_color: PRIMARY_COLOR_3D,
-                    perceptual_roughness: 0.2,
-                    ..default()
-                };
+        base_color: PRIMARY_COLOR_3D,
+        perceptual_roughness: 0.2,
+        ..default()
+    };
 
     app.add_systems(
         Startup,
