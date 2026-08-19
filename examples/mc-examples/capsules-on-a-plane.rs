@@ -23,7 +23,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
-use hoomd_vector::{self, Cartesian, Versor};
+use hoomd_vector::{self, Cartesian, Rotate as _, Rotation, Versor};
 
 type BodyProperties = OrientedPoint<Cartesian<2>, Versor>;
 
@@ -38,13 +38,13 @@ struct Boundary(Periodic<Rectangle>);
 
 impl Transform<SiteProperties> for OrientedPoint<Cartesian<2>, Versor> {
     fn transform(&self, site_properties: &SiteProperties) -> SiteProperties {
+        let lifted_body_position =
+            Cartesian::from([self.position[0], self.position[1], 0.0]);
+
         SiteProperties {
-            position: Cartesian::from([
-                self.position[0] + site_properties.position[0],
-                self.position[1] + site_properties.position[1],
-                site_properties.position[2],
-            ]),
-            orientation: self.orientation,
+            position: lifted_body_position
+                + self.orientation.rotate(&site_properties.position),
+            orientation: self.orientation.combine(&site_properties.orientation),
         }
     }
 }
