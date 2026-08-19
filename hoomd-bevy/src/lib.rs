@@ -259,13 +259,13 @@ pub struct CameraControl2d {
 #[derive(Debug, Default, Resource)]
 pub struct CameraControl3d {
     /// Coordinates clicked in the window.
-    initial_click_position: Vec2,
+    last_click_position: Vec2,
 
     /// Initial camera transform when clicked
-    initial_camera_transform: Transform,
+    last_camera_transform: Transform,
 
     /// Initial light transform when clicked
-    initial_light_transform: Transform,
+    last_light_transform: Transform,
 
     /// Track whether the user is dragging the view.
     dragging: bool,
@@ -746,9 +746,9 @@ where
         if buttons.just_pressed(MouseButton::Left)
             && let Some(initial_click_position) = window.cursor_position()
         {
-            control.initial_click_position = initial_click_position;
-            control.initial_camera_transform = *camera_transform;
-            control.initial_light_transform = *light_transform;
+            control.last_click_position = initial_click_position;
+            control.last_camera_transform = *camera_transform;
+            control.last_light_transform = *light_transform;
             control.dragging = true;
             return;
         }
@@ -761,22 +761,26 @@ where
         if control.dragging
             && let Some(current_cursor_position) = window.cursor_position()
         {
-            let offset = current_cursor_position - control.initial_click_position;
+            let offset = current_cursor_position - control.last_click_position;
             let q_y = Quat::from_axis_angle(
-                control.initial_camera_transform.local_y().into(),
+                control.last_camera_transform.local_y().into(),
                 -offset.x / 100.0 * settings.camera_sensitivity,
             );
             let q_x = Quat::from_axis_angle(
-                control.initial_camera_transform.local_x().into(),
+                control.last_camera_transform.local_x().into(),
                 -offset.y / 100.0 * settings.camera_sensitivity,
             );
-            camera_transform.translation = q_x * q_y * control.initial_camera_transform.translation;
+            camera_transform.translation = q_x * q_y * control.last_camera_transform.translation;
 
             let up = camera_transform.local_y();
             camera_transform.look_at(Vec3::default(), up);
 
-            light_transform.translation = q_x * q_y * control.initial_light_transform.translation;
+            light_transform.translation = q_x * q_y * control.last_light_transform.translation;
             light_transform.look_at(Vec3::default(), up);
+
+            control.last_click_position = current_cursor_position;
+            control.last_camera_transform = *camera_transform;
+            control.last_light_transform = *light_transform;
         }
     }
     /// Build the plugin.
