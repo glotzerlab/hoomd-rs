@@ -8,7 +8,7 @@ use hoomd_bevy::{
 use anyhow::Context;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
-use hoomd_vector::{Rotate, Rotation, Versor};
+use hoomd_vector::{Rotation, Versor};
 
 use super::Quasi2dCapsuleSelfAssembly;
 
