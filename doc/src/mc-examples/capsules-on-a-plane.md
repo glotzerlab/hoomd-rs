@@ -22,19 +22,20 @@ import init from 'https://glotzerlab.github.io/hoomd-rs/mc-examples/capsules-on-
 
 ## Strategy
 
-1. Bodies with `Cartesian<2>` positions and `Versor` orientations.
-2. Define a custom `SiteProperties` with `Cartesian<3>` position and `Versor` orientation.
-   Transform sites from the body frame to the simulation frame by lifting the body
-   position into 3D: `(body_x, body_y, 0)`.
+1. Represent bodies with `Cartesian<2>` positions and `Versor` orientations.
+2. Define a custom `SiteProperties` with `Cartesian<3>` positions and `Versor`
+   orientations. Transform sites from the body frame to the simulation frame by first
+   lifting the body position into 3D: `(body_x, body_y, 0)` and then transforming
+   as normal.
 3. Define a custom `Boundary` type that wraps `Periodic<Rectangle>`.
    Implement `Wrap<BodyProperties>`, `Volume`, `MapPoint`, `Scale`, and `Distribution`
-   for the custom boundary by calling the same method on the inner type.
+   for the custom boundary by calling the same methods on the inner type.
    Implement `Wrap<SiteProperties>` and `GenerateGhosts` by projecting
-   the 3D site position into 2D, calling the method on the wrapped type,
+   the 3D site position into 2D, calling the same methods on the wrapped type,
    then lift the result back into 3D.
 
 See the example code for details. It implements all of these steps in a general fashion.
-You can copy and paste this code and use it for Monte Carlo simulations of any 3D
+You can copy and paste this code and use it for Monte Carlo simulations with any 3D
 interaction model (including multi-site rigid bodies) where the body centers should
 be confined to the _xy_ plane.
 
