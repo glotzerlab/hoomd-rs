@@ -6,6 +6,7 @@ use hoomd_geometry::{
     Convex, MapPoint, Scale, Volume,
     shape::{Capsule, Rectangle},
 };
+use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
     pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
@@ -16,9 +17,7 @@ use hoomd_mc::{
     TuneOptions, UniformIn,
 };
 use hoomd_microstate::{
-    Microstate, SiteKey, Transform,
-    boundary::{GenerateGhosts, MAX_GHOSTS, Periodic, Wrap},
-    property::{Orientation, OrientedPoint, Point, Position},
+    AppendMicrostate, Microstate, SiteKey, Transform, boundary::{GenerateGhosts, MAX_GHOSTS, Periodic, Wrap}, property::{Orientation, OrientedPoint, Point, Position}
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
@@ -351,6 +350,38 @@ impl Quasi2dCapsuleSelfAssembly {
     }
 }
 
+impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Boundary>
+    for HoomdGsdFile
+{
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<
+            BodyProperties,
+            SiteProperties,
+            X,
+            Boundary,
+        >,
+    ) -> Result<hoomd_gsd::hoomd::Frame<'_>, hoomd_gsd::hoomd::AppendError>
+    {
+    let edge_lengths = microstate.boundary().0.shape().edge_lengths;
+    
+        self.append_frame(microstate.step())?
+            .configuration_box([edge_lengths[0].get(), edge_lengths[1].get(), 5.0, 0.0, 0.0, 0.0])?
+            .configuration_dimensions(Dimensions::Three)?
+            .particles_orientation(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.orientation),
+            )?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position),
+            )
+    }
+}
+
 // Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
 #[cfg(not(feature = "bevy"))]
 fn main() -> anyhow::Result<()> {
@@ -359,7 +390,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut simulation = Quasi2dCapsuleSelfAssembly::new()?;
     let mut hoomd_gsd_file =
-        HoomdGsdFile::create("hard-tetrahedron-self-assembly.gsd")?;
+        HoomdGsdFile::create("capsules-on-a-plane.gsd")?;
 
     for _ in 0..40_000 {
         simulation.advance()?;
