@@ -1306,7 +1306,7 @@ mod tests {
 
     #[test]
     fn random_hyperbolic() {
-        // Generate ten random points on the Hyperbolic
+        // Generate ten random points on the hyperboloid.
         let mut rng = StdRng::seed_from_u64(42);
         let d = 0.1;
         let origin = Minkowski::from([0.0, 0.0, 1.0]);

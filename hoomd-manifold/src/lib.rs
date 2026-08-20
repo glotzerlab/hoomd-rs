@@ -164,13 +164,11 @@
 //!
 //! [complete documentation]: https://hoomd-rs.readthedocs.io
 
-mod anisotropic_three_manifolds;
 mod biquaternion;
 mod hyperbolic_angle;
 mod minkowski;
 mod sphere;
 
-pub use anisotropic_three_manifolds::{H2CrossR};
 pub use biquaternion::{Biquaternion, UnitBiquaternion};
 pub use hyperbolic_angle::HyperbolicAngle;
 pub use minkowski::{Hyperbolic, HyperbolicDisk, HyperbolicRotationMatrix, Minkowski};
