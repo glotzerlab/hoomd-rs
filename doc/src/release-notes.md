@@ -4,13 +4,18 @@
 
 *Added:*
 
+* `[examples]`: Add "Melt an ideal hexagonal structure of hexagons" example (#393).
+* `[examples]`: Add "Multi-site patchy shapes" example (#395).
+* `[examples]`: Add "3D shapes confined to a 2D plane" example (#397).
+* `[examples]`: Use the mouse wheel to zoom examples with 3D cameras (#397).
+* `[examples]`: Click and drag to orbit the camera in examples with 3D cameras (#397).
 * `[hoomd-geometry]`: Add `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` shapes (#88).
 * `[hoomd-linear-algebra]` Add `matrix::qr` module with methods to compute the QR factorization of matrices (#88).
 * `[hoomd-linear-algebra]` Add methods `iter_column_slice`, `iter_column_slice_mut`, `iter_submatrix`, to `Matrix<N, M>` (#88).
 * `[hoomd-macrostate]`: Add `Fugacity` trait that access the fugacity of a macrostate (#354).
 * `[hoomd-macrostate]`: Add `IsothermoalIsofugacity` type that stores the system's temperature and fugacity (#354).
 * `[hoomd-mc]`: Add `GrandCanonical` trial move type. It inserts and removes bodies and samples from the constant chemical potential, constant volume, constant temperature ensemble (#354).
-* `[hoomd-mc`]: Add `InsertReMoveCount` type that counts the accepted and rejected insertion and removal moves (#354).
+* `[hoomd-mc`]: Add `InsertRemoveCount` type that counts the accepted and rejected insertion and removal moves (#354).
 * `[hoomd-microstate`]: Implement all traits necessary to use `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` as simulation boundaries (#88).
 * `[hoomd-microstate`]: Implement `AppendMicrostate` for microstates with `Triclinic` and `Rhomboid` boundaries (#88).
 * `[hoomd-microstate`]: Add `Microstate::iter_bodies_tag_order` method that iterates over all bodies in tag order (#393).
@@ -19,12 +24,14 @@
 * `[hoomd-vector`]: Implement `Mul<Cartesian<N>> for f64`, `Mul<PositiveReal> for Cartesian<N>`, `Mul<Cartesian<N>> for PositiveReal`, `MulAssign<f64> for Cartesian<N>`, and `MulAssign<PositiveReal> for Cartesian<N>` (#88).
 * `[hoomd-vector`]: Add `Cartesian::basis` method that constructs Cartesian basis vectors (#393).
 * `[hoomd-workspace`]: Add the `hoomd-workspace` crate. Use it to initialize and read state points in a signac workspace (#359).
-* *examples*: Add "Melt an ideal hexagonal structure of hexagons" example (#393).
-* *examples*: Add "Multi-site patchy shapes" example (#395).
 
 *Changed:*
 
 * Build the documentation with mdBook 0.5.4 and KaTeX 0.18.1 (#376).
+* `[hoomd-microstate]`: Relax trait bounds to allow bodie and site positions to
+  have different types (#397).
+* `[hoomd-mc]`: Relax trait bounds to allow bodie and site positions to
+  have different types (#397).
 
 *Deprecated:*
 
@@ -32,10 +39,10 @@
 
 *Fixed:*
 
+* `[examples]`: Properly auto size egui parameter windows (#354).
+* `[examples]`: Reduce the zoom speed (#393).
 * `[hoomd-interaction]`: Fix typos in documentation (#358).
 * `[hoomd-microstate]`: Fix typos in documentation (#358).
-* *examples*: Properly auto size egui parameter windows (#354).
-* *examples*: Reduce the zoom speed (#393).
 
 ## 1.2.0 (2026-07-07)
 

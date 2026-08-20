@@ -606,20 +606,21 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     ///
     /// This helper method is used in the various `Replicate` implementations.
     #[inline]
-    pub(crate) fn build_replicate<const N: usize, V>(
+    pub(crate) fn build_replicate<const N: usize, V1, V2>(
         &self,
         counts: [usize; N],
         new_boundary: C,
-        basis_vectors: [V; N],
-        base_offset: V,
+        basis_vectors: [V1; N],
+        base_offset: V1,
     ) -> Result<Microstate<B, S, X, C>, crate::Error>
     where
-        V: Vector,
-        B: Transform<S> + Position<Position = V>,
-        S: Position<Position = V> + Default,
+        V1: Vector,
+        V2: Copy,
+        B: Transform<S> + Position<Position = V1>,
+        S: Position<Position = V2> + Default,
         Body<B, S>: Clone,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-        X: PointUpdate<V, SiteKey> + Clone,
+        X: PointUpdate<V2, SiteKey> + Clone,
     {
         let mut microstate = Microstate::builder()
             .step(self.step())
@@ -648,7 +649,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
 impl<P, B, S, X, C> Microstate<B, S, X, C>
 where
     P: Copy,
-    B: Transform<S> + Position<Position = P>,
+    B: Transform<S>,
     S: Position<Position = P> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     X: PointUpdate<P, SiteKey>,
@@ -983,7 +984,7 @@ where
     )]
     pub fn update_body_properties(&mut self, body_index: usize, properties: B) -> Result<(), Error>
     where
-        B: Transform<S> + Position<Position = P>,
+        B: Transform<S>,
         S: Position<Position = P>,
         C: Wrap<B> + Wrap<S>,
     {
@@ -1456,13 +1457,14 @@ where
 }
 
 /// Manipulate the microstate as a whole.
-impl<P, B, S, X, C> Microstate<B, S, X, C>
+impl<P1, P2, B, S, X, C> Microstate<B, S, X, C>
 where
-    P: Copy,
-    B: Clone + Transform<S> + Position<Position = P>,
-    S: Clone + Position<Position = P> + Default,
-    C: Clone + Wrap<B> + Wrap<S> + GenerateGhosts<S> + MapPoint<P>,
-    X: Clone + PointUpdate<P, SiteKey>,
+    P1: Copy,
+    P2: Copy,
+    B: Clone + Transform<S> + Position<Position = P1>,
+    S: Clone + Position<Position = P2> + Default,
+    C: Clone + Wrap<B> + Wrap<S> + GenerateGhosts<S> + MapPoint<P1>,
+    X: Clone + PointUpdate<P2, SiteKey>,
 {
     /// Clone the microstate, mapping or wrapping bodies into a new boundary.
     ///
@@ -1847,7 +1849,7 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     pub fn try_build<P>(self) -> Result<Microstate<B, S, X, C>, Error>
     where
         P: Copy,
-        B: Transform<S> + Position<Position = P>,
+        B: Transform<S>,
         S: Position<Position = P> + Default,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
         X: PointUpdate<P, SiteKey>,

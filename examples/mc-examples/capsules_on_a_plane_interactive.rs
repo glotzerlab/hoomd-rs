@@ -1,3 +1,5 @@
+use std::f64::consts::PI;
+
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings,
     representation::surface_mesh,
@@ -6,19 +8,19 @@ use hoomd_bevy::{
 use anyhow::Context;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
+use hoomd_vector::{Rotation, Versor};
 
-use super::HardTetrahedronSelfAssembly;
+use super::Quasi2dCapsuleSelfAssembly;
 
 /// Mark the tetrahedron representation type.
 struct A;
 
 pub(crate) fn main() -> anyhow::Result<()> {
-    let simulation = HardTetrahedronSelfAssembly::new()
+    let simulation = Quasi2dCapsuleSelfAssembly::new()
         .context("failed to setup simulation")?;
-    let vertices = simulation.hamiltonian.0.0.0.vertices().to_vec();
 
     let l =
-        simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
+        simulation.microstate.boundary().0.shape().edge_lengths[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
             camera: InitialCamera::Orthographic3d(l + 1.0),
@@ -32,31 +34,11 @@ pub(crate) fn main() -> anyhow::Result<()> {
     app.add_plugins(EguiPlugin::default());
     hoomd_bevy_plugin.build(&mut app);
 
-    let tetrahedron_mesh = Tetrahedron {
-        vertices: [
-            Vec3::new(
-                vertices[0][0] as f32,
-                vertices[0][1] as f32,
-                vertices[0][2] as f32,
-            ),
-            Vec3::new(
-                vertices[1][0] as f32,
-                vertices[1][1] as f32,
-                vertices[1][2] as f32,
-            ),
-            Vec3::new(
-                vertices[2][0] as f32,
-                vertices[2][1] as f32,
-                vertices[2][2] as f32,
-            ),
-            Vec3::new(
-                vertices[3][0] as f32,
-                vertices[3][1] as f32,
-                vertices[3][2] as f32,
-            ),
-        ],
+    let capsule = Capsule3d {
+        radius: 1.0,
+        half_length: 2.5,
     };
-    let tetrahedron_material = StandardMaterial {
+    let capsule_material = StandardMaterial {
         base_color: PRIMARY_COLOR_3D,
         perceptual_roughness: 0.2,
         ..default()
@@ -64,19 +46,14 @@ pub(crate) fn main() -> anyhow::Result<()> {
 
     app.add_systems(
         Startup,
-        (move || {
-            (
-                tetrahedron_mesh.mesh().build(),
-                tetrahedron_material.clone(),
-            )
-        })
-        .pipe(surface_mesh::SurfaceMesh::<A>::setup),
+        (move || (capsule.mesh().build(), capsule_material.clone()))
+            .pipe(surface_mesh::SurfaceMesh::<A>::setup),
     );
 
     app.add_systems(
         Update,
         (sync_sites,)
-            .run_if(resource_changed::<HardTetrahedronSelfAssembly>)
+            .run_if(resource_changed::<Quasi2dCapsuleSelfAssembly>)
             .after(AdvanceSet),
     );
 
@@ -93,7 +70,7 @@ fn sync_sites(
         (Entity, &mut Transform),
         With<surface_mesh::SurfaceMesh<A>>,
     >,
-    simulation: Res<HardTetrahedronSelfAssembly>,
+    simulation: Res<Quasi2dCapsuleSelfAssembly>,
 ) {
     let sites = simulation.microstate.sites();
 
@@ -102,6 +79,15 @@ fn sync_sites(
         site_representation,
         site_query,
         sites.iter().map(|site| {
+            let orientation = site.properties.orientation;
+            let rotation = Versor::from_axis_angle(
+                [1.0, 0.0, 0.0]
+                    .try_into()
+                    .expect("hard-coded vector should be non-zero length"),
+                PI / 2.0,
+            );
+            let orientation = orientation.combine(&rotation);
+
             (
                 Vec3::new(
                     site.properties.position[0] as f32,
@@ -109,10 +95,10 @@ fn sync_sites(
                     site.properties.position[2] as f32,
                 ),
                 Quat::from_xyzw(
-                    site.properties.orientation.get().vector[0] as f32,
-                    site.properties.orientation.get().vector[1] as f32,
-                    site.properties.orientation.get().vector[2] as f32,
-                    site.properties.orientation.get().scalar as f32,
+                    orientation.get().vector[0] as f32,
+                    orientation.get().vector[1] as f32,
+                    orientation.get().vector[2] as f32,
+                    orientation.get().scalar as f32,
                 ),
             )
         }),

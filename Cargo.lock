@@ -3061,6 +3061,7 @@ name = "examples"
 version = "1.2.0"
 dependencies = [
  "anyhow",
+ "arrayvec",
  "bevy",
  "bevy_egui",
  "hoomd-bevy",
