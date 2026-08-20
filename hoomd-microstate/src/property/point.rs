@@ -2,12 +2,12 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement Point
-
+use num::complex::Complex;
 use serde::{Deserialize, Serialize};
 
 use super::Position;
 use crate::Transform;
-use hoomd_manifold::{Hyperbolic, Minkowski, Spherical};
+use hoomd_manifold::{Biquaternion, Hyperbolic, HyperbolicRotate, Minkowski, Spherical};
 use hoomd_vector::Cartesian;
 
 /// A position in space and nothing more.
@@ -121,69 +121,26 @@ impl Transform<Point<Hyperbolic<4>>> for Point<Hyperbolic<4>> {
     /// local body frame.
     #[inline]
     fn transform(&self, site_properties: &Point<Hyperbolic<4>>) -> Point<Hyperbolic<4>> {
-        let body_point = self.position.coordinates();
-        let body_theta = (body_point[2].powi(2) + body_point[1].powi(2))
-            .sqrt()
-            .atan2(body_point[0]);
-        let body_phi = body_point[2].atan2(body_point[1]);
-        let body_boost = (body_point[3]).acosh();
-        let site_pos = site_properties.position.coordinates();
-        let transformed_point = Minkowski::from([
-            site_pos[0]
-                * ((body_boost.cosh()) * ((body_theta.cos()).powi(2))
-                    + ((body_theta.sin()).powi(2)))
-                + site_pos[1]
-                    * (body_phi.cos())
-                    * (body_theta.sin())
-                    * (body_theta.cos())
-                    * ((body_boost.cosh()) - 1.0)
-                + site_pos[2]
-                    * (body_phi.sin())
-                    * (body_theta.sin())
-                    * (body_theta.cos())
-                    * ((body_boost.cosh()) - 1.0)
-                + site_pos[3] * (body_boost.sinh()) * (body_theta.cos()),
-            site_pos[0]
-                * (body_phi.cos())
-                * (body_theta.sin())
-                * (body_theta.cos())
-                * ((body_boost.cosh()) - 1.0)
-                + site_pos[1]
-                    * (((body_phi.cos()).powi(2))
-                        * ((body_boost.cosh()) * ((body_theta.sin()).powi(2))
-                            + ((body_theta.cos()).powi(2)))
-                        + ((body_phi.sin()).powi(2)))
-                + site_pos[2]
-                    * (body_phi.sin())
-                    * (body_phi.cos())
-                    * ((body_boost.cosh()) * ((body_theta.sin()).powi(2))
-                        + ((body_theta.cos()).powi(2))
-                        - 1.0)
-                + site_pos[3] * (body_boost.sinh()) * (body_theta.sin()) * (body_phi.cos()),
-            site_pos[0]
-                * (body_theta.cos())
-                * (body_theta.sin())
-                * (body_phi.sin())
-                * ((body_boost.cosh()) - 1.0)
-                + site_pos[1]
-                    * (body_phi.cos())
-                    * (body_phi.sin())
-                    * ((body_boost.cosh()) * ((body_theta.sin()).powi(2))
-                        + ((body_theta.cos()).powi(2))
-                        - 1.0)
-                + site_pos[2]
-                    * (((body_phi.sin()).powi(2))
-                        * ((body_boost.cosh()) * ((body_theta.sin()).powi(2))
-                            + ((body_theta.cos()).powi(2)))
-                        + ((body_phi.cos()).powi(2)))
-                + site_pos[3] * (body_boost.sinh()) * (body_theta.sin()) * (body_phi.sin()),
-            site_pos[0] * (body_boost.sinh()) * (body_theta.cos())
-                + site_pos[1] * (body_boost.sinh()) * (body_phi.cos()) * (body_theta.sin())
-                + site_pos[2] * (body_boost.sinh()) * (body_phi.sin()) * (body_theta.sin())
-                + site_pos[3] * (body_boost.cosh()),
-        ]);
-        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point);
-        Point::new(new_hyperbolic)
+        // convert body coordinates to biquaternion operator
+        let body_array = self.position.coordinates();
+        let eta = body_array[3].acosh();
+        let (sh, ch) = (
+            (eta / 2.0).sinh() / (eta.sinh()),
+            (eta / 2.0).cosh() / (eta.cosh()),
+        );
+        let body_quat_operator = Biquaternion::from([
+            Complex::new(0.0, body_array[0] * sh),
+            Complex::new(0.0, body_array[1] * sh),
+            Complex::new(0.0, body_array[2] * sh),
+            Complex::new(body_array[3] * ch, 0.0),
+        ])
+        .to_unit_unchecked();
+
+        let site_as_minkowski = site_properties.position.point();
+        let transformed_site = Hyperbolic::<4>::from_minkowski_coordinates(
+            body_quat_operator.hyperbolic_rotate(site_as_minkowski),
+        );
+        Point::new(transformed_site)
     }
 }
 
