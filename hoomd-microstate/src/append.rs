@@ -477,7 +477,7 @@ impl<B, X, C> AppendMicrostate<B, Point<Hyperbolic<4>>, X, C> for HoomdGsdFile {
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box([2.0, 2.0, 0.0, 0.0, 0.0, 0.0])?
-            .configuration_dimensions(Dimensions::Two)?
+            .configuration_dimensions(Dimensions::Three)?
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
