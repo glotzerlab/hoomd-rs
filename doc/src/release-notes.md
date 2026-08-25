@@ -7,9 +7,11 @@
 * `[examples]`: Add "Melt an ideal hexagonal structure of hexagons" example (#393).
 * `[examples]`: Add "Multi-site patchy shapes" example (#395).
 * `[examples]`: Add "3D shapes confined to a 2D plane" example (#397).
+* `[examples]`: Add "Binary hard shape systems" example (#401).
 * `[examples]`: Use the mouse wheel to zoom examples with 3D cameras (#397).
 * `[examples]`: Click and drag to orbit the camera in examples with 3D cameras (#397).
 * `[hoomd-geometry]`: Add `Hyperparallelepiped`, `Triclinic`, and `Rhomboid` shapes (#88).
+* `[hoomd-geometry]`: Implement `Scale` for `ConvexSurfaceMesh2d` (#401).
 * `[hoomd-linear-algebra]` Add `matrix::qr` module with methods to compute the QR factorization of matrices (#88).
 * `[hoomd-linear-algebra]` Add methods `iter_column_slice`, `iter_column_slice_mut`, `iter_submatrix`, to `Matrix<N, M>` (#88).
 * `[hoomd-macrostate]`: Add `Fugacity` trait that access the fugacity of a macrostate (#354).
