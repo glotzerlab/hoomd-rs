@@ -79,7 +79,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
                 ColorMaterial::from(MUTED_COLOR),
             )
         })
-            .pipe(plane_mesh::PlaneMesh::<GhostA>::setup),
+        .pipe(plane_mesh::PlaneMesh::<GhostA>::setup),
     );
     app.add_systems(
         Startup,
@@ -99,7 +99,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
                 ColorMaterial::from(MUTED_COLOR),
             )
         })
-            .pipe(plane_mesh::PlaneMesh::<GhostB>::setup),
+        .pipe(plane_mesh::PlaneMesh::<GhostB>::setup),
     );
     app.add_systems(
         Update,
