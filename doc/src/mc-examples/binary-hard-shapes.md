@@ -1,7 +1,7 @@
 # Binary hard shape systems
 
 <script type="module">
-import init from 'https://glotzerlab.github.io/hoomd-rs/mc-examples/binary-hard-shapes-shapes.js'
+import init from 'https://glotzerlab.github.io/hoomd-rs/mc-examples/binary-hard-shapes.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}
