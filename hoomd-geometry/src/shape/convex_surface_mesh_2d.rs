@@ -9,7 +9,8 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale, SupportMapping, Volume, shape::ConvexPolytope
+    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale,
+    SupportMapping, Volume, shape::ConvexPolytope,
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
@@ -400,7 +401,9 @@ impl Scale for ConvexSurfaceMesh2d {
     ///
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_geometry::{Scale, Volume, BoundingSphereRadius, shape::ConvexSurfaceMesh2d};
+    /// use hoomd_geometry::{
+    ///     BoundingSphereRadius, Scale, Volume, shape::ConvexSurfaceMesh2d,
+    /// };
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let rectangle = ConvexSurfaceMesh2d::from_point_set([
@@ -414,7 +417,10 @@ impl Scale for ConvexSurfaceMesh2d {
     ///
     /// assert_eq!(scaled_rectangle.vertices()[0], [-1.0, -0.5].into());
     /// assert_eq!(scaled_rectangle.volume(), 2.0);
-    /// assert_relative_eq!(scaled_rectangle.bounding_sphere_radius().get(), 1.25_f64.sqrt());
+    /// assert_relative_eq!(
+    ///     scaled_rectangle.bounding_sphere_radius().get(),
+    ///     1.25_f64.sqrt()
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -438,7 +444,9 @@ impl Scale for ConvexSurfaceMesh2d {
     ///
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_geometry::{Scale, Volume, BoundingSphereRadius, shape::ConvexSurfaceMesh2d};
+    /// use hoomd_geometry::{
+    ///     BoundingSphereRadius, Scale, Volume, shape::ConvexSurfaceMesh2d,
+    /// };
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let rectangle = ConvexSurfaceMesh2d::from_point_set([
@@ -452,7 +460,10 @@ impl Scale for ConvexSurfaceMesh2d {
     ///
     /// assert_eq!(scaled_rectangle.vertices()[0], [-1.0, -0.5].into());
     /// assert_eq!(scaled_rectangle.volume(), 2.0);
-    /// assert_relative_eq!(scaled_rectangle.bounding_sphere_radius().get(), 1.25_f64.sqrt());
+    /// assert_relative_eq!(
+    ///     scaled_rectangle.bounding_sphere_radius().get(),
+    ///     1.25_f64.sqrt()
+    /// );
     /// # Ok(())
     /// # }
     /// ```
