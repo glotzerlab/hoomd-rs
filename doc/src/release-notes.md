@@ -2,6 +2,14 @@
 
 ## Next release
 
+*Highlights:*
+
+**hoomd-rs 1.3** can now perform simulations in sheared boxes. Use `Rhomboid` for 2D, `Triclinic` for 3D or `Hyperparallelepiped` for N-D simulations. It can also perform Monte Carlo simulations in the grand canonical distribution, replicate periodic microstates, perform simulations with N-D bodies constrained to (N-1)-D manifolds, and interoperate directly with [signac] workspaces.
+
+Check out the many new examples and learn how to use **hoomd-rs** for your simulation models.
+
+[signac]: https://signac.readthedocs.io
+
 *Added:*
 
 * `[examples]`: Add "Melt an ideal hexagonal structure of hexagons" example (#393).
@@ -34,10 +42,6 @@
   have different types (#397).
 * `[hoomd-mc]`: Relax trait bounds to allow bodie and site positions to
   have different types (#397).
-
-*Deprecated:*
-
-*Removed:*
 
 *Fixed:*
 
