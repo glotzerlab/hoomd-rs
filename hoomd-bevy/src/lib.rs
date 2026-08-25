@@ -117,6 +117,16 @@ pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
 /// Camera zoom speed multiplier
 const CAMERA_ZOOM_SPEED: f32 = 25.0;
 
+/// The default 3D scene camera.
+fn default_3d_camera_transform(viewport_height: f32) -> Transform {
+    Transform::from_xyz(0.0, 0.0, -viewport_height * 2.0).looking_at(Vec3::ZERO, Vec3::Y)
+}
+
+/// The default 3D scene light direction.
+fn default_3d_light() -> Transform {
+    Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y)
+}
+
 /// Interface *hoomd-rs* simulations with the Bevy game engine.
 ///
 /// [`HoomdBevyPlugin`] is used by all the *hoomd-rs* examples that create
@@ -269,6 +279,9 @@ pub struct CameraControl3d {
 
     /// Track whether the user is dragging the view.
     dragging: bool,
+
+    /// Initial viewport height
+    viewport_height: f32,
 }
 
 /// The overlay UI root node.
@@ -548,12 +561,9 @@ where
         commands.spawn((
             Camera3d::default(),
             projection,
-            Transform::from_xyz(0.0, 0.0, -viewport_height * 2.0).looking_at(Vec3::ZERO, Vec3::Y),
+            default_3d_camera_transform(viewport_height),
         ));
-        commands.spawn((
-            DirectionalLight::default(),
-            Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ));
+        commands.spawn((DirectionalLight::default(), default_3d_light()));
     }
 
     /// Increase the brightness of the default ambient light.
@@ -577,6 +587,34 @@ where
             }
             control.dragging = false;
             transform.translation = Vec3::default();
+        }
+
+        reset_camera.clear();
+    }
+
+    /// Keyboard controls for the 3d camera.
+    ///
+    /// `=` resets the camera to the default.
+    #[expect(clippy::type_complexity, reason = "bevy")]
+    fn camera_reset_3d(
+        mut reset_camera: MessageReader<ResetCamera>,
+        camera: Single<
+            (&mut Transform, &mut Projection),
+            (With<Camera3d>, Without<DirectionalLight>),
+        >,
+        directional_light: Single<&mut Transform, (With<DirectionalLight>, Without<Camera3d>)>,
+        mut control: ResMut<CameraControl3d>,
+    ) {
+        let (mut transform, projection) = camera.into_inner();
+        let mut light_transform = directional_light.into_inner();
+
+        if !reset_camera.is_empty() {
+            if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
+                orthographic.scale = 1.0;
+            }
+            control.dragging = false;
+            *transform = default_3d_camera_transform(control.viewport_height);
+            *light_transform = default_3d_light();
         }
 
         reset_camera.clear();
@@ -864,7 +902,10 @@ where
                 app.add_systems(Startup, move |commands: Commands| {
                     Self::setup_camera_3d(commands, initial_viewport_height);
                 })
-                .insert_resource(CameraControl3d::default())
+                .insert_resource(CameraControl3d {
+                    viewport_height: initial_viewport_height,
+                    ..Default::default()
+                })
                 .add_systems(
                     Update,
                     Self::camera_mouse_rotate_control_3d
@@ -880,7 +921,11 @@ where
                         .run_if(on_message::<MouseWheel>)
                         .in_set(MouseInputSet),
                 )
-                .add_systems(Startup, Self::setup_ambient_light);
+                .add_systems(Startup, Self::setup_ambient_light)
+                .add_systems(
+                    Update,
+                    Self::camera_reset_3d.run_if(on_message::<ResetCamera>),
+                );
             }
         }
 
