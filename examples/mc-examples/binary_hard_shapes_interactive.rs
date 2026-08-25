@@ -6,7 +6,6 @@ use hoomd_bevy::{
 use anyhow::Context;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
-use hoomd_geometry::shape::ConvexSurfaceMesh2d;
 
 use crate::SiteType;
 
