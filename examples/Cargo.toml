@@ -177,3 +177,10 @@ path = "mc-examples/capsules-on-a-plane.rs"
 
 [package.metadata.example.capsules-on-a-plane]
 path = "mc-examples"
+
+[[example]]
+name = "binary-hard-shapes"
+path = "mc-examples/binary-hard-shapes.rs"
+
+[package.metadata.example.binary-hard-shapes]
+path = "mc-examples"
