@@ -10,37 +10,49 @@ use serde::{Deserialize, Serialize};
 use crate::Thermostat;
 use hoomd_simulation::macrostate::Temperature;
 
-/// Stochastic momentum rescaling.
+/// Stochastic momentum rescaling based on the canonical kinetic energy distribution.
 ///
-/// The time constant $` \tau `$ sets how long the kinetic energy of the system
-/// takes to decay to equilibrium.
-///
-/// When $`\tau`$ is 0, the rescaling factor $` \alpha `$ is:
-/// ```math
-///  \alpha = \sqrt{\frac{g kT}{K}}
-/// ```
-/// where $`K`$ is the instantaneous kinetic energy of the corresponding
-/// translational or rotational degrees of freedom, $`N`$ is the number of
-/// degrees of freedom, and $`g`$ is a random value sampled from the gamma
-/// distribution $`\Gamma(N, 1)`$ with the probability density function:
-/// ```math
-///    f_N(g) = \frac{1}{\Gamma{(N)}} g^{N-1} e^{-g}
-/// ```
-///
-/// When $`\tau`$ is non-zero, $` \alpha `$ is given by:
+/// `Bussi` implements the Bussi-Donadio-Parrinello algorithm following
+/// [Bussi et al. 2007](https://doi.org/10.1063/1.2408420). This algorithm
+/// rescales momentum and angular momentum separately by a factor $` \alpha `$,
+/// which is derived by sampling the canonical equilibrium distribution for
+/// kinetic energy.
+/// 
+/// The time-scale of thermal equilibration is controlled via the parameter
+/// `tau`. The relationship between `tau` and $` \alpha `$ is given by
+/// 
 /// ```math
 /// \alpha = \sqrt{e^{-\delta t / \tau}
-///      + (1 - e^{-\delta t / \tau}) \frac{(2 g + n^2) kT}{2 K}
+///      + (1 - e^{-\delta t / \tau}) \frac{(2 g_{N-1} + n^2) kT}{2 K}
 ///      + 2 n \sqrt{e^{-\delta t / \tau} (1-e^{-\delta t / \tau})
 ///         \frac{kT}{2 K}}}
 /// ```
-/// where $`\delta t`$ is the integration time step size and $`n`$ is a random
-/// value sampled from the standard normal distribution $`\mathcal{N}(0, 1)`$.
-///
-/// # Reference
-///
-/// * [Bussi et al. 2007](https://doi.org/10.1063/1.2408420)
-///
+/// 
+/// where
+/// 
+/// * $`\delta t`$ is the integration time step size,
+/// * $`n`$ is a random value sampled from the standard normal distribution
+///   $`\mathcal{N}(0, 1)`$,
+/// * $`N`$ is the number of translational or rotational degrees of freedom,
+/// * $`K`$ is the instantaneous kinetic energy of the translational or
+///   rotational degrees of freedom, and
+/// * $`g_N`$ is a random value sampled from the [gamma distribution]
+///   $`\Gamma(N, 1)`$ with the probability density function
+///   ```math
+///   f_N(g) = \frac{1}{\Gamma{(N)}} g^{N-1} e^{-g}
+///   ```
+/// 
+/// [gamma distribution]: https://en.wikipedia.org/wiki/Gamma_distribution
+/// 
+/// When `tau` is 0, the system is instantly thermalized and the above relation
+/// simplifies to
+/// 
+/// ```math
+/// \alpha = \sqrt{\frac{g_N kT}{K}}
+/// ```
+/// 
+/// `Bussi` rescales momenta only in the first integration half step.
+/// 
 /// # Example
 ///
 /// ```
@@ -58,7 +70,7 @@ pub struct Bussi {
 }
 
 impl Bussi {
-    /// Construct a new `Bussi` thermostat with the given time constant.
+    /// Construct a new thermostat with a given time constant `tau`.
     ///
     /// # Example
     ///
@@ -77,14 +89,15 @@ impl Bussi {
         kinetic_energy_old * (1.0 - rescaling_factor.powi(2))
     }
 
-    /// The total energy of the thermostat.
+    /// The total energy absorbed by the thermostat.
+    /// 
     /// # Example
     ///
     /// ```
     /// use hoomd_md::thermostat::Bussi;
     ///
     /// let bussi = Bussi::new(0.1);
-    /// let energy = bussi.energy();
+    /// assert_eq!(bussi.energy(), 0.0);
     /// ```
     #[inline]
     pub fn energy(&self) -> f64 {
@@ -96,6 +109,7 @@ impl<M> Thermostat<M> for Bussi
 where
     M: Temperature,
 {
+    /// Accumulate the absorbed energy for this time step and return the rescaling factor.
     #[inline]
     fn integrate_half_step_one<R: Rng + ?Sized>(
         &mut self,
@@ -144,6 +158,7 @@ where
         rescaling_factor
     }
 
+    /// Return `1.0`. Momenta are not rescaled in the second half step.
     #[inline]
     fn integrate_half_step_two<R: Rng + ?Sized>(
         &mut self,
