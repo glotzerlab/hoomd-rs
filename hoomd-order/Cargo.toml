@@ -12,7 +12,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-hoomd-vector = "1.1.0"
+hoomd-vector.workspace = true
 num-complex.workspace = true
 
 [dev-dependencies]
