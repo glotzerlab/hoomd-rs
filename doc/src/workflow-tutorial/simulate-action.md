@@ -35,27 +35,29 @@ necessary logic. It first checks if `model.postcard` exists. If it does,
 it deserializes the simulation state and returns it. If not, it initializes
 a new simulation model from the [signac] state point:
 ```rust,ignore
-fn get_model() -> anyhow::Result<LennardJonesModel> {
-    match fs::read(MODEL_FILE) {
+    let model_file: PathBuf = [Path::new("workspace"), directory, Path::new(MODEL_FILE)]
+        .iter()
+        .collect();
+    match fs::read(&model_file) {
         Ok(bytes) => {
-            debug!("Continuing simulation from `{MODEL_FILE}`.");
+            debug!("Continuing simulation from `{}`.", model_file.display());
 
-            postcard::from_bytes(&bytes).with_context(|| format!("could not read `{MODEL_FILE}`"))
+            postcard::from_bytes(&bytes)
+                .with_context(|| format!("could not read `{}`", model_file.display()))
         }
         Err(error) => match error.kind() {
             io::ErrorKind::NotFound => {
                 debug!("Constructing a new simulation model.");
-                let state_point_bytes = fs::read("signac_statepoint.json")
-                    .context("unable to read `signac_statepoint.json`")?;
-                let state_point: StatePoint = serde_json::from_slice(&state_point_bytes)
-                    .context("could not parse signac_statepoint.json")?;
-                let _ = HoomdGsdFile::create("trajectory.in-progress.gsd");
+                let state_point: StatePoint = hoomd_workspace::state_point(directory)
+                    .context("could not read state point")?
+                    .ok_or(anyhow!("state point not found"))?;
+                let _ =
+                    HoomdGsdFile::create(state_point.path()?.join("trajectory.in-progress.gsd"));
                 LennardJonesModel::new(state_point)
             }
             _ => Err(error).with_context(|| format!("Could not read `{MODEL_FILE}`")),
         },
     }
-}
 ```
 
 `simulate_one` breaks out of the main simulation loop when the wall time is nearly

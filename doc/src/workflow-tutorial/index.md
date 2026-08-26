@@ -4,13 +4,15 @@ By now, you have learned how to implement your simulation model using *hoomd-rs*
 and have been able to run several test cases. Changing `main.rs` and
 executing `cargo run` for each simulation is not very practical when your
 research study will require tens, hundreds, or thousands of different
-simulations. [Row] and [signac] can help you with that.
+simulations. [Row] and [signac] can help you with that. The [hoomd-workspace]
+crate implements a minimal Rust interface for [signac].
 
 This tutorial assumes that you already have a basic understanding of [row] and
 [signac]. If you don't, you should read their tutorials first. Here, you will
 learn the best practices to integrate your *hoomd-rs* simulations with [row]
 and [signac] including:
 
+* Adding state points to the workspace.
 * Reading the simulation parameters from a [signac] state point.
 * Writing status messages to `stdout` using the [log] crate.
 * Writing simulation trajectories to a [gsd] file.
@@ -26,8 +28,8 @@ or *fork* the repository (you don't need the template's commit history). You can
 create your own new repository on GitHub [from the template] (and then clone
 your own repository) or you can [download the template] for use locally.
 
-Once you have a local copy, launch a terminal and change to that directory.
-Then you can build the workflow binary with:
+Once you have a local copy, launch a terminal and change to that directory
+and you build the workflow binary with:
 ```shell
 $ cargo build --release
 ```
@@ -45,16 +47,15 @@ Then you can run the binary `target/release/action`.
 > may not have the network access needed to build and many parallel builds might
 > conflict.
 
-You are also going to need to install [row] and [signac]. You can activate the
-provided [Pixi] environment. In `bash` and `zsh`, you can run this command
-(see the [Pixi] documentation if you use another shell):
-```shell
-$ eval "$(pixi shell-hook)"
+You need to install [row] to execute the sample workflow. To do so, execute
 ```
-or you can install [row] and [signac] using your preferred package manager(s).
+$ cargo install row
+```
+or use your preferred conda-forge compatible package manager.
 
-[row]: https://row.readthedocs.io
 [signac]: https://signac.readthedocs.io
+[row]: https://row.readthedocs.io
+[hoomd-workspace]: ../../api/hoomd_workspace/index.html
 [log]: https://docs.rs/log
 [gsd]: https://gsd.readthedocs.org
 [parquet]: https://parquet.apache.org/
