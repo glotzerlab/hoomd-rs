@@ -386,8 +386,6 @@ where
         + Momentum<Momentum = Cartesian<N>>
         + NetForce<NetForce = Cartesian<N>>
         + NetVirial<NetVirial = <Cartesian<N> as Outer>::Tensor>
-        + NetTorque
-        + AngularMomentum
         + Drag
         + Mass
         + Transform<S>

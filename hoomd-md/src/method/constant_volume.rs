@@ -35,7 +35,7 @@ use hoomd_microstate::{
     },
 };
 use hoomd_spatial::PointUpdate;
-use hoomd_vector::{InnerProduct, Wedge};
+use hoomd_vector::{InnerProduct, Vector, Wedge};
 
 /// Integrate bodies' degrees of freedom in the microstate, modelling the NVE or NVT ensemble.
 ///
@@ -270,7 +270,7 @@ pub(crate) fn integrate_translation_half_step_one_with_filter<V, B, S, X, C, TT,
     should_integrate_body: F,
 )
 where
-    V: Default + InnerProduct,
+    V: Default + Vector,
     B: Position<Position = V>
         + Momentum<Momentum = V>
         + NetForce<NetForce = V>
