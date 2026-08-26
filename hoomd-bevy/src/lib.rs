@@ -65,6 +65,7 @@ use std::{ops::Range, time::Duration};
 use anyhow::Context;
 use bevy::{
     asset::embedded_asset,
+    ecs::component::Mutable,
     input::{
         common_conditions::{input_just_released, input_pressed},
         mouse::MouseWheel,
@@ -84,10 +85,10 @@ use bevy_diagnostic::{
     RegisterDiagnostic,
 };
 use bevy_egui::{
-    EguiContextSettings, EguiContexts, EguiPlugin, EguiPrimaryContextPass,
+    EguiContexts, EguiPlugin, EguiPrimaryContextPass,
     egui::{
         self,
-        gui_zoom::kb_shortcuts::{ZOOM_IN, ZOOM_IN_SECONDARY, ZOOM_OUT, ZOOM_RESET},
+        gui_zoom::kb_shortcuts::{ZOOM_IN, ZOOM_OUT, ZOOM_RESET},
     },
     input::{egui_wants_any_keyboard_input, egui_wants_any_pointer_input},
 };
@@ -99,22 +100,32 @@ use hoomd_simulation::Simulation;
 pub mod representation;
 
 /// The default color for the primary representation (in 2D).
-pub const PRIMARY_COLOR: Color = Color::srgb(249.0 / 255.0, 203.0 / 255.0, 136.0 / 255.0);
+pub const PRIMARY_COLOR: Color = Color::srgb(0.836, 0.533, 0.211);
 
 /// The default color for highlighted features.
 pub const HIGHLIGHT_COLOR: Color = Color::srgb(174.0 / 255.0, 215.0 / 255.0, 1.0);
 
 /// The default color for the primary representation (darkened for 3D lighting).
-pub const PRIMARY_COLOR_3D: Color = Color::srgb(0.836, 0.533, 0.211);
+pub const PRIMARY_COLOR_3D: Color = Color::srgb(0.7, 0.4, 0.0);
 
 /// The default color for a muted representation.
-pub const MUTED_COLOR: Color = Color::srgb(0.75, 0.75, 0.75);
+pub const MUTED_COLOR: Color = Color::srgb(0.5, 0.5, 0.5);
 
 /// The default color for the boundary representation.
 pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
 
 /// Camera zoom speed multiplier
-const CAMERA_ZOOM_SPEED: f32 = 50.0;
+const CAMERA_ZOOM_SPEED: f32 = 25.0;
+
+/// The default 3D scene camera.
+fn default_3d_camera_transform(viewport_height: f32) -> Transform {
+    Transform::from_xyz(0.0, 0.0, -viewport_height * 2.0).looking_at(Vec3::ZERO, Vec3::Y)
+}
+
+/// The default 3D scene light direction.
+fn default_3d_light() -> Transform {
+    Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y)
+}
 
 /// Interface *hoomd-rs* simulations with the Bevy game engine.
 ///
@@ -204,7 +215,8 @@ pub enum InitialCamera {
     /// automatically based on the window dimensions.
     ///
     /// Controls:
-    /// * TODO
+    /// * Left click and drag to rotate.
+    /// * Scroll to zoom.
     Orthographic3d(f32),
 }
 
@@ -253,6 +265,25 @@ pub struct CameraControl2d {
     dragging: bool,
 }
 
+/// Settings used by the 3d camera controls.
+#[derive(Debug, Default, Resource)]
+pub struct CameraControl3d {
+    /// Coordinates clicked in the window.
+    last_click_position: Vec2,
+
+    /// Initial camera transform when clicked
+    last_camera_transform: Transform,
+
+    /// Initial light transform when clicked
+    last_light_transform: Transform,
+
+    /// Track whether the user is dragging the view.
+    dragging: bool,
+
+    /// Initial viewport height
+    viewport_height: f32,
+}
+
 /// The overlay UI root node.
 #[derive(Component)]
 struct OverlayRoot;
@@ -292,7 +323,7 @@ pub struct MouseInputSet;
 
 impl<Sim> HoomdBevyPlugin<Sim>
 where
-    Sim: Resource + Simulation,
+    Sim: Resource<Mutability = Mutable> + Simulation,
 {
     /// Bevy diagnostic that counts the number of steps executed per second.
     pub const SPS: DiagnosticPath = DiagnosticPath::const_new("sps");
@@ -530,12 +561,9 @@ where
         commands.spawn((
             Camera3d::default(),
             projection,
-            Transform::from_xyz(0.0, 0.0, -viewport_height * 2.0).looking_at(Vec3::ZERO, Vec3::Y),
+            default_3d_camera_transform(viewport_height),
         ));
-        commands.spawn((
-            DirectionalLight::default(),
-            Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ));
+        commands.spawn((DirectionalLight::default(), default_3d_light()));
     }
 
     /// Increase the brightness of the default ambient light.
@@ -564,6 +592,34 @@ where
         reset_camera.clear();
     }
 
+    /// Keyboard controls for the 3d camera.
+    ///
+    /// `=` resets the camera to the default.
+    #[expect(clippy::type_complexity, reason = "bevy")]
+    fn camera_reset_3d(
+        mut reset_camera: MessageReader<ResetCamera>,
+        camera: Single<
+            (&mut Transform, &mut Projection),
+            (With<Camera3d>, Without<DirectionalLight>),
+        >,
+        directional_light: Single<&mut Transform, (With<DirectionalLight>, Without<Camera3d>)>,
+        mut control: ResMut<CameraControl3d>,
+    ) {
+        let (mut transform, projection) = camera.into_inner();
+        let mut light_transform = directional_light.into_inner();
+
+        if !reset_camera.is_empty() {
+            if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
+                orthographic.scale = 1.0;
+            }
+            control.dragging = false;
+            *transform = default_3d_camera_transform(control.viewport_height);
+            *light_transform = default_3d_light();
+        }
+
+        reset_camera.clear();
+    }
+
     /// Quit.
     fn quit(mut quit: MessageReader<Quit>, mut exit: MessageWriter<AppExit>) {
         if !quit.is_empty() {
@@ -574,10 +630,6 @@ where
     }
 
     /// Left click and drag to pan the 2D camera.
-    ///
-    /// # Panics
-    ///
-    /// Panics when the 2D camera viewport is invalid.
     fn camera_mouse_pan_control_2d(
         camera: Single<
             (&Camera, &GlobalTransform, &mut Transform, &mut Projection),
@@ -678,6 +730,97 @@ where
         }
     }
 
+    /// Zoom the 3d camera using the mouse wheel or trackpad scroll gesture.
+    fn camera_mouse_zoom_control_3d(
+        time: Res<Time>,
+        camera: Single<&mut Projection, With<Camera3d>>,
+        settings: Res<Settings>,
+        mut scroll: MessageReader<MouseWheel>,
+    ) {
+        let projection = camera.into_inner();
+
+        if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
+            let scroll = scroll.read().map(|e| e.y).fold(0.0, |total, y| total + y);
+
+            // The scroll events distinguish between line (mouse wheel) and pixel
+            // (trackpad) events. However, In wasm builds all major browsers report
+            // only pixel events. Tested on macOS, scrolling with the trackpad gave
+            // consistent values across all browsers and native. However, scrolling
+            // with the mouse wheel gave different scales between native and browser
+            // and from browser to browser (a factor of 100 from the smallest to
+            // the largest). Therefore, the best we can do is check the sign of the
+            // scroll event and act scale the camera in the appropriate direction.
+            let zoom_speed = settings.camera_sensitivity * CAMERA_ZOOM_SPEED * time.delta_secs();
+            let delta_zoom = -zoom_speed.copysign(scroll);
+            let new_scale = (orthographic.scale * (1.0 + delta_zoom)).clamp(
+                1.0 / settings.zoom_range.end,
+                1.0 / settings.zoom_range.start,
+            );
+
+            orthographic.scale = new_scale;
+        }
+    }
+
+    /// Left click and drag to pan the 3D camera.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the 3D camera viewport is invalid.
+    fn camera_mouse_rotate_control_3d(
+        camera: Single<&mut Transform, (With<Camera3d>, Without<DirectionalLight>)>,
+        directional_light: Single<&mut Transform, (With<DirectionalLight>, Without<Camera3d>)>,
+        mut control: ResMut<CameraControl3d>,
+        buttons: Res<ButtonInput<MouseButton>>,
+        window: Single<&Window, With<PrimaryWindow>>,
+        settings: Res<Settings>,
+    ) {
+        // Firefox wasm builds do not behave well using AccumulatedMouseMotion. Use
+        // absolute window coordinates and a state machine to provide consistent
+        // panning behavior across all platforms.
+
+        let mut camera_transform = camera.into_inner();
+        let mut light_transform = directional_light.into_inner();
+
+        if buttons.just_pressed(MouseButton::Left)
+            && let Some(initial_click_position) = window.cursor_position()
+        {
+            control.last_click_position = initial_click_position;
+            control.last_camera_transform = *camera_transform;
+            control.last_light_transform = *light_transform;
+            control.dragging = true;
+            return;
+        }
+
+        if !buttons.pressed(MouseButton::Left) {
+            control.dragging = false;
+            return;
+        }
+
+        if control.dragging
+            && let Some(current_cursor_position) = window.cursor_position()
+        {
+            let offset = current_cursor_position - control.last_click_position;
+            let q_y = Quat::from_axis_angle(
+                control.last_camera_transform.local_y().into(),
+                -offset.x / 100.0 * settings.camera_sensitivity,
+            );
+            let q_x = Quat::from_axis_angle(
+                control.last_camera_transform.local_x().into(),
+                -offset.y / 100.0 * settings.camera_sensitivity,
+            );
+            camera_transform.translation = q_x * q_y * control.last_camera_transform.translation;
+
+            let up = camera_transform.local_y();
+            camera_transform.look_at(Vec3::default(), up);
+
+            light_transform.translation = q_x * q_y * control.last_light_transform.translation;
+            light_transform.look_at(Vec3::default(), up);
+
+            control.last_click_position = current_cursor_position;
+            control.last_camera_transform = *camera_transform;
+            control.last_light_transform = *light_transform;
+        }
+    }
     /// Build the plugin.
     ///
     /// [`HoomdBevyPlugin`] does not implement [`Plugin`] and cannot be used with
@@ -736,7 +879,7 @@ where
                     Self::camera_mouse_pan_control_2d
                         .run_if(
                             input_pressed(MouseButton::Left)
-                                .or(input_just_released(MouseButton::Left)),
+                                .or_else(input_just_released(MouseButton::Left)),
                         )
                         .in_set(MouseInputSet),
                 )
@@ -759,7 +902,30 @@ where
                 app.add_systems(Startup, move |commands: Commands| {
                     Self::setup_camera_3d(commands, initial_viewport_height);
                 })
-                .add_systems(Startup, Self::setup_ambient_light);
+                .insert_resource(CameraControl3d {
+                    viewport_height: initial_viewport_height,
+                    ..Default::default()
+                })
+                .add_systems(
+                    Update,
+                    Self::camera_mouse_rotate_control_3d
+                        .run_if(
+                            input_pressed(MouseButton::Left)
+                                .or_else(input_just_released(MouseButton::Left)),
+                        )
+                        .in_set(MouseInputSet),
+                )
+                .add_systems(
+                    Update,
+                    Self::camera_mouse_zoom_control_3d
+                        .run_if(on_message::<MouseWheel>)
+                        .in_set(MouseInputSet),
+                )
+                .add_systems(Startup, Self::setup_ambient_light)
+                .add_systems(
+                    Update,
+                    Self::camera_reset_3d.run_if(on_message::<ResetCamera>),
+                );
             }
         }
 
@@ -788,9 +954,6 @@ where
         let context = contexts.ctx_mut()?;
         context.memory_mut(|m| {
             m.options.theme_preference = egui::ThemePreference::Dark;
-
-            // bevy_egui overrides the egui built-in zoom. Disable it to avoid conflicts.
-            m.options.zoom_with_keyboard = false;
         });
 
         Ok(())
@@ -800,7 +963,6 @@ where
     fn ui_system(
         #[cfg(not(target_arch = "wasm32"))] mut commands: Commands,
         mut contexts: EguiContexts,
-        mut context_settings: Single<&mut EguiContextSettings>,
         mut ui_state: ResMut<UiState>,
         mut options_window_state: ResMut<OptionsWindowState>,
         mut parameters_window_state: ResMut<ParametersWindowState>,
@@ -865,8 +1027,8 @@ where
                         ui.label("Scroll to zoom.");
                     }
                     InitialCamera::Orthographic3d(_) => {
-                        ui.label("TODO.");
-                        ui.label("TODO.");
+                        ui.label("Click and drag to rotate the camera.");
+                        ui.label("Scroll to zoom.");
                     }
                 }
 
@@ -942,7 +1104,7 @@ where
 
         {
             let context = contexts.ctx_mut()?;
-            if !context.wants_keyboard_input() {
+            if !context.egui_wants_keyboard_input() {
                 if context.input_mut(|i| i.consume_shortcut(&advance_shortcut)) {
                     advance_simulation.write(AdvanceSimulation);
                 }
@@ -971,19 +1133,6 @@ where
                     commands
                         .spawn(Screenshot::primary_window())
                         .observe(save_to_disk("screenshot.png"));
-                }
-
-                if context.input_mut(|i| i.consume_shortcut(&ZOOM_IN)) {
-                    context_settings.scale_factor *= 1.125;
-                }
-                if context.input_mut(|i| i.consume_shortcut(&ZOOM_IN_SECONDARY)) {
-                    context_settings.scale_factor *= 1.125;
-                }
-                if context.input_mut(|i| i.consume_shortcut(&ZOOM_OUT)) {
-                    context_settings.scale_factor /= 1.125;
-                }
-                if context.input_mut(|i| i.consume_shortcut(&ZOOM_RESET)) {
-                    context_settings.scale_factor = 1.0;
                 }
             }
         }

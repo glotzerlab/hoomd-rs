@@ -69,6 +69,30 @@ pub trait Pressure {
     fn pressure_mut(&mut self) -> &mut f64;
 }
 
+/// Set the fugacity of a system.
+///
+/// Macrostates with the [`Fugacity`] trait set the fugacity
+/// of the simulation. In *hoomd-rs*, fugacity is given in units of
+/// $` [\mathrm{energy}] \cdot [\mathrm{length}]^{-D} `$ where $` D `$
+/// is the dimensionality of the system.
+///
+/// # Example
+/// ```
+/// use hoomd_simulation::macrostate::IsothermalIsofugacity;
+///
+/// let macrostate = IsothermalIsofugacity {
+///     temperature: 1.2,
+///     fugacity: 0.0,
+/// };
+/// ```
+pub trait Fugacity {
+    /// The system's pressure $` ([\mathrm{energy}] \cdot [\mathrm{length}]^{-D}) `$.
+    fn fugacity(&self) -> &f64;
+
+    /// The system's pressure $` ([\mathrm{energy}] \cdot [\mathrm{length}]^{-D}) `$.
+    fn fugacity_mut(&mut self) -> &mut f64;
+}
+
 /// Constant temperature macrostate.
 ///
 /// Use [`Isothermal`] to set the system temperature using a thermostat or Monte
@@ -135,7 +159,7 @@ pub struct Isobaric {
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct IsothermalIsobaric {
-    /// Kinetic temperature of the system.
+    /// Temperature of the system.
     pub temperature: f64,
     /// Pressure of the system.
     pub pressure: f64,
@@ -160,5 +184,53 @@ impl Pressure for IsothermalIsobaric {
     #[inline]
     fn pressure_mut(&mut self) -> &mut f64 {
         &mut self.pressure
+    }
+}
+
+/// Constant temperature, constant fugacity macrostate.
+///
+/// Use [`IsothermalIsofugacity`] to set both the system temperature and fugacity.
+///
+/// * Temperature is given in units of $` [\mathrm{energy}] `$:
+///   $` \mathrm{temperature} = kT `$.
+/// * Fugacity is given in units of $` [\mathrm{energy}] \cdot
+///   [\mathrm{length}]^{-D} `$ where $` D `$ is the dimensionality of the system.
+///
+/// # Example
+/// ```
+/// use hoomd_simulation::macrostate::IsothermalIsofugacity;
+///
+/// let macrostate = IsothermalIsofugacity {
+///     temperature: 1.2,
+///     fugacity: 1.0,
+/// };
+/// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct IsothermalIsofugacity {
+    /// Temperature of the system.
+    pub temperature: f64,
+    /// Pressure of the system.
+    pub fugacity: f64,
+}
+impl Temperature for IsothermalIsofugacity {
+    #[inline]
+    fn temperature(&self) -> &f64 {
+        &self.temperature
+    }
+
+    #[inline]
+    fn temperature_mut(&mut self) -> &mut f64 {
+        &mut self.temperature
+    }
+}
+impl Fugacity for IsothermalIsofugacity {
+    #[inline]
+    fn fugacity(&self) -> &f64 {
+        &self.fugacity
+    }
+
+    #[inline]
+    fn fugacity_mut(&mut self) -> &mut f64 {
+        &mut self.fugacity
     }
 }

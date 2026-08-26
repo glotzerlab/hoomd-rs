@@ -556,7 +556,7 @@ where
             .fold(0, usize::max);
 
         writeln!(f, "HashCell<K, {D}>:")?;
-        writeln!(f, "- {} total cells.", self.particle_indices.len(),)?;
+        writeln!(f, "- {} total cells.", self.particle_indices.len())?;
         writeln!(f, "- {} points.", self.cell_index.len())?;
         writeln!(
             f,

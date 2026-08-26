@@ -16,7 +16,7 @@ use bevy::{
     mesh::MeshTag,
     prelude::*,
     reflect::TypePath,
-    render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer},
+    render::{render_resource::AsBindGroup, storage::ShaderBuffer},
     shader::ShaderRef,
     sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
@@ -84,7 +84,7 @@ impl<T: Send + Sync + 'static> Ellipse<T> {
         material: In<MaterialParameters>,
         mut commands: Commands,
         #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))] mut buffers: ResMut<
-            Assets<ShaderStorageBuffer>,
+            Assets<ShaderBuffer>,
         >,
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<Material>>,
@@ -93,8 +93,7 @@ impl<T: Send + Sync + 'static> Ellipse<T> {
         let background_colors = [material.0.background_color; 1024];
 
         #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
-        let background_colors =
-            buffers.add(ShaderStorageBuffer::from([material.0.background_color]));
+        let background_colors = buffers.add(ShaderBuffer::from([material.0.background_color]));
 
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
         let material = Material {
@@ -213,7 +212,7 @@ pub struct Material {
     /// Color applied to the interior of the ellipse (indexed by ellipse % array size).
     #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
     #[storage(1, read_only)]
-    background_colors: Handle<ShaderStorageBuffer>,
+    background_colors: Handle<ShaderBuffer>,
 }
 
 impl Material {
@@ -233,7 +232,7 @@ impl Material {
             unused_mut,
             reason = "Not used in all build configurations."
         )]
-        mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
+        mut buffers: ResMut<Assets<ShaderBuffer>>,
         colors: &[LinearRgba],
     ) {
         #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
@@ -249,7 +248,7 @@ impl Material {
 
         #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
         {
-            let color_buffer = buffers
+            let mut color_buffer = buffers
                 .get_mut(&self.background_colors)
                 .expect("Ellipse::setup should have added the storage buffer");
 

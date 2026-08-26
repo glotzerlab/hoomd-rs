@@ -12,6 +12,8 @@ on:
 
   workflow_dispatch:
 
+permissions: {}
+
 defaults:
   run:
     shell: bash
@@ -22,8 +24,10 @@ env:
 
 jobs:
   unit_test:
-    name: Unit test [rust-${{ matrix.rust }}-${{ matrix.os }}-${{ matrix.target || 'native' }}]
+    name: Unit test [${{ matrix.os }}-${{ matrix.target || 'native' }}]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       # Test the latest Rust on all platforms.
@@ -32,30 +36,25 @@ jobs:
           - ubuntu-24.04
           - macos-26
           - windows-2025
-        rust:
-          - 1.94.0
         target:
          - ''
 
         include:
         - os: ubuntu-24.04
-          rust: 1.94.0
+          rust: 1.96.0
           target: wasm32-unknown-unknown
-
-        # Test MSRV
-        - os: ubuntu-24.04
-          rust: 1.91.0
-          target: ''
 
     steps:
     - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
     - name: Remove native build configuration
       run: rm .cargo/config.toml
     - name: Configure Rust
       uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
       with:
-        toolchain: ${{ matrix.rust }}
+        toolchain: 1.98.0
         targets: ${{ matrix.target }}
     - name: Check rust installation
       run: rustc -vV
@@ -65,7 +64,7 @@ jobs:
     # dramatically. Add the Cargo.lock hash again in the key portion to
     # prevent this restoration.
     - name: Cache
-      uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+      uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       with:
         key: ${{ matrix.target || 'native' }}-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
@@ -138,6 +137,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+    - run: jq --exit-status 'all(.result == "success")' <<< "${NEEDS}"
+      env:
+        NEEDS: ${{ toJson(needs) }}
     - name: Done
       run: exit 0

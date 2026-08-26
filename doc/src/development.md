@@ -55,18 +55,9 @@ words commonly used throughout the repository.
 
 #### mdBook
 
-This documentation is built with [mdBook] using the following plugins:
-* [mdbook-alerts]
-* [mdbook-katex]
-
-Install these with Cargo:
-```shell
-$ cargo install mdbook mdbook-alerts mdbook-katex
-```
+This documentation is built with [mdBook].
 
 [mdBook]: https://rust-lang.github.io/mdBook/
-[mdbook-alerts]: https://github.com/lambdalisue/rs-mdbook-alerts
-[mdbook-katex]: https://github.com/lzanini/mdbook-katex
 
 To preview the documentation locally:
 ```shell

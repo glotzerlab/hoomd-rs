@@ -151,6 +151,17 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         index
     }
 
+    /// Expand a single value in `[0, product(shape)]` back to a multi-dimensional index.
+    #[inline]
+    fn index_to_multi_index(mut index: usize, shape: [usize; N]) -> [usize; N] {
+        let mut multi_index = [0_usize; N];
+        for i in (0..N).rev() {
+            multi_index[i] = index % shape[i];
+            index /= shape[i];
+        }
+        multi_index
+    }
+
     /// Compute the space width and checkerboard shape.
     #[inline]
     fn compute_dimensions(
@@ -196,66 +207,30 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
     }
 
     /// Partition the space indices by color.
-    #[expect(
-        clippy::todo,
-        reason = "there are no known use-cases for parallel 4D, 5D, ... simulations at this time"
-    )]
     fn construct_space_indices_by_color(shape: [usize; N]) -> Vec<Vec<usize>> {
         for width in shape {
             assert!(width.is_multiple_of(2));
         }
+        let num_colors = 2usize.pow(N as u32);
 
-        let mut result = Vec::new();
+        let half: [usize; N] = array::from_fn(|i| shape[i] / 2);
+        let total: usize = half.iter().product();
 
-        if N == 2 {
-            for offset_j in 0..=1 {
-                for offset_i in 0..=1 {
-                    let mut space_indices = Vec::new();
-                    let mut multi_index = [0; N];
+        let base: Vec<usize> = (0..total)
+            .map(|idx| {
+                let half_multi = Self::index_to_multi_index(idx, half);
+                let multi_index: [usize; N] = array::from_fn(|i| 2 * half_multi[i]);
+                Self::multi_index_to_index(multi_index, shape)
+            })
+            .collect();
 
-                    for j in 0..shape[0] / 2 {
-                        multi_index[0] = 2 * j + offset_j;
-                        for i in 0..shape[1] / 2 {
-                            multi_index[1] = 2 * i + offset_i;
-                            space_indices.push(Self::multi_index_to_index(multi_index, shape));
-                        }
-                    }
-
-                    result.push(space_indices);
-                }
-            }
-
-            return result;
-        }
-
-        if N == 3 {
-            for offset_k in 0..=1 {
-                for offset_j in 0..=1 {
-                    for offset_i in 0..=1 {
-                        let mut space_indices = Vec::new();
-                        let mut multi_index = [0; N];
-
-                        for k in 0..shape[0] / 2 {
-                            multi_index[0] = 2 * k + offset_k;
-                            for j in 0..shape[1] / 2 {
-                                multi_index[1] = 2 * j + offset_j;
-                                for i in 0..shape[2] / 2 {
-                                    multi_index[2] = 2 * i + offset_i;
-                                    space_indices
-                                        .push(Self::multi_index_to_index(multi_index, shape));
-                                }
-                            }
-                        }
-
-                        result.push(space_indices);
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        todo!("Implement a general method");
+        (0..num_colors)
+            .map(|color| {
+                let offset = Self::index_to_multi_index(color, [2; N]);
+                let delta = Self::multi_index_to_index(offset, shape);
+                base.iter().map(|&b| b + delta).collect()
+            })
+            .collect()
     }
 
     /// Construct a checkerboard with a given origin (for testing).
@@ -430,6 +405,39 @@ mod tests {
         check!(HypercuboidCheckerboard::<3>::multi_index_to_index([1, 0, 0], shape) == 24);
         check!(HypercuboidCheckerboard::<3>::multi_index_to_index([2, 0, 0], shape) == 48);
         check!(HypercuboidCheckerboard::<3>::multi_index_to_index([3, 3, 2], shape) == 92);
+    }
+
+    #[test]
+    fn test_multi_index_to_index_4d() {
+        let shape = [12, 4, 6, 8];
+        (0..shape[3]).for_each(|i| {
+            check!(HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, 0, i], shape) == i);
+        });
+
+        (0..shape[2]).for_each(|i| {
+            check!(
+                HypercuboidCheckerboard::<4>::multi_index_to_index([0, 0, i, 0], shape)
+                    == i * shape[3]
+            );
+        });
+
+        (0..shape[1]).for_each(|i| {
+            check!(
+                HypercuboidCheckerboard::<4>::multi_index_to_index([0, i, 0, 0], shape)
+                    == (i * shape[2]) * shape[3]
+            );
+        });
+
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([11, 3, 5, 7], shape) == 2303);
+        check!(
+            HypercuboidCheckerboard::<4>::multi_index_to_index([9, 0, 0, 0], shape)
+                == (9 * 4 * 6) * 8
+        );
+
+        // Same as 3D, multiplied by shape[3]
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([1, 0, 0, 0], shape) == 24 * 8);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([2, 0, 0, 0], shape) == 48 * 8);
+        check!(HypercuboidCheckerboard::<4>::multi_index_to_index([3, 3, 2, 0], shape) == 92 * 8);
     }
 
     #[test]
@@ -620,6 +628,112 @@ mod tests {
         check!(space_indices_by_color[7][3] == 24 + 15);
         check!(space_indices_by_color[7][4] == 24 + 21);
         check!(space_indices_by_color[7][5] == 24 + 23);
+    }
+
+    #[test]
+    fn test_construct_space_indices_by_color_4d_general() {
+        let space_indices_by_color =
+            HypercuboidCheckerboard::<4>::construct_space_indices_by_color([2, 4, 2, 4]);
+
+        assert!(space_indices_by_color.len() == 16);
+
+        // Colors 0-7: axis 0 offset is 0.
+        assert!(space_indices_by_color[0].len() == 4);
+        check!(space_indices_by_color[0][0] == 0);
+        check!(space_indices_by_color[0][1] == 2);
+        check!(space_indices_by_color[0][2] == 16);
+        check!(space_indices_by_color[0][3] == 18);
+
+        assert!(space_indices_by_color[1].len() == 4);
+        check!(space_indices_by_color[1][0] == 1);
+        check!(space_indices_by_color[1][1] == 3);
+        check!(space_indices_by_color[1][2] == 17);
+        check!(space_indices_by_color[1][3] == 19);
+
+        assert!(space_indices_by_color[2].len() == 4);
+        check!(space_indices_by_color[2][0] == 4);
+        check!(space_indices_by_color[2][1] == 6);
+        check!(space_indices_by_color[2][2] == 20);
+        check!(space_indices_by_color[2][3] == 22);
+
+        assert!(space_indices_by_color[3].len() == 4);
+        check!(space_indices_by_color[3][0] == 5);
+        check!(space_indices_by_color[3][1] == 7);
+        check!(space_indices_by_color[3][2] == 21);
+        check!(space_indices_by_color[3][3] == 23);
+
+        assert!(space_indices_by_color[4].len() == 4);
+        check!(space_indices_by_color[4][0] == 8);
+        check!(space_indices_by_color[4][1] == 10);
+        check!(space_indices_by_color[4][2] == 24);
+        check!(space_indices_by_color[4][3] == 26);
+
+        assert!(space_indices_by_color[5].len() == 4);
+        check!(space_indices_by_color[5][0] == 9);
+        check!(space_indices_by_color[5][1] == 11);
+        check!(space_indices_by_color[5][2] == 25);
+        check!(space_indices_by_color[5][3] == 27);
+
+        assert!(space_indices_by_color[6].len() == 4);
+        check!(space_indices_by_color[6][0] == 12);
+        check!(space_indices_by_color[6][1] == 14);
+        check!(space_indices_by_color[6][2] == 28);
+        check!(space_indices_by_color[6][3] == 30);
+
+        assert!(space_indices_by_color[7].len() == 4);
+        check!(space_indices_by_color[7][0] == 13);
+        check!(space_indices_by_color[7][1] == 15);
+        check!(space_indices_by_color[7][2] == 29);
+        check!(space_indices_by_color[7][3] == 31);
+
+        // Colors 8-15: axis 0 offset is 1 (stride 32 = 4*2*4).
+        assert!(space_indices_by_color[8].len() == 4);
+        check!(space_indices_by_color[8][0] == 32);
+        check!(space_indices_by_color[8][1] == 32 + 2);
+        check!(space_indices_by_color[8][2] == 32 + 16);
+        check!(space_indices_by_color[8][3] == 32 + 18);
+
+        assert!(space_indices_by_color[9].len() == 4);
+        check!(space_indices_by_color[9][0] == 32 + 1);
+        check!(space_indices_by_color[9][1] == 32 + 3);
+        check!(space_indices_by_color[9][2] == 32 + 17);
+        check!(space_indices_by_color[9][3] == 32 + 19);
+
+        assert!(space_indices_by_color[10].len() == 4);
+        check!(space_indices_by_color[10][0] == 32 + 4);
+        check!(space_indices_by_color[10][1] == 32 + 6);
+        check!(space_indices_by_color[10][2] == 32 + 20);
+        check!(space_indices_by_color[10][3] == 32 + 22);
+
+        assert!(space_indices_by_color[11].len() == 4);
+        check!(space_indices_by_color[11][0] == 32 + 5);
+        check!(space_indices_by_color[11][1] == 32 + 7);
+        check!(space_indices_by_color[11][2] == 32 + 21);
+        check!(space_indices_by_color[11][3] == 32 + 23);
+
+        assert!(space_indices_by_color[12].len() == 4);
+        check!(space_indices_by_color[12][0] == 32 + 8);
+        check!(space_indices_by_color[12][1] == 32 + 10);
+        check!(space_indices_by_color[12][2] == 32 + 24);
+        check!(space_indices_by_color[12][3] == 32 + 26);
+
+        assert!(space_indices_by_color[13].len() == 4);
+        check!(space_indices_by_color[13][0] == 32 + 9);
+        check!(space_indices_by_color[13][1] == 32 + 11);
+        check!(space_indices_by_color[13][2] == 32 + 25);
+        check!(space_indices_by_color[13][3] == 32 + 27);
+
+        assert!(space_indices_by_color[14].len() == 4);
+        check!(space_indices_by_color[14][0] == 32 + 12);
+        check!(space_indices_by_color[14][1] == 32 + 14);
+        check!(space_indices_by_color[14][2] == 32 + 28);
+        check!(space_indices_by_color[14][3] == 32 + 30);
+
+        assert!(space_indices_by_color[15].len() == 4);
+        check!(space_indices_by_color[15][0] == 32 + 13);
+        check!(space_indices_by_color[15][1] == 32 + 15);
+        check!(space_indices_by_color[15][2] == 32 + 29);
+        check!(space_indices_by_color[15][3] == 32 + 31);
     }
 
     #[test]

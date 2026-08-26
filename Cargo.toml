@@ -11,11 +11,13 @@ members = ["benchmarks",
            "hoomd-linear-algebra",
            "hoomd-manifold",
            "hoomd-mc",
+           "hoomd-md",
            "hoomd-microstate",
            "hoomd-simulation",
            "hoomd-spatial",
            "hoomd-utility",
            "hoomd-vector",
+           "hoomd-workspace",
            "tools/build-wasm-doc-examples",
            "hoomd-rand"
           , "hoomd-order"]
@@ -32,18 +34,20 @@ default-members = ["examples",
                    "hoomd-linear-algebra",
                    "hoomd-manifold",
                    "hoomd-mc",
+                   "hoomd-md",
                    "hoomd-microstate",
                    "hoomd-simulation",
                    "hoomd-spatial",
                    "hoomd-utility",
                    "hoomd-vector",
+                   "hoomd-workspace",
                    "hoomd-rand"
                   ]
 
 [workspace.package]
-version = "1.1.0"
+version = "1.3.0"
 edition = "2024"
-rust-version = "1.91"
+rust-version = "1.95"
 homepage = "https://glotzerlab.engin.umich.edu"
 documentation = "https://hoomd-rs.readthedocs.io"
 repository = "https://github.com/glotzerlab/hoomd-rs"
@@ -54,20 +58,21 @@ categories = ["science"]
 [workspace.dependencies]
 # hooomd-rs crates
 # These lines must have 'version = "X.Y.Z", path' *in that order* to work with bump-my-version.
-hoomd-bevy = { version = "1.1.0", path = "hoomd-bevy" }
-hoomd-derive = { version = "1.1.0", path = "hoomd-derive" }
-hoomd-geometry = { version = "1.1.0", path = "hoomd-geometry" }
-hoomd-gsd = { version = "1.1.0", path = "hoomd-gsd" }
-hoomd-interaction = { version = "1.1.0", path = "hoomd-interaction" }
-hoomd-linear-algebra = { version = "1.1.0", path = "hoomd-linear-algebra" }
-hoomd-manifold = { version = "1.1.0", path = "hoomd-manifold" }
-hoomd-mc = { version = "1.1.0", path = "hoomd-mc" }
-hoomd-microstate = { version = "1.1.0", path = "hoomd-microstate" }
-hoomd-simulation = { version = "1.1.0", path = "hoomd-simulation" }
-hoomd-spatial = { version = "1.1.0", path = "hoomd-spatial" }
-hoomd-utility = { version = "1.1.0", path = "hoomd-utility" }
-hoomd-vector = { version = "1.1.0", path = "hoomd-vector" }
-hoomd-rand = { version = "1.1.0", path = "hoomd-rand" }
+hoomd-bevy = { version = "1.3.0", path = "hoomd-bevy" }
+hoomd-derive = { version = "1.3.0", path = "hoomd-derive" }
+hoomd-geometry = { version = "1.3.0", path = "hoomd-geometry" }
+hoomd-gsd = { version = "1.3.0", path = "hoomd-gsd" }
+hoomd-interaction = { version = "1.3.0", path = "hoomd-interaction" }
+hoomd-linear-algebra = { version = "1.3.0", path = "hoomd-linear-algebra" }
+hoomd-manifold = { version = "1.3.0", path = "hoomd-manifold" }
+hoomd-mc = { version = "1.3.0", path = "hoomd-mc" }
+hoomd-md = { version = "1.3.0", path = "hoomd-md"}
+hoomd-microstate = { version = "1.3.0", path = "hoomd-microstate" }
+hoomd-simulation = { version = "1.3.0", path = "hoomd-simulation" }
+hoomd-spatial = { version = "1.3.0", path = "hoomd-spatial" }
+hoomd-utility = { version = "1.3.0", path = "hoomd-utility" }
+hoomd-vector = { version = "1.3.0", path = "hoomd-vector" }
+hoomd-rand = { version = "1.3.0", path = "hoomd-rand" }
 
 # Dev dependencies
 assert2 = "=0.4.0"
@@ -76,6 +81,7 @@ paste = "=1.0.15"
 rand_sfc = "=0.2.0"
 sphrs = "=0.2.2"
 rstest = "=0.26.1"
+rstest_reuse = "=0.7.0"
 tempfile = "=3.27.0"
 strum = "=0.28.0"
 strum_macros = "=0.28.0"
@@ -84,17 +90,20 @@ strum_macros = "=0.28.0"
 clap = {version = "4.5.48", features = ["derive"]}
 clap-verbosity-flag = "3.0.3"
 env_logger = "0.11.8"
-itertools = "0.14.0"
+hex = "0.4.3"
+itertools = "0.15.0"
 log = "0.4.28"
+md-5 = "0.11.0"
 postcard = {version = "1.1.3", default-features = false, features = ["use-std"]}
 rand_distr = "0.6.0"
 rayon = "1.11.0"
 robust = "1.2.0"
 rustc-hash = "2.1.1"
+serde-json-fmt = "0.2.0"
 serde_with = "3.16.1"
 wildmatch = "2.4.0"
-parquet = { version = "58.0.0", default-features=false }
-parquet_derive = { version = "58.0.0", default-features=false }
+parquet = { version = "59.0.0", default-features=false }
+parquet_derive = { version = "59.0.0", default-features=false }
 
 # Dependencies exposed via Public APIs.
 anyhow = "1.0.100"
@@ -104,14 +113,15 @@ num = { version = "0.4.3", features = ["serde"] }
 num-complex = "0.4"
 rand = { version = "0.10.0", default-features=false, features = ["std", "std_rng"] }
 serde = { version = "1.0.228", features = ["derive"]}
+serde_json = "1.0.150"
 thiserror = "2.0.12"
 
 # Bevy and bevy-adjacent dependencies
-bevy_egui = "0.39.0"
+bevy_egui = "0.42.0"
 wayland-sys = "0.31.8"
 
 [workspace.dependencies.bevy]
-version = "0.18.0"
+version = "0.19.0"
 default-features = false
 
 # Include all 2d and 3d features, but NOT audio or gamepad support.
@@ -133,10 +143,10 @@ features = ["default_app",
             "bevy_dev_tools"]
 
 [workspace.dependencies.bevy_diagnostic]
-version = "0.18.0"
+version = "0.19.0"
 
 [workspace.dependencies.bevy_winit]
-version = "0.18.0"
+version = "0.19.0"
 
 [workspace.lints.rust]
 missing_docs = "warn"
@@ -153,6 +163,7 @@ cast_precision_loss = "allow"
 float_cmp = "allow"
 similar_names = "allow"
 inline_always = "allow"
+must_use_candidate = "allow"
 
 # opt-in to restrictions
 allow_attributes_without_reason = "warn"
@@ -267,6 +278,8 @@ opt-level = 3
 [profile.dev.package.bevy_light]
 opt-level = 3
 [profile.dev.package.bevy_macro_utils]
+opt-level = 3
+[profile.dev.package.bevy_material]
 opt-level = 3
 [profile.dev.package.bevy_math]
 opt-level = 3

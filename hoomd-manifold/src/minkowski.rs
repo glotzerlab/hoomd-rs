@@ -24,13 +24,13 @@ use hoomd_vector::{Metric, Vector};
 
 /// A vector in N-dimensional Minkowski space.
 ///
-/// [`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the
+/// [`Minkowski<N>`] implements $`(N-1,1)`$-dimensional Minkowski space with the
 /// metric signature $`(+ , \cdots , + , -)`$. [`Minkowski`] supports
 /// [`Vector`] operations such as vector addition and rescaling.
 ///
 /// ## Constructing Minkowski vectors
 ///
-/// Similar to [`Cartesian`], N-dimensional vectors can be
+/// Similar to [`Cartesian`], $`N`$-dimensional vectors can be
 /// constructed using an array of (real-valued) coordinates. Three- and
 /// four-dimensional vectors can also be constructed from tuples:
 /// ```
@@ -249,7 +249,7 @@ impl<const N: usize> Metric for Minkowski<N> {
         ((self.distance_squared(other)).abs()).sqrt()
     }
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         N
     }
 }
@@ -448,12 +448,12 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
     }
 }
 
-/// Point on the top sheet of a Hyperboloid.
+/// Point on the top sheet of a two-sheeted hyperboloid.
 ///
 /// [`Hyperbolic`] implements an embedding of the top sheet of an
-/// (N-1)-dimensional two-sheeted hyperboloid in N-dimensional Minkowski space.
+/// $`(N-1)`$-dimensional two-sheeted hyperboloid in $`N`$-dimensional Minkowski space.
 /// This surface has constant negative curvature and therefore serves as a model
-/// of (N-1)-dimensional hyperbolic space.
+/// of $`(N-1)`$-dimensional hyperbolic space.
 ///
 /// Explicitly, for N-dimensional Minkowski space with metric $`\eta =
 /// \operatorname{diag}(+,\cdots,+,-)`$, the hyperboloid with skirt width $`R`$ is
@@ -469,7 +469,10 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 /// ```
 ///
 /// Note that the skirt width is fixed at $`R=1.0`$. In simulation, the global
-/// curvature may be tuned by changing the length scale of interactions.
+/// curvature may be tuned by changing the length scale of interactions. For
+/// example, rescaling distances by $`r \rightarrow r/\ell`$ has the same effect
+/// as running simulations with skirt length $`R = 1/\ell`$ or Gauss curvature
+/// $`K = -\ell^2`$.
 ///
 /// [`Hyperbolic`] implements a [`Metric`] that computes the distance of the
 /// geodesic passing between two points on a hyperboloid with some given skirt
@@ -488,6 +491,32 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 ///
 /// assert_eq!(((2.0_f64).sqrt()).acosh(), x.distance(&y));
 /// ```
+///
+/// ## Remark on Numeric Stability
+///
+/// The hyperboloid model of hyperbolic space performs best when points are
+/// located nearby the cusp (i.e., Minkowski coordinates $`(0,0,1)`$).
+/// Because of the way trial moves are validated, Monte Carlo simulations
+/// become numerically unstable when any bodies are far away from the cusp.
+/// Ideally, simulations should keep bodies within a distance of $`\approx 8.0`$
+/// from the cusp. All of the boundary conditions implemented for `Hyperbolic`
+/// satisfy this condition and perform well in MC simulations.
+///
+/// Nevertheless, it is often necessary to run larger simulations. `Hyperbolic`
+/// methods will still run simulations with bodies located far away from the
+/// cusp, but with a reduced numerical tolerance. Note also that using too
+/// small of a maximum translation step size is inherently unstable.
+/// Simulations will still run if the specified maximum step size is too small,
+/// but `Hyperbolic` methods would no longer guarantee that translation moves
+/// are not translated more than the specified maximum.
+///
+/// A rough method selecting maximum step sizes: If $`r_{max}`$ is the
+/// distance between the cusp and the most distant body, avoid setting the
+/// maximum step size to be smaller than
+/// $`10^{\left(\frac{1}{2}\log_{10}\left[\cosh^2(r_{max})/2\right]-6\right)}`$. For example,
+/// if the farthest body has Minkowski coordinates
+/// $`(10^5, 10^5, \sqrt{2\cdot 10^{10} + 1})`$, then $`r_{max} = 12.5526`$ and
+/// therefore step sizes smaller than $`0.1`$ are unstable.
 ///
 /// [`Metric`]: hoomd_vector::Metric
 #[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
@@ -520,9 +549,28 @@ impl<const N: usize> Hyperbolic<N> {
     /// ```
     #[must_use]
     #[inline]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "truncation to relax precision"
+    )]
     pub fn from_minkowski_coordinates(point: Minkowski<N>) -> Hyperbolic<N> {
-        let skirt_squared = -point.distance_squared(&Minkowski::<N>::default());
-        assert_relative_eq!(skirt_squared, 1.0_f64, epsilon = 1e-8);
+        let pt = point.coordinates;
+        let min_coord_index = pt[0..N - 1]
+            .iter()
+            .enumerate()
+            .min_by(|(_, a), (_, b)| a.total_cmp(b))
+            .map_or(0, |(i, _)| i);
+        let min_coord = pt[min_coord_index];
+        let lhs = min_coord.mul_add(min_coord, 1.0);
+        let rhs = pt[0..N - 1]
+            .iter()
+            .enumerate()
+            .filter(|(j, _)| *j != min_coord_index)
+            .fold(pt[N - 1] * pt[N - 1], |sum, (_, x)| {
+                f64::mul_add(-x, *x, sum)
+            });
+        let tolerance = 9_i32 - 2_i32 * (point.coordinates[N - 1].log10().trunc() as i32);
+        assert_relative_eq!(lhs, rhs, epsilon = 10.0_f64.powi(-tolerance));
         Hyperbolic { point }
     }
 }
@@ -539,7 +587,7 @@ impl Hyperbolic<3> {
             v_sinh * (theta_mod.sin()),
             v.cosh(),
         ]);
-        Hyperbolic::from_minkowski_coordinates(point)
+        Hyperbolic { point }
     }
 }
 
@@ -557,7 +605,7 @@ impl Hyperbolic<4> {
             v_sinh * (theta_mod.sin()) * (phi_mod.sin()),
             v.cosh(),
         ]);
-        Hyperbolic::from_minkowski_coordinates(point)
+        Hyperbolic { point }
     }
 }
 
@@ -588,7 +636,7 @@ impl<const N: usize> Hyperbolic<N> {
         (self.point.coordinates[N - 1]).acosh()
     }
 
-    /// Projects points on the hyperboloid onto the Poincare disk/ball.
+    /// Projects points on the hyperboloid onto the Poincaré disk/ball.
     ///
     /// # Example
     /// ```
@@ -650,10 +698,11 @@ impl Metric for Hyperbolic<3> {
     fn distance(&self, other: &Self) -> f64 {
         let self_coords = self.point.coordinates;
         let other_coords = other.point.coordinates;
-        (self_coords[2] * other_coords[2]
+        let arg = self_coords[2] * other_coords[2]
             - self_coords[0] * other_coords[0]
-            - self_coords[1] * other_coords[1])
-            .acosh()
+            - self_coords[1] * other_coords[1];
+        let arg_clipped = if arg <= 1.0 { 1.0 } else { arg };
+        arg_clipped.acosh()
     }
 
     #[inline]
@@ -662,7 +711,7 @@ impl Metric for Hyperbolic<3> {
     }
 
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         2_usize
     }
 }
@@ -682,11 +731,12 @@ impl Metric for Hyperbolic<4> {
     fn distance(&self, other: &Self) -> f64 {
         let self_coords = self.point.coordinates;
         let other_coords = other.point.coordinates;
-        (self_coords[3] * other_coords[3]
+        let arg = self_coords[3] * other_coords[3]
             - self_coords[0] * other_coords[0]
             - self_coords[1] * other_coords[1]
-            - self_coords[2] * other_coords[2])
-            .acosh()
+            - self_coords[2] * other_coords[2];
+        let arg_clipped = if arg <= 1.0 { 1.0 } else { arg };
+        arg_clipped.acosh()
     }
 
     #[inline]
@@ -695,7 +745,7 @@ impl Metric for Hyperbolic<4> {
     }
 
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         3_usize
     }
 }

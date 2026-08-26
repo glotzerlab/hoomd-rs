@@ -52,7 +52,7 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
         material: In<HyperbolicPolygonMaterialParameters>,
         mut commands: Commands,
         //#[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))] mut buffers: ResMut<
-        //    Assets<ShaderStorageBuffer>,
+        //    Assets<ShaderBuffer>,
         //>,
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<HyperbolicPolygonMaterial>>,
@@ -129,7 +129,7 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
     }
 }
 
-/// Project coordinates to Poincare disk
+/// Project coordinates to Poincaré disk
 fn poincare(point: &Minkowski<3>, radius: f64, angle: f32) -> ([f32; 3], f32) {
     let pt = Hyperbolic::from_minkowski_coordinates(*point);
     let proj = pt.to_poincare();
@@ -163,7 +163,7 @@ pub struct HyperbolicPolygonMaterial {
     #[texture(4)]
     #[sampler(5)]
     pub texture: Option<Handle<Image>>,
-    /// Color applied to the interior of the disk (indexed by disk % array size).
+    /// Number of sides of the polygon
     //#[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
     #[uniform(6)]
     pub n_sides: f32,
@@ -188,7 +188,7 @@ pub struct HyperbolicPolygonMaterialParameters {
 impl Default for HyperbolicPolygonMaterialParameters {
     fn default() -> Self {
         Self {
-            n_sides: 0.0_f32,
+            n_sides: 4.0_f32,
             background_color: PRIMARY_COLOR.into(),
             outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
             outline_width: 0.005,

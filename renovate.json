@@ -23,6 +23,11 @@
       "matchManagers": ["cargo"],
       "matchPackageNames": ["wayland-*"],
       "groupName": "wayland"
+    },
+    {
+      "matchPackageNames": ["rust"],
+      "matchCurrentVersion": "/nightly/",
+      "enabled": false
     }
   ]
 }

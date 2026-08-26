@@ -16,13 +16,17 @@ use hoomd_vector::{Cartesian, InnerProduct, Metric, Quaternion, Rotate, Versor};
 
 /// Point on the surface of a sphere.
 ///
-/// [`Spherical`] is a point on a unit N-sphere embedded in (N+1)-dimensional
-/// euclidean space. Explicitly, the N-sphere is defined by the set of
-/// (N+1)-dimensional points whose components satisfy
+/// [`Spherical<N>`] is a point on a unit $`(N-1)`$-sphere embedded in
+/// $`N`$-dimensional Euclidean space. Explicitly, the $`N`$-sphere is defined
+/// by the set of $`(N+1)`$-dimensional points whose components satisfy
 /// ```math
-/// x_1^2 + x_2^2 + \cdots + x_{N+1}^1 = 1.0
+/// x_1^2 + x_2^2 + \cdots + x_{N+1}^2 = 1.0
 /// ```
-/// Note that the radius is fixed to be 1.0.
+/// Note that the radius is fixed to be 1.0. The curvature of `Spherical`
+/// simulations can be tuned by changing the length scale of bodies and
+/// interactions. For example, rescaling all distances by
+/// $`r\rightarrow r/\ell`$ has the same effect as running simulations with
+/// radius $`R=1/\ell`$ or Gauss curvature $`K = \ell^2`$.
 #[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Spherical<const N: usize> {
     /// a cartesian point living on the surface of an N-sphere
@@ -53,8 +57,9 @@ impl<const N: usize> Spherical<N> {
         assert_relative_eq!(rad, 1.0_f64, epsilon = 1e-6);
         Spherical { point }
     }
-    /// Implements a stereographic projection from the N-sphere to an n-dimensional
-    /// plane by projecting through the $`(0,\cdots, 0,1)`$ axis.
+    /// Implements a stereographic projection from the $`N`$-sphere to an
+    /// $`n`$-dimensional subspace by projecting through the
+    /// $`(0,\cdots, 0,1)`$ axis.
     ///
     /// # Example
     /// ```
@@ -110,7 +115,7 @@ impl Spherical<4> {
     /// \\ \cos\theta
     /// \end{pmatrix}
     /// ```
-    /// where $`\theta`$ and $`phi_1`$ both run over the range $`0`$ to $`\pi`$ and $`\phi_2`$
+    /// where $`\theta`$ and $`\phi_1`$ both run over the range $`0`$ to $`\pi`$ and $`\phi_2`$
     /// runs from $`0`$ to $`2\pi`$.
     #[inline]
     #[must_use]
@@ -158,6 +163,7 @@ impl Spherical<4> {
     ///         .to_versor()
     ///         .expect("Hard-coded example is valid");
     /// let mapped_pole = Spherical::<4>::from_versor(transformation);
+    ///
     /// assert_relative_eq!(
     ///     mapped_pole.coordinates()[0],
     ///     x.coordinates()[0],
@@ -206,13 +212,13 @@ impl Metric for Spherical<3> {
     /// The distance between two [`Spherical<3>`] points.
     ///
     /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a
-    /// 2-sphere with radius $`R`$ is given by
+    /// 2-sphere with unit radius is given by
     ///
     /// ```math
-    /// d_{S_2}(\vec{u}, \vec{v}) = R \arccos\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3)\right]
+    /// d_{S_2}(\vec{u}, \vec{v}) = \arccos\left[u_1v_1 + u_2v_2 + u_3v_3\right]
     /// ```
     /// This choice of metric furnishes a representation of 2-dimensional spherical
-    /// space with Gaussian curvature $`K = 1/R^2`$.
+    /// space with Gaussian curvature $`K = 1`$.
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
@@ -224,7 +230,7 @@ impl Metric for Spherical<3> {
         (self.distance(other)).powi(2)
     }
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         2_usize
     }
 }
@@ -234,13 +240,13 @@ impl Metric for Spherical<4> {
     ///
     /// Explicitly, the
     /// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a 3-sphere with
-    /// radius  $`R`$ is given by
+    /// unit radius is given by
     ///
     /// ```math
-    /// d_{S_3}(\vec{u}, \vec{v}) = R \arccos\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3 + u_4v_4)\right]
+    /// d_{S_3}(\vec{u}, \vec{v}) = \arccos\left[u_1v_1 + u_2v_2 + u_3v_3 + u_4v_4\right]
     /// ```
     /// This choice of metric furnishes a representation of 3-dimensional spherical
-    /// space with Gaussian curvature $`K = 1/R^2`$.
+    /// space with Gaussian curvature $`K = 1`$.
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         let arg = Cartesian::dot(&self.point, &other.point);
@@ -252,7 +258,7 @@ impl Metric for Spherical<4> {
         (self.distance(other)).powi(2)
     }
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         3_usize
     }
 }

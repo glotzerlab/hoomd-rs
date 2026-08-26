@@ -303,20 +303,20 @@ mod tests {
     #[test]
     fn default() {
         let a = Angle::default();
-        assert!(a.theta == 0.0);
+        assert_eq!(a.theta, 0.0);
     }
 
     #[test]
     fn identity() {
         let a = Angle::identity();
-        assert!(a.theta == 0.0);
+        assert_eq!(a.theta, 0.0);
     }
 
     #[rstest(theta => [0.0, 1.0, 2.125, 14.875, -4.5])]
     fn inverted(theta: f64) {
         let angle1 = Angle::from(theta);
         let angle2 = angle1.inverted();
-        assert!(angle2.theta == -theta);
+        assert_eq!(angle2.theta, -theta);
         assert_relative_eq!(angle1.combine(&angle2), Angle::identity());
     }
 

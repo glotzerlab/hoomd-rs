@@ -6,7 +6,7 @@
 //! See the [crate-level documentation](crate) for an overview of how boundary
 //! conditions interact with [`Microstate`](crate::Microstate) and model methods.
 //!
-//! hoomd-rs* provides the boundary types [`Open`], [`Closed`], and [`Periodic`].
+//! *hoomd-rs* provides the boundary types [`Open`], [`Closed`], and [`Periodic`].
 //! * [`Open`] boundaries allow bodies and sites to exist anywhere in space.
 //! * [`Closed`] boundaries limit bodies and sites to the inside of a shape and
 //!   are not periodic in any direction.
@@ -44,7 +44,7 @@ pub enum Error {
 }
 
 /// The maximum number of possible ghosts.
-pub(crate) const MAX_GHOSTS: usize = 8;
+pub const MAX_GHOSTS: usize = 12;
 
 // Ideally, MAX_GHOSTS would be associated with the boundary type, but that is
 // not currently possible in Rust.

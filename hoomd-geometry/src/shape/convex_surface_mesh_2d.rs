@@ -9,8 +9,8 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, SupportMapping,
-    Volume, shape::ConvexPolytope,
+    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale,
+    SupportMapping, Volume, shape::ConvexPolytope,
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
@@ -385,6 +385,92 @@ impl Volume for ConvexSurfaceMesh2d {
             .iter()
             .circular_tuple_windows()
             .fold(0.0, |total, (a, b)| total + a[0] * b[1] - b[0] * a[1])
+    }
+}
+
+impl Scale for ConvexSurfaceMesh2d {
+    /// Construct a scaled convex surface mesh.
+    ///
+    /// The resulting surface meshs' vertices $` \vec{p}_\mathrm{new} `$ are
+    /// the original's $` \vec{p} `$ scaled by $` v `$:
+    /// ```math
+    /// \vec{p}_\mathrm{new} = v \vec}{p}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{
+    ///     BoundingSphereRadius, Scale, Volume, shape::ConvexSurfaceMesh2d,
+    /// };
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rectangle = ConvexSurfaceMesh2d::from_point_set([
+    ///     [-2.0, -1.0].into(),
+    ///     [2.0, -1.0].into(),
+    ///     [2.0, 1.0].into(),
+    ///     [-2.0, 1.0].into(),
+    /// ])?;
+    ///
+    /// let scaled_rectangle = rectangle.scale_length(0.5.try_into()?);
+    ///
+    /// assert_eq!(scaled_rectangle.vertices()[0], [-1.0, -0.5].into());
+    /// assert_eq!(scaled_rectangle.volume(), 2.0);
+    /// assert_relative_eq!(
+    ///     scaled_rectangle.bounding_sphere_radius().get(),
+    ///     1.25_f64.sqrt()
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        Self {
+            vertices: self.vertices.iter().map(|&r| r * v.get()).collect(),
+            bounding_radius: self.bounding_radius * v,
+        }
+    }
+
+    /// Construct a scaled convex surface mesh.
+    ///
+    /// The resulting surface meshs' vertices $` \vec{p}_\mathrm{new} `$ are
+    /// the original's $` \vec{p} `$ scaled by $` v^{\frac{1}{2}} `$:
+    /// ```math
+    /// \vec{p}_\mathrm{new} = v \vec}{p}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{
+    ///     BoundingSphereRadius, Scale, Volume, shape::ConvexSurfaceMesh2d,
+    /// };
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rectangle = ConvexSurfaceMesh2d::from_point_set([
+    ///     [-2.0, -1.0].into(),
+    ///     [2.0, -1.0].into(),
+    ///     [2.0, 1.0].into(),
+    ///     [-2.0, 1.0].into(),
+    /// ])?;
+    ///
+    /// let scaled_rectangle = rectangle.scale_volume(0.25.try_into()?);
+    ///
+    /// assert_eq!(scaled_rectangle.vertices()[0], [-1.0, -0.5].into());
+    /// assert_eq!(scaled_rectangle.volume(), 2.0);
+    /// assert_relative_eq!(
+    ///     scaled_rectangle.bounding_sphere_radius().get(),
+    ///     1.25_f64.sqrt()
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().powf(1.0 / 2.0);
+        self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
     }
 }
 
@@ -922,9 +1008,11 @@ mod tests {
 
     #[rstest]
     fn test_many_bottom_points() {
-        let mut points: Vec<[f64; 2]> = (0..10).map(|i| [f64::from(i) * 2.0 / 9.0, 0.0]).collect();
-        points.push([1.0, 1.0]); // Apex
-        let points: Vec<Cartesian<2>> = points.into_iter().map(Cartesian::from).collect();
+        let points: Vec<Cartesian<2>> = (0..10)
+            .map(|i| [f64::from(i) * 2.0 / 9.0, 0.0])
+            .chain([[1.0, 1.0]])
+            .map(Cartesian::from)
+            .collect();
         let vertices = ConvexSurfaceMesh2d::construct_convex_hull(points)
             .expect("hard-coded points should lie on a convex hull");
         // Leftmost [0,0] and rightmost [2,0] should be in hull with apex
