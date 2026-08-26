@@ -8,7 +8,8 @@ import init from 'https://glotzerlab.github.io/hoomd-rs/mc-examples/binary-hard-
 
 ## Overview
 
-* Objective: TODO
+* Objective: Show how to write a custom site pair interaction that checks for overlaps
+  between two different types of hard shapes.
 * File: `hoomd-rs/examples/mc-examples/binary-hard-shapes.rs`
 * Run (interactively):
   ```shell
