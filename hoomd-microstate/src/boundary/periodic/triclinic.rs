@@ -293,7 +293,7 @@ where
     Periodic<Triclinic>: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     X: PointUpdate<P, SiteKey> + Clone,
 {
-    /// Replicate the bodies in self `counts[0]` x `counts[1]` x `counts[2]` times and
+    /// Replicate the bodies in `self` `counts[0]` by `counts[1]` x `counts[2]` times and
     /// expand the periodic boundary accordingly.
     ///
     /// The new microstate is built with the same step, seed, and spatial data
@@ -328,7 +328,7 @@ where
     ///
     /// # Errors
     ///
-    /// * [`Error::NoReplication`] when any of the counts is 0.
+    /// * [`crate::Error::NoReplication`] when any of the counts is 0.
     #[inline]
     fn replicate_with_maximum_interaction_range(
         &self,
@@ -365,6 +365,8 @@ where
 
     /// Calls [`replicate_with_maximum_interaction_range`] with the current boundary's
     /// maximum interaction range.
+    ///
+    /// [`replicate_with_maximum_interaction_range`]: Self::replicate_with_maximum_interaction_range
     #[inline]
     fn replicate(
         &self,

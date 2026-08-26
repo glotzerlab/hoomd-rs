@@ -584,7 +584,7 @@ pub trait AppendMicrostate<B, S, X, C> {
 /// # }
 /// ```
 pub trait Replicate<const N: usize, B, S, X, C> {
-    /// Replicate the bodies in self count[0] x count[1] x ... count[N-1] times and
+    /// Replicate the bodies in `self` `count[0]` by `count[1]` by ... by `count[N-1]` times and
     /// expand the periodic boundary accordingly.
     ///
     /// The new microstate is built with the same step, seed, and spatial data
@@ -597,7 +597,7 @@ pub trait Replicate<const N: usize, B, S, X, C> {
     /// * [`Error::NoReplication`] when any of the counts is 0.
     fn replicate(&self, counts: [usize; N]) -> Result<Microstate<B, S, X, C>, Error>;
 
-    /// Replicate the bodies in self count[0] x count[1] x ... count[N-1] times and
+    /// Replicate the bodies in `self` `count[0]` by `count[1]` by ... by `count[N-1]` times and
     /// expand the periodic boundary accordingly.
     ///
     /// The new microstate is built with the same step, seed, and spatial data
