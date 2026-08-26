@@ -38,10 +38,21 @@ use crate::{RotationalMotion, TranslationalMotion};
 
 /// Integrate bodies' degrees of freedom in the microstate according to Brownian equations of motion.
 /// 
+/// Brownian dynamics simulate Langevin equations of motion in
+/// the overdamped or diffusive limit, where particle motion is dominated by
+/// thermal fluctuations ("Brownian kicks") rather than classical Newtonian
+/// dynamics. Position and orientation are still coupled to force and torque,
+/// but momentum and angular momentum are not, being drawn instead from a
+/// thermal distribution represented by the macrostate.
+/// 
 /// The `Brownian` implementation follows the integration scheme by [Snook 2007]
-/// (Section 6.2.5).
+/// (Section 6.2.5). Integration occurs in a single step and is not symplectic.
+/// See the implementations for [translational motion] and [rotational motion]
+/// for governing equations and other details.
 /// 
 /// [Snook 2007]: https://dx.doi.org/10.1016/B978-0-444-52129-3.50028-6
+/// [translational motion]: Self::integrate_translation_half_step_one_with_filter
+/// [rotational motion]: Self::integrate_rotation_half_step_one_with_filter
 pub struct Brownian {
     /// The time step size.
     pub delta_t: f64,

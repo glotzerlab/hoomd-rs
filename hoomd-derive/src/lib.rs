@@ -303,8 +303,11 @@ pub fn total_energy_derive(input: TokenStream) -> TokenStream {
 
 /// Automatically add all fields and implement all property traits for `hoomd_microstate::property::DynamicPoint`.
 ///
-/// Args:
-/// * v: The vector type to use for position, etc. Example: `Cartesian::<2>`.
+/// Arguments:
+/// * `V`: The vector type to use for position, etc.  This type must implement
+///   [`Default`], `hoomd_vector::Vector`, and `hoomd_vector::Outer`, and its
+///   associated type through `Outer` must additionally implement [`Default`].
+///   Example: `hoomd_vector::Cartesian::<2>`.
 /// 
 /// Valid on:
 /// * Structs with named fields.
@@ -463,11 +466,18 @@ pub fn derive_dynamic_point(input: TokenStream, annotated_item: TokenStream) -> 
     })
 }
 
-/// Automatically add all fields and implement all property traits for `hoomd_microstate::property::DynamicPoint`.
+/// Automatically add all fields and implement all property traits for `hoomd_microstate::property::DynamicOrientedPoint`.
 ///
-/// Args:
-/// * v: The vector type to use for position, etc. Example: `Cartesian::<2>`.
-/// * r: The rotation type to use for orientation. Example: `Angle`.
+/// Arguments:
+/// * `V`: The vector type to use for position, etc. This type must implement
+///   [`Default`], `hoomd_vector::Vector`, `hoomd_vector::Outer`, and
+///   `hoomd_vector::Wedge`, and its associated types through `Outer` and
+///   `Wedge` must additionally implement [`Default`]. Example:
+///   `hoomd_vector::Cartesian::<2>`.
+/// * `R`: The rotation type to use for orientation. This type must implement
+///   `hoomd_microstate::property::RotationalMotionTypes`,
+///   `hoomd_vector::Rotate<V>` and `hoomd_vector::Rotation`. Example:
+///   `hoomd_vector::Angle`.
 /// 
 /// Valid on:
 /// * Structs with named fields.

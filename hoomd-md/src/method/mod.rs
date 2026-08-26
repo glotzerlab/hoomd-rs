@@ -16,8 +16,6 @@ pub use langevin::Langevin;
 pub mod brownian;
 pub use brownian::Brownian;
 
-// TODO: fix the katex build problem...
-
 /// Symplecticly integrate rotational degrees of freedom.
 /// 
 /// This trait binds symplectic rotational integration schemes to the types that
