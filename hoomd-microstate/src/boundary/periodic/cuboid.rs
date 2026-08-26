@@ -299,8 +299,8 @@ where
     Periodic<Hypercuboid<N>>: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     X: PointUpdate<P, SiteKey> + Clone,
 {
-    /// Replicate the bodies in self `counts[0]` x `counts[1]` x ... `counts[N-1]` times and
-    /// expand the periodic boundary accordingly.
+    /// Replicate the bodies in `self` `counts[0]` by `counts[1]` by ... by
+    /// `counts[N-1]` times and expand the periodic boundary accordingly.
     ///
     /// The new microstate is built with the same step, seed, and spatial data
     /// structure, as if it were cloned. The new microstate's boundary sets the
@@ -333,7 +333,7 @@ where
     ///
     /// # Errors
     ///
-    /// * [`Error::NoReplication`] when any of the counts is 0.
+    /// * [`crate::Error::NoReplication`] when any of the counts is 0.
     #[inline]
     fn replicate_with_maximum_interaction_range(
         &self,
@@ -370,6 +370,8 @@ where
 
     /// Calls [`replicate_with_maximum_interaction_range`] with the current boundary's
     /// maximum interaction range.
+    ///
+    /// [`replicate_with_maximum_interaction_range`]: Self::replicate_with_maximum_interaction_range
     #[inline]
     fn replicate(
         &self,
