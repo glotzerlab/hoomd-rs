@@ -87,4 +87,4 @@ let state_point: StatePoint = hoomd_workspace::state_point(directory)
 
 [signac]: https://signac.readthedocs.io
 [serde]: https://docs.rs/serde
-[hoomd-workspace]: ../../api/hoomd_workspace/index.html
+[hoomd-workspace]: ../api/hoomd_workspace/index.html

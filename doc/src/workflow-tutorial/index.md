@@ -55,7 +55,7 @@ or use your preferred conda-forge compatible package manager.
 
 [signac]: https://signac.readthedocs.io
 [row]: https://row.readthedocs.io
-[hoomd-workspace]: ../../api/hoomd_workspace/index.html
+[hoomd-workspace]: ../api/hoomd_workspace/index.html
 [log]: https://docs.rs/log
 [gsd]: https://gsd.readthedocs.org
 [parquet]: https://parquet.apache.org/
