@@ -12,15 +12,14 @@ use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
 
 /// Stochastic momentum rescaling based on an extended ensemble.
-/// 
 ///
 /// `MartynaTuckermanTobiasKlein` implements the Nosé-Hoover thermostat
 /// ([Nosé 1984], [Hoover 1985]) following [Martyna et al. 1994] and
-/// [Tuckerman et al. 2006]. This  algorithm adds a new degree of freedom
-/// $` \eta `$ whose dynamics are tuned to constrain the system's evolution such
-/// that its other degrees of freedom sample a constant temperature ensemble.
-/// A `MartynaTuckermanTobiasKlein` instance stores its extended "position"
-/// $` \eta `$ and its corresponding extended "momentum" $` \xi `$.
+/// [Tuckerman et al. 2006]. This algorithm adds a new degree of freedom whose
+/// dynamics are tuned to constrain the system's evolution such that its other
+/// degrees of freedom sample a constant temperature ensemble. Motion in the new
+/// degree of freedom is quantified through an extended "position" $`\eta`$ and
+/// an extended "momentum" $`\xi`$.
 /// 
 /// [Nosé 1984]: https://doi.org/10.1063/1.447334
 /// [Hoover 1985]: https://doi.org/10.1103/PhysRevA.31.1695
@@ -32,7 +31,7 @@ use hoomd_utility::valid::PositiveReal;
 /// to the spring constant in a system of a piston attached to a spring. Values
 /// that are too high can cause abrupt fluctuations in the kinetic temperature,
 /// while values that are too low can cause excessive equilibration time. The
-/// recommended value for most systems is $` 1000 \Delta t `$.
+/// recommended value for most systems is $` 100 \Delta t `$.
 /// 
 /// The extended Hamiltonian $`H`$ is given by
 /// 
@@ -108,9 +107,9 @@ use hoomd_utility::valid::PositiveReal;
 #[doc(alias = "mttk")]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MartynaTuckermanTobiasKlein {
-    /// Thermostat time constant.
+    /// Thermostat coupling constant.
     tau: PositiveReal,
-    /// Thermostat velocity.
+    /// Thermostat momentum.
     xi: f64,
     /// Thermostat position.
     eta: f64,
@@ -119,7 +118,7 @@ pub struct MartynaTuckermanTobiasKlein {
 }
 
 impl MartynaTuckermanTobiasKlein {
-    /// Construct a new `MartynaTuckermanTobiasKlein` thermostat with a given `tau` and a zeroed initial condition.
+    /// Construct a new thermostat with a given `tau` and a zeroed initial condition.
     /// 
     /// The resulting thermostat has `eta = 0` and `xi = 0`. This initial
     /// condition is likely to be very far from equilibrium, which will result
@@ -319,7 +318,7 @@ where
         degrees_of_freedom: usize,
     ) -> f64 {
         // Integrate extra degrees-of-freedom and return the
-        // velocity rescaling factor, following Tuckerman's work
+        // momentum rescaling factor, following Tuckerman's work
         // https://doi.org/10.1088/0305-4470/39/19/S18.
 
         let kinetic_temperature = 2.0 * kinetic_energy / (degrees_of_freedom as f64);
