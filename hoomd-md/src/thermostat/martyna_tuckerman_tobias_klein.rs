@@ -11,60 +11,89 @@ use crate::Thermostat;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
 
-/// Nosé-Hoover thermostat.
+/// Stochastic momentum rescaling based on an extended ensemble.
+/// 
 ///
-/// [`MartynaTuckermanTobiasKlein`] adds a new degree of freedom ($`\eta`$)
-/// to a molecular dynamics simulation in such a way that the existing
-/// degrees of freedom sample a constant temperature ensemble. Each
-/// [`MartynaTuckermanTobiasKlein`] instance stores $`\eta`$ and its momentum,
-/// $`\xi`$, internally.
+/// `MartynaTuckermanTobiasKlein` implements the Nosé-Hoover thermostat
+/// ([Nosé 1984], [Hoover 1985]) following [Martyna et al. 1994] and
+/// [Tuckerman et al. 2006]. This  algorithm adds a new degree of freedom
+/// $` \eta `$ whose dynamics are tuned to constrain the system's evolution such
+/// that its other degrees of freedom sample a constant temperature ensemble.
+/// A `MartynaTuckermanTobiasKlein` instance stores its extended "position"
+/// $` \eta `$ and its corresponding extended "momentum" $` \xi `$.
+/// 
+/// [Nosé 1984]: https://doi.org/10.1063/1.447334
+/// [Hoover 1985]: https://doi.org/10.1103/PhysRevA.31.1695
+/// [Martyna et al. 1994]: https://doi.org/10.1063/1.467468
+/// [Tuckerman et al. 2006]: https://doi.org/10.1088/0305-4470/39/19/S18
 ///
-/// The extended Hamiltonian $`H`$ is:
+/// The dynamics of the new degree of freedom are tuned through the parameter
+/// `tau` ($` \tau `$), which represents a coupling constant, somewhat analagous
+/// to the spring constant in a system of a piston attached to a spring. Values
+/// that are too high can cause abrupt fluctuations in the kinetic temperature,
+/// while values that are too low can cause excessive equilibration time. The
+/// recommended value for most systems is $` 1000 \Delta t `$.
+/// 
+/// The extended Hamiltonian $`H`$ is given by
+/// 
 /// ```math
-///    H = K + U
-///         + N kT \eta
-///         +  \frac{1}{2} N kT \tau^2\xi^2
+/// H = K + U + N kT \eta + \frac{1}{2} N kT \tau^2\xi^2
 /// ```
-/// Where $`K`$ is the kinetic energy of the system, $`U`$ is the potential
-/// energy of the system, $`N`$ is the number of degrees of freedom, and $`kT`$
-/// is the temperature.
-///
-/// Following the Trotter decomposition of Liouvillian,
-/// [`MartynaTuckermanTobiasKlein`] integrates $`\eta`$ and $`\xi`$ forward
-/// by half time step $`\frac{\delta t}{2}`$ via the following procedure:
-///
-/// ```math
-/// \begin{align*}
-///
-/// G_\mathrm{old} &= \frac{1}{\tau^2} \left( \frac{2 K}{N kT} - 1 \right) \\
-///
-/// \xi \left\{ t+\frac{\delta t} {4} \right\} &= \xi \{ t \} + G_\mathrm{old}\frac{\delta t}{4} \\
-///
-/// \alpha &= \exp\left[ -\xi \left\{ t+\frac{\delta t} {4} \right\} \frac{dt}{2} \right]  \\
-///
-/// K_{new} &= K \alpha^2 \\
-///
-/// \eta \left\{ t+\frac{\delta t} {2} \right\} &= \eta \{ t \} + \xi \left\{ t+\frac{\delta t} {4} \right\} \frac{\delta t}{2} \\
-///
-/// G_\mathrm{new} &= \frac{1}{\tau^2} \left( \frac{2 K_\mathrm{new} }{kT} - 1 \right) \\
-///
-/// \xi \left\{ t+\frac{\delta t} {2} \right\} &= \xi \left\{ t+\frac{\delta t} {4} \right\} + G_\mathrm{new} \frac{\delta t}{4}
-///
-/// \end{align*}
-/// ```
-///
+/// 
+/// where $`N`$ is the number of degrees of freedom.
+/// 
+/// # Integrating the extra degree of freedom
+/// 
+/// The thermostat's extra degree of freedom is integrated in half steps, with
+/// each half step following the same procedure. Consequently, in the equations
+/// below, $`t`$ refers to the time at the start of the half step, *not* at the
+/// start of the full step.
+/// 
+/// 1. Momentum $`\xi`$ is integrated forward a quarter step, and the rescaling
+///    factor $`\alpha`$ is calculated from its new value. The equations are
+/// 
+///    ```math
+///    \begin{align*}
+///    
+///    T_K(t) &= \frac{2 K(t)}{N} \\
+///    
+///    G(t) &= \frac{1}{\tau^2} \bigg( \frac{T_K(t)}{kT} - 1 \bigg) \\
+///    
+///    \xi \bigg( t + \frac{\Delta t}{4} \bigg) &= \xi(t) + G(t) \frac{\Delta t}{4} \\
+///    
+///    \alpha &= \exp\bigg[ - \xi \bigg( t + \frac{\Delta t}{4} \bigg) \frac{\Delta t}{2} \bigg]
+///    
+///    \end{align*}
+///    ```
+/// 
+///    where $`T_K`$ is the instantaneous kinetic temperature and $`G`$
+///    represents the thermodynamic driving force in the new degree of freedom.
+/// 
+/// 2. Position $`\eta`$ is integrated forward a half step using the new value
+///    of $`\xi`$, and then $`\xi`$ is integrated forward another quarter step.
+/// 
+///    ```math
+///    \begin{align*}
+/// 
+///    \eta \bigg( t + \frac{\Delta t}{2} \bigg) &= \eta(t) + \xi \bigg( t + \frac{\Delta t}{4} \bigg) \frac{\Delta t}{2} \\
+/// 
+///    T_K(t)' &= T_K(t) \alpha^2 \\
+/// 
+///    G(t)' &= \frac{1}{\tau^2} \bigg( \frac{T_K(t)'}{kT} - 1 \bigg) \\
+///    
+///    \xi \bigg( t + \frac{\Delta t}{2} \bigg) &= \xi \bigg( t + \frac{\Delta t}{4} \bigg) + G(t)' \frac{\Delta t}{4} \\
+///    
+///    \end{align*}
+///    ```
+/// 
 /// # Warning
-///
-/// [`MartynaTuckermanTobiasKlein`] fails to sample the correct distribution when there are
-/// strong harmonic interactions in the system. In such situations, use
-/// [`Bussi`] or [`NoséHooverChain`] instead.
+/// 
+/// When there are strong harmonic forces in your interaction model,
+/// `MartynaTuckermanTobiasKlein` will fail to sample the correct distribution;
+/// use [`Bussi`] or [`NoséHooverChain`] instead.
 ///
 /// [`Bussi`]: crate::thermostat::Bussi
 /// [`NoséHooverChain`]: crate::thermostat::NoséHooverChain
-///
-/// # References
-/// * [Tuckerman et al. 2006](https://doi.org/10.1088/0305-4470/39/19/S18)
-/// * [Martyna et al. 1994](https://doi.org/10.1063/1.467468)
 ///
 /// # Example
 ///
@@ -90,13 +119,13 @@ pub struct MartynaTuckermanTobiasKlein {
 }
 
 impl MartynaTuckermanTobiasKlein {
-    /// Construct a new `MartynaTuckermanTobiasKlein` thermostat with the given time constant,
-    /// $` \xi = 0 `$, and $` \eta = 0 `$ .
-    ///
-    /// This initial condition is likely to be very far from equilibrium which
-    /// will result in wild kinetic energy oscillations for the first hundred to
-    /// thousand time steps. Use [`thermalized`] to choose the initial position
-    /// and momentum from a thermal distribution.
+    /// Construct a new `MartynaTuckermanTobiasKlein` thermostat with a given `tau` and a zeroed initial condition.
+    /// 
+    /// The resulting thermostat has `eta = 0` and `xi = 0`. This initial
+    /// condition is likely to be very far from equilibrium, which will result
+    /// in wild kinetic energy oscillations for the first hundred to thousand
+    /// time steps. Use [`thermalized`] to choose the initial position and
+    /// momentum from a thermal distribution.
     ///
     /// [`thermalized`]: Self::thermalized
     ///
@@ -120,8 +149,11 @@ impl MartynaTuckermanTobiasKlein {
         }
     }
 
-    /// Construct a new `MartynaTuckermanTobiasKlein` thermostat with a random $` \xi `$
-    /// drawn from a thermal distribution.
+    /// Construct a new thermostat with a given `tau` and an initial condition drawn from the thermal distribution.
+    /// 
+    /// The resulting thermostat has `eta = 0` and `xi` that is randomly chosen
+    /// from the thermal distribution encoded in a macrostat's temperature
+    /// set point.
     ///
     /// # Panics
     ///
@@ -200,7 +232,9 @@ impl MartynaTuckermanTobiasKlein {
         result
     }
 
-    /// Calculate the thermostats energy.
+    /// Calculate the thermostat's energy.
+    /// 
+    /// See above for the hamiltonian.
     #[inline]
     fn thermostat_energy(&self, temperature_set_point: f64, degrees_of_freedom: usize) -> f64 {
         (degrees_of_freedom as f64)
@@ -208,7 +242,11 @@ impl MartynaTuckermanTobiasKlein {
             * (self.eta + 0.5 * (self.xi * self.tau.get()).powi(2))
     }
 
-    /// The total energy of the thermostat.
+    /// The energy contribution from the extra degree of freedom.
+    /// 
+    /// ```math
+    /// N kT \eta + \frac{1}{2} N kT \tau^2\xi^2
+    /// ```
     ///
     /// # Example
     ///
@@ -227,7 +265,7 @@ impl MartynaTuckermanTobiasKlein {
         self.energy
     }
 
-    /// The thermostat's position.
+    /// The extended position.
     ///
     /// # Example
     ///
@@ -246,7 +284,7 @@ impl MartynaTuckermanTobiasKlein {
         self.eta
     }
 
-    /// The thermostat's momentum.
+    /// The extended momentum.
     ///
     /// # Example
     ///
@@ -270,6 +308,7 @@ impl<M> Thermostat<M> for MartynaTuckermanTobiasKlein
 where
     M: Temperature,
 {
+    /// Integrate `xi` and `eta` forward a half step and return the rescaling factor.
     #[inline]
     fn integrate_half_step_one<R: Rng + ?Sized>(
         &mut self,
@@ -301,6 +340,7 @@ where
         rescaling_factor
     }
 
+    /// Integrate `xi` and `eta` forward a half step and return the rescaling factor.
     #[inline]
     fn integrate_half_step_two<R: Rng + ?Sized>(
         &mut self,
