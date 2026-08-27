@@ -28,7 +28,7 @@ or *fork* the repository (you don't need the template's commit history). You can
 create your own new repository on GitHub [from the template] (and then clone
 your own repository) or you can [download the template] for use locally.
 
-Once you have a local copy, launch a terminal and change to that directory
+Once you have a local copy, launch a terminal, change to that directory,
 and you build the workflow binary with:
 ```shell
 $ cargo build --release

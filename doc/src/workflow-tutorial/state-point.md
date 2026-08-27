@@ -66,13 +66,15 @@ To execute it, run:
 $ target/release/populate_workspace
 ```
 
-Signac stores these state points in JSON files in the `workspace` directory.
-Explor the `workspace` directory and inspect the `signac_statepoint.json` files
-you find. They should match the structs written by `populate_workspace.rs`.
+`populate_workspace` wrote these state points to JSON files in the `workspace`
+directory. Explor the `workspace` directory and inspect the `signac_statepoint.json`
+files you find. They should match the structs written by `populate_workspace.rs`.
+The workspace created by `hoomd-workspace` is compatible with the [signac] Python
+framework.
 
 In `simulate.rs` (explained later), the workflow reads the state point using
-the `state_point` function in [hoomd-workspace] which requires that the
-state point type implements the `Deserialize` trait:
+the `state_point` function in [hoomd-workspace], which uses the `Deserialize`
+trait to read the JSON file and parse the struct fields:
 ```rust,ignore
 let state_point: StatePoint = hoomd_workspace::state_point(directory)
     .context("could not read state point")?

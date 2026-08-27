@@ -1,6 +1,6 @@
 # The Row Workflow
 
-Now, let's put this all together and automate the submission process with
+Let's put this all together and automate the submission process with
 [row].
 
 ## `workflow.toml`
@@ -30,8 +30,8 @@ command = "target/release/action $ACTION_NAME {directories}"
 ```
 The `command` tells [row] how to launch the `action` binary. Use the
 `$ACTION_NAME` environment variable instead of hard-coding `simulate`
-so that `command` is ready for use when you add more actions subcommands
-in the future.
+so that the default `command` can execute any new action subcommands
+you might add.
 
 ### Launcher
 
@@ -51,8 +51,7 @@ resources.threads_per_process = 1
 > The resulting resource contention will cause your simulations to run
 > *extremely slowly*.
 
-How should you choose `threads_per_process`? You need to choose it appropriately
-based on how you configure your simulation model. Most of *hoomd-rs* uses only
+How should you choose `threads_per_process`? Most of *hoomd-rs* uses only
 1 thread, so start thre. In the current release, only `hoomd_mc::ParallelSweep`
 and `hoomd_md::UpdateNetForce*` use multiple threads. Benchmark and see how your
 model scales before submitting a set of jobs to a cluster. You would waste your own
@@ -90,7 +89,7 @@ row submit -n 1
 again.
 
 This time, the action should quit after 1 minute (it defaults to a 5 minute wall
-time buffer) and will print:
+time buffer) and will output something like:
 ```
 ...
 [INFO  hoomd_workflow::simulate] Step 15000 / 100000 (15%)

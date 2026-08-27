@@ -19,7 +19,7 @@ Most HPC resources limit the wall time your jobs may execute. To enable
 long-running simulation models, this workflow template monitors the wall time
 used and *serializes* the entire simulation state to a file a few minutes before
 the time is up. At that point, your HPC job ends and [row] will indicate that
-the directory is eligible again. When you submit the new job, `simulate` will
+the directory is eligible again. When you submit a new job, `simulate` will
 *deserialize* the simulation state and continue the simulation from where it
 left off.
 

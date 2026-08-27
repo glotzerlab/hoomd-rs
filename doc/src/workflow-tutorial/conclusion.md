@@ -4,19 +4,18 @@ There is a lot packed into the example workflow, so don't worry if you don't
 understand it all at first.
 
 To implement your own simulation model, start by modifying `state_point.rs`,
-`model.rs`, and `populate_workspace.rs` to implement your. You may need to
-modify `simulate.rs` or `action.rs` not at all or at least only minimally at
-first.
+`model.rs`, and `populate_workspace.rs`. You may need to make slight modifications
+to `simulate.rs` and `action.rs`.
 
 > [!NOTE]
 > Remember: Start your own Git repository history from scratch. Don't clone the
 > repository. Make a new one from the template or download the files directly.
 
-If you have any questions, please check the [hoomd-rs discussion board] first.
-If no one else has asked the same question, the *hoomd-rs* developers would be
-happy to answer yours. **PLEASE** include a fully working example of any code
-you have questions about (post it as a [gist] or link to your GitHub
-repository).
+If you have any questions, please check the [hoomd-rs discussion board]
+first. If no one else has asked the same question, post it and the *hoomd-rs*
+developers would be happy to answer yours. **PLEASE** include a fully working
+example of any code you have questions about (post it as a [gist] or link to
+your GitHub repository).
 
 Resources:
 - [Create a GitHub repository from the template]

@@ -44,22 +44,22 @@ one action. The template uses it so that you can easily add more actions
 (subcommands) as needed (e.g. `analyze`, `render`, ...).
 
 > [!TIP]
-> [row] of course allows you to implement these other actions in another
-> language of your preference. You do not have to write all your workflow
-> actions in Rust.
+> [row] allows you to implement these other actions in another language of your
+> preference. You do not have to write all your workflow actions in Rust.
 
 ## Configure `env_logger`
 
-Did you notice all the `info!` and `debug!` messages throughout the code?
-These macros pass messages to the [log] crate, which does nothing by itself.
-Once you configure a logging backend, the messages will print to `stdout` (or
-wherever the backend delivers them). The [env_logger] crate a backend
+Did you notice all the `info!` and `debug!` messages throughout the code? These
+macros pass messages to the [log] crate, which does nothing by itself. Once
+you configure a logging backend, the messages will print to `stdout`/`stderr`
+(or wherever the backend delivers them). The [env_logger] crate a backend
 that allows fine-grained customization at run time (e.g. you could hide
 messages from `hoomd-mc` and see messages from your own crate). The `verbose`
 option configures what level is visible from the command line (which can be
-overridden by the `RUST_LOG` environment variable). By default, `warning!` and
+overridden by the `RUST_LOG` environment variable). By default, only `warning!` and
 `info!` messages are shown. Pass `-q` or `-qq` to hide `info` and `warning`
-respectively. Pass `-v` to enable `debug!` messages and `-vv` to enable `trace!`.
+respectively. Pass `-v` to enable `debug!` messages and `-vv` to enable
+`trace!`.
 
 ```rust,ignore
 let log_level = match options.verbose.log_level_filter() {
@@ -113,9 +113,9 @@ Try adding `-v`, `-vv`, or `-q` to the command and see how the output changes.
 
 Notice that `main` returns an `anyhow::Result` and checks for errors with `?`.
 In this way, any errors that occur in methods called by main (or methods called
-by those methods, and on down the chain) will propagate all the way to the top,
-unless then are recovered from. When `main` returns an `Err`, `anyhow` prints
-a human readable form of the error message.
+by those methods, and on down the chain) will propagate all the way to the top
+When `main` returns an `Err`, [anyhow] prints a human readable form of the error
+message.
 
 To see an error message, execute:
 ```shell
@@ -131,7 +131,7 @@ Caused by:
 ```
 
 The `error initializing model` came from a call to `.with_context`.
-`anyhow` lists the original error message(s) under `Caused by`. In this case,
+[anyhow] lists the original error message(s) under `Caused by`. In this case,
 the state point with identifier `not-a-directory` is not found.
 
 ## Troubleshooting Difficult Errors
