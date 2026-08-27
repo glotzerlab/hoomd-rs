@@ -14,12 +14,13 @@ use hoomd_simulation::macrostate::Temperature;
 ///
 /// `Bussi` implements the Bussi-Donadio-Parrinello algorithm following
 /// [Bussi et al. 2007](https://doi.org/10.1063/1.2408420). This algorithm
-/// rescales momentum and angular momentum separately by a factor $` \alpha `$,
+/// rescales momentum and angular momentum separately by a factor $`\alpha`$,
 /// which is derived by sampling the canonical equilibrium distribution for
 /// kinetic energy.
 /// 
 /// The time-scale of thermal equilibration is controlled via the parameter
-/// `tau`. The relationship between `tau` and $` \alpha `$ is given by
+/// `tau` ($`\tau`$). The relationship between $`\tau`$ and $`\alpha`$ is given
+/// by
 /// 
 /// ```math
 /// \alpha = \sqrt{e^{-\delta t / \tau}
@@ -44,8 +45,8 @@ use hoomd_simulation::macrostate::Temperature;
 /// 
 /// [gamma distribution]: https://en.wikipedia.org/wiki/Gamma_distribution
 /// 
-/// When `tau` is 0, the system is instantly thermalized and the above relation
-/// simplifies to
+/// When $`\tau`$ is 0, the system is instantly thermalized and the above
+/// relation simplifies to
 /// 
 /// ```math
 /// \alpha = \sqrt{\frac{g_N kT}{K}}
@@ -70,7 +71,7 @@ pub struct Bussi {
 }
 
 impl Bussi {
-    /// Construct a new thermostat with a given time constant `tau`.
+    /// Construct a new thermostat with a given `tau`.
     ///
     /// # Example
     ///
