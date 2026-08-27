@@ -21,29 +21,12 @@ use hoomd_microstate::{
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Cartesian, InnerProduct, Outer, Wedge};
 
-// When we require this trait in the bounds for the impl block for
-// ZeroCenterAngularMomentum on Microstate, there is a problem if we use the
-// same pattern as before, where this trait is implemented on rotation types
-// that are then bound to body orientation. If we do that, then this
-// functionality is only available for microstates with oriented bodies. What
-// else can we do?
-// 
-// Options:
-// 1. Add R to this trait's generics
-// 2. Create a binding between Vector type and Orientation type. Cartesian<2>
-// would then always be bound to Angle, likewise for Cartesian<3> and Versor.
-// The orientation type would then be inferred from the position type.
-// 3. Design this trait to instead be implemented on vector types, rather than
-// orientation types.
-// 
-// I'll try option 3 first.
-
 /// Negate the overall rotational motion of the system's center of mass.
 /// 
 /// This trait binds the center of mass rotational negation scheme to the type
-/// that represents position. Implement this trait on a type that represents
-/// body position to make a [`Microstate`] containing such bodies compatible
-/// with [`ZeroCenterAngularMomentum`].
+/// that represents position and momentum. Implement this trait on a type that
+/// represents body position to make a [`Microstate`] containing such bodies
+/// compatible with [`ZeroCenterAngularMomentum`].
 ///
 /// [`Microstate`]: hoomd_microstate::Microstate
 pub trait ZeroCenterRotation {
@@ -84,7 +67,6 @@ pub trait ZeroCenterRotation {
         mass: &f64,
     ) -> Self::Momentum;
 }
-
 
 /// Rotational motion negation for systems in 2-dimensional cartesian space.
 impl ZeroCenterRotation for Cartesian<2> {
@@ -252,6 +234,12 @@ impl ZeroCenterRotation for Cartesian<3> {
     }
 }
 
+/// Remove collective rotational motion about the system's center of mass.
+/// 
+/// The momentum of each body is adjusted to zero out the overall angular
+/// momentum of the system about its center of mass, following a procedure that
+/// is bound to the type representing position and momentum through the trait
+/// [`ZeroCenterRotation`].
 impl<V, B, S, X, C> ZeroCenterAngularMomentum<B, S> for Microstate<B, S, X, C>
 where
     V: Default

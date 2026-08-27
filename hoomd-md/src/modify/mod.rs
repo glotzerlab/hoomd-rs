@@ -16,7 +16,7 @@ mod zero_center_momentum;
 /// that uses a specific type for position and momentum. (For details on
 /// existing implementations, see the implementation section below.) To extend
 /// this functionality to a new spatial representation, implement
-/// [`ThermalizeMomentum`] on a [`Microstate`] that uses your position and
+/// `ThermalizeMomentum` on a [`Microstate`] that uses your position and
 /// momentum type.
 /// 
 /// [`Microstate`]: hoomd_microstate::Microstate
@@ -74,13 +74,17 @@ pub trait ThermalizeMomentum<B, S> {
     );
 }
 
-/// Remove translational motion from the system's center of mass.
+/// Remove collective translational motion from the system's center of mass.
 ///
-/// [`ZeroCenterMomentum`] subtracts the average momentum from every body's momentum:
-/// ```math
-/// \vec{p}_{i,\mathrm{new}} = \vec{p}_{i,\mathrm{old}} - \langle \vec{p}_\mathrm{old} \rangle
-/// ```
-///
+/// The procedure for drawing random momenta is bound to a [`Microstate`] type
+/// that uses a specific type for position and momentum. (For details on
+/// existing implementations, see the implementation section below.) To extend
+/// this functionality to a new spatial representation, implement
+/// `ZeroCenterMomentum` on a [`Microstate`] that uses your position and
+/// momentum type.
+/// 
+/// [`Microstate`]: hoomd_microstate::Microstate
+/// 
 /// # Example
 ///
 /// ```
@@ -131,39 +135,19 @@ pub trait ZeroCenterMomentum<B, S> {
     );
 }
 
-/// Remove rotational motion about the system's center of mass.
-///
-/// [`ZeroCenterAngularMomentum`] adjusts the translational momentum of every body in order to zero
-/// out the total angular momentum of the system about the center of mass (ignoring
-/// periodic boundary conditions).
-///
-/// # 2D
-///
-/// In 2D, [`ZeroCenterAngularMomentum`] applies:
-/// ```math
-/// \vec{p}_{i,\mathrm{new}} = \vec{p}_{i,\mathrm{old}} - \left( [-r_{ci}^{y}, r_{ci}^{x}] \right) \frac{L_c}{I_c} m_i
-/// ```
-/// where $`i`$ is the index of each body in a system, $`L_c`$ is the
-/// angular momentum about the center of mass, $`I_c`$ is the moment of
-/// inertia about the center of mass, and $`\vec{r}_{ci}`$ is the position of body *i*
-/// relative to the center of mass.
-///
-/// # 3D
-///
-/// In 3D, [`ZeroCenterAngularMomentum`] applies:
-/// ```math
-/// \vec{p}_{i,\mathrm{new}} = \vec{p}_{i,\mathrm{old}} - \left( \vec{\omega}_c \times \vec{r}_{ci} \right) m_i
-/// ```
-/// where $`i`$ is the index of each body in a system,
-/// $`\vec{\omega}_c`$ is angular velocity about the center of mass, and
-/// $`\vec{r}_{ci}`$ is the position of body *i* relative to the center of mass.
-///
-/// $`\vec{\omega}_c`$ is obtained by solving the following linear system:
-/// ```math
-/// \mathbf{I}_c \vec{\omega}_c = \vec{L}_c
-/// ```
-/// where $`\mathbf{I}_c`$ is the moment of inertia about the center of mass,
-/// and $`\vec{L}_c`$ is the angular momentum about the center of mass.
+/// Remove collective rotational motion about the system's center of mass.
+/// 
+/// The momentum of each body is adjusted to zero out the overall angular
+/// momentum of the system about its center of mass (ignoring periodic boundary
+/// conditions).
+/// 
+/// The procedure for removing collective rotational motion is bound directly to
+/// the type that represents position and momentum. (For details on existing
+/// implementations, see the implementation section for [`ZeroCenterRotation`].)
+/// To extend this functionality to a new spatial representation, implement
+/// [`ZeroCenterRotation`] on your position and momentum type.
+/// 
+/// [`ZeroCenterRotation`]: crate::modify::zero_center_angular_momentum::ZeroCenterRotation
 ///
 /// # Example
 ///
@@ -202,15 +186,13 @@ pub trait ZeroCenterMomentum<B, S> {
 /// # }
 /// ```
 pub trait ZeroCenterAngularMomentum<B, S> {
-    /// Adjust each body's angular translational momentum in order to zero the system's overall
-    /// angular momentum about the center of mass.
+    /// Adjust each body's momentum to zero the system's overall angular momentum about the center of mass.
     #[inline]
     fn zero_center_angular_momentum(&mut self) {
         self.zero_center_angular_momentum_with_filter(|_| true);
     }
 
-    /// Adjust each selected body's translational momentum in order to zero the system's overall
-    /// angular momentum about the center of mass..
+    /// Adjust each selected body's momentum to zero the system's overall angular momentum about the center of mass.
     fn zero_center_angular_momentum_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &mut self,
         should_zero_body: F,

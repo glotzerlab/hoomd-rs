@@ -12,6 +12,14 @@ use hoomd_microstate::{
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::Cartesian;
 
+/// Remove collective translational motion from the system's center of mass embedded in cartesian space.
+/// 
+/// The average momentum across all bodies is subtracted from the momentum for
+/// each body $`i`$.
+/// 
+/// ```math
+/// \vec{p}_{i,\mathrm{new}} = \vec{p}_{i,\mathrm{old}} - \langle \vec{p}_\mathrm{old} \rangle
+/// ```
 impl<const N: usize, B, S, X, C> ZeroCenterMomentum<B, S> for Microstate<B, S, X, C>
 where
     B: Position<Position = Cartesian<N>> + Momentum<Momentum = Cartesian<N>> + Transform<S> + Clone,
