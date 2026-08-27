@@ -6,6 +6,8 @@
 
 *Changed:*
 
+`[tutorials]`:  The workflow tutorial now uses `hoomd-workspace` (#403).
+
 *Deprecated:*
 
 *Removed:*
