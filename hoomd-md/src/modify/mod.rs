@@ -225,6 +225,7 @@ pub trait ZeroCenterAngularMomentum<B, S> {
 ///         Body::single_site(
 ///             DynamicOrientedPoint {
 ///                 position: Cartesian::from([1.0, 2.0]),
+///                 orientation: Angle::default(),
 ///                 ..Default::default()
 ///             },
 ///             Point::default(),
@@ -232,6 +233,7 @@ pub trait ZeroCenterAngularMomentum<B, S> {
 ///         Body::single_site(
 ///             DynamicOrientedPoint {
 ///                 position: Cartesian::from([-2.0, 3.0]),
+///                 orientation: Angle::default(),
 ///                 ..Default::default()
 ///             },
 ///             Point::default(),

@@ -738,7 +738,7 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 /// To integrate the whole system forward one step, call [`integrate_translation_and_rotation`]:
 /// ```
 /// # use hoomd_microstate::{Body, Microstate, property::{DynamicOrientedPoint, Point}};
-/// # use hoomd_vector::Cartesian;
+/// # use hoomd_vector::{Angle, Cartesian};
 /// # use hoomd_md::{ThermalizeMomentum, RotationalMotion, TranslationalMotion, method::ConstantVolume};
 /// # use hoomd_interaction::{Rigid, Zero};
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -746,12 +746,14 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 /// #     .bodies([
 /// #         Body::single_site(DynamicOrientedPoint {
 /// #           position: Cartesian::from([1.0, 2.0]),
+/// #           orientation: Angle::default(),
 /// #           ..Default::default()
 /// #           },
 /// #           Point::default(),
 /// #           ),
 /// #         Body::single_site(DynamicOrientedPoint {
 /// #           position: Cartesian::from([-2.0, 3.0]),
+/// #           orientation: Angle::default(),
 /// #           ..Default::default()
 /// #           },
 /// #           Point::default(),
@@ -816,7 +818,7 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 /// 
 /// ```
 /// # use hoomd_microstate::{Body, Microstate, property::{DynamicOrientedPoint, Point}};
-/// # use hoomd_vector::Cartesian;
+/// # use hoomd_vector::{Angle, Cartesian};
 /// # use hoomd_md::{UpdateNetForceVirialAndTorque, ThermalizeMomentum, RotationalMotion, TranslationalMotion, method::ConstantVolume};
 /// # use hoomd_interaction::{Rigid, Zero};
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -824,12 +826,14 @@ pub trait TranslationalMotion<B, S, X, C, M> {
 /// #     .bodies([
 /// #         Body::single_site(DynamicOrientedPoint {
 /// #           position: Cartesian::from([1.0, 2.0]),
+/// #           orientation: Angle::default(),
 /// #           ..Default::default()
 /// #           },
 /// #           Point::default(),
 /// #           ),
 /// #         Body::single_site(DynamicOrientedPoint {
 /// #           position: Cartesian::from([-2.0, 3.0]),
+/// #           orientation: Angle::default(),
 /// #           ..Default::default()
 /// #           },
 /// #           Point::default(),
