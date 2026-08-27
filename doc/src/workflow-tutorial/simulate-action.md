@@ -85,7 +85,8 @@ while model.step() < TOTAL_STEPS {
 }
 
 let out_bytes: Vec<u8> = postcard::to_stdvec(&model)?;
-let mut file = File::create(MODEL_FILE).context("failed to create `{MODEL_FILE}`")?;
+let mut file =
+    File::create(job_directory.join(MODEL_FILE)).context("failed to create `{MODEL_FILE}`")?;
 file.write_all(&out_bytes)
     .context("failed to write `{MODEL_FILE}`")?;
 ```
@@ -99,7 +100,7 @@ environment variable.
 analysis:
 
 ```rust,ignore
-let mut gsd_file = HoomdGsdFile::open("trajectory.in-progress.gsd")
+let mut gsd_file = HoomdGsdFile::open(job_directory.join("trajectory.in-progress.gsd"))
     .context("error opening trajectory.in-progress.gsd")?;
 ```
 `open` works here because `get_model` created the GSD file.
@@ -116,8 +117,11 @@ drop(gsd_file);
 
 if model.step() == TOTAL_STEPS {
     info!("Simulation complete.");
-    fs::rename("trajectory.in-progress.gsd", "trajectory.gsd")
-        .context("failed to rename `trajectory.in-progress.gsd` to `trajectory.gsd`")?;
+    fs::rename(
+        job_directory.join("trajectory.in-progress.gsd"),
+        job_directory.join("trajectory.gsd"),
+    )
+    .context("failed to rename `trajectory.in-progress.gsd` to `trajectory.gsd`")?;
 }
 ```
 
@@ -132,8 +136,9 @@ The solution suggested by the [parquet] developers is to create multiple files.
 The `create_unique` method creates `log.parquet.0` on the first submission then
 `log.parquet.1` on the second, and so on:
 ```rust,ignore
-let mut parquet_logger = ParquetLogger::<LogRecord>::create_unique("log.parquet")
-    .context("error creating `log.parquet`")?;
+let mut parquet_logger =
+    ParquetLogger::<LogRecord>::create_unique(job_directory.join("log.parquet"))
+        .context("error creating `log.parquet`")?;
 ```
 
 When you visualize or post-process the log later, you should concatenate
