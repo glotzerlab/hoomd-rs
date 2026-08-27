@@ -15,6 +15,23 @@ use hoomd_spatial::PointUpdate;
 use hoomd_vector::Cartesian;
 use rand_distr::{Distribution, Normal};
 
+/// Draw random momenta from a thermal distribution embedded in N-dimensional cartesian space.
+/// 
+/// Drawn from the [Maxwell–Boltzmann distribution], each component of the
+/// momentum $` p_i `$ is normally distributed with mean 0 and variance
+/// $` \sigma^2 = m k T`$. The probability distribution is then given by
+/// 
+/// ```math
+///    f(p_i) = \frac{1}{\sqrt{2 \pi m k T}} \exp{\left( -\frac{p_i^2}{2 m k T} \right)}
+/// ```
+///
+/// [Maxwell–Boltzmann distribution]: https://en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
+/// 
+/// The momenta drawn in this way do not collectively sum to zero. To zero the
+/// effective momentum of the system's center of mass, use
+/// [`ZeroCenterMomentum`].
+/// 
+/// [`ZeroCenterMomentum`]: crate::modify::ZeroCenterMomentum
 impl<const N: usize, B, S, X, C> ThermalizeMomentum<B, S> for Microstate<B, S, X, C>
 where
     B: Position<Position = Cartesian<N>>

@@ -3,8 +3,6 @@
 
 //! Implement `ThermalizeAngularMomentum`
 
-// TODO: add documentation
-
 use super::ThermalizeAngularMomentum;
 use hoomd_microstate::{
     Body,
@@ -129,6 +127,27 @@ impl ThermalizeRotation for Versor {
     }
 }
 
+/// Draw random angular momenta from a thermal distribution.
+///
+/// Angular momenta are drawn from the [Maxwell–Boltzmann distribution],
+/// following a procedure that is bound to the type representing orientation
+/// through the trait [`ThermalizeRotation`].
+/// 
+/// [Maxwell–Boltzmann distribution]: https://en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
+/// 
+/// For example, in 3-dimensional cartesian space, where orientation is
+/// represented by a [`Versor`], each component of the angular momentum
+/// $` L_i `$ (aligned to the principal axes) is normally distributed with mean
+/// 0 and variance $` \sigma^2 = I_i k T`$. The probability distribution is then
+/// given by
+/// 
+/// ```math
+///    f(L_i) = \frac{1}{\sqrt{2 \pi I_i k T}} \exp{\left( -\frac{L_i^2}{2 I_i k T} \right)}
+/// ```
+///
+/// where $`I`$ is the diagonalized moment of inertia.
+/// 
+/// [`Versor`]: hoomd_vector::Versor
 impl<V, R, B, S, X, C> ThermalizeAngularMomentum<B, S> for Microstate<B, S, X, C>
 where
     V: Copy,
