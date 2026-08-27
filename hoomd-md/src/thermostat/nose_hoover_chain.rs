@@ -12,26 +12,37 @@ use crate::Thermostat;
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_utility::valid::PositiveReal;
 
-/// Chain of Nosé-Hoover thermostats.
-///
-/// [`NoséHooverChain`] adds new degrees of freedom ($`\eta_i`$)
-/// to a molecular dynamics simulation in such a way that the existing
-/// degrees of freedom sample a constant temperature ensemble. Each
-/// [`NoséHooverChain`] instance stores the $`\eta_i`$ and their momenta,
-/// $`\xi_i`$, internally.
-///
-/// The dynamics of each $`\eta_i, \xi_i`$ are similar to that in
-/// [`MartynaTuckermanTobiasKlein`], but they are also chained together.
-/// See [Martyna et al. 1992] for details.
-///
+/// Stochastic momentum rescaling based on a nesting or "chain" of extended ensembles.
+/// 
+/// `NoséHooverChain` extends the Nosé-Hoover thermostat ([Nosé 1984],
+/// [Hoover 1985]) following [Martyna et al. 1992] and [Tuckerman et al. 2006].
+/// This algorithm creates a chain of extended ensembles in the manner of
+/// [`MartynaTuckermanTobiasKlein`]. The first extended ensemble operates on the
+/// "real" or physical system, the second ensemble operates on the first, and so
+/// on. Each ensemble provides a new degree of freedom $`i`$ in which motion is
+/// quantified through a "position" $`\eta_i`$ and a "momentum" $`\xi_i`$. The
+/// collective dynamics of these ensembles are tuned to constrain the system's
+/// evolution such that its physical degrees of freedom sample a constant
+/// temperature ensemble.
+/// 
 /// [`MartynaTuckermanTobiasKlein`]: crate::thermostat::MartynaTuckermanTobiasKlein
-///
-/// # Reference
-///
-/// * [Martyna et al. 1992]
-///
+/// [Nosé 1984]: https://doi.org/10.1063/1.447334
+/// [Hoover 1985]: https://doi.org/10.1103/PhysRevA.31.1695
 /// [Martyna et al. 1992]: https://doi.org/10.1063/1.463940
-///
+/// [Tuckerman et al. 2006]: https://doi.org/10.1088/0305-4470/39/19/S18
+/// 
+/// The dynamics of the new degrees of freedom are tuned through the parameter
+/// `tau`, which represents a coupling constant that is applied to each
+/// ensemble, somewhat analagously to the spring constant in a system of a
+/// piston attached to a spring. Values that are too high can cause abrupt
+/// fluctuations in the kinetic temperature, while values that are too low can
+/// cause excessive equilibration time. The recommended value for most systems
+/// is $` 100 \Delta t `$.
+/// 
+/// See [`MartynaTuckermanTobiasKlein`] for a description of the integration
+/// scheme for a single degree of freedom, and [Martyna et al. 1992] for details
+/// on the procedure for a chain of ensembles.
+/// 
 /// # Example
 ///
 /// ```
@@ -45,7 +56,7 @@ use hoomd_utility::valid::PositiveReal;
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct NoséHooverChain<const N: usize> {
-    /// Thermostat time constant.
+    /// Thermostat coupling constant.
     tau: PositiveReal,
 
     /// Chain of thermostat momenta.
@@ -56,7 +67,7 @@ pub struct NoséHooverChain<const N: usize> {
     #[serde_as(as = "[_; N]")]
     eta: [f64; N],
 
-    /// Chain of thermostat accelerations.
+    /// Chain of thermostat forces.
     #[serde_as(as = "[_; N]")]
     g: [f64; N],
 
@@ -65,16 +76,22 @@ pub struct NoséHooverChain<const N: usize> {
 }
 
 impl<const N: usize> NoséHooverChain<N> {
-    /// Construct a new `NoséHooverChain` thermostat with the given time constant,
-    /// $` \xi_i = 0 `$, and $` \eta_i = 0 `$ .
+    /// Construct a new thermostat with a given `tau` and a zeroed initial condition.
     ///
-    /// This initial condition is likely to be very far from equilibrium which
-    /// will result in wild kinetic energy oscillations for the first hundred to
+    /// The resulting thermostat has all `eta` and `xi` values set to 0. This
+    /// initial condition is likely to be very far from equilibrium, which will
+    /// result in wild kinetic energy oscillations for the first hundred to
     /// thousand time steps. Use [`thermalized`] to choose the initial position
     /// and momentum from a thermal distribution.
-    ///
+    /// 
     /// [`thermalized`]: Self::thermalized
-    ///
+    /// 
+    /// This method is generic over the integer `N`, which determines the number
+    /// of ensembles in the chain. Use the [turbofish operator] (`::<>`) to
+    /// specify a value.
+    /// 
+    /// [turbofish operator]: https://doc.rust-lang.org/reference/glossary.html#turbofish
+    /// 
     /// # Example
     ///
     /// ```
@@ -96,9 +113,18 @@ impl<const N: usize> NoséHooverChain<N> {
         }
     }
 
-    /// Construct a new `NoséHooverChain` thermostat with random $` \xi_i `$
-    /// values drawn from a thermal distribution.
-    ///
+    /// Construct a new thermostat with a given `tau` and an initial condition drawn from the thermal distribution.
+    /// 
+    /// The resulting thermostat has all `eta` values set to 0 and `xi` values
+    /// that are each randomly chosen from the thermal distribution encoded in a
+    /// macrostat's temperature set point.
+    /// 
+    /// This method is generic over the integer `N`, which determines the number
+    /// of ensembles in the chain. Use the [turbofish operator] (`::<>`) to
+    /// specify a value.
+    /// 
+    /// [turbofish operator]: https://doc.rust-lang.org/reference/glossary.html#turbofish
+    /// 
     /// # Panics
     ///
     /// This method will panic when `degrees_of_freedom` is 0.
@@ -196,7 +222,7 @@ impl<const N: usize> NoséHooverChain<N> {
         result
     }
 
-    /// Calculate thermostat energy.
+    /// Calculate the thermostat's energy.
     #[inline]
     fn thermostat_energy(
         &self,
@@ -214,7 +240,7 @@ impl<const N: usize> NoséHooverChain<N> {
         energy
     }
 
-    /// The total energy of the thermostat.
+    /// The energy contributions from the extra degrees of freedom.
     ///
     /// # Example
     ///
@@ -276,6 +302,7 @@ impl<const N: usize, M> Thermostat<M> for NoséHooverChain<N>
 where
     M: Temperature,
 {
+    /// Integrate `xi` and `eta` forward a half step for each ensemble and return the rescaling factor.
     #[inline]
     fn integrate_half_step_one<R: Rng + ?Sized>(
         &mut self,
@@ -351,6 +378,7 @@ where
         rescaling_factor
     }
 
+    /// Integrate `xi` and `eta` forward a half step for each ensemble and return the rescaling factor.
     #[inline]
     fn integrate_half_step_two<R: Rng + ?Sized>(
         &mut self,
