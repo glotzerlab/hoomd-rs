@@ -10,22 +10,30 @@ mod translational_kinetic_energy;
 
 /// Compute the translational kinetic energy of bodies in a microstate.
 ///
-/// `TranslationalKineticEnergy` is implemented for `Microstate`. Call
-/// `microstate.translational_kinetic_energy` to compute the total translational
-/// kinetic energy (and degrees of freedom) of all bodies in the microstate.
-/// Energy can be calculated for a subset of bodies using the companion method
-/// `translational_kinetic_energy_with_filter`.
-///
-/// Sum the per-body kinetic energies:
+/// This trait is implemented directly on [`Microstate`]. Call
+/// [`microstate.translational_kinetic_energy()`] to compute the total
+/// translational kinetic energy (and degrees of freedom) of all bodies in the
+/// microstate. Calculations can be performed on a subset of bodies using the
+/// companion method [`translational_kinetic_energy_with_filter`].
+/// 
+/// [`Microstate`]: hoomd_microstate::Microstate
+/// [`microstate.translational_kinetic_energy()`]: Self::translational_kinetic_energy
+/// [`translational_kinetic_energy_with_filter`]: Self::translational_kinetic_energy_with_filter
+/// 
+/// Kinetic energy is summed across selected bodies
 /// ```math
 /// K = \sum_{i \in \mathrm{selection}} \frac{\vec{p}_i \cdot \vec{p}_i}{2m_i}
 /// ```
 ///
-/// Count the degrees of freedom of each selected body:
+/// The degrees of freedom are also summed across selected bodies
+/// 
 /// ```math
-/// \mathrm{degrees\_of\_freedom} = \sum_{i \in \mathrm{selection}} D
+/// N = \sum_{i \in \mathrm{selection}} D
 /// ```
-/// where `D` is the dimensionality of momentum vector space.
+/// 
+/// where `D` is the dimensionality of [`Momentum`] vector space.
+/// 
+/// [`Momentum`]: hoomd_microstate::property::Momentum
 ///
 /// # Example
 ///
@@ -89,12 +97,16 @@ pub trait TranslationalKineticEnergy<B, S> {
 
 /// Compute the rotational kinetic energy of bodies in a microstate.
 ///
-/// `RotationalKineticEnergy` is implemented for `Microstate`. Call
-/// `microstate.rotational_kinetic_energy` to compute the total rotational
-/// kinetic energy (and degrees of freedom) of all bodies in the microstate.
-/// Energy can be calculated for a subset of bodies using the companion method
-/// `rotational_kinetic_energy_with_filter`.
-///
+/// This trait is implemented directly on [`Microstate`]. Call
+/// [`microstate.rotational_kinetic_energy()`] to compute the total
+/// rotational kinetic energy (and degrees of freedom) of all bodies in the
+/// microstate. Calculations can be performed on a subset of bodies using the
+/// companion method [`rotational_kinetic_energy_with_filter`].
+/// 
+/// [`Microstate`]: hoomd_microstate::Microstate
+/// [`microstate.rotational_kinetic_energy()`]: Self::rotational_kinetic_energy
+/// [`rotational_kinetic_energy_with_filter`]: Self::rotational_kinetic_energy_with_filter
+/// 
 /// # 2D
 ///
 /// In 2D, each body has only 0 or 1 rotational degree of freedom. Set $` L = 0 `$ to deactivate

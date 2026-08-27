@@ -484,12 +484,13 @@ pub use update_net_force::{UpdateNetForceAndVirial, UpdateNetForceVirialAndTorqu
 
 /// Scale momenta to hold the system at constant temperature.
 ///
-/// Use any of the thermostats in the [`thermostat`] module along with the
-/// integration method of your choice.
-///
-/// The [`ConstantVolume`] integration method rescales every momentum in the
-/// system following the given [`Thermostat`] to sample trajectories from the
-/// canonical ensemble.
+/// Momentum scaling algorithms are implemented for the various types in the
+/// [`thermostat`] module.
+/// 
+/// Any thermostat can be used with any integration method that accepts one. For
+/// example, construct [`ConstantVolume`] with a translational---and if
+/// relevant, rotational---thermostat to sample  trajectories from the canonical
+/// (NVT) ensemble.
 ///
 /// [`ConstantVolume`]: crate::method::ConstantVolume
 pub trait Thermostat<M> {
