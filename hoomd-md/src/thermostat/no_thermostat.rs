@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Thermostat;
 
-/// Apply no momentum scaling.
+/// No momentum rescaling.
 ///
 /// Use [`NoThermostat`] with [`ConstantVolume`] to model the microcanonical (NVE) ensemble.
 ///
