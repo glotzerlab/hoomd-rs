@@ -301,7 +301,7 @@
 //! macrostate "owns" these set points, which are "borrowed" by various other
 //! objects that operate on the microstate. For example, the [`Isothermal`]
 //! macrostate type owns a temperature set point. During integration that
-//! set point is borrowed by the thermostat, which re-scales quantities in the
+//! set point is borrowed by the thermostat, which rescales quantities in the
 //! microstate to achieve an instantaneous temperature that matches the
 //! set point.
 //! 
@@ -315,10 +315,10 @@
 //! # The thermostat
 //!
 //! To sample a constant temperature ensemble, the user must provide a
-//! thermostat, which re-scales velocities to match a temperature [set point]
+//! thermostat, which rescales velocities to match a temperature [set point]
 //! during the integration scheme. `hoomd-md` provides implementations of many
-//! velocity-rescaling thermostats, which can be found in the [`thermostat`]
-//! module. Use [`NoThermostat`] to prevent velocity-rescaling, which samples
+//! momentum-rescaling thermostats, which can be found in the [`thermostat`]
+//! module. Use [`NoThermostat`] to prevent momentum-rescaling, which samples
 //! constant energy (or enthalpy) ensembles.
 //!
 //! [set point]: crate#the-macrostate
