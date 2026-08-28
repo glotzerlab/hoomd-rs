@@ -15,6 +15,25 @@ where
     V: InnerProduct,
     B: Momentum<Momentum = V> + Mass,
 {
+    /// Compute the total translational kinetic energy (and degrees of freedom) over selected bodies in the microstate.
+    /// 
+    /// In [`InnerProduct`] vector space, each body has $`D`$ translational
+    /// degrees of freedom, where $`D`$ is the number of dimensions. The total
+    /// number of translational degrees of freedom is given by
+    /// 
+    /// ```math
+    /// N_{trans} = \sum_{i \in \mathrm{selection}} D
+    /// ```
+    /// 
+    /// [`InnerProduct`]: hoomd_vector::InnerProduct
+    /// 
+    /// The total translational kinetic energy is given by
+    /// 
+    /// ```math
+    /// K_{trans} = \sum_{i \in \mathrm{selection}} \frac{\vec{p}_i \cdot \vec{p}_i}{2m_i}
+    /// ```
+    /// 
+    /// assuming that all selected bodies have $` m_i \ne 0 `$.
     #[inline]
     fn translational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,

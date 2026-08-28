@@ -5,8 +5,9 @@
 
 use hoomd_microstate::{Body, Tagged};
 
-mod rotational_kinetic_energy;
 mod translational_kinetic_energy;
+
+pub mod rotational_kinetic_energy;
 
 /// Compute the translational kinetic energy of bodies in a microstate.
 ///
@@ -20,20 +21,17 @@ mod translational_kinetic_energy;
 /// [`microstate.translational_kinetic_energy()`]: Self::translational_kinetic_energy
 /// [`translational_kinetic_energy_with_filter`]: Self::translational_kinetic_energy_with_filter
 /// 
-/// Kinetic energy is summed across selected bodies
-/// ```math
-/// K = \sum_{i \in \mathrm{selection}} \frac{\vec{p}_i \cdot \vec{p}_i}{2m_i}
-/// ```
-///
-/// The degrees of freedom are also summed across selected bodies
+/// The procedure for computing translational kinetic energy (and degrees of
+/// freedom) is bound to a [`Microstate`] type that uses a specific type for
+/// momentum. (For details on existing implementations, see the implementation
+/// section below.) To extend this functionality to a new spatial
+/// representation, implement `TranslationalKineticEnergy` on a [`Microstate`]
+/// that uses your momentum type.
 /// 
-/// ```math
-/// N = \sum_{i \in \mathrm{selection}} D
-/// ```
+/// [`Microstate`]: hoomd_microstate::Microstate
 /// 
-/// where `D` is the dimensionality of [`Momentum`] vector space.
-/// 
-/// [`Momentum`]: hoomd_microstate::property::Momentum
+/// [`InnerProduct`]: hoomd_vector::InnerProduct
+/// [implementation section]: Self::translational_kinetic_energy_with_filter
 ///
 /// # Example
 ///
@@ -80,15 +78,13 @@ mod translational_kinetic_energy;
 /// # }
 /// ```
 pub trait TranslationalKineticEnergy<B, S> {
-    /// Compute the total translational kinetic energy and degrees of freedom over all bodies
-    /// in the microstate.
+    /// Compute the total translational kinetic energy (and degrees of freedom) over all bodies in the microstate.
     #[inline]
     fn translational_kinetic_energy(&self) -> (f64, usize) {
         self.translational_kinetic_energy_with_filter(|_| true)
     }
 
-    /// Compute the total translational kinetic energy and degrees of freedom over selected
-    /// bodies in the microstate.
+    /// Compute the total translational kinetic energy (and degrees of freedom) over selected bodies in the microstate.
     fn translational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         should_sum_body: F,
@@ -107,36 +103,15 @@ pub trait TranslationalKineticEnergy<B, S> {
 /// [`microstate.rotational_kinetic_energy()`]: Self::rotational_kinetic_energy
 /// [`rotational_kinetic_energy_with_filter`]: Self::rotational_kinetic_energy_with_filter
 /// 
-/// # 2D
-///
-/// In 2D, each body has only 0 or 1 rotational degree of freedom. Set $` L = 0 `$ to deactivate
-/// rotations for a body. The total number of degrees of freedom is then:
-/// ```math
-/// \mathrm{degrees\_of\_freedom} = \sum_{i \in \mathrm{selection}} \left| L_i \ne 0 \right|
-/// ```
-/// where $` \left| \right| `$ is the Iverson bracket.
-///
-/// The kinetic energy is
-/// ```math
-/// K = \sum_{i \in \mathrm{selection}} \frac{L_i^2}{2I}
-/// ```
-/// (ignoring terms where the moment of inertia is zero).
-///
-/// # 3D
-///
-/// In 3D, there are 0 to 3 degrees of freedom per body.
-/// Set $` I_{xx}=0 `$, $` I_{yy}=0 `$, and/or $` I_{zz}=0 `$ to deactivate
-/// rotations one or more axes. The total number of degrees of freedom is then:
-/// ```math
-/// \mathrm{degrees\_of\_freedom} = \sum_{i \in \mathrm{selection}} \left| I_{xx,i} \ne 0 \right| + \left| I_{yy,i} \ne 0 \right| + \left| I_{zz,i} \ne 0 \right|
-/// ```
-///
-/// The kinetic energy is
-/// ```math
-/// K = \sum_{i \in \mathrm{selection}}\frac{L_{x,i}(t)^2}{2I_{xx,i}} + \frac{L_{y,i}(t)^2}{2I_{yy,i}} + \frac{L_{z,i}(t)^2}{2I_{zz,i}}
-/// ```
-/// (ignoring terms where the moment of inertia is zero).
-///
+/// The procedure for computing rotational kinetic energy (and degrees of
+/// freedom) is bound directly to the type that represents orientation. (For
+/// details on existing implementations, see the implementation section for
+/// [`AggregateEnergyRotation`].) To extend this functionality to a new spatial
+/// representation, implement [`AggregateEnergyRotation`] on your orientation
+/// type.
+/// 
+/// [`AggregateEnergyRotation`]: crate::compute::rotational_kinetic_energy::AggregateEnergyRotation
+/// 
 /// # Example
 ///
 /// ```
@@ -187,15 +162,13 @@ pub trait TranslationalKineticEnergy<B, S> {
 /// # }
 /// ```
 pub trait RotationalKineticEnergy<B, S> {
-    /// Compute the total rotational kinetic energy and degrees of freedom over all bodies
-    /// in the microstate.
+    /// Compute the total rotational kinetic energy (and degrees of freedom) over all bodies in the microstate.
     #[inline]
     fn rotational_kinetic_energy(&self) -> (f64, usize) {
         self.rotational_kinetic_energy_with_filter(|_| true)
     }
 
-    /// Compute the total rotational kinetic energy and degrees of freedom over selected
-    /// bodies in the microstate.
+    /// Compute the total rotational kinetic energy (and degrees of freedom) over selected bodies in the microstate.
     fn rotational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         should_sum_body: F,

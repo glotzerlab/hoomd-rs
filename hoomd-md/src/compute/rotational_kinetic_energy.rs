@@ -4,69 +4,131 @@
 //! Implement `RotationalKineticEnergy`
 
 use super::RotationalKineticEnergy;
-use hoomd_microstate::{Body, Microstate, Tagged, property::DynamicOrientedPoint};
-use hoomd_vector::{Angle, Outer, Versor, Wedge};
+use hoomd_microstate::{
+    Body,
+    Microstate,
+    Tagged,
+    property::{
+        AngularMomentum,
+        MomentOfInertia,
+        Orientation,
+        RotationalMotionTypes
+    }
+};
+use hoomd_vector::{Angle, Versor};
 
-impl<P, S, X, C> RotationalKineticEnergy<DynamicOrientedPoint<P, Angle>, S>
-    for Microstate<DynamicOrientedPoint<P, Angle>, S, X, C>
-where
-    P: Wedge + Outer,
+/// Aggregate rotational kinetic energy (and degrees of freedom).
+/// 
+/// This trait binds the aggregation scheme to the type that represents
+/// orientation. Implement this trait on a type that represents body orientation
+/// to make a [`Microstate`] containing such bodies compatible with
+/// [`RotationalKineticEnergy`].
+/// 
+/// [`Microstate`]: hoomd_microstate::Microstate
+pub trait AggregateEnergyRotation: RotationalMotionTypes
 {
-    #[inline]
-    fn rotational_kinetic_energy_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Angle>, S>>) -> bool,
-    >(
-        &self,
-        should_sum_body: F,
-    ) -> (f64, usize) {
-        self.bodies()
-            .iter()
-            .filter(|&body| should_sum_body(body))
-            .fold((0.0, 0), |(total, count), body| {
-                let moment_of_inertia = body.item.properties.moment_of_inertia;
-                let angular_momentum = body.item.properties.angular_momentum;
+    /// Return the contribution of a single body to the system's rotational kinetic energy (and degrees of freedom).
+    fn energy_and_dof_per_body(
+        moment_of_inertia: &Self::MomentOfInertia,
+        angular_momentum: &Self::AngularMomentum,
+    ) -> (f64, usize);
+}
 
-                if moment_of_inertia == 0.0 {
-                    (total, count)
-                } else {
-                    (
-                        total + angular_momentum.powi(2) / (2.0 * moment_of_inertia),
-                        count + 1,
-                    )
-                }
-            })
+///  Aggregation for bodies in 2-dimensional cartesian space.
+impl AggregateEnergyRotation for Angle {
+    /// Return the contribution of a single body to the system's rotational kinetic energy (and degrees of freedom).
+    /// 
+    /// In 2-dimensional cartesian space, each body has either 0 rotational
+    /// degrees of freedom (when $` I = 0 `$) or 1 (when $` I \ne 0 `$). The
+    /// total number of rotational degrees of freedom is given by
+    /// 
+    /// ```math
+    /// N_{rot} = \sum_{i \in \mathrm{selection}} \left| I_i \ne 0 \right|
+    /// ```
+    /// 
+    /// where $` \left| \right| `$ is the [Iverson bracket].
+    /// 
+    /// [Iverson bracket]: https://en.wikipedia.org/wiki/Iverson_bracket
+    ///
+    /// The total rotational kinetic energy is given by
+    /// 
+    /// ```math
+    /// K_{rot} = \sum_{i \in \mathrm{selection}} \frac{L_i^2}{2 I_i}
+    /// ```
+    /// 
+    /// ignoring bodies for which $` I_i = 0 `$.
+    fn energy_and_dof_per_body(
+        moment_of_inertia: &Self::MomentOfInertia,
+        angular_momentum: &Self::AngularMomentum,
+    ) -> (f64, usize) {
+        if *moment_of_inertia == 0.0 {
+            (0.0, 0)
+        } else {
+            (angular_momentum.powi(2) / (2.0 * moment_of_inertia), 1)
+        }
     }
 }
 
-impl<P, S, X, C> RotationalKineticEnergy<DynamicOrientedPoint<P, Versor>, S>
-    for Microstate<DynamicOrientedPoint<P, Versor>, S, X, C>
+///  Aggregation for bodies in 3-dimensional cartesian space.
+impl AggregateEnergyRotation for Versor {
+    /// Return the contribution of a single body to the system's rotational kinetic energy (and degrees of freedom).
+    /// 
+    /// In 3-dimensional cartesian space, each body has 0 to 3 rotational
+    /// degrees of freedom, depending on the number of non-zero components of
+    /// the body's diagonalized moment of inertia. The total number of 
+    /// rotational degrees of freedom is given by
+    /// 
+    /// ```math
+    /// N_{rot} = \sum_{i \in \mathrm{selection}} \left| I_{xx,i} \ne 0 \right| + \left| I_{yy,i} \ne 0 \right| + \left| I_{zz,i} \ne 0 \right|
+    /// ```
+    ///
+    /// The total rotational kinetic energy is given by
+    /// 
+    /// ```math
+    /// K_{rot} = \sum_{i \in \mathrm{selection}}\frac{L_{x,i}^2}{2I_{xx,i}} + \frac{L_{y,i}^2}{2I_{yy,i}} + \frac{L_{z,i}^2}{2I_{zz,i}}
+    /// ```
+    /// 
+    /// ignoring terms for which $` I_{jj,i} = 0 `$.
+    fn energy_and_dof_per_body(
+        moment_of_inertia: &Self::MomentOfInertia,
+        angular_momentum: &Self::AngularMomentum,
+    ) -> (f64, usize) {
+        let (mut energy_total, mut dof_count) = (0.0, 0);
+
+        for (momentum, inertia) in
+            angular_momentum.coordinates.iter().zip(moment_of_inertia)
+        {
+            if *inertia != 0.0 {
+                energy_total += momentum.powi(2) / (2.0 * inertia);
+                dof_count += 1;
+            }
+        }
+
+        (energy_total, dof_count)
+    }
+}
+
+impl<B, S, X, C> RotationalKineticEnergy<B, S> for Microstate<B, S, X, C>
 where
-    P: Wedge + Outer,
+    B: Orientation<Rotation: AggregateEnergyRotation>
+        + MomentOfInertia<MomentOfInertia = <B::Rotation as RotationalMotionTypes>::MomentOfInertia>
+        + AngularMomentum<AngularMomentum = <B::Rotation as RotationalMotionTypes>::AngularMomentum>
 {
     #[inline]
-    fn rotational_kinetic_energy_with_filter<
-        F: Fn(&Tagged<Body<DynamicOrientedPoint<P, Versor>, S>>) -> bool,
-    >(
+    fn rotational_kinetic_energy_with_filter<F: Fn(&Tagged<Body<B, S>>) -> bool>(
         &self,
         should_sum_body: F,
     ) -> (f64, usize) {
         self.bodies()
             .iter()
             .filter(|&body| should_sum_body(body))
-            .fold((0.0, 0), |(mut total, mut count), body| {
-                let moment_of_inertia = body.item.properties.moment_of_inertia;
-                let angular_momentum = body.item.properties.angular_momentum;
+            .fold((0.0, 0), |(cum_total, cum_count), body| {
+                let (total, count) = <B::Rotation as AggregateEnergyRotation>::energy_and_dof_per_body(
+                    body.item.properties.moment_of_inertia(),
+                    body.item.properties.angular_momentum()
+                );
 
-                for (momentum, inertia) in
-                    angular_momentum.coordinates.iter().zip(moment_of_inertia)
-                {
-                    if inertia != 0.0 {
-                        total += momentum.powi(2) / (2.0 * inertia);
-                        count += 1;
-                    }
-                }
-
-                (total, count)
+                (cum_total + total, cum_count + count)
             })
     }
 }

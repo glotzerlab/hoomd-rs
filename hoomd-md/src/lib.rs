@@ -471,7 +471,7 @@ use hoomd_microstate::{Body, Microstate, Tagged};
 pub mod method;
 pub mod thermostat;
 
-mod compute;
+pub mod compute;
 pub use compute::{RotationalKineticEnergy, TranslationalKineticEnergy};
 
 pub mod modify;
