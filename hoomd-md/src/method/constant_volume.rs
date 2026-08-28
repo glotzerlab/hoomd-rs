@@ -529,7 +529,7 @@ pub(crate) fn integrate_rotation_half_step_one_with_filter<V, R, B, S, X, C, TR,
 )
 where
     V: Wedge + Copy,
-    R: SymplecticIntegrateRotation<Rotation = R, NetTorque = V::Bivector> + RotationalMotionTypes + Clone,
+    R: SymplecticIntegrateRotation<NetTorque = V::Bivector> + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>
@@ -543,7 +543,6 @@ where
     TR: Thermostat<M>,
     F: Fn(&Tagged<Body<B, S>>) -> bool,
     Microstate<B, S, X, C>: RotationalKineticEnergy<B, S>,
-    <R as SymplecticIntegrateRotation>::Rotation: Clone,
     <R as RotationalMotionTypes>::AngularMomentum: MulAssign<f64> + Clone,
 {
     let mut rng = microstate.counter().make_rng();
@@ -609,7 +608,7 @@ pub(crate) fn integrate_rotation_half_step_two_with_filter<V, R, B, S, X, C, TR,
 )
 where
     V: Wedge + Copy,
-    R: SymplecticIntegrateRotation<Rotation = R, NetTorque = V::Bivector> + RotationalMotionTypes + Clone,
+    R: SymplecticIntegrateRotation<NetTorque = V::Bivector> + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>
@@ -699,7 +698,7 @@ impl<V, R, B, S, X, C, TT, TR, M> RotationalMotion<R, B, S, X, C, M>
     for ConstantVolume<TT, TR>
 where
     V: Wedge + Copy,
-    R: SymplecticIntegrateRotation<Rotation = R, NetTorque = V::Bivector> + RotationalMotionTypes + Clone,
+    R: SymplecticIntegrateRotation<NetTorque = V::Bivector> + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>

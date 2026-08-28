@@ -25,13 +25,7 @@ pub use brownian::Brownian;
 /// integrateable with [`ConstantVolume`] and [`Langevin`].
 /// 
 /// [`Microstate`]: hoomd_microstate::Microstate
-pub trait SymplecticIntegrateRotation
-where
-    <Self as SymplecticIntegrateRotation>::Rotation: RotationalMotionTypes,
-{
-    /// Type that represents a body's orientation.
-    type Rotation;
-
+pub trait SymplecticIntegrateRotation: RotationalMotionTypes {
     /// Type that represents a body's net torque.
     type NetTorque;
 
@@ -39,24 +33,23 @@ where
     fn half_step_one(
         delta_t: f64,
         net_torque: &Self::NetTorque,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
-        orientation: &mut Self::Rotation,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &mut Self::AngularMomentum,
+        orientation: &mut Self,
+        moment_of_inertia: &Self::MomentOfInertia,
     );
 
     /// Integrate angular momentum forward a half step.
     fn half_step_two(
         delta_t: f64,
         net_torque: &Self::NetTorque,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
-        orientation: & Self::Rotation,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &mut Self::AngularMomentum,
+        orientation: & Self,
+        moment_of_inertia: &Self::MomentOfInertia,
     );
 }
 
 /// Symplectic rotational integration for bodies in 2-dimensional cartesian space.
 impl SymplecticIntegrateRotation for Angle {
-    type Rotation = Angle;
     type NetTorque = <Cartesian<2> as Wedge>::Bivector;
 
     /// Integrate orientation forward a full step and angular momentum forward a half step.
@@ -81,9 +74,9 @@ impl SymplecticIntegrateRotation for Angle {
     fn half_step_one(
         delta_t: f64,
         net_torque: &Self::NetTorque,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
-        orientation: &mut Self::Rotation,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &mut Self::AngularMomentum,
+        orientation: &mut Self,
+        moment_of_inertia: &Self::MomentOfInertia,
     ) {
         // Return early if there is no rotational degree of freedom.
         if *moment_of_inertia == 0.0 {
@@ -108,9 +101,9 @@ impl SymplecticIntegrateRotation for Angle {
     fn half_step_two(
         delta_t: f64,
         net_torque: &Self::NetTorque,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
-        _orientation: & Self::Rotation,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &mut Self::AngularMomentum,
+        _orientation: & Self,
+        moment_of_inertia: &Self::MomentOfInertia,
     ) {
         // Return early if there is no rotational degree of freedom.
         if *moment_of_inertia == 0.0 {
@@ -123,7 +116,6 @@ impl SymplecticIntegrateRotation for Angle {
 
 /// Symplectic rotational integration for bodies in 3-dimensional cartesian space.
 impl SymplecticIntegrateRotation for Versor {
-    type Rotation = Versor;
     type NetTorque = <Cartesian<3> as Wedge>::Bivector;
 
     /// Integrate orientation forward a full step and angular momentum forward a half step.
@@ -253,9 +245,9 @@ impl SymplecticIntegrateRotation for Versor {
     fn half_step_one(
         delta_t: f64,
         net_torque: &Self::NetTorque,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
-        orientation: &mut Self::Rotation,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &mut Self::AngularMomentum,
+        orientation: &mut Self,
+        moment_of_inertia: &Self::MomentOfInertia,
     ) {
         let mut q = *orientation.get();
 
@@ -414,9 +406,9 @@ impl SymplecticIntegrateRotation for Versor {
     fn half_step_two(
         delta_t: f64,
         net_torque: &Self::NetTorque,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
-        orientation: & Self::Rotation,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
+        angular_momentum: &mut Self::AngularMomentum,
+        orientation: & Self,
+        moment_of_inertia: &Self::MomentOfInertia,
     ) {
         // Transform net torque to the body frame and calculate which of the
         // three rotational degrees of freedom are active.

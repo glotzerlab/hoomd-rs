@@ -221,13 +221,7 @@ impl Langevin {
 /// This trait binds drag and random torque calculation to the types that
 /// represent orientation and its associated quantities. Implement this trait on
 /// an orientation type to enable its use with [`Langevin`].
-pub trait DragAndRandomTorque
-where
-    <Self as DragAndRandomTorque>::Rotation: RotationalMotionTypes,
-{
-    /// Type that represents a body's orientation.
-    type Rotation;
-
+pub trait DragAndRandomTorque: RotationalMotionTypes {
     /// Type that represents a body's net torque.
     type NetTorque;
 
@@ -237,9 +231,9 @@ where
     /// direction of motion. Random torques are uniform and have magnitudes that
     /// scale with drag and temperature. For details, see [`Langevin`].
     fn drag_and_random_torque<R: Rng + ?Sized>(
-        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
-        angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        rotational_drag: &Self::RotationalDrag,
+        moment_of_inertia: &Self::MomentOfInertia,
+        angular_momentum: &Self::AngularMomentum,
         temperature: f64,
         delta_t: f64,
         rng: &mut R,
@@ -247,7 +241,6 @@ where
 }
 
 impl DragAndRandomTorque for Angle {
-    type Rotation = Angle;
     type NetTorque = <Cartesian<2> as Wedge>::Bivector;
 
     /// Calculate drag and random torque.
@@ -256,9 +249,9 @@ impl DragAndRandomTorque for Angle {
     /// direction of motion. Random torques are uniform and have magnitudes that
     /// scale with drag and temperature. For details, see [`Langevin`].
     fn drag_and_random_torque<R: Rng + ?Sized>(
-        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
-        angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        rotational_drag: &Self::RotationalDrag,
+        moment_of_inertia: &Self::MomentOfInertia,
+        angular_momentum: &Self::AngularMomentum,
         temperature: f64,
         delta_t: f64,
         rng: &mut R,
@@ -282,7 +275,6 @@ impl DragAndRandomTorque for Angle {
 }
 
 impl DragAndRandomTorque for Versor {
-    type Rotation = Versor;
     type NetTorque = <Cartesian<3> as Wedge>::Bivector;
 
     /// Calculate drag and random torque.
@@ -291,9 +283,9 @@ impl DragAndRandomTorque for Versor {
     /// direction of motion. Random torques are uniform and have magnitudes that
     /// scale with drag and temperature. For details, see [`Langevin`].
     fn drag_and_random_torque<R: Rng + ?Sized>(
-        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
-        angular_momentum: &<Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        rotational_drag: &Self::RotationalDrag,
+        moment_of_inertia: &Self::MomentOfInertia,
+        angular_momentum: &Self::AngularMomentum,
         temperature: f64,
         delta_t: f64,
         rng: &mut R,
@@ -341,14 +333,14 @@ impl Langevin {
     )
     where
         V: Wedge,
-        R: DragAndRandomTorque<Rotation = R, NetTorque = V::Bivector> + RotationalMotionTypes,
+        R: DragAndRandomTorque<NetTorque = V::Bivector>,
         B: Transform<S>
             + Clone
             + Orientation<Rotation = R>
-            + AngularMomentum<AngularMomentum = <R as RotationalMotionTypes>::AngularMomentum>
-            + MomentOfInertia<MomentOfInertia = <R as RotationalMotionTypes>::MomentOfInertia>
+            + AngularMomentum<AngularMomentum = R::AngularMomentum>
+            + MomentOfInertia<MomentOfInertia = R::MomentOfInertia>
             + NetTorque<NetTorque = V::Bivector>
-            + RotationalDrag<RotationalDrag = <R as RotationalMotionTypes>::RotationalDrag>,
+            + RotationalDrag<RotationalDrag = R::RotationalDrag>,
         S: Position<Position = V> + Default,
         X: PointUpdate<V, SiteKey>,
         C: Wrap<B>
@@ -356,7 +348,8 @@ impl Langevin {
             + GenerateGhosts<S>,
         M: Temperature,
         RNG: Rng + ?Sized,
-        V::Bivector: Add<Output = V::Bivector> + AddAssign<V::Bivector>,
+        V::Bivector: Add<Output = V::Bivector>
+            + AddAssign<V::Bivector>,
     {       
         for body_index in 0..microstate.bodies().len() {
             let body = &microstate.bodies()[body_index];
@@ -452,25 +445,25 @@ where
 impl<V, R, B, S, X, C, M> RotationalMotion<R, B, S, X, C, M> for Langevin
 where
     V: Wedge + Copy,
-    R: SymplecticIntegrateRotation<Rotation = R, NetTorque = V::Bivector>
-        + DragAndRandomTorque<Rotation = R, NetTorque = V::Bivector>
-        + RotationalMotionTypes
+    R: SymplecticIntegrateRotation<NetTorque = V::Bivector>
+        + DragAndRandomTorque<NetTorque = V::Bivector>
         + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>
         + Orientation<Rotation = R>
-        + AngularMomentum<AngularMomentum = <R as RotationalMotionTypes>::AngularMomentum>
-        + MomentOfInertia<MomentOfInertia = <R as RotationalMotionTypes>::MomentOfInertia>
+        + AngularMomentum<AngularMomentum = R::AngularMomentum>
+        + MomentOfInertia<MomentOfInertia = R::MomentOfInertia>
         + NetTorque<NetTorque = V::Bivector>
-        + RotationalDrag<RotationalDrag = <R as RotationalMotionTypes>::RotationalDrag>,
+        + RotationalDrag<RotationalDrag = R::RotationalDrag>,
     S: Position<Position = V> + Default,
     X: PointUpdate<V, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     M: Temperature,
     Microstate<B, S, X, C>: RotationalKineticEnergy<B, S>,
-    <R as RotationalMotionTypes>::AngularMomentum: MulAssign<f64> + Clone,
-    V::Bivector: Add<Output = V::Bivector> + AddAssign<V::Bivector>,
+    R::AngularMomentum: MulAssign<f64> + Clone,
+    V::Bivector: Add<Output = V::Bivector>
+        + AddAssign<V::Bivector>,
 {
     /// Integrate selected body orientations forward a full step and their angular momenta forward a half step.
     ///

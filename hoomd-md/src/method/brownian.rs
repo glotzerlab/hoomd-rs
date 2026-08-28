@@ -62,18 +62,12 @@ pub struct Brownian {
 /// 
 /// This trait binds brownian rotational integration schemes to the types that
 /// represent orientation and its associated quantities: angular momentum,
-/// moment of inertia, net torque, and rotational drag. Implement this trait on
+/// moment of inertia, rotational drag, and net torque. Implement this trait on
 /// a type that represents body orientation to make a [`Microstate`] containing
 /// such bodies integrateable with [`Brownian`].
 ///
 /// [`Microstate`]: hoomd_microstate::Microstate
-pub trait BrownianIntegrateRotation
-where
-    <Self as BrownianIntegrateRotation>::Rotation: RotationalMotionTypes,
-{
-    /// Type that represents a body's orientation.
-    type Rotation;
-
+pub trait BrownianIntegrateRotation: RotationalMotionTypes {
     /// Type that represents a body's net torque.
     type NetTorque;
 
@@ -81,10 +75,10 @@ where
     fn step<R: Rng + ?Sized>(
         delta_t: f64,
         net_torque: &Self::NetTorque,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
-        orientation: &mut Self::Rotation,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
-        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
+        angular_momentum: &mut Self::AngularMomentum,
+        orientation: &mut Self,
+        moment_of_inertia: &Self::MomentOfInertia,
+        rotational_drag: &Self::RotationalDrag,
         temperature: f64,
         rng: &mut R,
     );
@@ -92,7 +86,6 @@ where
 
 /// Brownian rotational integration for bodies in 2-dimensional cartesian space.
 impl BrownianIntegrateRotation for Angle {
-    type Rotation = Angle;
     type NetTorque = <Cartesian<2> as Wedge>::Bivector;
 
     /// Integrate orientation forward a full step and pick a new random angular momentum.
@@ -140,10 +133,10 @@ impl BrownianIntegrateRotation for Angle {
     fn step<R: Rng + ?Sized>(
         delta_t: f64,
         net_torque: &Self::NetTorque,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
-        orientation: &mut Self::Rotation,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
-        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
+        angular_momentum: &mut Self::AngularMomentum,
+        orientation: &mut Self,
+        moment_of_inertia: &Self::MomentOfInertia,
+        rotational_drag: &Self::RotationalDrag,
         temperature: f64,
         rng: &mut R,
     ) {
@@ -172,7 +165,6 @@ impl BrownianIntegrateRotation for Angle {
 
 /// Brownian rotational integration for bodies in 3-dimensional cartesian space.
 impl BrownianIntegrateRotation for Versor {
-    type Rotation = Versor;
     type NetTorque = <Cartesian<3> as Wedge>::Bivector;
 
     /// Integrate orientation forward a full step and pick a new random angular momentum.
@@ -224,10 +216,10 @@ impl BrownianIntegrateRotation for Versor {
     fn step<R: Rng + ?Sized>(
         delta_t: f64,
         net_torque: &Self::NetTorque,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
-        orientation: &mut Self::Rotation,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
-        rotational_drag: &<Self::Rotation as RotationalMotionTypes>::RotationalDrag,
+        angular_momentum: &mut Self::AngularMomentum,
+        orientation: &mut Self,
+        moment_of_inertia: &Self::MomentOfInertia,
+        rotational_drag: &Self::RotationalDrag,
         temperature: f64,
         rng: &mut R,
     ) {
@@ -386,23 +378,23 @@ where
 impl<V, R, B, S, X, C, M> RotationalMotion<R, B, S, X, C, M> for Brownian
 where
     V: Wedge + Copy,
-    R: BrownianIntegrateRotation<Rotation = R, NetTorque = V::Bivector>
-        + RotationalMotionTypes
+    R: BrownianIntegrateRotation<NetTorque = V::Bivector>
         + Clone,
     B: Copy
         + Transform<S>
         + Position<Position = V>
         + Orientation<Rotation = R>
-        + AngularMomentum<AngularMomentum = <R as RotationalMotionTypes>::AngularMomentum>
-        + MomentOfInertia<MomentOfInertia = <R as RotationalMotionTypes>::MomentOfInertia>
+        + AngularMomentum<AngularMomentum = R::AngularMomentum>
+        + MomentOfInertia<MomentOfInertia = R::MomentOfInertia>
         + NetTorque<NetTorque = V::Bivector>
-        + RotationalDrag<RotationalDrag = <R as RotationalMotionTypes>::RotationalDrag>,
+        + RotationalDrag<RotationalDrag = R::RotationalDrag>,
     S: Position<Position = V> + Default,
     X: PointUpdate<V, SiteKey>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     M: Temperature,
-    V::Bivector: Add<Output = V::Bivector> + AddAssign<V::Bivector>,
-    <R as RotationalMotionTypes>::AngularMomentum: Clone,
+    V::Bivector: Add<Output = V::Bivector>
+        + AddAssign<V::Bivector>,
+    R::AngularMomentum: Clone,
 {
     /// Integrate selected body orientations and angular momenta forward a whole step.
     /// 

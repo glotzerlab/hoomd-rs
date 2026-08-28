@@ -31,26 +31,18 @@ use rand_distr::{Distribution, Normal};
 /// moment of inertia. Implement this trait on a type that represents body
 /// orientation to make a [`Microstate`] containing such bodies thermalizeable
 /// with [`ThermalizeAngularMomentum`].
-pub trait ThermalizeRotation
-where
-    <Self as ThermalizeRotation>::Rotation: RotationalMotionTypes
-{
-    /// Type that represents a body's orientation.
-    type Rotation;
-
+pub trait ThermalizeRotation: RotationalMotionTypes {
     /// Draw a new angular momentum from the thermal distribution.
     fn thermalize<R: Rng + ?Sized>(
         temperature: &f64,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        moment_of_inertia: &Self::MomentOfInertia,
+        angular_momentum: &mut Self::AngularMomentum,
         rng: &mut R
     );
 }
 
 /// Rotational thermalization for bodies in 2-dimensional cartesian space.
 impl ThermalizeRotation for Angle {
-    type Rotation = Angle;
-
     /// Draw a new angular momentum from the thermal distribution.
     /// 
     /// If the moment of inertia is zero, the angular momentum is not changed.
@@ -68,8 +60,8 @@ impl ThermalizeRotation for Angle {
     /// ```
     fn thermalize<R: Rng + ?Sized>(
         temperature: &f64,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        moment_of_inertia: &Self::MomentOfInertia,
+        angular_momentum: &mut Self::AngularMomentum,
         rng: &mut R,
     ) {
         if *moment_of_inertia != 0.0 {
@@ -82,8 +74,6 @@ impl ThermalizeRotation for Angle {
 
 /// Rotational thermalization for bodies in 3-dimensional cartesian space.
 impl ThermalizeRotation for Versor {
-    type Rotation = Versor;
-
     /// Draw a new angular momentum from the thermal distribution.
     /// 
     /// Rotational degrees of freedom with a moment of inertia component of zero
@@ -105,8 +95,8 @@ impl ThermalizeRotation for Versor {
     /// diagonalized moment of inertia.
     fn thermalize<R: Rng + ?Sized>(
         temperature: &f64,
-        moment_of_inertia: &<Self::Rotation as RotationalMotionTypes>::MomentOfInertia,
-        angular_momentum: &mut <Self::Rotation as RotationalMotionTypes>::AngularMomentum,
+        moment_of_inertia: &Self::MomentOfInertia,
+        angular_momentum: &mut Self::AngularMomentum,
         rng: &mut R
     ) {
         let x_nonzero = moment_of_inertia[0] > 0.0;
@@ -151,7 +141,7 @@ impl ThermalizeRotation for Versor {
 impl<V, R, B, S, X, C> ThermalizeAngularMomentum<B, S> for Microstate<B, S, X, C>
 where
     V: Copy,
-    R: ThermalizeRotation<Rotation = R> + RotationalMotionTypes,
+    R: ThermalizeRotation,
     B: Copy
         + Transform<S>
         + Position<Position = V>
