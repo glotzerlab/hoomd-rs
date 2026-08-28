@@ -30,12 +30,6 @@ use hoomd_vector::{Cartesian, InnerProduct, Outer, Wedge};
 ///
 /// [`Microstate`]: hoomd_microstate::Microstate
 pub trait ZeroCenterRotation {
-    /// Type that represents a body's position.
-    type Position;
-
-    /// Type that represents a body's momentum.
-    type Momentum;
-
     /// Type that represents the system's angular momentum about its center of mass.
     type AngularMomentum;
 
@@ -47,7 +41,7 @@ pub trait ZeroCenterRotation {
 
     /// Calculate the contribution of a body to the system's moment of inertia.
     fn body_contribution_to_center_moment_of_inertia(
-        body_position_relative_to_center: &Self::Position,
+        body_position_relative_to_center: &Self,
         mass: &f64,
     ) -> Self::FullMomentOfInertia;
 
@@ -62,16 +56,14 @@ pub trait ZeroCenterRotation {
     /// Cumulatively, once all bodies are corrected, the system's
     /// angular momentum will be zero.
     fn body_momentum_correction(
-        body_position_relative_to_center: &Self::Position,
+        body_position_relative_to_center: &Self,
         center_angular_velocity: &Self::AngularMomentum,
         mass: &f64,
-    ) -> Self::Momentum;
+    ) -> Self;
 }
 
 /// Rotational motion negation for systems in 2-dimensional cartesian space.
 impl ZeroCenterRotation for Cartesian<2> {
-    type Position = Cartesian<2>;
-    type Momentum = Cartesian<2>;
     type AngularMomentum = f64;
     type MomentOfInertia = f64;
     type FullMomentOfInertia = f64;
@@ -87,7 +79,7 @@ impl ZeroCenterRotation for Cartesian<2> {
     /// where $` \vec{r}_i' = \vec{r}_i - \vec{r}_{com} `$ is the position of
     /// the body relative to the system's center of mass.
     fn body_contribution_to_center_moment_of_inertia(
-        body_position_relative_to_center: &Self::Position,
+        body_position_relative_to_center: &Self,
         mass: &f64,
     ) -> Self::FullMomentOfInertia {
         body_position_relative_to_center.norm_squared() * mass
@@ -122,18 +114,16 @@ impl ZeroCenterRotation for Cartesian<2> {
     /// the body relative to the system's center of mass and the matrix rotates
     /// the vector counterclockwise by $` \pi/2 `$ radians.
     fn body_momentum_correction(
-        body_position_relative_to_center: &Self::Position,
+        body_position_relative_to_center: &Self,
         center_angular_velocity: &Self::AngularMomentum,
         mass: &f64,
-    ) -> Self::Momentum {
+    ) -> Self {
         body_position_relative_to_center.perpendicular() * *center_angular_velocity * *mass
     }
 }
 
 /// Rotational motion negation for systems in 3-dimensional cartesian space.
 impl ZeroCenterRotation for Cartesian<3> {
-    type Position = Cartesian<3>;
-    type Momentum = Cartesian<3>;
     type AngularMomentum = Cartesian<3>;
     type MomentOfInertia = [f64; 3];
     type FullMomentOfInertia = Matrix<3,3>;
@@ -156,7 +146,7 @@ impl ZeroCenterRotation for Cartesian<3> {
     /// where $` \vec{r}_i' = \vec{r}_i - \vec{r}_{com} `$ is the position of
     /// the body relative to the system's center of mass.
     fn body_contribution_to_center_moment_of_inertia(
-        body_position_relative_to_center: &Self::Position,
+        body_position_relative_to_center: &Self,
         mass: &f64,
     ) -> Self::FullMomentOfInertia {
         let r = *body_position_relative_to_center;
@@ -226,10 +216,10 @@ impl ZeroCenterRotation for Cartesian<3> {
     /// where $` \vec{r}_i' = \vec{r}_i - \vec{r}_{com} `$ is the position of
     /// the body relative to the system's center of mass.
     fn body_momentum_correction(
-        body_position_relative_to_center: &Self::Position,
+        body_position_relative_to_center: &Self,
         center_angular_velocity: &Self::AngularMomentum,
         mass: &f64,
-    ) -> Self::Momentum {
+    ) -> Self {
         center_angular_velocity.wedge(body_position_relative_to_center) * *mass * -1.0
     }
 }
@@ -245,7 +235,7 @@ where
     V: Default
         + Copy
         + Wedge
-        + ZeroCenterRotation<Position = V, Momentum = V, AngularMomentum = V::Bivector>
+        + ZeroCenterRotation<AngularMomentum = V::Bivector>
         + std::ops::AddAssign
         + std::ops::DivAssign<f64>
         + std::ops::Mul<f64, Output = V>
