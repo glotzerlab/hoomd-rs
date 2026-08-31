@@ -134,7 +134,8 @@ spatial data structure:
 
 #### Place Disks
 
-Place `n_disks` disks in the microstate on a square lattice:
+Place `n_disks` disks in the microstate on a square lattice (in fractional
+coordinates):
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-disk-self-assembly.rs:place_disks}}
 ```

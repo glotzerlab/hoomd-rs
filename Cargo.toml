@@ -107,10 +107,9 @@ parquet_derive = { version = "59.0.0", default-features=false }
 
 # Dependencies exposed via Public APIs.
 anyhow = "1.0.100"
-approxim = {version = "0.6.6", features = ["num-complex"]}
+approxim = {version = "0.6.6", features = ["num-complex"] }
 arrayvec = { version = "0.7.6", features = ["serde"] }
-num = { version = "0.4.3", features = ["serde"] }
-num-complex = "0.4"
+num-complex = { version = "0.4.6", features = ["std", "serde"] }
 rand = { version = "0.10.0", default-features=false, features = ["std", "std_rng"] }
 serde = { version = "1.0.228", features = ["derive"]}
 serde_json = "1.0.150"
