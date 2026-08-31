@@ -12,6 +12,7 @@ use std::{
 };
 
 use approxim::approx_derive::RelativeEq;
+use hoomd_utility::valid::PositiveReal;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
@@ -378,10 +379,50 @@ impl<const N: usize> Mul<f64> for Cartesian<N> {
     }
 }
 
+impl<const N: usize> Mul<Cartesian<N>> for f64 {
+    type Output = Cartesian<N>;
+
+    #[inline]
+    fn mul(self, rhs: Cartesian<N>) -> Self::Output {
+        Self::Output {
+            coordinates: rhs.coordinates.map(|x| x * self),
+        }
+    }
+}
+
+impl<const N: usize> Mul<PositiveReal> for Cartesian<N> {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: PositiveReal) -> Self {
+        Self {
+            coordinates: self.coordinates.map(|x| x * rhs.get()),
+        }
+    }
+}
+
+impl<const N: usize> Mul<Cartesian<N>> for PositiveReal {
+    type Output = Cartesian<N>;
+
+    #[inline]
+    fn mul(self, rhs: Cartesian<N>) -> Self::Output {
+        Self::Output {
+            coordinates: rhs.coordinates.map(|x| x * self.get()),
+        }
+    }
+}
+
 impl<const N: usize> MulAssign<f64> for Cartesian<N> {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
         self.coordinates = self.coordinates.map(|x| x * rhs);
+    }
+}
+
+impl<const N: usize> MulAssign<PositiveReal> for Cartesian<N> {
+    #[inline]
+    fn mul_assign(&mut self, rhs: PositiveReal) {
+        self.coordinates = self.coordinates.map(|x| x * rhs.get());
     }
 }
 
@@ -432,6 +473,91 @@ impl<const N: usize> Neg for Cartesian<N> {
         Self {
             coordinates: self.coordinates.map(|x| -x),
         }
+    }
+}
+
+impl<const N: usize> Cartesian<N> {
+    /// Apply a scalar function to all coordinates of the vector.
+    ///
+    /// The provided closure is called once for each component, and the returned
+    /// vector has the same dimensionality as the original.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let a = Cartesian::from([1.0, 2.0, 3.0]);
+    /// let b = a.map(|x| x * 2.0);
+    ///
+    /// assert_eq!(b, [2.0, 4.0, 6.0].into())
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn map<F>(self, f: F) -> Cartesian<N>
+    where
+        F: FnMut(f64) -> f64,
+    {
+        self.coordinates.map(f).into()
+    }
+
+    /// Create a Cartesian vector from a row matrix.
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let m: Matrix<1, 3> = Matrix {
+    ///     rows: [[1.0, 2.0, 3.0]],
+    /// };
+    /// let v = Cartesian::<3>::from_row_matrix(&m);
+    /// assert_eq!(v, [1.0, 2.0, 3.0].into());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn from_row_matrix(matrix: &Matrix<1, N>) -> Self {
+        Self {
+            coordinates: matrix.rows[0],
+        }
+    }
+
+    /// Create a Cartesian vector from a row matrix.
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let m: Matrix<3, 1> = Matrix {
+    ///     rows: [[1.0], [2.0], [3.0]],
+    /// };
+    /// let v = Cartesian::<3>::from_column_matrix(&m);
+    /// assert_eq!(v, [1.0, 2.0, 3.0].into());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn from_column_matrix(matrix: &Matrix<N, 1>) -> Self {
+        let mut x = Cartesian::<N>::default();
+        for i in 0..N {
+            x[i] = matrix[(i, 0)];
+        }
+        x
+    }
+
+    /// Construct the i'th Cartesian basis vector.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let e_1 = Cartesian::<3>::basis(1);
+    ///
+    /// assert_eq!(e_1, [0.0, 1.0, 0.0].into());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn basis(i: usize) -> Self {
+        array::from_fn(|j| if i == j { 1.0 } else { 0.0 }).into()
     }
 }
 
@@ -872,13 +998,6 @@ impl<const N: usize> Cartesian<N> {
         Matrix {
             rows: std::array::from_fn(|i| [self[i]]),
         }
-    }
-}
-
-impl<const N: usize> From<Matrix<1, N>> for Cartesian<N> {
-    #[inline]
-    fn from(value: Matrix<1, N>) -> Self {
-        value.rows[0].into()
     }
 }
 

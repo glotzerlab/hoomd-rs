@@ -54,8 +54,9 @@
 //!
 //! ## Body insertion/removal
 //!
-//! A future release of *hoomd-rs* will implement moves that insert and remove
-//! bodies.
+//! [`GrandCanonical`] randomly inserts and removes bodies from the microstate,
+//! holding the system at constant chemical potential, volume, and temperature
+//! ($` \mu, V, T`$).
 //!
 //! ## Tuning trial moves
 //!
@@ -92,6 +93,7 @@ use std::ops::{Add, AddAssign};
 use hoomd_microstate::Microstate;
 use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
 
+mod grand_canonical;
 mod hypercuboid;
 mod parallel_sweep;
 mod quick_compress;
@@ -102,6 +104,7 @@ mod translate;
 pub(crate) mod tune_local;
 mod uniform_in;
 
+pub use grand_canonical::{GrandCanonical, InsertRemoveCount};
 pub use hypercuboid::HypercuboidCheckerboard;
 pub use parallel_sweep::ParallelSweep;
 pub use quick_compress::QuickCompress;
