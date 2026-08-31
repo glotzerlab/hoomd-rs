@@ -1,5 +1,19 @@
 # Release Notes
 
+## Next release
+
+*Added:*
+
+*Changed:*
+
+`[tutorials]`:  The workflow tutorial now uses `hoomd-workspace` (#403).
+
+*Deprecated:*
+
+*Removed:*
+
+*Fixed:*
+
 ## 1.3.0 (2026-08-26)
 
 *Highlights:*
