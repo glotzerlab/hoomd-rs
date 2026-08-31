@@ -111,15 +111,16 @@ impl HardDiskSelfAssembly {
 
         // ANCHOR: place_disks
         let n_on_side_f64 = (n_disks as f64).sqrt().ceil();
-        let a = initial_box_edge_length / n_on_side_f64;
+        let a = 1.0 / n_on_side_f64;
         let n_on_side = n_on_side_f64 as usize;
         for j in 0..n_on_side {
-            let y = -initial_box_edge_length / 2.0 + j as f64 * a;
+            let y_fractional = -0.5 + j as f64 * a;
             for i in 0..n_on_side {
-                let x = -initial_box_edge_length / 2.0 + i as f64 * a;
+                let x_fractional = -0.5 / 2.0 + i as f64 * a;
                 if microstate.bodies().len() < n_disks {
-                    microstate
-                        .add_body(Body::point(Cartesian::from([x, y])))?;
+                    let position =
+                        rhomboid.absolute(&[x_fractional, y_fractional].into());
+                    microstate.add_body(Body::point(position))?;
                 }
             }
         }

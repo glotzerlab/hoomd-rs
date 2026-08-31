@@ -247,6 +247,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "816825ba1726f300e5558f701bf3be2d2d2d2b6bdd0e648f338366c9ce12798a"
 dependencies = [
  "approx-derive",
+ "num-complex",
  "num-traits",
 ]
 
@@ -3907,7 +3908,7 @@ dependencies = [
  "divan",
  "hoomd-utility",
  "hoomd-vector",
- "num",
+ "num-complex",
  "paste",
  "rand 0.10.2",
  "rstest",
@@ -4904,20 +4905,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35bd024e8b2ff75562e5f34e7f4905839deb4b22955ef5e73d2fea1b9813cb23"
-dependencies = [
- "num-bigint 0.4.8",
- "num-complex",
- "num-integer",
- "num-iter",
- "num-rational",
- "num-traits",
-]
-
-[[package]]
 name = "num-bigint"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4925,7 +4912,6 @@ checksum = "c89e69e7e0f03bea5ef08013795c25018e101932225a656383bd384495ecc367"
 dependencies = [
  "num-integer",
  "num-traits",
- "serde",
 ]
 
 [[package]]
@@ -4965,16 +4951,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num-iter"
-version = "0.1.46"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c92800bd69a1eac91786bcfe9da64a897eb72911b8dc3095decbd07429e8048b"
-dependencies = [
- "num-integer",
- "num-traits",
-]
-
-[[package]]
 name = "num-rational"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4983,7 +4959,6 @@ dependencies = [
  "num-bigint 0.4.8",
  "num-integer",
  "num-traits",
- "serde",
 ]
 
 [[package]]
