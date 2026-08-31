@@ -381,8 +381,6 @@ impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Periodic<Rectangle>>
 // Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
 #[cfg(not(feature = "bevy"))]
 fn main() -> anyhow::Result<()> {
-    use hoomd_interaction::TotalEnergy;
-
     let mut simulation = BinaryHardShapes::new()?;
     let mut hoomd_gsd_file = HoomdGsdFile::create("binary-hard-shapes.gsd")?;
 
