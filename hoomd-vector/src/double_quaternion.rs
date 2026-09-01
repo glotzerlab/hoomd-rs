@@ -327,7 +327,7 @@ impl Metric for DoubleVersor {
 
     #[inline]
     /// The dimension of the manifold of SO(N) is $`\frac{N(N-1)}{2}`$, or 6 for SO(4).
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         6
     }
     #[inline]
