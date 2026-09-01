@@ -148,6 +148,23 @@
 //! # }
 //! ```
 //!
+//! [`DoubleVersor`] implements rotations on [`Cartesian<4>`] vectors:
+//! ```
+//! use approxim::assert_relative_eq;
+//! use hoomd_vector::{Cartesian, DoubleVersor, Rotate, Versor};
+//! use std::f64::consts::PI;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let a = Cartesian::from([1.0, 2.0, 0.0, 0.0]);
+//! let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
+//!     [1.0, 0.0, 0.0].try_into()?,
+//!     PI,
+//! ));
+//! assert_relative_eq!(v.rotate(&a), [-2.0, 1.0, 0.0, 0.0].into());
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! Convert to a [`RotationMatrix`] when you need to rotate many vectors by the same
 //! rotation. [`RotationMatrix::rotate`] is typically several times faster than
 //! [`Versor::rotate`].
@@ -163,6 +180,8 @@
 //! - Angles are uniformly sampled from the half-open interval `[0, 2π)`
 //! - Versors are uniformly sampled from the surface of the `3-Sphere`, which doubly
 //!   covers `SO(3)`, the manifold of rotations in three dimensions.
+//! - Double versors are sampled as independent pairs of versors, which uniformly
+//!   covers `SO(4)`, the manifold of rotations in four dimensions.
 //!
 //! ```
 //! use hoomd_vector::{Angle, Cartesian, Versor};
@@ -205,13 +224,12 @@
 mod angle;
 mod cartesian;
 pub mod distribution;
+mod doubleversor;
 mod quaternion;
-
-pub mod double_quaternion;
-pub use double_quaternion::DoubleVersor;
 
 pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
+pub use doubleversor::DoubleVersor;
 pub use quaternion::{Quaternion, Versor};
 
 use serde::{Deserialize, Serialize};
