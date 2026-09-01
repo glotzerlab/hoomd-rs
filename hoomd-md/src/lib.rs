@@ -182,7 +182,7 @@
 //! [`Boxcar`]: hoomd_interaction::univariate::Boxcar
 //! 
 //! ```ignore (pseudocode)
-//! let pairwise_model = Rigid( External( PairwiseCutoff( Isotropic {
+//! let pairwise_model = Rigid( PairwiseCutoff( Isotropic {
 //!     interaction: LennardJones::<12, 6> { ... },
 //!     r_cut: ...
 //! })));
