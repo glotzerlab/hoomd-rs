@@ -441,10 +441,15 @@ impl Metric for DoubleVersor {
 #[cfg(test)]
 mod tests {
     use approxim::assert_relative_eq;
+    use hoomd_linear_algebra::{MatMul, matrix::Matrix44};
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
+    use std::f64::consts::{PI, TAU};
 
-    use crate::{Cartesian, DoubleVersor, Rotate, Rotation, RotationMatrix};
+    use crate::{
+        Cartesian, DoubleVersor, InnerProduct, Metric, Rotate, Rotation, RotationMatrix, Unit,
+        Versor,
+    };
 
     #[rstest]
     fn random_rotations_match_matrix(
@@ -523,6 +528,89 @@ mod tests {
                 a.rotate(&b.rotate(&v)),
                 epsilon = 1e-12,
             );
+        }
+    }
+
+    #[test]
+    fn chordal_distance_matches_frobenius() {
+        let mut rng = StdRng::seed_from_u64(11);
+
+        for _ in 0..10_000 {
+            let u: DoubleVersor = rng.random();
+            let v: DoubleVersor = rng.random();
+
+            let mu = RotationMatrix::from(u);
+            let mv = RotationMatrix::from(v);
+
+            let frobenius = (0..4)
+                .flat_map(|i| (0..4).map(move |j| mu.rows()[i][j] - mv.rows()[i][j]))
+                .map(|difference| difference * difference)
+                .sum::<f64>()
+                .sqrt();
+
+            assert_relative_eq!(u.chordal_distance(&v), frobenius, epsilon = 1e-12);
+        }
+    }
+
+    #[test]
+    fn metric_properties_hold_up() {
+        let mut rng = StdRng::seed_from_u64(31);
+
+        for _ in 0..1_000 {
+            let u: DoubleVersor = rng.random();
+            let v: DoubleVersor = rng.random();
+            let w: DoubleVersor = rng.random();
+
+            // Symmetry
+            assert_relative_eq!(u.distance(&v), v.distance(&u), epsilon = 1e-14);
+
+            // Zero self-distance
+            assert_relative_eq!(u.distance(&u), 0.0, epsilon = 1e-7);
+
+            // Triangle inequality
+            assert!(
+                u.distance(&w) <= u.distance(&v) + v.distance(&w) + 1e-14,
+                "triangle inequality violated: {} > {} + {}",
+                u.distance(&w),
+                u.distance(&v),
+                v.distance(&w)
+            );
+        }
+
+        let x: Unit<Cartesian<3>> = [1.0, 0.0, 0.0]
+            .try_into()
+            .expect("hard-coded axis should have non-zero length");
+        let y: Unit<Cartesian<3>> = [0.0, 1.0, 0.0]
+            .try_into()
+            .expect("hard-coded axis should have non-zero length");
+        for (theta_l, theta_r) in [(0.3, 1.7), (2.0, 0.9), (2.9, 3.0), (0.0, PI)] {
+            let u = DoubleVersor::from((
+                Versor::from_axis_angle(x, theta_l),
+                Versor::from_axis_angle(y, theta_r),
+            ));
+            let negated_u = DoubleVersor::from((
+                Versor::from_axis_angle(x, theta_l + TAU),
+                Versor::from_axis_angle(y, theta_r + TAU),
+            ));
+
+            assert_relative_eq!(u.distance(&negated_u), 0.0, epsilon = 1e-7);
+        }
+    }
+
+    #[test]
+    fn rotation_matrix_rows_orthonormal() {
+        let mut rng = StdRng::seed_from_u64(41);
+
+        for _ in 0..10_000 {
+            let dv: DoubleVersor = rng.random();
+            let rows = RotationMatrix::from(dv).rows();
+
+            for (i, row_i) in rows.iter().enumerate() {
+                assert_relative_eq!(row_i.dot(row_i), 1.0, epsilon = 1e-14);
+                for row_j in rows.iter().skip(i + 1) {
+                    assert_relative_eq!(row_i.dot(row_j), 0.0, epsilon = 1e-14);
+                }
+            }
         }
     }
 }
