@@ -249,7 +249,7 @@ impl<const N: usize> Metric for Minkowski<N> {
         ((self.distance_squared(other)).abs()).sqrt()
     }
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         N
     }
 }
@@ -711,7 +711,7 @@ impl Metric for Hyperbolic<3> {
     }
 
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         2_usize
     }
 }
@@ -745,7 +745,7 @@ impl Metric for Hyperbolic<4> {
     }
 
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         3_usize
     }
 }

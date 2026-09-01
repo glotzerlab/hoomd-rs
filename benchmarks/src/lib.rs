@@ -5,6 +5,7 @@
 
 mod benchmark;
 pub mod mc;
+pub mod md;
 pub mod place;
 
 pub use benchmark::Benchmark;

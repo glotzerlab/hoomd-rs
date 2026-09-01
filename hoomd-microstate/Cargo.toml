@@ -34,7 +34,8 @@ hoomd-rand.workspace = true
 hoomd-vector.workspace = true
 
 [dev-dependencies]
-assert2.workspace = true
+hoomd-linear-algebra.workspace = true
+
 anyhow.workspace = true
 approxim.workspace = true
 divan.workspace = true

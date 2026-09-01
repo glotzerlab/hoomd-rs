@@ -381,7 +381,91 @@ pub trait Vector:
 {
 }
 
-/// Operates on elements on a metric space.
+/// The vector wedge product.
+///
+/// The result of a vector wedge product is a *[bivector]*. Mathematically,
+/// bivectors are different from vectors. In practice, *hoomd-rs* uses
+/// follows standard physics practices, where torques are bivectors:
+/// * When the inputs are 2D vectors ([`Cartesian<2>`]), the result is a scalar.
+/// * When the inputs are 3D vectors ([`Cartesian<3>`]), the result is another
+///   [`Cartesian<3>`].
+///
+/// [bivector]: https://en.wikipedia.org/wiki/Bivector
+pub trait Wedge {
+    /// Type of the bivector result.
+    type Bivector;
+
+    /// Compute the wedge product of two vectors.
+    ///
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    ///
+    /// # Examples
+    ///
+    /// 2D:
+    /// ```
+    /// use hoomd_vector::{Cartesian, Wedge};
+    ///
+    /// let a = Cartesian::from([2.0, 1.0]);
+    /// let b = Cartesian::from([3.0, 1.0]);
+    ///
+    /// assert_eq!(a.wedge(&b), -1.0);
+    /// ```
+    ///
+    /// 3D:
+    /// ```
+    /// use hoomd_vector::{Cartesian, Wedge};
+    ///
+    /// let a = Cartesian::from([1.0, 0.0, 0.0]);
+    /// let b = Cartesian::from([0.0, 1.0, 0.0]);
+    /// assert_eq!(a.wedge(&b), [0.0, 0.0, 1.0].into());
+    /// ```
+    fn wedge(&self, other: &Self) -> Self::Bivector;
+}
+
+/// The vector outer product.
+pub trait Outer {
+    /// Result type.
+    type Tensor;
+
+    /// Compute the outer product of two vectors.
+    ///
+    /// ```math
+    /// a \otimes b = \begin{bmatrix} a_0
+    ///  \\ a_1
+    ///  \\ \vdots
+    ///  \\ a_{n}
+    /// \end{bmatrix}
+    /// \begin{bmatrix}
+    /// b_0 & b_1 & \dots & b_{n}
+    /// \end{bmatrix}
+    /// =
+    /// \begin{bmatrix}
+    /// a_0 b_0 & a_0 b_1 & \dots & a_0 b_n \\
+    /// a_1 b_0 & a_1 b_1 & \dots & a_1 b_n \\
+    /// \vdots & \vdots & \ddots & \vdots \\
+    /// a_n b_0 & a_n b_1 & \dots & a_n b_n
+    /// \end{bmatrix}
+    /// ```
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::{Cartesian, Outer};
+    ///
+    /// let a = Cartesian::from([2.0, 1.0]);
+    /// let b = Cartesian::from([4.0, 3.0]);
+    ///
+    /// let m = Matrix {
+    ///     rows: [[8.0, 6.0], [4.0, 3.0]],
+    /// };
+    /// assert_eq!(a.outer(&b), m);
+    /// ```
+    fn outer(&self, other: &Self) -> Self::Tensor;
+}
+
+/// Operates on elements of a metric space.
 ///
 /// [`Metric`] implements a distance metric between points.
 pub trait Metric {
@@ -407,14 +491,12 @@ pub trait Metric {
     /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let vec2 = Cartesian::<2>::default();
-    /// let vec3 = Cartesian::<3>::default();
-    /// assert_eq!(2, vec2.n_dimensions());
-    /// assert_eq!(3, vec3.n_dimensions());
+    /// assert_eq!(2, Cartesian::<2>::n_dimensions());
+    /// assert_eq!(3, Cartesian::<3>::n_dimensions());
     /// # Ok(())
     /// # }
     /// ```
-    fn n_dimensions(&self) -> usize;
+    fn n_dimensions() -> usize;
 
     /// Compute the distance between two vectors belonging to a metric space.
     /// # Example
@@ -613,9 +695,11 @@ impl<V> Unit<V> {
     }
 }
 
-/// A vector space where the cross product is defined.
+/// The vector cross product.
+///
+/// The result of a vector cross product is in the same vector space as the
+/// operands.
 pub trait Cross {
-    /// Perform the cross product.
     /// Compute the cross product (right-handed) of two vectors:
     ///
     /// ```math

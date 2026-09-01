@@ -9,7 +9,7 @@
 - [Overview](guide/overview.md)
 - [All crates](api/index.md)
 
-# Tutorials
+# Tutorials and examples
 
 - [Running the Examples](examples.md)
 - [Monte Carlo Tutorial](mc-tutorial/index.md)
@@ -31,9 +31,14 @@
   - [The `action` Binary](workflow-tutorial/action-binary.md)
   - [The Row Workflow](workflow-tutorial/row-workflow.md)
   - [Conclusion](workflow-tutorial/conclusion.md)
+- [Molecular Dynamics Examples](md-examples/index.md)
+  - [Lennard-Jones fluid](md-examples/lj-fluid.md)
+  - [Patchy Body (3D)](md-examples/patchy-body-3d.md)
+  - [Patchy Body (2D)](md-examples/patchy-body-2d.md)
+
 # Reference
 
-- [Release notes](release-notes.md)
+- [Release Notes](release-notes.md)
 - [Topics](topics.md)
 - [Notation](notation.md)
 - [Development](development.md)
