@@ -267,16 +267,17 @@ impl<D> QuickInsert<D> {
     /// # }
     /// ```
     #[inline]
-    pub fn apply<P, B, S, X, C, H>(
+    pub fn apply<P1, P2, B, S, X, C, H>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
     ) -> Count
     where
-        P: Copy,
-        B: Position<Position = P> + Transform<S>,
-        S: Position<Position = P> + Default,
-        X: PointUpdate<P, SiteKey>,
+        P1: Copy,
+        P2: Copy,
+        B: Position<Position = P1> + Transform<S>,
+        S: Position<Position = P2> + Default,
+        X: PointUpdate<P2, SiteKey>,
         D: BodyDistribution<Body<B, S>>,
         H: DeltaEnergyInsert<B, S, X, C> + TotalEnergy<Microstate<B, S, X, C>>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,

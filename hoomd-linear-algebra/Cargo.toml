@@ -22,7 +22,7 @@ serde.workspace = true
 serde_with.workspace = true
 
 [dev-dependencies]
-faer = { version = "=0.24.1", default-features = false, features=["std"] }
+faer = { version = "=0.24.4", default-features = false, features=["std"] }
 approxim.workspace = true
 divan.workspace = true
 rand.workspace = true

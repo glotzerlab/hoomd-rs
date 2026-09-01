@@ -249,7 +249,7 @@ impl<const N: usize> Metric for Minkowski<N> {
         ((self.distance_squared(other)).abs()).sqrt()
     }
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         N
     }
 }
@@ -711,7 +711,7 @@ impl Metric for Hyperbolic<3> {
     }
 
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         2_usize
     }
 }
@@ -745,7 +745,7 @@ impl Metric for Hyperbolic<4> {
     }
 
     #[inline]
-    fn n_dimensions(&self) -> usize {
+    fn n_dimensions() -> usize {
         3_usize
     }
 }
@@ -821,7 +821,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     /// use hoomd_manifold::{
     ///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
     /// };
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -844,7 +844,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     /// use hoomd_manifold::{
     ///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
     /// };
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -865,7 +865,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     ///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
     ///     UnitBiquaternion,
     /// };
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -890,7 +890,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
     /// };
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {

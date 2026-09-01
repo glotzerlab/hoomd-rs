@@ -29,14 +29,17 @@ hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
 hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true
+hoomd-linear-algebra.workspace = true
 hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
+hoomd-md.workspace = true
 hoomd-microstate.workspace = true
 hoomd-simulation.workspace = true
 hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 
+arrayvec.workspace = true
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
 bevy_egui = { workspace = true, optional = true }
@@ -46,6 +49,7 @@ parquet_derive.workspace = true
 rand.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
+itertools.workspace = true
 
 [[example]]
 name = "hello"
@@ -124,3 +128,59 @@ path = "mc-tutorial/polydisperse-hard-disk-model.rs"
 
 [package.metadata.example.polydisperse-hard-disk-model]
 path = "mc-tutorial"
+
+[[example]]
+name = "lj-fluid"
+path = "md-examples/lj-fluid.rs"
+
+[package.metadata.example.lj-fluid]
+path = "md-examples"
+
+[[example]]
+name = "patchy-body-3d"
+path = "md-examples/patchy-body-3d.rs"
+
+[package.metadata.example.patchy-body-3d]
+path = "md-examples"
+
+[[example]]
+name = "patchy-body-2d"
+path = "md-examples/patchy-body-2d.rs"
+
+[package.metadata.example.patchy-body-2d]
+path = "md-examples"
+
+[[example]]
+name = "ellipse-gcmc-2d"
+path = "mc-examples/ellipse-gcmc-2d.rs"
+
+[package.metadata.example.ellipse-gcmc-2d]
+path = "mc-examples"
+
+[[example]]
+name = "crystal-stability"
+path = "mc-examples/crystal-stability.rs"
+
+[package.metadata.example.crystal-stability]
+path = "mc-examples"
+
+[[example]]
+name = "multi-site-patchy-shapes"
+path = "mc-examples/multi-site-patchy-shapes.rs"
+
+[package.metadata.example.multi-site-patchy-shapes]
+path = "mc-examples"
+
+[[example]]
+name = "capsules-on-a-plane"
+path = "mc-examples/capsules-on-a-plane.rs"
+
+[package.metadata.example.capsules-on-a-plane]
+path = "mc-examples"
+
+[[example]]
+name = "binary-hard-shapes"
+path = "mc-examples/binary-hard-shapes.rs"
+
+[package.metadata.example.binary-hard-shapes]
+path = "mc-examples"

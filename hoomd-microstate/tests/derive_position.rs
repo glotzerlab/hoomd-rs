@@ -3,7 +3,6 @@
 
 //! Test derive(Position)
 
-use assert2::check;
 use hoomd_microstate::property::Position;
 
 // Compile error
@@ -41,8 +40,8 @@ struct Named {
 #[test]
 fn derive_position() {
     let mut test = Named { position: 15.0 };
-    check!(*test.position() == 15.0);
+    assert_eq!(*test.position(), 15.0);
 
     *test.position_mut() = 32.0;
-    check!(test.position == 32.0);
+    assert_eq!(test.position, 32.0);
 }

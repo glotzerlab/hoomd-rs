@@ -64,12 +64,14 @@
 //! a body might have mass, position and velocity while that body's sites have
 //! position and type.
 //!
-//! The `property` module provides a number of property types. It also defines
+//! The [`property`] module provides a number of property types. It also defines
 //! traits that you can use to implement custom property types. At a minimum, *both
 //! `B` and `S` MUST implement [`property::Position`]* so that [`Microstate`] can
 //! place your body's and sites inside the boundary conditions and maintain spatial
-//! data structures. Some model methods (such as shape overlap energies) will
-//! require other traits (such as [`property::Orientation`]). The `property` module
+//! data structures. Some interaction models (such as shape overlap energies) will
+//! require other traits (such as [`property::Orientation`]). Molecular dynamics
+//! simulations operate on bodies with either a [`property::DynamicPoint`] or
+//! [`property::DynamicOrientedPoint`] type. The [`property`] module
 //! documentation provides more details on using the types it provides and how to
 //! define custom types.
 //!
@@ -383,6 +385,33 @@ impl<V> Body<Point<V>, Point<V>> {
     }
 }
 
+impl<B, S> Body<B, S> {
+    /// Construct a single site body.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::{Body, property::Point};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let body = Body::single_site(
+    ///     Point::new(Cartesian::from([-3.0, 5.0])),
+    ///     Point::new(Cartesian::from([0.0, 0.0])),
+    /// );
+    /// assert_eq!(body.properties.position, [-3.0, 5.0].into());
+    /// assert_eq!(body.sites.len(), 1);
+    /// assert_eq!(body.sites[0].position, [0.0, 0.0].into());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn single_site(body_properties: B, site_properties: S) -> Self {
+        Self {
+            properties: body_properties,
+            sites: vec![site_properties],
+        }
+    }
+}
+
 /// Take [`Site`] properties in the body frame into the system frame.
 ///
 /// See the [`property`] module-level documentation for an example
@@ -408,6 +437,10 @@ pub enum Error {
     /// Failed to update a body in a [`Microstate`].
     #[error("failed to update body (tag={0})")]
     UpdateBody(usize, #[source] boundary::Error),
+
+    /// Cannot replicate 0 times in any direction.
+    #[error("requested invalid replication amount")]
+    NoReplication(#[source] hoomd_utility::valid::Error),
 }
 
 /// Write a frame to a GSD file with the contents of a microstate.
@@ -523,4 +556,61 @@ pub trait AppendMicrostate<B, S, X, C> {
         &mut self,
         microstate: &Microstate<B, S, X, C>,
     ) -> Result<Frame<'_>, AppendError>;
+}
+
+/// Make a new microstate with the original bodies repeated following the periodic
+/// boundary conditions.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_geometry::shape::Hypercuboid;
+/// use hoomd_microstate::{Body, Microstate, Replicate, boundary::Periodic};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let cuboid = Hypercuboid {
+///     edge_lengths: [10.0.try_into()?, 20.0.try_into()?, 30.0.try_into()?],
+/// };
+///
+/// let periodic = Periodic::new(1.0, cuboid)?;
+/// let microstate = Microstate::builder()
+///     .boundary(periodic)
+///     .bodies([Body::point(Cartesian::from([0.0, 0.0, 0.0]))])
+///     .try_build()?;
+///
+/// let replicated = microstate.replicate([2, 2, 2])?;
+/// # Ok(())
+/// # }
+/// ```
+pub trait Replicate<const N: usize, B, S, X, C> {
+    /// Replicate the bodies in `self` `count[0]` by `count[1]` by ... by `count[N-1]` times and
+    /// expand the periodic boundary accordingly.
+    ///
+    /// The new microstate is built with the same step, seed, and spatial data
+    /// structure, as if it were cloned. The new microstate's boundary keeps
+    /// the same interaction range but is extended by `counts[i]` along each
+    /// relevant (shape-dependent) axis.
+    ///
+    /// # Errors
+    ///
+    /// * [`Error::NoReplication`] when any of the counts is 0.
+    fn replicate(&self, counts: [usize; N]) -> Result<Microstate<B, S, X, C>, Error>;
+
+    /// Replicate the bodies in `self` `count[0]` by `count[1]` by ... by `count[N-1]` times and
+    /// expand the periodic boundary accordingly.
+    ///
+    /// The new microstate is built with the same step, seed, and spatial data
+    /// structure, as if it were cloned. The new microstate's boundary sets
+    /// the given interaction range and is extended by `counts[i]` along each
+    /// relevant (shape-dependent) axis.
+    ///
+    /// # Errors
+    ///
+    /// * [`Error::NoReplication`] when any of the counts is 0.
+    fn replicate_with_maximum_interaction_range(
+        &self,
+        counts: [usize; N],
+        maximum_interaction_range: f64,
+    ) -> Result<Microstate<B, S, X, C>, Error>;
 }
