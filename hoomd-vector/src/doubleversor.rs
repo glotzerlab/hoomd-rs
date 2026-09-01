@@ -100,6 +100,22 @@ impl DoubleVersor {
 
     #[inline]
     #[must_use]
+    /// Normalize the double versor.
+    ///
+    /// Nominally, all [`DoubleVersor`] instances have unit components. Due to limited
+    /// floating point precision, this assumption may not hold after repeated
+    /// operations. Normalize double versors when needed to correct this issue.
+    pub fn normalized(self) -> Self {
+        // Normalization is a projection onto the manifold as normal, and projection
+        // onto a product manifold can be separated into the components in the product.
+        Self {
+            l: self.l.normalized(),
+            r: self.r.normalized(),
+        }
+    }
+
+    #[inline]
+    #[must_use]
     /// The distance between two [`DoubleVersor`]s measured along a chord.
     ///
     /// Explicitly, this is the straight-line (chordal) distance between two
@@ -445,6 +461,27 @@ mod tests {
                 epsilon = 1e-14,
             );
         }
+    }
+
+    #[test]
+    fn normalized_restores_unit_components() {
+        let mut rng = StdRng::seed_from_u64(99);
+        let mut q: DoubleVersor = rng.random();
+        for _ in 0..100_000 {
+            q = q.combine(&rng.random());
+        }
+
+        let norm_l = q.left_isoclinic().get().norm();
+        let norm_r = q.right_isoclinic().get().norm();
+
+        let n = q.normalized();
+        assert_relative_eq!(n.left_isoclinic().get().norm(), 1.0, epsilon = 1e-15);
+        assert_relative_eq!(n.right_isoclinic().get().norm(), 1.0, epsilon = 1e-15);
+
+        // The drifted rotation is the normalized one scaled by norm_l * norm_r.
+        let a = Cartesian::from([1.0, 2.0, -3.0, 0.5]);
+        let scale = norm_l * norm_r;
+        assert_relative_eq!(n.rotate(&a), q.rotate(&a) / scale, max_relative = 1e-12);
     }
 
     #[rstest]
