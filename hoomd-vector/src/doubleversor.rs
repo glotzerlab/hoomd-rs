@@ -394,8 +394,8 @@ impl Rotation for DoubleVersor {
 impl Metric for DoubleVersor {
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
-        let left_angle = self.l.dot_as_cartesian(&other.l).clamp(-1.0, 1.0).acos();
-        let right_angle = self.r.dot_as_cartesian(&other.r).clamp(-1.0, 1.0).acos();
+        let left_angle = self.l.arc_distance(&other.l);
+        let right_angle = self.r.arc_distance(&other.r);
 
         // The principal angles of the relative rotation are theta_1 = left_angle
         // + right_angle and theta_2 = |left_angle - right_angle|. Fold theta_1
@@ -441,7 +441,6 @@ impl Metric for DoubleVersor {
 #[cfg(test)]
 mod tests {
     use approxim::assert_relative_eq;
-    use hoomd_linear_algebra::{MatMul, matrix::Matrix44};
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
     use std::f64::consts::{PI, TAU};
@@ -564,8 +563,8 @@ mod tests {
             // Symmetry
             assert_relative_eq!(u.distance(&v), v.distance(&u), epsilon = 1e-14);
 
-            // Zero self-distance
-            assert_relative_eq!(u.distance(&u), 0.0, epsilon = 1e-7);
+            // Zero self-distance: the vector part of q* q cancels exactly
+            assert_eq!(u.distance(&u), 0.0);
 
             // Triangle inequality
             assert!(
@@ -584,6 +583,8 @@ mod tests {
             .try_into()
             .expect("hard-coded axis should have non-zero length");
         for (theta_l, theta_r) in [(0.3, 1.7), (2.0, 0.9), (2.9, 3.0), (0.0, PI)] {
+            // Negate via angle + TAU, which negates the versor up to
+            // rounding: (cos, sin) evaluated at half of (angle + TAU).
             let u = DoubleVersor::from((
                 Versor::from_axis_angle(x, theta_l),
                 Versor::from_axis_angle(y, theta_r),
@@ -593,7 +594,7 @@ mod tests {
                 Versor::from_axis_angle(y, theta_r + TAU),
             ));
 
-            assert_relative_eq!(u.distance(&negated_u), 0.0, epsilon = 1e-7);
+            assert_relative_eq!(u.distance(&negated_u), 0.0, epsilon = 1e-15);
         }
     }
 
