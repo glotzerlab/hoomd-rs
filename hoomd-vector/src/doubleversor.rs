@@ -18,7 +18,18 @@ use crate::{Cartesian, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Ver
 
 /// A pair of [`Versor`]s that represent a 4D rotation.
 ///
-/// Each [`Versor`] represents an independent rotation about a plane in R^4.
+/// Every rotation in SO(4) factors into a *left-isoclinic* and a *right-isoclinic*
+/// rotation via the Van Elfrinkhof decomposition, each of which can be described as an
+/// ordinary 3D [`Versor`] with fully independent degrees of freedom. [`DoubleVersor`]
+/// stores one unit quaternion for each factor, $`\mathbf{q_l}`$ and $`\mathbf{q_r}`$.
+/// The two rotate a [`Cartesian<4>`] vector $`\vec{a}`$ (viewed as a quaternion) with a
+/// double-sided product that mirrors the three-dimensional [`Versor::rotate`]:
+///
+/// ```math
+/// \vec{a}' = \mathbf{q}_l \, \vec{a} \, \mathbf{q}_r
+/// ```
+/// As normal [`Versor`]s do with SO(3), the pair $`(\mathbf{q}_l, \mathbf{q}_r)`$ forms
+/// a double cover of SO(4).
 #[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct DoubleVersor {
     /// The left-isoclinic part of the rotation.
@@ -89,19 +100,41 @@ impl DoubleVersor {
 
     #[inline]
     #[must_use]
-    /// The distance between two [`DoubleQuaternion`] points.
+    /// The distance between two [`DoubleVersor`]s measured along a chord.
     ///
-    /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$
-    /// *along a chord through the manifold*. This is NOT equivalent to the intrinsic
-    /// distance, defined with [`DoubleQuaternion::Metric`].
+    /// Explicitly, this is the straight-line (chordal) distance between two
+    /// rotations $`\vec{u}`$ and $`\vec{v}`$. It is NOT the intrinsic distance
+    /// along the manifold, which is defined by the [`Metric`] implementation.
     ///
     /// ```math
-    /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{8 * (1 - (u_l \cdot v_l * u_r \cdot v_r)}
+    /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{8 \left(1 - (\vec{u}_l \cdot \vec{v}_l)\,(\vec{u}_r \cdot \vec{v}_r)\right)}
     /// ```
     ///
-    /// This is equivalent to the matrix form $`||R_u - R_v||_F`$, but does not require
+    /// This is equivalent to the matrix form $`\lVert R_u - R_v \rVert_F`$, but does not require
     /// forming the matrix representation of each rotation.
-    pub fn chordal_distanc(&self, other: &Self) -> f64 {
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_vector::{DoubleVersor, Metric, Versor};
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let identity = DoubleVersor::default();
+    /// // A rotation by PI/2 in both invariant planes.
+    /// let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
+    ///     [1.0, 0.0, 0.0].try_into()?,
+    ///     PI,
+    /// ));
+    ///
+    /// assert_relative_eq!(v.chordal_distance(&identity), 8.0_f64.sqrt());
+    /// // The intrinsic distance along the manifold is longer than the chord.
+    /// assert!(v.distance(&identity) > 8.0_f64.sqrt());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn chordal_distance(&self, other: &Self) -> f64 {
         // We choose a form based on the dot product of pairs of left and right
         // quaternions -- as expected, this is exactly the same as the standard
         // Frobenius metric on SO(N), $`||A-B||_F^2`$. The following Mathematica code
@@ -142,16 +175,27 @@ impl DoubleVersor {
 impl From<DoubleVersor> for RotationMatrix<4> {
     /// Construct a rotation matrix equivalent to this double versor's rotation.
     ///
-    /// When rotating many vectors by the same [`DoubleVersor`], improve performance
-    /// by converting to a matrix first and applying that matrix to the vectors.
+    /// When rotating many vectors by the same [`DoubleVersor`], converting to a matrix
+    /// and applying that matrix to the vectors may be faster than direct rotation.
     ///
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
+    /// use hoomd_vector::{
+    ///     Cartesian, DoubleVersor, Rotate, RotationMatrix, Versor,
+    /// };
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let a = Cartesian::from([1.0, 2.0, 0.0, 0.0]);
+    /// let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
+    ///     [1.0, 0.0, 0.0].try_into()?,
+    ///     PI,
+    /// ));
+    ///
+    /// let matrix = RotationMatrix::from(v);
+    /// assert_relative_eq!(matrix.rotate(&a), v.rotate(&a));
+    /// assert_relative_eq!(matrix.rotate(&a), [-2.0, 1.0, 0.0, 0.0].into());
     /// # Ok(())
     /// # }
     /// ```
@@ -197,7 +241,8 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([1.0, 2.0, 0.0, 0.0]);
     ///
-    /// // A rotation of PI/2 radians about the `xy` and `zw` planes
+    /// // A left-isoclinic rotation that rotates by PI/2 radians in both the
+    /// // `xy` and `zw` planes. Note that each plane rotates by half the given angle
     /// let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
     ///     [1.0, 0.0, 0.0].try_into()?,
     ///     PI,
@@ -245,7 +290,10 @@ impl Distribution<DoubleVersor> for StandardUniform {
 impl Rotation for DoubleVersor {
     /// Combine two rotations.
     ///
-    /// The resulting versor is obtained by left and right quaternion multiplications.
+    /// The resulting versor is obtained by left and right quaternion
+    /// multiplications. As with [`Versor`], `self.combine(other)` first applies
+    /// `other`, then `self`. Note that the right components multiply in the
+    /// reverse order!
     /// ```math
     /// \mathbf{q}_{l_{ab}} = \mathbf{q}_{l_a} \mathbf{q}_{l_b}
     /// \mathbf{q}_{r_{ab}} = \mathbf{q}_{r_b} \mathbf{q}_{r_a}
@@ -254,9 +302,24 @@ impl Rotation for DoubleVersor {
     /// # Example
     ///
     /// ```
-    /// use hoomd_vector::{Rotation, Versor};
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, DoubleVersor, Rotate, Rotation, Versor};
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let a = Cartesian::from([1.0, 2.0, -3.0, 0.5]);
+    /// let left = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
+    ///     [1.0, 0.0, 0.0].try_into()?,
+    ///     PI / 2.0,
+    /// ));
+    /// let right = DoubleVersor::from_right_isoclinic(Versor::from_axis_angle(
+    ///     [0.0, 1.0, 0.0].try_into()?,
+    ///     PI / 3.0,
+    /// ));
+    ///
+    /// // Combining applies `right` first, then `left`.
+    /// let combined = left.combine(&right);
+    /// assert_relative_eq!(combined.rotate(&a), left.rotate(&right.rotate(&a)));
     /// # Ok(())
     /// # }
     /// ```
@@ -284,8 +347,9 @@ impl Rotation for DoubleVersor {
 
     /// Create a [`DoubleVersor`] that performs the inverse rotation of the given double versor.
     ///
+    /// Both components are conjugated:
     /// ```math
-    /// \mathbf{q}^*
+    /// (\mathbf{q}_l, \mathbf{q}_r)^{-1} = (\mathbf{q}_l^*, \mathbf{q}_r^*)
     /// ```
     ///
     /// # Example
@@ -317,12 +381,14 @@ impl Metric for DoubleVersor {
         let left_angle = self.l.dot_as_cartesian(&other.l).clamp(-1.0, 1.0).acos();
         let right_angle = self.r.dot_as_cartesian(&other.r).clamp(-1.0, 1.0).acos();
 
-        // Alpha is the shorter arc of {l+r, 2π-(l+r)}
-        let alpha = f64::min(left_angle + right_angle, TAU - (left_angle + right_angle));
-        let beta = f64::abs(left_angle - right_angle);
+        // The principal angles of the relative rotation are theta_1 = left_angle
+        // + right_angle and theta_2 = |left_angle - right_angle|. Fold theta_1
+        // into [0, pi] to account for the double cover of SO(4) by the versor pair.
+        let theta_1 = f64::min(left_angle + right_angle, TAU - (left_angle + right_angle));
+        let theta_2 = f64::abs(left_angle - right_angle);
 
-        // Multiply by 2.0 to match the standard ||log(R_A^T R_B)||_F^2 scalin
-        2.0 * (alpha.powi(2) + beta.powi(2))
+        // Multiply by 2.0 to match the standard ||log(R_A^T R_B)||_F^2 scaling.
+        2.0 * (theta_1.powi(2) + theta_2.powi(2))
     }
 
     #[inline]
@@ -331,7 +397,7 @@ impl Metric for DoubleVersor {
         6
     }
     #[inline]
-    /// The distance between two [`DoubleQuaternion`] points.
+    /// The intrinsic distance between two [`DoubleVersor`]s.
     ///
     /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on the
     /// manifold SO(4):
@@ -340,13 +406,14 @@ impl Metric for DoubleVersor {
     /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{2\theta_1^2 + 2\theta_2^2}
     /// ```
     ///
-    /// Where the principal planar angles $`\theta_1`$ and $`\theta_2`$ are derived
-    /// from the left and right quaternion arc lengths ($\alpha$ and $\beta$),
-    /// accounting double cover of the manifold:
-    /// * $`\alpha = \arccos(\vec{u}_L \cdot \vec{v}_L)`$
-    /// * $`\beta = \arccos(\vec{u}_R \cdot \vec{v}_R)`$
-    /// * $`\theta_1 = \min(\alpha + \beta, 2\pi - (\alpha + \beta))`$
-    /// * $`\theta_2 = |\alpha - \beta|`$
+    /// Where the principal planar angles $`\theta_1`$ and $`\theta_2`$ of the
+    /// relative rotation are derived from the left and right quaternion arc
+    /// lengths, folding the sum into $`[0, \pi]`$ to account for the double
+    /// cover of the manifold:
+    /// * $`\alpha_l = \arccos(\vec{u}_L \cdot \vec{v}_L)`$
+    /// * $`\alpha_r = \arccos(\vec{u}_R \cdot \vec{v}_R)`$
+    /// * $`\theta_1 = \min(\alpha_l + \alpha_r, 2\pi - (\alpha_l + \alpha_r))`$
+    /// * $`\theta_2 = |\alpha_l - \alpha_r|`$
     ///
     /// This is equivalent to the scaled matrix logarithm form $`||\log(R_u^T R_v)||_F`$,
     /// measuring the shortest path along the curved manifold.
