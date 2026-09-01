@@ -45,7 +45,3 @@ log.workspace = true
 rand.workspace = true
 rstest.workspace = true
 tempfile.workspace = true
-
-[[bench]]
-name = "cuboid"
-harness = false
