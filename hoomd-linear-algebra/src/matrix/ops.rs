@@ -35,6 +35,15 @@ impl<const N: usize, const M: usize> IndexMut<(usize, usize)> for Matrix<N, M> {
     }
 }
 
+/// Compute the elementwise scalar multiplication of a [`Matrix`]
+///
+/// # Examples
+/// ```
+/// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
+/// let matrix = Matrix22::full(2.0);
+/// let scalar = 2.0;
+/// assert_eq!(matrix * scalar, matrix + matrix);
+/// ```
 impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
     type Output = Self;
 
@@ -147,6 +156,77 @@ impl<const N: usize, const M: usize> SubAssign for Matrix<N, M> {
         self.iter_elements_mut()
             .zip(rhs.iter_elements())
             .for_each(|(x, r)| *x -= r);
+    }
+}
+impl<const N: usize, const M: usize> Matrix<N, M> {
+    /// Returns an iterator over the elements of a part of a column.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the slice is out of bounds.
+    #[inline]
+    #[must_use]
+    pub fn iter_column_slice(
+        &self,
+        column_slice: usize,
+        row_range: std::ops::Range<usize>,
+    ) -> impl ExactSizeIterator<Item = f64> + '_ + Clone {
+        self.rows[row_range]
+            .iter()
+            .map(move |row| row[column_slice])
+    }
+
+    /// Returns a mutable iterator over the elements of a part of a column.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the slice is out of bounds.
+    #[inline]
+    pub fn iter_column_slice_mut(
+        &mut self,
+        column_index: usize,
+        row_range: std::ops::Range<usize>,
+    ) -> impl ExactSizeIterator<Item = &mut f64> + '_ {
+        self.rows[row_range]
+            .iter_mut()
+            .map(move |row| &mut row[column_index])
+    }
+
+    /// Returns an iterator over slices of each row in a submatrix view.
+    ///
+    /// The submatrix is defined by `row_range` and `col_range`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the submatrix is out of bounds.
+    #[inline]
+    #[must_use]
+    pub fn iter_submatrix(
+        &'_ self,
+        row_range: std::ops::Range<usize>,
+        col_range: std::ops::Range<usize>,
+    ) -> impl ExactSizeIterator<Item = &'_ [f64]> + Clone {
+        self.rows[row_range]
+            .iter()
+            .map(move |row| &row[col_range.clone()])
+    }
+
+    /// Returns a mutable iterator over slices of each row in a submatrix view.
+    ///
+    /// The submatrix is defined by `row_range` and `col_range`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the submatrix is out of bounds.
+    #[inline]
+    pub fn iter_submatrix_mut(
+        &mut self,
+        row_range: std::ops::Range<usize>,
+        col_range: std::ops::Range<usize>,
+    ) -> impl ExactSizeIterator<Item = &mut [f64]> {
+        self.rows[row_range]
+            .iter_mut()
+            .map(move |row| &mut row[col_range.clone()])
     }
 }
 
@@ -274,7 +354,7 @@ mod tests {
     ) {
         let mut a = Matrix { rows: a_rows };
         let b = Matrix { rows: b_rows };
-        let c = a.clone() + b.clone();
+        let c = a + b;
 
         a += b;
         assert_eq!(a, c);
@@ -302,7 +382,7 @@ mod tests {
     ) {
         let mut a = Matrix { rows: a_rows };
         let b = Matrix { rows: b_rows };
-        let c = a.clone() - b.clone();
+        let c = a - b;
 
         a -= b;
         assert_eq!(a, c);
@@ -325,7 +405,7 @@ mod tests {
         #[case] x: f64,
     ) {
         let mut a = Matrix { rows: a_rows };
-        let c = a.clone() * x;
+        let c = a * x;
 
         a *= x;
         assert_eq!(a, c);
@@ -349,6 +429,149 @@ mod tests {
         #[case] x: f64,
     ) {
         let a = Matrix { rows: a_rows };
-        assert_eq!(a.clone() * x, x * a);
+        assert_eq!(a * x, x * a);
+    }
+
+    #[test]
+    fn test_get_col_slice_iter() {
+        let m: Matrix<3, 4> = Matrix {
+            rows: [
+                [1.0, 2.0, 3.0, 4.0],
+                [5.0, 6.0, 7.0, 8.0],
+                [9.0, 10.0, 11.0, 12.0],
+            ],
+        };
+        let col_iter = m.iter_column_slice(1, 0..2);
+        let col_vec: Vec<f64> = col_iter.collect();
+        assert_eq!(col_vec, vec![2.0, 6.0]);
+    }
+
+    #[test]
+    fn test_get_col_slice_iter_mut() {
+        let mut m: Matrix<3, 4> = Matrix {
+            rows: [
+                [1.0, 2.0, 3.0, 4.0],
+                [5.0, 6.0, 7.0, 8.0],
+                [9.0, 10.0, 11.0, 12.0],
+            ],
+        };
+        let col_iter_mut = m.iter_column_slice_mut(1, 0..2);
+        col_iter_mut.for_each(|x| *x *= 10.0);
+
+        let expected_rows = [
+            [1.0, 20.0, 3.0, 4.0],
+            [5.0, 60.0, 7.0, 8.0],
+            [9.0, 10.0, 11.0, 12.0],
+        ];
+        assert_eq!(m.rows, expected_rows);
+    }
+
+    #[test]
+    fn test_submatrix_slice_iter() {
+        let m: Matrix<3, 4> = Matrix {
+            rows: [
+                [1.0, 2.0, 3.0, 4.0],
+                [5.0, 6.0, 7.0, 8.0],
+                [9.0, 10.0, 11.0, 12.0],
+            ],
+        };
+        let mut sub_iter = m.iter_submatrix(1..3, 1..3);
+        assert_eq!(sub_iter.next(), Some(&[6.0, 7.0] as &[f64]));
+        assert_eq!(sub_iter.next(), Some(&[10.0, 11.0] as &[f64]));
+        assert_eq!(sub_iter.next(), None);
+    }
+
+    #[test]
+    #[should_panic(expected = "range end index 4 out of range for slice of length 3")]
+    fn test_submatrix_slice_iter_panic() {
+        let m: Matrix<3, 4> = Matrix {
+            rows: [
+                [1.0, 2.0, 3.0, 4.0],
+                [5.0, 6.0, 7.0, 8.0],
+                [9.0, 10.0, 11.0, 12.0],
+            ],
+        };
+        // This should panic.
+        let _ = m.iter_submatrix(1..4, 1..4);
+    }
+
+    #[test]
+    fn test_submatrix_slice_iter_full() {
+        let m: Matrix<2, 2> = Matrix {
+            rows: [[1.0, 2.0], [3.0, 4.0]],
+        };
+        let mut sub_iter = m.iter_submatrix(0..2, 0..2);
+        assert_eq!(sub_iter.next(), Some(&[1.0, 2.0] as &[f64]));
+        assert_eq!(sub_iter.next(), Some(&[3.0, 4.0] as &[f64]));
+        assert_eq!(sub_iter.next(), None);
+    }
+
+    #[test]
+    fn test_submatrix_slice_iter_single_element() {
+        let m: Matrix<2, 2> = Matrix {
+            rows: [[1.0, 2.0], [3.0, 4.0]],
+        };
+        let mut sub_iter = m.iter_submatrix(1..2, 1..2);
+        assert_eq!(sub_iter.next(), Some(&[4.0] as &[f64]));
+        assert_eq!(sub_iter.next(), None);
+    }
+
+    #[test]
+    fn test_submatrix_slice_iter_empty() {
+        let m: Matrix<2, 2> = Matrix {
+            rows: [[1.0, 2.0], [3.0, 4.0]],
+        };
+        let mut sub_iter_zero_rows = m.iter_submatrix(1..1, 1..2);
+        assert_eq!(sub_iter_zero_rows.next(), None);
+
+        let mut sub_iter_zero_cols = m.iter_submatrix(1..2, 1..1);
+        assert_eq!(sub_iter_zero_cols.next(), Some(&[] as &[f64]));
+        assert_eq!(sub_iter_zero_cols.next(), None);
+    }
+
+    #[rstest]
+    #[case([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])]
+    #[case([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])]
+    #[case([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0], [9.0, 10.0, 11.0, 12.0], [13.0, 14.0, 15.0, 16.0]])]
+    #[case([[1.0, 2.0, 3.0, 4.0, 5.0]])]
+    #[case([[1.0], [2.0], [3.0], [4.0], [5.0]])]
+    #[case([[1.0]])]
+    fn test_submatrix_slice_iter_whole_matrix<const N: usize, const M: usize>(
+        #[case] rows: [[f64; M]; N],
+    ) {
+        let m = Matrix::<N, M> { rows };
+
+        let mut sub_iter = m.iter_submatrix(0..N, 0..M);
+
+        for i in 0..N {
+            let row_slice = sub_iter.next().unwrap();
+            assert_eq!(row_slice, &m.rows[i][..]);
+        }
+        assert!(sub_iter.next().is_none());
+    }
+
+    #[test]
+    fn test_submatrix_slice_iter_mut() {
+        let mut m: Matrix<3, 4> = Matrix {
+            rows: [
+                [1.0, 2.0, 3.0, 4.0],
+                [5.0, 6.0, 7.0, 8.0],
+                [9.0, 10.0, 11.0, 12.0],
+            ],
+        };
+
+        let sub_iter_mut = m.iter_submatrix_mut(1..3, 1..3);
+        for row_slice in sub_iter_mut {
+            for x in row_slice {
+                *x *= 10.0;
+            }
+        }
+
+        let expected_rows = [
+            [1.0, 2.0, 3.0, 4.0],
+            [5.0, 60.0, 70.0, 8.0],
+            [9.0, 100.0, 110.0, 12.0],
+        ];
+        assert_eq!(m.rows, expected_rows);
     }
 }

@@ -99,6 +99,22 @@ fn cross_vec3(bencher: Bencher) {
         .with_inputs(|| create_random_vector_pair::<3, _>(&mut rng))
         .bench_local_values(|(a, b)| black_box(a.cross(&b)));
 }
+#[divan::bench(sample_size = 1000)]
+fn counary_cross_vec4(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| {
+            (
+                create_random_vector_pair::<4, _>(&mut rng),
+                create_random_vector_pair::<4, _>(&mut rng),
+            )
+        })
+        .bench_local_values(|((a, b), (c, _))| {
+            black_box(Cartesian::<4>::counary_cross(&[a, b, c]))
+        });
+}
 
 #[divan::bench(consts = DIMENSIONS)]
 fn gen_random<const N: usize>(bencher: Bencher) {

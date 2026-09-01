@@ -378,3 +378,25 @@ mod capsule {
             .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
     }
 }
+
+#[divan::bench_group]
+mod support_mapping {
+    use super::*;
+    use hoomd_geometry::SupportMapping;
+
+    #[divan::bench(consts = DIPYRAMID_VERTICES)]
+    fn dipyramid<const N: usize>(bencher: Bencher) {
+        let shape = create_dipyramid(N);
+        let mut rng = StdRng::seed_from_u64(1);
+        let directions: Vec<Cartesian<3>> = (0..1024).map(|_| rng.random()).collect();
+
+        bencher
+            .counter(ItemsCount::from(1024_u32))
+            .with_inputs(|| directions.clone())
+            .bench_local_values(|dirs| {
+                for d in black_box(dirs) {
+                    black_box(shape.support_mapping(&d));
+                }
+            });
+    }
+}
