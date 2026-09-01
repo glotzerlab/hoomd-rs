@@ -177,4 +177,20 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn displacement_components_stay_in_hemisphere() {
+        // The |s| > pi rejection keeps each component in the Re(q) >= 0 hemisphere of
+        // S^3, which is needed for detailed balance
+        let mut rng = StdRng::seed_from_u64(1);
+        let displacement = DoubleVersorDisplacement { std_dev: 2.0 };
+
+        for _ in 0..100_000 {
+            let d = displacement.sample(&mut rng);
+            check!(d.left_isoclinic().get().scalar >= 0.0);
+            check!(d.right_isoclinic().get().scalar >= 0.0);
+            check!((d.left_isoclinic().get().norm_squared() - 1.0).abs() < 1e-15);
+            check!((d.right_isoclinic().get().norm_squared() - 1.0).abs() < 1e-15);
+        }
+    }
 }
