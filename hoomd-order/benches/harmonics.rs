@@ -2,11 +2,11 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! ...
-use hoomd_order::SphericalHarmonic;
+use hoomd_order::math::SphericalHarmonic;
 use hoomd_vector::{Cartesian, InnerProduct};
 use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 
-/// Generate a random point on the unit sphere.
+/// Generate a random point.
 #[inline]
 fn random_unit_point<R: Rng>(rng: &mut R) -> Cartesian<3> {
     let (x, y, z) = (rng.random(), rng.random(), rng.random());
@@ -30,5 +30,5 @@ fn recurrence<const L: usize>(bencher: divan::Bencher<'_, '_>) {
             let point = random_unit_point::<StdRng>(&mut rng);
             (point.to_unit().expect("non-zero point")).0
         })
-        .bench_local_values(|xyz| sh.eval(xyz));
+        .bench_local_values(|xyz| sh.evaluate(&xyz));
 }
