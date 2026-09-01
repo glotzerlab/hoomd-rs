@@ -248,7 +248,7 @@ impl Rotation for DoubleVersor {
     /// The resulting versor is obtained by left and right quaternion multiplications.
     /// ```math
     /// \mathbf{q}_{l_{ab}} = \mathbf{q}_{l_a} \mathbf{q}_{l_b}
-    /// \mathbf{q}_{r_{ab}} = \mathbf{q}_{r_a} \mathbf{q}_{r_b}
+    /// \mathbf{q}_{r_{ab}} = \mathbf{q}_{r_b} \mathbf{q}_{r_a}
     /// ```
     ///
     /// # Example
