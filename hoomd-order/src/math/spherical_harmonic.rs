@@ -89,10 +89,10 @@ use std::{
 /// # Example
 ///
 /// ```
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_order::math::SphericalHarmonic;
 /// use hoomd_vector::Cartesian;
 /// use num_complex::Complex;
-/// use approxim::{assert_relative_eq, assert_abs_diff_eq};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let spherical_harmonic = SphericalHarmonic::<2>::new();
@@ -168,10 +168,10 @@ impl<const L: usize> SphericalHarmonic<L> {
     /// # Example
     ///
     /// ```
+    /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
     /// use hoomd_order::math::SphericalHarmonic;
     /// use hoomd_vector::Cartesian;
     /// use num_complex::Complex;
-    /// use approxim::{assert_relative_eq, assert_abs_diff_eq};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let spherical_harmonic = SphericalHarmonic::<2>::new();
@@ -236,7 +236,7 @@ impl<const L: usize> Default for SphericalHarmonic<L> {
     }
 }
 
-/// Spherical harmonic values for $` m \in [0,L] `$. 
+/// Spherical harmonic values for $` m \in [0,L] `$.
 ///
 /// Call [`SphericalHarmonic::evaluate`] to obtain the resulting value as
 /// [`SphericalHarmonicOutputs`]. The output contains the values at
@@ -341,14 +341,14 @@ impl<const L: usize> SphericalHarmonicOutputs<L> {
     pub fn iter(&self) -> impl Iterator<Item = Complex64> + '_ {
         std::iter::once(self.m0).chain(self.mp.iter().copied())
     }
-    
+
     /// The length of the container, equal to `L + 1`.
     #[inline]
     #[must_use]
     pub const fn len(&self) -> usize {
         L + 1
     }
-    
+
     /// Check if the container is empty. This will always be false.
     #[inline]
     #[must_use]

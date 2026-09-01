@@ -263,17 +263,18 @@ impl Unit<Cartesian<3>> {
     /// # Example
     ///
     /// ```
-    /// use std::f64::consts::PI;
-    /// use hoomd_vector::{Cartesian, Unit};
     /// use approxim::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, Unit};
+    /// use std::f64::consts::PI;
     ///
     /// let z = Unit::<Cartesian<3>>::from_spherical_coordinates(0.0, 0.0);
     /// assert_relative_eq!(z.get(), &[0.0, 0.0, 1.0].into());
     ///
-    /// let x = Unit::<Cartesian<3>>::from_spherical_coordinates(PI/2.0, 0.0);
+    /// let x = Unit::<Cartesian<3>>::from_spherical_coordinates(PI / 2.0, 0.0);
     /// assert_relative_eq!(x.get(), &[1.0, 0.0, 0.0].into());
     ///
-    /// let y = Unit::<Cartesian<3>>::from_spherical_coordinates(PI/2.0, PI/2.0);
+    /// let y =
+    ///     Unit::<Cartesian<3>>::from_spherical_coordinates(PI / 2.0, PI / 2.0);
     /// assert_relative_eq!(y.get(), &[0.0, 1.0, 0.0].into());
     /// ```
     #[inline]
