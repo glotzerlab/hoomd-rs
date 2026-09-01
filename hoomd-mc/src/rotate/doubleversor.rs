@@ -13,11 +13,11 @@ use rand_distr::Distribution;
 
 use crate::{Adjust, LocalTrial, Rotate, rotate::versor::VersorDisplacement};
 
-/// A normal distribution of random [`DoubleVersor`]s, centered on a mean with
-/// some standard deviation.
+/// A normal distribution of random [`DoubleVersor`] displacements, centered on
+/// the identity with some standard deviation.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct DoubleVersorDisplacement {
-    /// The standard deviation of the normal distribution of quaternions around the mean.
+    /// The standard deviation of the normal distribution of quaternions around the identity.
     std_dev: f64,
 }
 
@@ -28,14 +28,18 @@ impl From<f64> for DoubleVersorDisplacement {
     }
 }
 impl Distribution<DoubleVersor> for DoubleVersorDisplacement {
-    /// Sample a random [`DoubleVersor`] displacement from a provided mean.
+    /// Sample a random [`DoubleVersor`] displacement centered on the identity.
     ///
-    /// Mathematically, we sample from a 6-dimensional Normal distribution
-    /// in the tangent space of SO(4), lift to the manifold, then rotate to center on
-    /// the mean of the [`DoubleVersorDisplacement`]. The result is a small displacement
-    /// from a rotational input, with fast decay in the tails that make large
-    /// displacements unlikely. This is desirable for Monte Carlo, as large moves are
-    /// very likely to be rejected.
+    /// Mathematically, we sample two independent 3-dimensional Normal
+    /// distributions in the tangent spaces of the left- and right-isoclinic
+    /// components (together, a 6-dimensional Normal distribution in the tangent
+    /// space of SO(4)) and lift them to the manifold with the exponential map.
+    /// The result is a small displacement from the identity, with fast decay in
+    /// the tails that makes large displacements unlikely. This is desirable for
+    /// Monte Carlo, as large moves are very likely to be rejected.
+    ///
+    /// When used in a trial move, the displacement is combined with (centered
+    /// on) a body's existing orientation; see [`LocalTrial::propose`].
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> DoubleVersor {
         let single_displacement = VersorDisplacement::from(self.std_dev);
