@@ -111,11 +111,9 @@ where
     /// `generate_ghosts` emits one periodic image of `site_properties` for each
     /// non-empty combination of the boundary directions that `site_properties` lies
     /// within `maximum_interaction_range` of. A site in the bulk produces no ghosts; a
-    /// site near the middle of an `(N - 1)`-face produces one; a
+    /// site near the middle of an $`(N - 1)`$-face produces one; a
     /// site near an edge (where two boundaries meet) produces three; and so on, up to
-    /// `2.pow(N) - 1` ghosts for a site near all `2 * N` boundaries at once.
-    /// Images are currently emitted in descending numeric order of the subset bitmask,
-    /// where bit i indicates the image is folded across the facet normal to dimension i
+    /// $`2^N - 1`$ ghosts for a site near all $`2N`$ boundaries at once.
     ///
     /// # Example
     ///
