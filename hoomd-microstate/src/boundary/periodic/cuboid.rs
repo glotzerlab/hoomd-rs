@@ -15,7 +15,7 @@ use crate::{
     },
     property::Position,
 };
-use hoomd_geometry::{IsPointInside, shape::Hypercuboid};
+use hoomd_geometry::shape::Hypercuboid;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
@@ -142,12 +142,7 @@ where
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();
-        let max = self.shape.maximal_extents();
-        let min = self.shape.minimal_extents();
-
-        if !self.shape.is_point_inside(r) {
-            return result;
-        }
+        let range = self.maximum_interaction_range;
 
         // Record each direction the site is near, and the translation that folds a
         // ghost back across that boundary. `near_mask` is the set of active directions
@@ -155,10 +150,15 @@ where
         let mut near_mask = 0u32;
         let mut dim_offset = [0.0_f64; N];
         for i in 0..N {
-            if r[i] > max[i] - self.maximum_interaction_range {
+            let half = self.shape.edge_lengths[i].get() / 2.0;
+            let x = r[i];
+            if x < -half || x >= half {
+                return result;
+            }
+            if x > half - range {
                 near_mask |= 1 << i;
                 dim_offset[i] = -self.shape.edge_lengths[i].get();
-            } else if r[i] < min[i] + self.maximum_interaction_range {
+            } else if x < -half + range {
                 near_mask |= 1 << i;
                 dim_offset[i] = self.shape.edge_lengths[i].get();
             }
@@ -282,6 +282,7 @@ where
 mod tests {
     use super::*;
     use crate::property::Point;
+    use hoomd_geometry::IsPointInside;
 
     use approxim::assert_relative_eq;
     use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
