@@ -335,7 +335,11 @@ impl Rotation for DoubleVersor {
     ///
     /// // Combining applies `right` first, then `left`.
     /// let combined = left.combine(&right);
-    /// assert_relative_eq!(combined.rotate(&a), left.rotate(&right.rotate(&a)), 1e-14);
+    /// assert_relative_eq!(
+    ///     combined.rotate(&a),
+    ///     left.rotate(&right.rotate(&a)),
+    ///     epsilon = 1e-14
+    /// );
     /// # Ok(())
     /// # }
     /// ```
