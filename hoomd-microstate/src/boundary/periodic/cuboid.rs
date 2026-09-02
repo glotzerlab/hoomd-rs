@@ -145,7 +145,7 @@ where
         // Record what facets a site is within the maximum_interaction_range of, or
         // none if outside the box (as checked by `x < -half || x >= half`).
         let mut near_mask = 0u32;
-        let mut dim_offset = [0.0_f64; N];
+        let mut per_dimension_translation = [0.0_f64; N];
         for i in 0..N {
             let half = self.shape.edge_lengths[i].get() / 2.0;
             let x = r[i];
@@ -154,10 +154,10 @@ where
             }
             if x > half - range {
                 near_mask |= 1 << i;
-                dim_offset[i] = -self.shape.edge_lengths[i].get();
+                per_dimension_translation[i] = -self.shape.edge_lengths[i].get();
             } else if x < -half + range {
                 near_mask |= 1 << i;
-                dim_offset[i] = self.shape.edge_lengths[i].get();
+                per_dimension_translation[i] = self.shape.edge_lengths[i].get();
             }
         }
 
@@ -174,7 +174,7 @@ where
             // These will be all nonzero for corners, 1 zero for 3D edges, etc.
             for i in 0..N {
                 if subset & (1 << i) != 0 {
-                    pos[i] += dim_offset[i];
+                    pos[i] += per_dimension_translation[i];
                 }
             }
             result.push(ghost);
