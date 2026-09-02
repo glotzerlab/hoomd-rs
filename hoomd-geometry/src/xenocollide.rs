@@ -38,7 +38,7 @@ use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, RotationMatrix};
 const XENOCOLLIDE_MAX_ITER: usize = 1024;
 
 /// Result of portal discovery.
-pub(crate) enum Discovery<const N: usize> {
+enum Discovery<const N: usize> {
     /// Collision result already determined during discovery.
     Known(bool),
     /// Portal discovered — proceed to refinement.
@@ -51,7 +51,7 @@ pub(crate) enum Discovery<const N: usize> {
 /// - Tolerance for convergence check
 /// - Portal discovery (can be done directly in 2D, requires search in 3D and up)
 /// - Portal vertex replacement logic
-pub(crate) trait MinkowskiPortalRefinement<const N: usize> {
+trait MinkowskiPortalRefinement<const N: usize> {
     /// Dimension-specific convergence tolerance.
     const TOLERANCE: f64;
 
@@ -511,7 +511,7 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
 }
 
 /// Stateful type that efficiently computes repeated Minkowski differences.
-pub(crate) struct MinkowskiDifference<
+pub struct MinkowskiDifference<
     'a,
     const N: usize,
     A: SupportMapping<Cartesian<N>>,
@@ -577,12 +577,7 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
 /// checks, vertex replacement) are resolved at compile time via the
 /// [`MinkowskiPortalRefinement`] trait.
 #[inline]
-pub(crate) fn collide<const N: usize, R, A, B>(
-    sa: &A,
-    sb: &B,
-    v_ij: &Cartesian<N>,
-    q_ij: &R,
-) -> bool
+fn collide<const N: usize, R, A, B>(sa: &A, sb: &B, v_ij: &Cartesian<N>, q_ij: &R) -> bool
 where
     A: SupportMapping<Cartesian<N>>,
     B: SupportMapping<Cartesian<N>>,
@@ -636,7 +631,7 @@ where
             return result;
         }
 
-        // Face test and vertex replacement (dimension-specific) TODO
+        // Face test and vertex replacement (dimension-specific)
         Cartesian::<N>::narrow_portal(&v0, &mut portal, v_new);
 
         if count >= XENOCOLLIDE_MAX_ITER {
@@ -646,7 +641,7 @@ where
 }
 
 /// Detect collision between two convex 2D objects via Minkowski Portal Refinement.
-#[inline]
+#[inline(never)]
 pub fn collide2d<R: Copy, A: SupportMapping<Cartesian<2>>, B: SupportMapping<Cartesian<2>>>(
     sa: &A,
     sb: &B,

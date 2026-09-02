@@ -24,10 +24,12 @@ Symbol definitions:
 | --------------------------------------- | ------------------------------------------------------------------------------------------ |
 | $`\vec{v}_{ij}`$                          | $`\vec{v}_j - \vec{v}_j`$ |
 | $`\vec{r}`$                               | Position. |
-| $`\vec{v}`$                               | Velocity. |
-| $`\mathbf{q}`$                            | Orientation. |
-| $`m`$                                     | Mass. |
 | $`\vec{p}`$                               | Momentum. |
+| $`\vec{v}`$                               | Velocity. |
+| $`m`$                                     | Mass. |
+| $`\mathbf{q}`$                            | Orientation. |
+| $`\vec{L}`$                               | Angular momentum. |
+| $`\vec{\omega} `$                         | Angular velocity. |
 | $`I`$                                     | Moment of inertia. |
 | $`q`$                                     | Charge. |
 | $`N`$                                     | Number. |
@@ -37,6 +39,7 @@ Symbol definitions:
 | $`\rho`$                                  | Number density. |
 | $`\vec{a}_1`$, $`\vec{a}_2`$, $`\vec{a}_3`$   | Box unit cell vectors. |
 | $`\vec{F}`$                               | Force. |
+| $`\mathbf{W}`$                            | Virial. |
 | $`\vec{\tau}`$                            | Torque. |
 | $`U`$                                     | Potential energy. |
 | $`K`$                                     | Kinetic energy. |

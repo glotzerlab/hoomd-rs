@@ -377,6 +377,18 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     }
 }
 
+/// Compute the matrix-vector multiplication of an `ArrayVec` against a `Cartesian<N>`.
+///
+/// This returns an `ExactSizeIterator` of f64 values with `lhs.len()` elements.
+#[inline(always)]
+fn matrix_vector_multiply<const MAX_VERTICES: usize, const N: usize>(
+    lhs: &ArrayVec<Cartesian<N>, MAX_VERTICES>,
+    rhs: Cartesian<N>, // Copy appears to be compiled out, and this lets us elide '_
+) -> impl ExactSizeIterator<Item = f64> + '_ {
+    lhs.iter()
+        .map(move |vertex| (0..N).map(|m| vertex[m] * rhs[m]).sum())
+}
+
 impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
     for ConvexPolytope<N, MAX_VERTICES>
 {
@@ -385,15 +397,18 @@ impl<const N: usize, const MAX_VERTICES: usize> SupportMapping<Cartesian<N>>
         match N {
             0 => Cartesian::<N>::default(),
             1 => self.vertices[0],
-            _ => *self
-                .vertices
-                .iter()
-                .max_by(|a, b| {
-                    a.dot(n)
-                        .partial_cmp(&b.dot(n))
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-                .expect("the 0 match statement should handle empty vectors"),
+            _ => {
+                let scalars = matrix_vector_multiply(&self.vertices, *n);
+
+                let (mut argmax, mut max_val) = (0, f64::NEG_INFINITY);
+                scalars.enumerate().for_each(|(i, x)| {
+                    if x > max_val {
+                        argmax = i;
+                        max_val = x;
+                    }
+                });
+                self.vertices[argmax]
+            }
         }
     }
 }

@@ -3,23 +3,25 @@
 
 //! Implement `PairwiseCutoff`
 
+use std::ops::AddAssign;
+
 use serde::{Deserialize, Serialize};
 
+use crate::{
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange,
+    NetSiteForceAndVirial, NetSiteForceVirialAndTorque, SitePairEnergy, SitePairForceAndVirial,
+    SitePairForceVirialAndTorque, TotalEnergy,
+};
 use hoomd_microstate::{
     Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
 };
 use hoomd_spatial::PointsNearBall;
-
-use crate::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
-    TotalEnergy,
-};
+use hoomd_vector::{InnerProduct, Metric, Outer, Vector, Wedge};
 
 /// Short-ranged pairwise interactions between sites.
 ///
-/// A [`PairwiseCutoff`] newtype wrapped around a type that implements
+/// A [`PairwiseCutoff`] newtype wrapping a type that implements
 /// [`SitePairEnergy`] represents:
-///
 /// ```math
 /// U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
 /// ```
@@ -32,10 +34,25 @@ use crate::{
 /// separated by a distance less than the maximum interaction range `r_cut` and
 /// belong to different bodies.
 ///
-/// Use [`PairwiseCutoff`] with [`Anisotropic`], [`Isotropic`], [`HardShape`], or
-/// your own custom type.
+/// A [`PairwiseCutoff`] newtype wrapping a type that implements
+/// [`SitePairForceAndVirial`] and/or [`SitePairForceVirialAndTorque`] represents:
+/// ```math
+/// \vec{F}_i = \sum_{j \ne i} \vec{F}\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+/// ```
+/// ```math
+/// \vec{\tau}_i = \sum_{j \ne i} \vec{\tau}\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+/// ```
+/// where $`\vec{F}(s_i, s_j)`$ is the force computed by [`SitePairForceAndVirial`]
+/// (or [`SitePairForceVirialAndTorque`]) and $`\vec{\tau}(s_i, s_j)`$ is the torque computed by
+/// [`SitePairForceVirialAndTorque`].
 ///
-/// TODO: Reword this when [`PairwiseCutoff`] also implements `SitePairForce`.
+/// A type that implements *both* [`SitePairEnergy`] and [`SitePairForceAndVirial`]
+/// (or [`SitePairForceVirialAndTorque`]) *must* compute forces and torques that are
+/// derivatives of the energy.
+///
+/// Use [`PairwiseCutoff`] with [`Anisotropic`], [`Isotropic`], [`HardShape`], or
+/// your own custom type that implements [`SitePairEnergy`], [`SitePairForceAndVirial`] and/or
+/// [`SitePairForceVirialAndTorque`].
 ///
 /// [`Anisotropic`]: crate::pairwise::Anisotropic
 /// [`Isotropic`]: crate::pairwise::Isotropic
@@ -59,7 +76,7 @@ use crate::{
 /// });
 /// ```
 ///
-/// Set a custom potential using a closure:
+/// Set a custom potential using a closure (implements only [`SitePairEnergy`]):
 /// ```
 /// use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic};
 ///
@@ -121,6 +138,128 @@ use crate::{
 pub struct PairwiseCutoff<E>(pub E);
 
 impl<E> PairwiseCutoff<E> {
+    /// Calculate the pairwise force and virial on site `i` caused by site `j`.
+    ///
+    /// Use this method to compute an individual term in the net force and virial on site `i`,
+    /// subject to the the maximum interaction range `r_cut` and inter-body checks:
+    ///
+    /// ```math
+    /// \begin{align*}
+    /// \vec{F}_{i} &= \sum_{j \in N_s} \vec{F}_{ji} \\
+    /// \mathbf{W}_{i} &= \sum_{j \in N_s} \mathbf{W}_{ji} \\
+    /// \end{align*}
+    /// ```
+    ///
+    /// where $`N_s`$ is the set of neighboring sites in other bodies
+    /// for which $`\left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut}`$ and
+    /// the subscript $`ji`$ means "from *j* on *i*".
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_interaction::{
+    ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
+    /// };
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_microstate::{Body, Microstate, Site, property::Point};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.extend_bodies([
+    ///     Body::point(Cartesian::from([0.0, 0.0, 0.0])),
+    ///     Body::point(Cartesian::from([1.0, 0.0, 0.0])),
+    /// ])?;
+    ///
+    /// let lennard_jones: LennardJones = LennardJones {
+    ///     epsilon: 1.0,
+    ///     sigma: 1.0,
+    /// };
+    ///
+    /// let force = PairwiseCutoff(Isotropic {
+    ///     interaction: lennard_jones,
+    ///     r_cut: 2.5,
+    /// });
+    ///
+    /// let sites = microstate.sites();
+    /// let (force_0, virial_0) =
+    ///     force.site_pair_force_and_virial(&sites[0], &sites[1]);
+    /// let (force_1, virial_1) =
+    ///     force.site_pair_force_and_virial(&sites[1], &sites[0]);
+    ///
+    /// assert_relative_eq!(force_0, Cartesian::from([-24.0, 0.0, 0.0]));
+    /// assert_eq!(
+    ///     virial_0,
+    ///     Matrix {
+    ///         rows: [[12.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    ///     }
+    /// );
+    ///
+    /// assert_relative_eq!(force_1, Cartesian::from([24.0, 0.0, 0.0]));
+    /// assert_eq!(
+    ///     virial_1,
+    ///     Matrix {
+    ///         rows: [[12.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    ///     }
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn site_pair_force_and_virial<V, S>(
+        &self,
+        site_i: &Site<S>,
+        site_j: &Site<S>,
+    ) -> (V, V::Tensor)
+    where
+        E: SitePairForceAndVirial<S, Force = V>,
+        V: Default + Outer,
+        V::Tensor: Default,
+    {
+        if site_i.body_tag == site_j.body_tag {
+            (V::default(), V::Tensor::default())
+        } else {
+            self.0
+                .site_pair_force_and_virial(&site_i.properties, &site_j.properties)
+        }
+    }
+
+    /// Calculate the pairwise force, virial, and torque on site `i` caused by site `j`.
+    ///
+    /// Use this method to compute an individual term in the net force, virial, and torque on site `i`,
+    /// subject to the the maximum interaction range `r_cut` and inter-body checks:
+    ///
+    /// ```math
+    /// \begin{align*}
+    /// \vec{F}_{i} &= \sum_{j \in N_s} \vec{F}_{ji} \\
+    /// \mathbf{W}_{i} &= \sum_{j \in N_s} \mathbf{W}_{ji} \\
+    /// \vec{\tau}_{i} &= \sum_{j \in N_s} \vec{\tau}_{ji} \\
+    /// \end{align*}
+    /// ```
+    ///
+    /// where $`N_s`$ is the set of neighboring sites in other bodies
+    /// for which $`\left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut}`$ and
+    /// the subscript $`ji`$ means "from *j* on *i*".
+    #[inline]
+    pub fn site_pair_force_virial_and_torque<V, S>(
+        &self,
+        site_i: &Site<S>,
+        site_j: &Site<S>,
+    ) -> (V, V::Tensor, V::Bivector)
+    where
+        E: SitePairForceVirialAndTorque<S, Force = V>,
+        V: Default + Wedge + Outer,
+        V::Bivector: Default,
+        V::Tensor: Default,
+    {
+        if site_i.body_tag == site_j.body_tag {
+            (V::default(), V::Tensor::default(), V::Bivector::default())
+        } else {
+            self.0
+                .site_pair_force_virial_and_torque(&site_i.properties, &site_j.properties)
+        }
+    }
+
     /// Compute the pair energy between two sites.
     ///
     /// Use this method to compute an individual term in the total pair energy,
@@ -133,7 +272,6 @@ impl<E> PairwiseCutoff<E> {
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
-    ///
     /// use hoomd_interaction::{
     ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
     /// };
@@ -345,6 +483,158 @@ impl<E> PairwiseCutoff<E> {
     }
 }
 
+impl<V, B, S, X, C, E> NetSiteForceAndVirial<B, S, X, C> for PairwiseCutoff<E>
+where
+    V: Vector + Default + InnerProduct + Metric + Outer,
+    B: Transform<S>,
+    S: Position<Position = V>,
+    E: MaximumInteractionRange + SitePairForceAndVirial<S, Force = V>,
+    X: PointsNearBall<V, SiteKey>,
+    V::Tensor: Default + AddAssign,
+{
+    type Force = V;
+
+    /// Compute the net force and virial on a given site.
+    ///
+    /// ```math
+    /// \begin{align*}
+    /// \vec{F}_{i} &= \sum_{j \in N_s} \vec{F}_{ji} \\
+    /// \mathbf{W}_{i} &= \sum_{j \in N_s} \mathbf{W}_{ji} \\
+    /// \end{align*}
+    /// ```
+    ///
+    /// where $`N_s`$ is the set of neighboring sites in other bodies
+    /// for which $`\left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut}`$ and
+    /// the subscript $`ji`$ means "from *j* on *i*". The pairwise forces and
+    /// virials are given by `E`'s implementation of [`SitePairForceAndVirial`].
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_interaction::{
+    ///     NetSiteForceAndVirial, PairwiseCutoff, pairwise::Isotropic,
+    ///     univariate::LennardJones,
+    /// };
+    /// use hoomd_microstate::{Body, Microstate, Site, property::Point};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.extend_bodies([
+    ///     Body::point(Cartesian::from([0.0, 0.0, 0.0])),
+    ///     Body::point(Cartesian::from([1.0, 0.0, 0.0])),
+    /// ])?;
+    ///
+    /// let lennard_jones: LennardJones = LennardJones {
+    ///     epsilon: 1.0,
+    ///     sigma: 1.0,
+    /// };
+    ///
+    /// let force = PairwiseCutoff(Isotropic {
+    ///     interaction: lennard_jones,
+    ///     r_cut: 2.5,
+    /// });
+    ///
+    /// let (force_0, virial_0) = force.net_site_force_and_virial(&microstate, 0);
+    /// let (force_1, virial_1) = force.net_site_force_and_virial(&microstate, 1);
+    ///
+    /// assert_relative_eq!(force_0, Cartesian::from([-24.0, 0.0, 0.0]));
+    /// assert_relative_eq!(force_1, Cartesian::from([24.0, 0.0, 0.0]));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn net_site_force_and_virial(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        site_index: usize,
+    ) -> (V, V::Tensor) {
+        let site = &microstate.sites()[site_index];
+        let mut total_force = V::default();
+        let mut total_virial = V::Tensor::default();
+
+        for other_site in microstate
+            .iter_sites_near(site.properties.position(), self.maximum_interaction_range())
+            .filter(|s| site.body_tag != s.body_tag)
+        {
+            // Nominally, `site_pair_force_and_virial` should handle the cutoff. However, then this loop
+            // must += (0,0,0) many times. Performing the check here also boosts performance by
+            // 10%.
+            let distance_squared =
+                (*site.properties.position() - *other_site.properties.position()).norm_squared();
+            if distance_squared < self.0.maximum_interaction_range().powi(2) {
+                let (site_force, site_virial) = self
+                    .0
+                    .site_pair_force_and_virial(&site.properties, &other_site.properties);
+                total_force += site_force;
+                total_virial += site_virial;
+            }
+        }
+
+        (total_force, total_virial)
+    }
+}
+
+impl<V, B, S, X, C, E> NetSiteForceVirialAndTorque<B, S, X, C> for PairwiseCutoff<E>
+where
+    V: Vector + Default + InnerProduct + Metric + Wedge + Outer,
+    B: Transform<S>,
+    S: Position<Position = V>,
+    E: MaximumInteractionRange + SitePairForceVirialAndTorque<S, Force = V>,
+    V::Bivector: AddAssign + Default,
+    X: PointsNearBall<V, SiteKey>,
+    V::Tensor: Default + AddAssign,
+{
+    type Force = V;
+
+    /// Compute the net force, virial, and torque on a given site.
+    ///
+    /// ```math
+    /// \begin{align*}
+    /// \vec{F}_{i} &= \sum_{j \in N_s} \vec{F}_{ji} \\
+    /// \mathbf{W}_{i} &= \sum_{j \in N_s} \mathbf{W}_{ji} \\
+    /// \vec{\tau}_{i} &= \sum_{j \in N_s} \vec{\tau}_{ji} \\
+    /// \end{align*}
+    /// ```
+    ///
+    /// where $`N_s`$ is the set of neighboring sites in other bodies
+    /// for which $`\left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut}`$ and
+    /// the subscript $`ji`$ means "from *j* on *i*". The pairwise forces,
+    /// virials, and torques are given by `E`'s implementation of [`SitePairForceVirialAndTorque`].
+    #[inline]
+    fn net_site_force_virial_and_torque(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        site_index: usize,
+    ) -> (V, V::Tensor, V::Bivector) {
+        let site = &microstate.sites()[site_index];
+        let mut total_force = V::default();
+        let mut total_virial = V::Tensor::default();
+        let mut total_torque = V::Bivector::default();
+
+        for other_site in microstate
+            .iter_sites_near(site.properties.position(), self.maximum_interaction_range())
+            .filter(|s| site.body_tag != s.body_tag)
+        {
+            // nominally, `site_pair_force` should handle the cutoff. However, then this loop
+            // must += (0,0,0) many times. Perform the check here also boosts performance by
+            // 10%.
+            let distance_squared =
+                (*site.properties.position() - *other_site.properties.position()).norm_squared();
+            if distance_squared < self.0.maximum_interaction_range().powi(2) {
+                let (force, virial, torque) = self
+                    .0
+                    .site_pair_force_virial_and_torque(&site.properties, &other_site.properties);
+                total_force += force;
+                total_virial += virial;
+                total_torque += torque;
+            }
+        }
+
+        (total_force, total_virial, total_torque)
+    }
+}
+
 impl<P, B, S, X, C, E> TotalEnergy<Microstate<B, S, X, C>> for PairwiseCutoff<E>
 where
     E: SitePairEnergy<S> + MaximumInteractionRange,
@@ -448,7 +738,7 @@ where
 
     /// Compute the difference in energy between two microstates.
     ///
-    /// Returns `$ E_\mathrm{final} - E_\mathrm{initial} $`.
+    /// Returns $` E_\mathrm{final} - E_\mathrm{initial} `$.
     ///
     /// # Example
     ///
