@@ -44,7 +44,32 @@ pub enum Error {
 }
 
 /// The maximum number of possible ghosts.
-pub const MAX_GHOSTS: usize = 12;
+///
+/// This value is the capacity of the array-backed storage that [`GenerateGhosts`] fills
+/// and [`Microstate`](crate::Microstate) maintains for each site.
+/// Choose it at compile time by enabling the `max_ghosts_12`, `max_ghosts_16`,
+/// `max_ghosts_32`, and `max_ghosts_64` cargo features of `hoomd-microstate`.
+/// The largest enabled feature sets `MAX_GHOSTS`; with none enabled, `MAX_GHOSTS` is 8.
+///
+/// The default of 8 covers Cartesian periodic boundaries in 2 and 3
+/// dimensions, which place at most `2^N - 1` images per site (3 and 7), and
+/// the `EightEight` hyperbolic tiling, which places 8. Choose 12 for the
+/// `TwelveTwelve` hyperbolic tiling (12), 16 for 4-dimensional Cartesian
+/// periodic boundaries (15), 32 for 5 dimensions, and 64 for 6 dimensions.
+///
+/// Boundary conditions panic when they place more images than this within the
+/// interaction range.
+pub const MAX_GHOSTS: usize = if cfg!(feature = "max_ghosts_64") {
+    64 // Consts MUST be sorted in descending order to ensure we get the correct counts
+} else if cfg!(feature = "max_ghosts_32") {
+    32
+} else if cfg!(feature = "max_ghosts_16") {
+    16
+} else if cfg!(feature = "max_ghosts_12") {
+    12
+} else {
+    8
+};
 
 // Ideally, MAX_GHOSTS would be associated with the boundary type, but that is
 // not currently possible in Rust.
@@ -95,7 +120,8 @@ pub trait Wrap<P> {
 /// vertex will have 3.
 ///
 /// To avoid costly dynamic memory allocations, [`generate_ghosts`] returns an
-/// array-backed storage with a hard-coded maximum size of `MAX_GHOSTS`.
+/// array-backed storage with a maximum size of [`MAX_GHOSTS`], which is chosen
+/// at compile time with cargo features.
 ///
 /// [`generate_ghosts`]: Self::generate_ghosts
 pub trait GenerateGhosts<S> {
@@ -111,6 +137,12 @@ pub trait GenerateGhosts<S> {
     /// Given `site_properties` inside the boundary, `generate_ghosts` places
     /// periodic images of that site. It must place all ghosts needed to compute
     /// interactions with other sites in the given [`maximum_interaction_range`].
+    ///
+    /// # Panics
+    ///
+    /// `generate_ghosts` panics when the boundary condition places more images
+    /// than [`MAX_GHOSTS`] within the interaction range. Choose a larger value
+    /// with the `max_ghosts_*` cargo features of `hoomd-microstate` if needed.
     ///
     /// [`maximum_interaction_range`]: Self::maximum_interaction_range
     fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS>;
