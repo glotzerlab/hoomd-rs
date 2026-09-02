@@ -162,8 +162,8 @@ where
         }
 
         // Emit ghosts nearby lower-dimensional elements of the hypercuboid: edges,
-        // corners, etc. Each of these requires a mixture of zero and dim_offset
-        // translations, which we construct in the following loop.
+        // corners, etc. Each of these requires a mixture of zero and
+        // per_dimension_translation displacements, which we construct in the loop
         // `(subset - 1) & near_mask` walks over the ghost subsets in descending order,
         // stopping once the mask is 0 (no ghosts left to generate).
         let mut subset = near_facets_bitmask;
