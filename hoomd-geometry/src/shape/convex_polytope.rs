@@ -7,7 +7,7 @@ use std::f64::consts::SQRT_2;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{BoundingSphereRadius, Error, SupportMapping};
+use crate::{BoundingSphereRadius, Error, SupportMapping, Volume, shape::ConvexSurfaceMesh2d};
 use arrayvec::ArrayVec;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
@@ -374,6 +374,15 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
             vertices: ArrayVec::<_, MAX_VERTICES>::from_iter(signed_combinations_of_one_half::<N>()),
             bounding_radius,
         }
+    }
+}
+
+impl<const MAX_VERTICES: usize> Volume for ConvexPolytope<2, MAX_VERTICES> {
+    #[inline]
+    fn volume(&self) -> f64 {
+        ConvexSurfaceMesh2d::try_from(self.clone())
+            .expect("Polygon could not be triangulated!")
+            .volume()
     }
 }
 
