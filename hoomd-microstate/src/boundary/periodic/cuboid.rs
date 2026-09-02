@@ -144,7 +144,7 @@ where
 
         // Record what facets a site is within the maximum_interaction_range of, or
         // none if outside the box (as checked by `x < -half || x >= half`).
-        let mut near_mask = 0u32;
+        let mut near_facets_bitmask = 0u32;
         let mut per_dimension_translation = [0.0_f64; N];
         for i in 0..N {
             let half = self.shape.edge_lengths[i].get() / 2.0;
@@ -153,10 +153,10 @@ where
                 return result;
             }
             if x > half - range {
-                near_mask |= 1 << i;
+                near_facets_bitmask |= 1 << i;
                 per_dimension_translation[i] = -self.shape.edge_lengths[i].get();
             } else if x < -half + range {
-                near_mask |= 1 << i;
+                near_facets_bitmask |= 1 << i;
                 per_dimension_translation[i] = self.shape.edge_lengths[i].get();
             }
         }
@@ -166,7 +166,7 @@ where
         // translations, which we construct in the following loop.
         // `(subset - 1) & near_mask` walks over the ghost subsets in descending order,
         // stopping once the mask is 0 (no ghosts left to generate).
-        let mut subset = near_mask;
+        let mut subset = near_facets_bitmask;
         while subset != 0 {
             let mut ghost = *site_properties;
             let ghost_position = ghost.position_mut();
@@ -178,7 +178,7 @@ where
                 }
             }
             result.push(ghost);
-            subset = (subset - 1) & near_mask;
+            subset = (subset - 1) & near_facets_bitmask;
         }
 
         result
