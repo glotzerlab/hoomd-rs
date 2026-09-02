@@ -11,7 +11,7 @@
 *Changed:*
 
 * `[hoomd-microstate]`: Lower the default maximum number of ghosts per site
-  from 12 to 8. This covers 2-D and 3-D Cartesian periodic boundaries and the 8-8
+  from 12 to 8. This covers 2D and 3D Cartesian periodic boundaries and the 8-8
   tiling. Simulations with the 12-12 hyperbolic tiling must now enable the
   `max_ghosts_12` feature, as do higher-dimensional Cartesian simulations.
 
