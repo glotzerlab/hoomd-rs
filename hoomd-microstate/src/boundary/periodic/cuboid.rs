@@ -142,9 +142,8 @@ where
         let r = site_properties.position();
         let range = self.maximum_interaction_range;
 
-        // Record each direction the site is near, and the translation that folds a
-        // ghost back across that boundary. `near_mask` is the set of active directions
-        // and `dim_offset` is the per-direction periodic translation.
+        // Record what facets a particle is within the ghost radius of, or none if
+        // outside the box (as checked by `x < -half || x >= half`).
         let mut near_mask = 0u32;
         let mut dim_offset = [0.0_f64; N];
         for i in 0..N {
@@ -162,12 +161,17 @@ where
             }
         }
 
-        // Emit one image for every non-empty subset of the active directions by
-        // walking the subsets of `near_mask` in descending order.
+        // Emit ghosts nearby lower-dimensional elements of the hypercuboid: edges,
+        // corners, etc. Each of these requires a mixture of zero and dim_offset
+        // translations, which we construct in the following loop.
+        // `(subset - 1) & near_mask` walks over the ghost subsets in descending order,
+        // stopping once the mask is 0 (no ghosts left to generate).
         let mut subset = near_mask;
         while subset != 0 {
             let mut ghost = *site_properties;
             let pos = ghost.position_mut();
+            // Accumulate per-direction offset
+            // These will be all nonzero for corners, 1 zero for 3D edges, etc.
             for i in 0..N {
                 if subset & (1 << i) != 0 {
                     pos[i] += dim_offset[i];
