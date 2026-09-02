@@ -169,12 +169,12 @@ where
         let mut subset = near_mask;
         while subset != 0 {
             let mut ghost = *site_properties;
-            let pos = ghost.position_mut();
+            let ghost_position = ghost.position_mut();
             // Accumulate per-direction offset
             // These will be all nonzero for corners, 1 zero for 3D edges, etc.
             for i in 0..N {
                 if subset & (1 << i) != 0 {
-                    pos[i] += per_dimension_translation[i];
+                    ghost_position[i] += per_dimension_translation[i];
                 }
             }
             result.push(ghost);
