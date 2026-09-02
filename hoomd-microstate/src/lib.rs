@@ -150,6 +150,12 @@
 //! When using [`Open`] or [`Closed`] boundary conditions, [`ghosts`] will always
 //! be empty.
 //!
+//! Each site stores its ghosts in an array-backed container with a capacity of
+//! [`MAX_GHOSTS`](crate::boundary::MAX_GHOSTS), chosen at compile time with the
+//! `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and `max_ghosts_64` cargo
+//! features of `hoomd-microstate`. The default value of 8 ghosts is sufficient for
+//! 2-D and 3-D Cartesian periodic boundaries and the `EightEight` hyperbolic tiling.
+//!
 //! [`ghosts`]: Microstate::ghosts
 //! [`Open`]: crate::boundary::Open
 //! [`Closed`]: crate::boundary::Closed
