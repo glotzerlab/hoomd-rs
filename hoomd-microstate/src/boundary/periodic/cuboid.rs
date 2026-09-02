@@ -142,7 +142,7 @@ where
         let r = site_properties.position();
         let range = self.maximum_interaction_range;
 
-        // Record what facets a particle is within the ghost radius of, or none if
+        // Record what facets a particle is within the interaction range of, or none if
         // outside the box (as checked by `x < -half || x >= half`).
         let mut near_mask = 0u32;
         let mut dim_offset = [0.0_f64; N];
