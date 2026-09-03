@@ -51,11 +51,20 @@ pub enum Error {
 /// `max_ghosts_32`, and/or `max_ghosts_64` cargo features of `hoomd-microstate`.
 /// The largest enabled feature sets `MAX_GHOSTS`; with none enabled, `MAX_GHOSTS` is 8.
 ///
-/// The default of 8 covers Cartesian periodic boundaries in 2 and 3
-/// dimensions, which place at most `2^N - 1` images per site (3 and 7), and
-/// the `EightEight` hyperbolic tiling, which places 8. Choose 12 for the
-/// `TwelveTwelve` hyperbolic tiling (12), 16 for 4-dimensional Cartesian
-/// periodic boundaries (15), 32 for 5 dimensions, and 64 for 6 dimensions.
+/// The default of 8 covers [`Hypercuboid`], [`Hyperparallelepiped`], [`Rhomboid`],
+/// and [`Triclinic`] periodic boundaries in 2 and 3 dimensions, which place at most
+/// $`2^N - 1`$ images per site (3 and 7), and the [`EightEight`] hyperbolic tiling,
+/// which places 8. Choose 12 for the [`TwelveTwelve`] hyperbolic tiling (12).
+/// For periodic [`Hypercuboid`] / [`Hyperparallelepiped`] boundaries, choose 16 for
+/// 4-dimensional Cartesian periodic boundaries (15), 32 for 5 dimensions, and 64 for
+/// 6 dimensions.
+///
+/// [`Hypercuboid`]: hoomd_geometry::Hypercuboid
+/// [`Hyperparallelepiped`]: hoomd_geometry::Hyperparalellepiped
+/// [`Rhomboid`]: hoomd_geometry::Rhomboid
+/// [`Triclinic`]: hoomd_geometry::Triclinic
+/// [`EightEight`]: hoomd_geometry::EightEight
+/// [`TwelveTwelve`]: hoomd_geometry::TwelveTwelve
 ///
 /// Boundary conditions panic when they place more images than this within the
 /// interaction range.
