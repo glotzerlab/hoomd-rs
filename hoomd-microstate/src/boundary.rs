@@ -48,7 +48,7 @@ pub enum Error {
 /// This value is the capacity of the array-backed storage that [`GenerateGhosts`] fills
 /// and [`Microstate`](crate::Microstate) maintains for each site.
 /// Choose it at compile time by enabling the `max_ghosts_12`, `max_ghosts_16`,
-/// `max_ghosts_32`, and `max_ghosts_64` cargo features of `hoomd-microstate`.
+/// `max_ghosts_32`, and/or `max_ghosts_64` cargo features of `hoomd-microstate`.
 /// The largest enabled feature sets `MAX_GHOSTS`; with none enabled, `MAX_GHOSTS` is 8.
 ///
 /// The default of 8 covers Cartesian periodic boundaries in 2 and 3
