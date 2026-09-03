@@ -4,7 +4,16 @@
 
 *Added:*
 
+* `[hoomd-microstate]`: Add the `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and
+  `max_ghosts_64` cargo features that set the maximum number of ghosts per site. The
+  largest enabled feature is used when multiple are set simultaneously.
+
 *Changed:*
+
+* `[hoomd-microstate]`: Lower the default maximum number of ghosts per site
+  from 12 to 8. This covers 2D and 3D Cartesian periodic boundaries and the 8-8
+  tiling. Simulations with the 12-12 hyperbolic tiling must now enable the
+  `max_ghosts_12` feature, as do higher-dimensional Cartesian simulations.
 
 `[tutorials]`:  The workflow tutorial now uses `hoomd-workspace` (#403).
 
