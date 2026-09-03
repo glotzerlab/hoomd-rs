@@ -185,6 +185,11 @@
 //!
 //! [serde]: https://serde.rs/
 //! [postcard]: https://docs.rs/postcard/latest/postcard/
+//! # Feature flags
+//! * `max_ghosts_12`: Set [`MAX_GHOSTS`] to at least 12.
+//! * `max_ghosts_16`: Set [`MAX_GHOSTS`] to at least 16.
+//! * `max_ghosts_32`: Set [`MAX_GHOSTS`] to at least 32.
+//! * `max_ghosts_64`: Set [`MAX_GHOSTS`] to at least 64.
 //!
 //! # Complete documentation
 //!
