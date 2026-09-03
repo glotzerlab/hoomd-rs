@@ -4,3 +4,6 @@
 //! TODO
 
 pub mod math;
+
+mod k_atic_psi;
+pub use k_atic_psi::k_atic_psi;
