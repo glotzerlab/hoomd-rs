@@ -509,8 +509,9 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
         for i in 0..4 {
             let edges = std::array::from_fn(|k| portal[(i + k + 1) % 4] - v_new);
             let n = Self::counary_cross(&edges);
-            // Skip near-degenerate faces.
-            if n.norm_squared() < Self::TOLERANCE * Self::TOLERANCE * interior.norm_squared() {
+            // Skip degenerate facets. |n|**2 has units of length^6, so we match that
+            let scale = portal[i].norm_squared().max(v_new.norm_squared()).sqrt();
+            if n.norm_squared() < Self::TOLERANCE.powi(2) * scale.powi(6) {
                 continue;
             }
             let n = if (portal[i] - v_new).dot(&n) < 0.0 {
