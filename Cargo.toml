@@ -19,7 +19,8 @@ members = ["benchmarks",
            "hoomd-vector",
            "hoomd-workspace",
            "tools/build-wasm-doc-examples",
-           "hoomd-rand"
+           "hoomd-rand",
+           "validation"
           ]
 
 # Include only core hoomd simulation crates by default so that `cargo build`,

@@ -1,0 +1,30 @@
+# Constants for hoomd-rs validation
+
+[workspace]
+ndims = [2, 3]
+particle_types = ["sphere", "dumbbell"]
+methods = ["constant-volume", "langevin"]
+thermostats = ["no-thermostat", "bussi", "mttk"]
+
+[procedure]
+dt = 0.001
+tau = 0.1
+gsd_period = 30
+sim_duration = 30000
+nlist_buffer = 0.4
+
+[system]
+kt = 1.5
+particles_per_side = 10
+
+density_sphere_3d = 0.6269137133228043
+density_sphere_2d = 0.6269137133228043
+
+density_dumbbell_3d = 0.5
+density_dumbbell_2d = 0.5
+
+epsilon = 1.0
+sigma = 1.0
+r_cut = 4.0
+r_on = 3.2
+mode = "xplor"

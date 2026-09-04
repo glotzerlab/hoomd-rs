@@ -1,0 +1,31 @@
+[package]
+name = "validation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+hoomd-derive.workspace = true
+hoomd-interaction.workspace = true
+hoomd-md.workspace = true
+hoomd-microstate.workspace = true
+hoomd-vector.workspace = true
+hoomd-spatial.workspace = true
+hoomd-simulation.workspace = true
+hoomd-workspace = {path = "../hoomd-workspace"}
+hoomd-linear-algebra.workspace = true
+hoomd-geometry.workspace = true
+serde.workspace = true
+toml = "1.1.4"
+anyhow.workspace = true
+itertools.workspace = true
+hoomd-rand.workspace = true
+
+[lints]
+workspace = true
