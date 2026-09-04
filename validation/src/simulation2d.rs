@@ -68,66 +68,37 @@ type Macrostate = Isothermal;
 
 
 // The site types.
-type SphereSiteProperties = Point<Position>;
-
 #[derive(Clone, Copy, Default, PartialEq)]
-enum DumbbellSiteVariants {
+enum SiteVariants {
     #[default]
     A,
     B,
 }
 
 #[derive(Clone, Copy, Default, hoomd_derive::Position)]
-struct DumbbellSiteProperties {
+struct SiteProperties {
     position: Position,
-    site_type: DumbbellSiteVariants,
-}
-
-#[derive(Clone, Copy)]
-enum SiteProperties {
-    Sphere(SphereSiteProperties),
-    Dumbbell(DumbbellSiteProperties),
-}
-
-impl hoomd_microstate::property::Position for SiteProperties {
-    type Position = Position;
-
-    fn position(&self) -> &Self::Position {
-        match self {
-            Self::Sphere(inner_properties) => inner_properties.position(),
-            Self::Dumbbell(inner_properties) => inner_properties.position(),
-        }
-    }
-
-    fn position_mut(&mut self) -> &mut Self::Position {
-        match self {
-            Self::Sphere(inner_properties) => inner_properties.position_mut(),
-            Self::Dumbbell(inner_properties) => inner_properties.position_mut(),
-        }
-    }
+    site_type: SiteVariants,
 }
 
 impl Transform<SiteProperties> for BodyProperties {
     fn transform(&self, site_properties: &SiteProperties) -> SiteProperties {
-        match site_properties {
-            SiteProperties::Sphere(inner_properties) => SiteProperties::Sphere(
-                Point {
-                    position: self.position + self.orientation.rotate(&inner_properties.position)
-                }
-            ),
-            SiteProperties::Dumbbell(inner_properties) => SiteProperties::Dumbbell(
-                DumbbellSiteProperties {
-                    position: self.position + self.orientation.rotate(&inner_properties.position),
-                    site_type: inner_properties.site_type
-                }
-            )
+        SiteProperties {
+            position: self.position
+                + self.orientation.rotate(&site_properties.position),
+            site_type: site_properties.site_type
         }
     }
 }
 
 
 // The microstate type.
-type Microstate = hoomd_microstate::Microstate<BodyProperties, SiteProperties, Spatial, Boundary>;
+type Microstate = hoomd_microstate::Microstate<
+    BodyProperties,
+    SiteProperties,
+    Spatial,
+    Boundary
+>;
 
 
 /// The interaction types.
@@ -145,23 +116,23 @@ impl MaximumInteractionRange for DumbbellInteraction {
     }
 }
 
-impl SitePairForceVirialAndTorque<DumbbellSiteProperties> for DumbbellInteraction {
+impl SitePairForceVirialAndTorque<SiteProperties> for DumbbellInteraction {
     type Force = Position;
 
     fn site_pair_force_virial_and_torque(
         &self,
-        site_properties_i: &DumbbellSiteProperties,
-        site_properties_j: &DumbbellSiteProperties,
+        site_properties_i: &SiteProperties,
+        site_properties_j: &SiteProperties,
     ) -> (
         Self::Force,
         <Self::Force as Outer>::Tensor,
         <Self::Force as Wedge>::Bivector,
     ) {
         let (force, virial, torque) = match (site_properties_i.site_type, site_properties_j.site_type) {
-            (DumbbellSiteVariants::A, DumbbellSiteVariants::A) => self
+            (SiteVariants::A, SiteVariants::A) => self
                 .aa
                 .site_pair_force_virial_and_torque(site_properties_i, site_properties_j),
-            (DumbbellSiteVariants::B, DumbbellSiteVariants::B) => self
+            (SiteVariants::B, SiteVariants::B) => self
                 .bb
                 .site_pair_force_virial_and_torque(site_properties_i, site_properties_j),
             _ => self
