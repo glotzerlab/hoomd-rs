@@ -477,7 +477,11 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
         None
     }
     #[inline]
-    fn narrow_portal(interior: &Cartesian<4>, portal: &mut [Cartesian<4>; 4], v_new: Cartesian<4>) {
+    fn narrow_portal(
+        interior: &Cartesian<4>,
+        portal: &mut [Cartesian<4>; 4],
+        v_new: Cartesian<4>,
+    ) -> bool {
         // The 4-simplex [portal[0..4] , v_new] has 5 tetrahedral faces.
         // The entry face is the current portal (portal[0..4]).
         // The 4 exit faces each contain v_new and all portal vertices except portal[i].
@@ -530,6 +534,7 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
             }
         }
         portal[exit_face.map_or(fallback_i, |(i, _)| i)] = v_new;
+        false
     }
 }
 
