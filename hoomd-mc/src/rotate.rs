@@ -9,6 +9,7 @@ use std::{fmt, marker::PhantomData};
 use hoomd_utility::valid::PositiveReal;
 
 mod angle;
+mod doubleversor;
 mod versor;
 
 /// Change the orientation of a body by a small amount.
@@ -24,8 +25,13 @@ mod versor;
 /// When proposing trial moves for [`Versor`], [`maximum_rotation`] is measured
 /// in radians and the width of a Gaussian distribution centered on 0.
 ///
+/// When proposing trial moves for [`DoubleVersor`], [`maximum_rotation`] is the
+/// width of a Gaussian distribution centered on 0 in each of the two isoclinic
+/// components.
+///
 /// [`Angle`]: hoomd_vector::Angle
 /// [`Versor`]: hoomd_vector::Versor
+/// [`DoubleVersor`]: hoomd_vector::DoubleVersor
 /// [`maximum_rotation`]: Self::maximum_rotation
 ///
 /// The generic type names are:
