@@ -90,7 +90,15 @@ trait MinkowskiPortalRefinement<const N: usize> {
     /// exit through one of the outer faces. This method identifies which outer
     /// face the ray exits through and replaces the portal vertex opposite that
     /// face with `v_new`, ensuring that the origin ray always passes through the portal
-    fn narrow_portal(interior: &Cartesian<N>, portal: &mut [Cartesian<N>; N], v_new: Cartesian<N>);
+    ///
+    /// Returns `true` when the origin is known to lie inside the N-simplex
+    /// {``v_new``, *portal}. This simplex is guaranteed to be in the Minkowski
+    /// difference, so this guarantees we found an overlap.
+    fn narrow_portal(
+        interior: &Cartesian<N>,
+        portal: &mut [Cartesian<N>; N],
+        v_new: Cartesian<N>,
+    ) -> bool;
 }
 
 impl MinkowskiPortalRefinement<2> for Cartesian<2> {
@@ -143,7 +151,11 @@ impl MinkowskiPortalRefinement<2> for Cartesian<2> {
     }
 
     #[inline]
-    fn narrow_portal(interior: &Cartesian<2>, portal: &mut [Cartesian<2>; 2], v_new: Cartesian<2>) {
+    fn narrow_portal(
+        interior: &Cartesian<2>,
+        portal: &mut [Cartesian<2>; 2],
+        v_new: Cartesian<2>,
+    ) -> bool {
         let mut v_perp = (v_new - *interior).perpendicular();
         // Orient toward portal[0]
         if (portal[0] - v_new).dot(&v_perp) < 0.0 {
@@ -156,6 +168,7 @@ impl MinkowskiPortalRefinement<2> for Cartesian<2> {
             // Origin is on the portal[1] side — replace portal[0]
             portal[0] = v_new;
         }
+        false
     }
 }
 
@@ -270,7 +283,11 @@ impl MinkowskiPortalRefinement<3> for Cartesian<3> {
     }
 
     #[inline]
-    fn narrow_portal(interior: &Cartesian<3>, portal: &mut [Cartesian<3>; 3], v_new: Cartesian<3>) {
+    fn narrow_portal(
+        interior: &Cartesian<3>,
+        portal: &mut [Cartesian<3>; 3],
+        v_new: Cartesian<3>,
+    ) -> bool {
         let [v1, v2, v3] = *portal;
         // Test origin against the three planes that separate the new portal candidates
         // using the triple product identities as an optimization:
@@ -293,6 +310,7 @@ impl MinkowskiPortalRefinement<3> for Cartesian<3> {
             (false, _, true) => portal[1] = v_new, // OUTside v1 && inside  v3 => eliminate v2
             (false, _, false) => portal[0] = v_new, // OUTside v1 && OUTside v3 => eliminate v1
         }
+        false
     }
 }
 
