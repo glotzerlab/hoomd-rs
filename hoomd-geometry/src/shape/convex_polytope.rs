@@ -224,17 +224,22 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
     /// let diamond = ConvexPolytope::<2>::orthoplex();
-    /// assert_relative_eq!(diamond.volume(), 1.0);
+    /// assert_relative_eq!(
+    ///     diamond.bounding_sphere_radius().get(),
+    ///     f64::sqrt(2.0)
+    /// );
+    /// assert_eq!(diamond.vertices().len(), 2 * 2);
     ///
     /// let octahedron = ConvexPolyhedron::orthoplex();
     /// assert_relative_eq!(
     ///     octahedron.bounding_sphere_radius().get(),
     ///     f64::sqrt(2.0)
     /// );
+    /// assert_eq!(octahedron.vertices().len(), 2 * 3);
     ///
     /// // Cross polytopes always have 2*N vertices
     /// let octachoron = ConvexPolytope::<4, 8>::orthoplex();
-    /// assert_eq!(octachoron.vertices().len(), 8);
+    /// assert_eq!(octachoron.vertices().len(), 2 * 4);
     /// # Ok(())
     /// # }
     /// ```
@@ -277,7 +282,10 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
     /// let triangle = ConvexPolygon::simplex();
-    /// assert_relative_eq!(triangle.volume(), f64::sqrt(3.0) / 4.0);
+    /// assert_relative_eq!(
+    ///     triangle.bounding_sphere_radius().get(),
+    ///     f64::sqrt(2.0 / 6.0) // sqrt(N / (N**2 + N))
+    /// );
     ///
     /// let tetrahedron = ConvexPolyhedron::simplex();
     /// assert_relative_eq!(
@@ -337,7 +345,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
     /// let square = ConvexPolygon::hypercube();
-    /// assert_relative_eq!(square.volume(), 1.0);
+    /// assert_relative_eq!(square.bounding_sphere_radius().get(), f64::sqrt(2.0));
     ///
     /// let cube = ConvexPolyhedron::hypercube();
     /// assert_relative_eq!(cube.bounding_sphere_radius().get(), f64::sqrt(3.0));
