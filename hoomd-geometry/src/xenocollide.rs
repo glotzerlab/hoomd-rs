@@ -660,8 +660,11 @@ where
             return result;
         }
 
-        // Face test and vertex replacement (dimension-specific)
-        Cartesian::<N>::narrow_portal(&v0, &mut portal, v_new);
+        // Face test and vertex replacement (dimension-specific). A `true` return
+        // confirms that the origin lie inside the portal (and therefore shapes overlap)
+        if Cartesian::<N>::narrow_portal(&v0, &mut portal, v_new) {
+            return true;
+        }
 
         if count >= XENOCOLLIDE_MAX_ITER {
             return true;
