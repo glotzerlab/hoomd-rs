@@ -482,30 +482,41 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
         portal: &mut [Cartesian<4>; 4],
         v_new: Cartesian<4>,
     ) -> bool {
-        // The 4-simplex [portal[0..4] , v_new] has 5 tetrahedral faces.
+        // The 4-simplex [portal[0..4] , v_new] has 5 tetrahedral facets.
         // The entry face is the current portal (portal[0..4]).
-        // The 4 exit faces each contain v_new and all portal vertices except portal[i].
+        // The 4 exit facets each contain v_new and all portal vertices except portal[i]
         //
-        // The origin ray enters through the portal and must exit through one of these
-        // 4 faces. To determine which, we compute the outward-facing normal to each exit
-        // face and check whether the origin lies on the outward side:
+        // The origin ray (from `v0` through the origin and beyond) enters through the
+        // portal and must exit through one of the four remaining facets, each of which
+        // contains `v_new` and all but one portal vertex. Note that each point on the
+        // origin ray is expressable as `λ*v_0 + 0`. λ=1 is at exactly the deep point
+        // (v0), at λ=0 the ray touches the origin, and for all 1>=λ>0, the ray is
+        // marching outward toward the origin (and for λ<0 we have moved past the
+        // origin). Once we pass the origin, we can identify which facet we leave
+        // through by searching the ray in barycentric coordinates: the weight of a
+        // selected vertex is positive inside the simplex, and then *0 exactly when the
+        // ray exits the facet opposite that vertex*. If we can identify which vertex's
+        // weight reaches 0 first, we've narrowed the portal successfully.
         //
-        //   n_i = inward normal of the face opposite portal[i]
+        // Locating where a ray meets a facet's hyperplane can be done in the standard
+        // way: with a facet normal n_i oriented toward portal[i], the crossing sits at
+        // `λ_i = (v_new . n_i) / (v_0 . n_i)`. A candidate hyperplane is reachable only
+        // when the denominator is greater than zero.
+        // (see https://stackoverflow.com/a/23976134/21897583 for an example)
         //
-        // The signed distance from a point P to the hyperplane through v_new with normal n
-        // is (P − v_new) . n. The origin (P = 0) has distance −v_new . n, and interior
-        // has distance (interior − v_new) . n. We orient n toward portal[i] so that the
-        // origin is on the opposite (outward) side when v_new . n > 0.
-        // Among faces the ray crosses (d > 0 and num > 0), we pick the one with smallest
-        // t = num / (num + d) and fall back to the face with largest d if none qualify.
+        // The key thing: since marching outward means decreasing λ, the first
+        // hyperplane we encounter after entering the simplex is the reachable candidate
+        // with the *largest* λ_i. All other weights are positive at this point, meaning
+        // the crossing lies *inside* the exit facet (not just its hyperplane). This
+        // facet is the exit, and will serve as the new portal in the next iteration.
         //
-        // NOTE: This is fundementally different from 3d, where the cross product
-        // uniquely identifies the correct facet (plane, in that case) to exit through.
-        // In 4D, we need to find the *best* facet
-        let mut exit_face: Option<(usize, f64)> = None;
-        let mut fallback_i = 0;
-        let mut fallback_d = f64::NEG_INFINITY;
+        // The sign of the largest λ_i tells us where the exit lies: positive means the
+        // ray exits before reaching the origin (refinement continues), while zero or
+        // negative means the origin lies on or inside the simplex and therefore inside
+        // the Minkowski difference. Installing that facet is still correct (as the ray
+        // crosses it), and the next iteration's hit test reports the overlap.
 
+        let mut exit_face: Option<(usize, f64)> = None;
         for i in 0..4 {
             let edges = std::array::from_fn(|k| portal[(i + k + 1) % 4] - v_new);
             let n = Self::counary_cross(&edges);
@@ -514,28 +525,31 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
             if n.norm_squared() < Self::TOLERANCE.powi(2) * scale.powi(6) {
                 continue;
             }
+            // Orient the normal toward portal[i], the vertex this candidate would replace
             let n = if (portal[i] - v_new).dot(&n) < 0.0 {
                 -n
             } else {
                 n
             };
-            let d = v_new.dot(&n);
-            let num = (*interior - v_new).dot(&n);
-
-            if d > fallback_d {
-                fallback_d = d;
-                fallback_i = i;
+            let denom = interior.dot(&n);
+            if denom <= 0.0 {
+                continue; // The origin ray can't reach this facet -> can't be the exit
             }
-            if d > 0.0 && num > 0.0 {
-                let t = num / (num + d);
-                match exit_face {
-                    Some((_, best_t)) if t >= best_t => {}
-                    _ => exit_face = Some((i, t)),
-                }
+            let lambda = v_new.dot(&n) / denom;
+            if exit_face.is_none_or(|(_, best_lambda)| lambda > best_lambda) {
+                exit_face = Some((i, lambda));
             }
         }
-        portal[exit_face.map_or(fallback_i, |(i, _)| i)] = v_new;
-        false
+        match exit_face {
+            Some((i, _)) => {
+                portal[i] = v_new;
+                false
+            }
+            // No facet was reachable: every candidate was degenerate or numerically
+            // rejected. (An origin strictly inside the simplex would instead yield a
+            // reachable facet with λ <= 0, above). Fail safe as an overlap.
+            None => true,
+        }
     }
 }
 
