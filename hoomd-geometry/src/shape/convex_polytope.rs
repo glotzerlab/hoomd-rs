@@ -224,10 +224,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
     /// let diamond = ConvexPolytope::<2>::orthoplex();
-    /// assert_relative_eq!(
-    ///     diamond.bounding_sphere_radius().get(),
-    ///     f64::sqrt(2.0)
-    /// );
+    /// assert_relative_eq!(diamond.bounding_sphere_radius().get(), f64::sqrt(2.0));
     /// assert_eq!(diamond.vertices().len(), 2 * 2);
     ///
     /// let octahedron = ConvexPolyhedron::orthoplex();
