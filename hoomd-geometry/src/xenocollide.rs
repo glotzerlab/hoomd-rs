@@ -541,13 +541,17 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
             }
         }
         match exit_face {
+            // The first exit lies at or beyond the origin, so the origin is on (or
+            // inside) the portal+v_new simplex. That simplex is contained in Minkowski
+            // Minkowski difference, so we can immediately exit -> overlap.
+            Some((_, lambda)) if lambda <= 0.0 => true,
             Some((i, _)) => {
                 portal[i] = v_new;
                 false
             }
             // No facet was reachable: every candidate was degenerate or numerically
             // rejected. (An origin strictly inside the simplex would instead yield a
-            // reachable facet with λ <= 0, above). Fail safe as an overlap.
+            // reachable facet with lambda <= 0, above). Fail safe as an overlap.
             None => true,
         }
     }
