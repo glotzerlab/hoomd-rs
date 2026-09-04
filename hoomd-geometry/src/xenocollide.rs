@@ -4,9 +4,9 @@
 //! Implementations of the Xenocollide collision detection algorithm.
 //!
 //! > [!IMPORTANT]
-//! > This implementation of Xenocollide *require* that geometries contain the origin in
-//! their local frame. If this assumption is violated, the algorithm can produce
-//! incorrect results!
+//! > This implementation of Xenocollide *requires* that geometries contain the origin
+//! > in their local frame. If this assumption is violated, the algorithm can produce
+//! > incorrect results!
 //!
 //! [`collide2d`] and [`collide3d`] test for intersections between arbitrary geometries
 //! that implement the [`SupportMapping<Cartesian<2|3>>`](`crate::SupportMapping`) trait.
