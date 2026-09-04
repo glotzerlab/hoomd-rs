@@ -33,6 +33,7 @@ use hoomd_vector::{Angle, Cartesian, Quaternion, Rotate, Versor, Wedge};
 
 use rand::Rng;
 use rand_distr::{Distribution, Normal, Uniform};
+use serde::{Deserialize, Serialize};
 
 use crate::{RotationalMotion, TranslationalMotion};
 
@@ -53,6 +54,7 @@ use crate::{RotationalMotion, TranslationalMotion};
 /// [Snook 2007]: https://dx.doi.org/10.1016/B978-0-444-52129-3.50028-6
 /// [translational motion]: Self::integrate_translation_half_step_one_with_filter
 /// [rotational motion]: Self::integrate_rotation_half_step_one_with_filter
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Brownian {
     /// The time step size.
     pub delta_t: f64,

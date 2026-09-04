@@ -33,6 +33,7 @@ use hoomd_microstate::{
 use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, Outer, Versor, Wedge};
 use rand_distr::Uniform;
+use serde::{Deserialize, Serialize};
 use crate::{
     RotationalKineticEnergy,
     RotationalMotion,
@@ -153,6 +154,7 @@ use crate::{
 /// ```
 /// 
 /// [`ConstantVolume`]: (crate::method::ConstantVolume)
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Langevin {
     /// The time step size.
     pub delta_t: f64,
