@@ -317,8 +317,9 @@ impl MinkowskiPortalRefinement<3> for Cartesian<3> {
 /// Find a vector perpendicular to the plane spanned by `a` and `b` in R^4.
 ///
 /// `counary_cross` requires 3 inputs but during early portal discovery we only have
-/// 2 vectors. This function uses a standard basis vector as the 3rd input — at least
-/// one of the 4 basis vectors is guaranteed to be non-coplanar with any 2 given vectors.
+/// 2 vectors. This function uses a standard basis vector as the 3rd input, as at least
+/// one of the 4 basis vectors is guaranteed to be non-coplanar with any 2 given vectors
+/// (assuming a non-degenerate portal simplex).
 #[inline]
 fn perp_to_2d_subspace(a: Cartesian<4>, b: Cartesian<4>, tol: f64) -> Option<Cartesian<4>> {
     for i in 0..4 {
