@@ -10,9 +10,8 @@
 //! Benchmark overlaps
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
-use hoomd_geometry::SupportMapping;
 use hoomd_geometry::{
-    Convex, IntersectsAt,
+    Convex, IntersectsAt, SupportMapping,
     shape::{
         Capsule, ConvexPolytope, Cylinder, Hypercuboid, Hyperellipsoid, Hypersphere, Simplex3,
     },
