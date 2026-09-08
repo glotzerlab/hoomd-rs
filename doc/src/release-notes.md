@@ -4,6 +4,8 @@
 
 *Added:*
 
+* `[hoomd-geometry]`: Implement `MinkowskiPortalRefinement` for `Cartesian<4>` (#306).
+
 *Changed:*
 
 `[tutorials]`:  The workflow tutorial now uses `hoomd-workspace` (#403).
