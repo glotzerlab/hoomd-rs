@@ -145,14 +145,14 @@ where
     /// ```
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
-        let r = site_properties_i
+        let r_squared = site_properties_i
             .position()
-            .distance(site_properties_j.position());
-        if r >= self.r_cut {
+            .distance_squared(site_properties_j.position());
+        if r_squared >= self.r_cut * self.r_cut {
             return 0.0;
         }
 
-        self.interaction.energy(r)
+        self.interaction.energy(r_squared.sqrt())
     }
 }
 
