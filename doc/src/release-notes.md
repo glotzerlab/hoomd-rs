@@ -4,16 +4,15 @@
 
 *Added:*
 
+* `[hoomd-microstate]`: Add the `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and `max_ghosts_64` cargo features that set the maximum number of ghosts per site. The largest enabled feature is used when multiple are set simultaneously.
+
 *Changed:*
 
+* `[hoomd-geometry]`: `MinkowskiDifference::composite_support_mapping` is now `inline(always)` for better performance (#416).
+* `[hoomd-interaction]`: `Isotropic::site_pair_energy` now compares squared distances in the pre-filter step (#416).
+* `[hoomd-microstate]`: Lower the default maximum number of ghosts per site from 12 to 8. This covers 2D and 3D Cartesian periodic boundaries and the 8-8 tiling. Simulations with the 12-12 hyperbolic tiling must now enable the `max_ghosts_12` feature, as do higher-dimensional Cartesian simulations.
+* `[hoomd-spatial]`: `PointsIterator::next` is now `inline(always)` for better performance (#416).
 * `[tutorials]`: The workflow tutorial now uses `hoomd-workspace` (#403).
-* `[hoomd-interaction]`: `Isotropic::site_pair_energy` now compares squared distances in
-the pre-filter step (#416).
-* `[hoomd-geometry]`:
-* `MinkowskiDifference::composite_support_mapping` is now inline(always) for better
-performance (#416).
-* `[hoomd-spatial]`: `PointsIterator::next` is now inline(always) for
-better performance (#416).
 
 *Deprecated:*
 

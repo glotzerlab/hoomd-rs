@@ -108,6 +108,16 @@ jobs:
         --verbose
       if: ${{ matrix.target == '' }}
 
+    - name: Run tests [max_ghosts_12]
+      run: >
+        cargo test
+        --profile=ci
+        --features=max_ghosts_12
+        --locked
+        --package=hoomd-microstate
+        --verbose
+      if: ${{ matrix.target == '' }}
+
     - name: Build API documentation
       run: >
         cargo doc
