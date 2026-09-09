@@ -148,7 +148,7 @@ where
         let r_squared = site_properties_i
             .position()
             .distance_squared(site_properties_j.position());
-        if r_squared >= self.r_cut * self.r_cut {
+        if r_squared >= self.r_cut.powi(2) {
             return 0.0;
         }
 
@@ -252,15 +252,15 @@ where
         site_properties_j: &S,
     ) -> (Self::Force, <Self::Force as Outer>::Tensor) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();
-        let distance = r_ji.norm();
-
-        if distance >= self.r_cut {
-            (V::default(), V::Tensor::default())
-        } else {
-            let force = (r_ji / distance) * self.interaction.force(distance);
-            let virial = (force / 2.0).outer(&r_ji);
-            (force, virial)
+        let r_squared = r_ji.norm_squared();
+        if r_squared >= self.r_cut.powi(2) {
+            return (V::default(), V::Tensor::default());
         }
+
+        let distance = r_squared.sqrt();
+        let force = (r_ji / distance) * self.interaction.force(distance);
+        let virial = (force / 2.0).outer(&r_ji);
+        (force, virial)
     }
 }
 
@@ -295,15 +295,14 @@ where
         site_properties_j: &S,
     ) -> (V, <Self::Force as Outer>::Tensor, V::Bivector) {
         let r_ji = *site_properties_i.position() - *site_properties_j.position();
-        let distance = r_ji.norm();
-
-        if distance >= self.r_cut {
-            (V::default(), V::Tensor::default(), V::Bivector::default())
-        } else {
-            let force = (r_ji / distance) * self.interaction.force(distance);
-            let virial = (force / 2.0).outer(&r_ji);
-            let torque = V::Bivector::default();
-            (force, virial, torque)
+        let r_squared = r_ji.norm_squared();
+        if r_squared >= self.r_cut.powi(2) {
+            return (V::default(), V::Tensor::default(), V::Bivector::default());
         }
+
+        let distance = r_squared.sqrt();
+        let force = (r_ji / distance) * self.interaction.force(distance);
+        let virial = (force / 2.0).outer(&r_ji);
+        (force, virial, V::Bivector::default())
     }
 }
