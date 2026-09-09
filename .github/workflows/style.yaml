@@ -34,7 +34,7 @@ jobs:
     - name: Configure Rust
       uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
       with:
-        toolchain: 1.98.0
+        toolchain: 1.98.1
         targets: wasm32-unknown-unknown
         components: clippy
     - name: Cache
@@ -157,7 +157,7 @@ jobs:
         persist-credentials: false
 
     - name: Run zizmor
-      uses: zizmorcore/zizmor-action@70fb788f84895a7701f5643d103d587e460b5c99 # v0.6.3
+      uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
       with:
         advanced-security: false
 

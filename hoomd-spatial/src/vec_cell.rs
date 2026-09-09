@@ -646,7 +646,7 @@ where
 {
     type Item = K;
 
-    #[inline]
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some(keys) = self.keys
@@ -707,7 +707,7 @@ where
     /// Panics when `radius` is larger than the *maximum search radius*
     /// provided at construction, rounded up to the nearest integer multiple
     /// of the *nominal search radius*.
-    #[inline]
+    #[inline(always)]
     fn points_near_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item = K> {
         let stencil_index = (radius / self.cell_width.get()).ceil() as usize - 1;
         assert!(
