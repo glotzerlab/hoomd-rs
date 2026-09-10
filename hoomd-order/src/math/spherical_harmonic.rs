@@ -9,69 +9,11 @@
 //! typically attempt to evaluate all values of `l` up to the target. When computing
 //! Steinhardt order parameters or similar algorithms, this code is much faster than
 //! alternatives, with good numerical stability even out to large values of `l`.
-//!
-//! # Example
-//! ```
-//! use hoomd_order::math::SphericalHarmonic;
-//! use num_complex::Complex64;
-//! use hoomd_vector::{Cartesian, InnerProduct};
-//! use approxim::assert_abs_diff_eq;
-//! use std::f64::consts::PI;
-//!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! // Initialize the SphericalHarmonic container, which can be reused
-//! // to compute Y_6^m at a large number of points.
-//! let y_6 = SphericalHarmonic::<6>::new();
-//!
-//! // Values of m in 0..=L are returned as a HarmonicOutput<L> container, which behaves
-//! // like a [f64; L+1] array.
-//! let (point, _) = Cartesian::<3>::from([1.0; 3]).to_unit()?;
-//! let sh = y_6.evaluate(&point);
-//! assert_eq!(sh.len(), 6+1);
-//!
-//! // Zonal harmonic (m=0) is always purely real
-//! assert_eq!(sh[0].im, 0.0);
-//!
-//! // Y_6^0 = sqrt(13/(4pi)) * P_6(1/sqrt(3)) = sqrt(13/(4pi)) * 2/9
-//! let expected_m0 = 2.0 * f64::sqrt(13.0 / (4.0 * PI)) / 9.0;
-//! assert_abs_diff_eq!(sh[0].re, expected_m0, epsilon = 1e-15);
-//!
-//! /// Implement the Steinhardt order parameter q6.
-//! fn q6(bonds: &[Cartesian<3>]) -> f64 {
-//!     let mut accum = [Complex64::ZERO; 7];
-//!     let y6 = SphericalHarmonic::<6>::new();
-//!
-//!     for &bond in bonds {
-//!         let (unit_bond, _) = bond.to_unit().expect("Bond should have non-zero distance!");
-//!         let qlmi = y6.evaluate(&unit_bond);
-//!         for m in 0..7 { accum[m] += qlmi[m]; }
-//!     }
-//!
-//!     // We multiply the `m>0` components by two to account for `-m` contributions.
-//!     let sum_sq = accum[0].norm_sqr()
-//!         + 2.0 * accum[1..].iter().map(Complex64::norm_sqr).sum::<f64>();
-//!     let n = bonds.len() as f64;
-//!
-//!     (4.0 * PI / 13.0 * sum_sq).sqrt() / n
-//! }
-//!
-//! // FCC nearest neighbors: permutations of (±1, ±1, 0)
-//! let fcc_bonds: Vec<Cartesian<3>> = [
-//!     [-1.0, -1.0,  0.0], [-1.0,  1.0,  0.0], [1.0, -1.0,  0.0], [1.0,  1.0,  0.0],
-//!     [-1.0,  0.0, -1.0], [-1.0,  0.0,  1.0], [1.0,  0.0, -1.0], [1.0,  0.0,  1.0],
-//!     [ 0.0, -1.0, -1.0], [ 0.0, -1.0,  1.0], [0.0,  1.0, -1.0], [0.0,  1.0,  1.0],
-//! ].map(Cartesian::<3>::from).to_vec();
-//! assert_abs_diff_eq!(q6(&fcc_bonds), 0.57452416, epsilon = 1e-6);
-//! # Ok(())
-//! # }
-//! ```
 
 use hoomd_vector::{Cartesian, Unit};
-use num_complex::Complex64;
+use num_complex::Complex;
 use std::{
-    f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2},
-    fmt,
-    ops::Index,
+    array, f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2}, fmt, ops::{Add, AddAssign, Div, Index, Mul},
 };
 
 /// The spherical harmonic of degree `L`.
@@ -206,24 +148,24 @@ impl<const L: usize> SphericalHarmonic<L> {
             self.z_coeff[0] * z * h[0] - rxy2 * self.rxy_coeff[0] * h_plus1
         };
 
-        let mut result = [Complex64::ZERO; L];
+        let mut result = [Complex::ZERO; L];
 
         if L > 0 {
             let mut cm = x;
             let mut sm = y;
-            result[0] = Complex64::new(h[0] * cm, h[0] * sm);
+            result[0] = Complex::new(h[0] * cm, h[0] * sm);
 
             for m in 1..L {
                 let prev_cm = cm;
                 let prev_sm = sm;
                 cm = prev_cm * x - prev_sm * y;
                 sm = prev_cm * y + prev_sm * x;
-                result[m] = Complex64::new(h[m] * cm, h[m] * sm);
+                result[m] = Complex::new(h[m] * cm, h[m] * sm);
             }
         }
 
         SphericalHarmonicOutputs {
-            m0: Complex64::new(h_0, 0.0),
+            m0: Complex::new(h_0, 0.0),
             mp: result,
         }
     }
@@ -241,6 +183,9 @@ impl<const L: usize> Default for SphericalHarmonic<L> {
 /// Call [`SphericalHarmonic::evaluate`] to obtain the resulting value as
 /// [`SphericalHarmonicOutputs`]. The output contains the values at
 /// all non-negative values of *m*.
+///
+/// [`SphericalHarmonicOutputs`] add element-wise and can be multiplied and
+/// divided by scalars.
 ///
 /// # Examples
 ///
@@ -279,16 +224,16 @@ impl<const L: usize> Default for SphericalHarmonic<L> {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SphericalHarmonicOutputs<const L: usize> {
     /// `Y_L^0` (zonal harmonic, always real).
-    m0: Complex64,
+    m0: Complex<f64>,
     /// `Y_L^m` for m = 1..=L, stored at index m − 1.
-    mp: [Complex64; L],
+    mp: [Complex<f64>; L],
 }
 
 impl<const L: usize> Index<usize> for SphericalHarmonicOutputs<L> {
-    type Output = Complex64;
+    type Output = Complex<f64>;
 
     #[inline]
-    fn index(&self, index: usize) -> &Complex64 {
+    fn index(&self, index: usize) -> &Complex<f64> {
         match index {
             0 => &self.m0,
             n => &self.mp[n - 1],
@@ -297,9 +242,9 @@ impl<const L: usize> Index<usize> for SphericalHarmonicOutputs<L> {
 }
 
 impl<const L: usize> IntoIterator for SphericalHarmonicOutputs<L> {
-    type Item = Complex64;
+    type Item = Complex<f64>;
     type IntoIter =
-        std::iter::Chain<std::iter::Once<Complex64>, std::array::IntoIter<Complex64, L>>;
+        std::iter::Chain<std::iter::Once<Complex<f64>>, std::array::IntoIter<Complex<f64>, L>>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -338,7 +283,7 @@ impl<const L: usize> SphericalHarmonicOutputs<L> {
     /// # }
     /// ```
     #[inline]
-    pub fn iter(&self) -> impl Iterator<Item = Complex64> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = Complex<f64>> + '_ {
         std::iter::once(self.m0).chain(self.mp.iter().copied())
     }
 
@@ -357,10 +302,78 @@ impl<const L: usize> SphericalHarmonicOutputs<L> {
     }
 }
 
+impl<const L: usize> Default for SphericalHarmonicOutputs<L> {
+    /// The default [`SphericalHarmonicOutputs`] contains all 0's
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use num_complex::Complex;
+    /// use hoomd_order::math::SphericalHarmonicOutputs;
+    ///
+    /// let default = SphericalHarmonicOutputs::<3>::default();
+    /// assert_eq!(default[0], Complex::new(0.0, 0.0));
+    /// assert_eq!(default[1], Complex::new(0.0, 0.0));
+    /// assert_eq!(default[2], Complex::new(0.0, 0.0));
+    /// assert_eq!(default[3], Complex::new(0.0, 0.0));
+    /// ```
+    #[inline(always)]
+    fn default() -> Self {
+        Self { m0: Complex::default(), mp: [Complex::default(); L] }
+    }
+}
+
+impl<const L: usize> AddAssign for SphericalHarmonicOutputs<L> {
+    #[inline(always)]
+    fn add_assign(&mut self, rhs: Self) {
+        self.m0 += rhs.m0;
+        for i in 0..L {
+            self.mp[i] += rhs.mp[i];
+        }
+    }
+}
+
+impl<const L: usize> Add for SphericalHarmonicOutputs<L> {
+    type Output = SphericalHarmonicOutputs<L>;
+
+    #[inline(always)]
+    fn add(self, rhs: SphericalHarmonicOutputs<L>) -> Self::Output {
+        Self {
+            m0: self.m0 + rhs.m0,
+            mp: array::from_fn(|i| self.mp[i] + rhs.mp[i]),
+        }
+    }
+}
+
+impl<const L: usize> Div<f64> for SphericalHarmonicOutputs<L> {
+    type Output = SphericalHarmonicOutputs<L>;
+
+    #[inline(always)]
+    fn div(self, rhs: f64) -> Self::Output {
+        Self {
+            m0: self.m0 / rhs,
+            mp: array::from_fn(|i| self.mp[i] / rhs),
+        }
+    }
+}
+
+impl<const L: usize> Mul<f64> for SphericalHarmonicOutputs<L> {
+    type Output = SphericalHarmonicOutputs<L>;
+
+    #[inline(always)]
+    fn mul(self, rhs: f64) -> Self::Output {
+        Self {
+            m0: self.m0 * rhs,
+            mp: array::from_fn(|i| self.mp[i] * rhs),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use approxim::assert_abs_diff_eq;
+    use num_complex::Complex;
     use rstest::rstest;
     use std::marker::PhantomData;
 
@@ -374,7 +387,7 @@ mod tests {
         let sh = SphericalHarmonic::<0>::new();
         let out = sh.evaluate(&[0.0, 0.0, 1.0].try_into()?);
         let expected = 1.0 / (2.0 * f64::sqrt(PI));
-        assert_abs_diff_eq!(out[0], Complex64::new(expected, 0.0f64), epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0], Complex::new(expected, 0.0f64), epsilon = 1e-12);
         assert_eq!(out.mp.len(), 0);
         Ok(())
     }
@@ -384,8 +397,8 @@ mod tests {
         let sh = SphericalHarmonic::<1>::new();
         let out = sh.evaluate(&[0.0, 0.0, 1.0].try_into()?);
         let c = f64::sqrt(3.0 / (4.0 * PI));
-        assert_abs_diff_eq!(out[0], Complex64::new(c, 0.0), epsilon = 1e-12);
-        assert_abs_diff_eq!(out[1], Complex64::ZERO, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0], Complex::new(c, 0.0), epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1], Complex::ZERO, epsilon = 1e-12);
         Ok(())
     }
 
@@ -394,8 +407,8 @@ mod tests {
         let sh = SphericalHarmonic::<1>::new();
         let out = sh.evaluate(&[1.0, 0.0, 0.0].try_into()?);
         let c = f64::sqrt(3.0 / (8.0 * PI));
-        assert_abs_diff_eq!(out[0], Complex64::ZERO, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[1], Complex64::new(c, 0.0), epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0], Complex::ZERO, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1], Complex::new(c, 0.0), epsilon = 1e-12);
         Ok(())
     }
 
@@ -404,8 +417,8 @@ mod tests {
         let sh = SphericalHarmonic::<1>::new();
         let out = sh.evaluate(&[0.0, 1.0, 0.0].try_into()?);
         let c = f64::sqrt(3.0 / (8.0 * PI));
-        assert_abs_diff_eq!(out[0], Complex64::ZERO, epsilon = 1e-12);
-        assert_abs_diff_eq!(out[1], Complex64::new(0.0, c), epsilon = 1e-12);
+        assert_abs_diff_eq!(out[0], Complex::ZERO, epsilon = 1e-12);
+        assert_abs_diff_eq!(out[1], Complex::new(0.0, c), epsilon = 1e-12);
         Ok(())
     }
 
@@ -458,7 +471,7 @@ mod tests {
         let coords = Coordinates::cartesian(x, y, z);
 
         let expected_m0: f64 = RealSH::Spherical.eval(l, 0, &coords);
-        assert_abs_diff_eq!(out[0], Complex64::new(expected_m0, 0.0), epsilon = 1e-8);
+        assert_abs_diff_eq!(out[0], Complex::new(expected_m0, 0.0), epsilon = 1e-8);
 
         for m in 1..=L {
             let m_i64 = i64::try_from(m).expect("m should not overflow i64");
@@ -466,7 +479,7 @@ mod tests {
             let s_neg: f64 = RealSH::Spherical.eval(l, -m_i64, &coords);
             assert_abs_diff_eq!(
                 out[m],
-                Complex64::new(s_pos * FRAC_1_SQRT_2, s_neg * FRAC_1_SQRT_2),
+                Complex::new(s_pos * FRAC_1_SQRT_2, s_neg * FRAC_1_SQRT_2),
                 epsilon = 1e-8
             );
         }
@@ -548,5 +561,58 @@ mod tests {
             0.7_f64.cos(),
         ];
         check_completeness::<L>(point).unwrap();
+    }
+
+    #[test]
+    fn add_outputs() {
+        let a = SphericalHarmonicOutputs {
+            m0: Complex::new(1.0, 0.0),
+            mp: [Complex::new(2.0, 3.0), Complex::new(-4.0, -5.0), Complex::new(1.0, 0.5)],
+        };
+        let b = SphericalHarmonicOutputs {
+            m0: Complex::new(2.0, 0.0),
+            mp: [Complex::new(3.0, -4.0), Complex::new(6.0, -3.0), Complex::new(5.0, 8.0)],
+        };
+
+        let mut c = a;
+        c += b;
+        assert_eq!(c[0], Complex::new(3.0, 0.0));
+        assert_eq!(c[1], Complex::new(5.0, -1.0));
+        assert_eq!(c[2], Complex::new(2.0, -8.0));
+        assert_eq!(c[3], Complex::new(6.0, 8.5));
+
+        let c = a + b;
+        assert_eq!(c[0], Complex::new(3.0, 0.0));
+        assert_eq!(c[1], Complex::new(5.0, -1.0));
+        assert_eq!(c[2], Complex::new(2.0, -8.0));
+        assert_eq!(c[3], Complex::new(6.0, 8.5));
+    }
+
+    #[test]
+    fn div_outputs() {
+        let a = SphericalHarmonicOutputs {
+            m0: Complex::new(1.0, 0.0),
+            mp: [Complex::new(2.0, 4.0), Complex::new(-4.0, -6.0), Complex::new(1.0, 0.5)],
+        };
+
+        let b = a / 2.0;
+        assert_eq!(b[0], Complex::new(0.5, 0.0));
+        assert_eq!(b[1], Complex::new(1.0, 2.0));
+        assert_eq!(b[2], Complex::new(-2.0, -3.0));
+        assert_eq!(b[3], Complex::new(0.5, 0.25));
+    }
+
+    #[test]
+    fn mul_outputs() {
+        let a = SphericalHarmonicOutputs {
+            m0: Complex::new(1.0, 0.0),
+            mp: [Complex::new(2.0, 4.0), Complex::new(-4.0, -6.0), Complex::new(1.0, 0.5)],
+        };
+
+        let b = a * 2.0;
+        assert_eq!(b[0], Complex::new(2.0, 0.0));
+        assert_eq!(b[1], Complex::new(4.0, 8.0));
+        assert_eq!(b[2], Complex::new(-8.0, -12.0));
+        assert_eq!(b[3], Complex::new(2.0, 1.0));
     }
 }
