@@ -35,6 +35,16 @@ hoomd-utility.workspace = true
 hoomd-rand.workspace = true
 hoomd-vector.workspace = true
 
+[features]
+# Select the largest number of ghosts per site that any boundary condition coult place
+# within the maximum interaction range. The largest enabled feature wins.
+# With no feature enabled, MAX_GHOSTS is 8, which covers 2-D and 3-D Cartesian, plus
+# the EightEight hyperbolic tiling.
+max_ghosts_12 = [] # The TwelveTwelve hyperbolic tiling places 12 images per site.
+max_ghosts_16 = [] # 4-D cartesian periodic boundaries place up to 15 images per site.
+max_ghosts_32 = [] # 5-D cartesian periodic boundaries place up to 31 images per site.
+max_ghosts_64 = [] # 6-D cartesian periodic boundaries place up to 63 images per site.
+
 [dev-dependencies]
 hoomd-linear-algebra.workspace = true
 
