@@ -2,7 +2,7 @@
 
 The `hoomd-order` crate implements order parameters and other related calculations,
 such as k-atic, Steinhardt, radial distribution functions, and spatial correlation
-functions. It is the evolution of the functionality available in the [`freud`] Python
+functions. It is an evolution of the functionality available in the [`freud`] Python
 package.
 
 ## Design goals
@@ -25,15 +25,15 @@ methods that operate on `Microstate`.
 
 ### Simplicity
 
-All methods in `hoomd-order` should be the most natural possible expression
-of the underlying mathematical operation. This provides complete clarity to
-the caller so that there is no ambiguity over what input maps to what
+All method signatures in `hoomd-order` should be the most natural possible
+expression of the underlying mathematical operation. This provides complete
+clarity to the caller so that there is no ambiguity over what input maps to what
 (see e.g. the confusion over `query_points` and `points` in [`freud]`).
 
 For example, the k-atic order parameter can be expressed as a function with
 the signature:
 ```rust
-fn k_atic_psi<I: IntoIterator<Item=Cartesian<2>>>(k: f64, r_i: Cartesian<2>, neighbors: I) -> Complex<f64>;
+fn k_atic_psi<I: IntoIterator<Item=Cartesian<2>>>(k: f64, r_i: &Cartesian<2>, neighbors: I) -> Complex<f64>;
 ```
 
 Analysis methods should be exposed as functions where possible and structs only when
@@ -42,14 +42,14 @@ they need to store some internal state (such as the g(r) histogram).
 Note that unlike in [`freud`], the k-atic function computes an order parameter for
 a single point rather than for an entire system of points. This grants the caller
 the flexibility to call it only when needed for specific points without the need
-to design a complicated filter/selection system.
+for a complicated filter/selection system.
 
 [`freud`]: https://freud.readthedocs.io/en/latest/
 
 ## Neighbor queries
 
 As shown in the `k_atic_psi` signature above, neighbor queries in `hoomd-order`
-simply become iterators. The iterator item depends on context, sometimes it may
+are iterators. The iterator item depends on context, sometimes it may
 be only position while other methods might need position and orientation, or
 position, orientation, and weight. This grants the caller infinite flexibility.
 For example, they could form a chain of iterators starting with
@@ -88,16 +88,15 @@ will not require them following the simplicity rule.
 
 Other analysis methods will need the concept of a tag implicitly. For example,
 the average Steinhardt order parameter needs to know a) the non-averaged order
-parameter for each site tag and b) the tags of neighbors of site with a given tag.
-For generality, the `average_over_neighbors` method will be general so that
-it can be applied to any quantity, not just Steinhardt. Its design remains TBD
-as of this writing, but might likely involve a `HashMap` that maps tags to
-`q` values.
+parameter for each site tag and b) the tags of neighbors of site with a given
+tag. The `average_over_neighbors` method will be general so that it can be
+applied to any quantity, not just Steinhardt. Its design remains TBD as of this
+writing, but will likely involve a `HashMap` that maps tags to `q` values.
 
 It's neighbor query is not an iterator, but a callable that produces
 the neighboring tags given a tag. The neighbor queries built around `Mircostate`
 can of course provide this callable. Users working outside `Microstate` will need
-to implement some sort of equivalent data structures to use `average_over_neighbors`.
+to implement some sort of equivalent data structures to use methods like `average_over_neighbors`.
 Note that the neighbor query customization path is different for this type of
 signature. When `neighbors` is an iterator, callers can customize it by chaining.
 When it is a callable, they need to implement a new callable (which can contain
