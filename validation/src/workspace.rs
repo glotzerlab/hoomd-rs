@@ -67,8 +67,8 @@ pub fn make_workspace() -> anyhow::Result<()> {
             particles_per_side: crate::PARTICLES_PER_SIDE,
             method,
             thermostat,
-            gsd_period: crate::GSD_PERIOD,
-            sim_duration: crate::SIM_DURATION,
+            gsd_period: crate::LOG_PERIOD,
+            sim_duration: crate::DURATION,
             hoomd: String::from("rs"),
         };
 
