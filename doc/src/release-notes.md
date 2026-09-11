@@ -13,6 +13,7 @@
 * `[hoomd-microstate]`: Lower the default maximum number of ghosts per site from 12 to 8. This covers 2D and 3D Cartesian periodic boundaries and the 8-8 tiling. Simulations with the 12-12 hyperbolic tiling must now enable the `max_ghosts_12` feature, as do higher-dimensional Cartesian simulations.
 * `[hoomd-spatial]`: `PointsIterator::next` is now `inline(always)` for better performance (#416).
 * `[tutorials]`: The workflow tutorial now uses `hoomd-workspace` (#403).
+* `[hoomd-microstate]`: `Periodic<Hypercuboid<N>>::GenerateGhosts` now works for arbitrary dimension (#338)
 
 *Deprecated:*
 

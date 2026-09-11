@@ -25,7 +25,7 @@ where
     BS: Position<Position = P>,
     T: IsPointInside<P>,
 {
-    #[inline]
+    #[inline(always)]
     fn wrap(&self, properties: BS) -> Result<BS, Error> {
         if self.0.is_point_inside(properties.position()) {
             Ok(properties)
@@ -44,7 +44,7 @@ where
         f64::INFINITY
     }
 
-    #[inline]
+    #[inline(always)]
     fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         ArrayVec::new()
     }
