@@ -145,8 +145,8 @@ impl<E> PairwiseCutoff<E> {
     ///
     /// ```math
     /// \begin{align*}
-    /// \vec{F}_{i} &= \sum_{j \in N_s} \vec{F}_{ji}
-    /// \mathbf{W}_{i} &= \sum_{j \in N_s} \mathbf{W}_{ji}
+    /// \vec{F}_{i} &= \sum_{j \in N_s} \vec{F}_{ji} \\
+    /// \mathbf{W}_{i} &= \sum_{j \in N_s} \mathbf{W}_{ji} \\
     /// \end{align*}
     /// ```
     ///

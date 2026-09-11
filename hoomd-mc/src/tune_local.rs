@@ -18,7 +18,7 @@ use hoomd_simulation::macrostate::Temperature;
 use hoomd_spatial::PointUpdate;
 
 /// Tune local trial moves.
-pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA, F>(
+pub(crate) fn tune_local_trial<P1, P2, B, S, X, C, L, H, MA, F>(
     local_trial: &mut L,
     microstate: &Microstate<B, S, X, C>,
     hamiltonian: &H,
@@ -26,10 +26,11 @@ pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA, F>(
     options: &TuneOptions,
     should_move_body: F,
 ) where
-    P: Copy,
-    B: Copy + Default + Transform<S> + Position<Position = P>,
-    S: Copy + Default + Position<Position = P>,
-    X: PointUpdate<P, SiteKey>,
+    P1: Copy,
+    P2: Copy,
+    B: Copy + Default + Transform<S> + Position<Position = P1>,
+    S: Copy + Default + Position<Position = P2>,
+    X: PointUpdate<P2, SiteKey>,
     L: LocalTrial<B> + Adjust + Display,
     H: DeltaEnergyOne<B, S, X, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,

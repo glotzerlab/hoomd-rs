@@ -1,0 +1,31 @@
+[package]
+name = "hoomd-workspace"
+categories.workspace = true
+description = "Interoperate with signac workspaces."
+edition.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "katex.html" ]
+
+[lints]
+workspace = true
+
+[dependencies]
+hex.workspace = true
+md-5.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde-json-fmt.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+anyhow.workspace = true
+rstest.workspace = true
+tempfile.workspace = true

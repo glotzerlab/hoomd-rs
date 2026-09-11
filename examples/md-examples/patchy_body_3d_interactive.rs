@@ -33,7 +33,11 @@ pub(crate) fn main() -> anyhow::Result<()> {
     hoomd_bevy_plugin.build(&mut app);
 
     let sphere_mesh = Sphere { radius: 0.5 };
-    let sphere_material = StandardMaterial::from(PRIMARY_COLOR_3D);
+    let sphere_material = StandardMaterial {
+        base_color: PRIMARY_COLOR_3D,
+        perceptual_roughness: 0.2,
+        ..default()
+    };
 
     app.add_systems(
         Startup,
@@ -46,7 +50,11 @@ pub(crate) fn main() -> anyhow::Result<()> {
         (move || {
             (
                 sphere_mesh.mesh().build(),
-                StandardMaterial::from(HIGHLIGHT_COLOR),
+                StandardMaterial {
+                    base_color: HIGHLIGHT_COLOR,
+                    perceptual_roughness: 0.2,
+                    ..default()
+                },
             )
         })
         .pipe(surface_mesh::SurfaceMesh::<B>::setup),

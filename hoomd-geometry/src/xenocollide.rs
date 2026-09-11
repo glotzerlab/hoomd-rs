@@ -314,7 +314,7 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
     MinkowskiDifference<'_, N, A, B>
 {
     /// Compute the support function on the Minkowski difference of two shapes.
-    #[inline]
+    #[inline(always)]
     fn composite_support_mapping(&self, n: Cartesian<N>) -> Cartesian<N> {
         // Support point of b in the direction of vij
         // 'translation/rotation formula comes from pg 168 of "Games Programming Gems 7"'
@@ -404,7 +404,7 @@ where
             return result;
         }
 
-        // Face test and vertex replacement (dimension-specific) TODO
+        // Face test and vertex replacement (dimension-specific)
         Cartesian::<N>::narrow_portal(&v0, &mut portal, v_new);
 
         if count >= XENOCOLLIDE_MAX_ITER {

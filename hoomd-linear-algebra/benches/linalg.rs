@@ -110,12 +110,3 @@ fn svd_mat2(bencher: Bencher) {
         .with_inputs(|| create_random_matrix::<2, 2, _>(&mut rng))
         .bench_local_values(|a| black_box(a.svd()));
 }
-#[divan::bench]
-fn svd_mat3(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(42);
-
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| create_random_matrix::<3, 3, _>(&mut rng))
-        .bench_local_values(|a| black_box(a.svd()));
-}

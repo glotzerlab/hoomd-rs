@@ -165,6 +165,7 @@
 //! * [`Determinant`](matrix::Matrix::determinant)
 //! * [`Singular value decomposition (2x2)`](matrix::Matrix22::svd)
 //! * [`Singular value decomposition (3x3)`](matrix::Matrix33::svd)
+//! * [`QR decomposition`](matrix::qr)
 //! * [`Quadratic form`](QuadraticForm)
 //!
 //! # Complete documentation

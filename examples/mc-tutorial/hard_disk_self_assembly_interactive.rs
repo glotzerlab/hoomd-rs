@@ -1,6 +1,6 @@
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, Settings,
-    representation::RectangularBoundary, representation::disk,
+    representation::disk,
 };
 
 use anyhow::Context;
@@ -18,8 +18,7 @@ struct Ghost;
 pub(crate) fn main() -> anyhow::Result<()> {
     let simulation =
         HardDiskSelfAssembly::new().context("failed to setup simulation")?;
-    let l =
-        simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
+    let l = simulation.microstate.boundary().shape().extents[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
             camera: InitialCamera::Orthographic2d(l + 2.0),
@@ -45,17 +44,8 @@ pub(crate) fn main() -> anyhow::Result<()> {
         .pipe(disk::Disk::<Ghost>::setup),
     );
     app.add_systems(
-        Startup,
-        (move || RectangularBoundary {
-            width: l,
-            height: l,
-            ..default()
-        })
-        .pipe(RectangularBoundary::setup),
-    );
-    app.add_systems(
         Update,
-        (sync_sites, sync_ghosts, sync_boundary)
+        (sync_sites, sync_ghosts)
             .run_if(resource_changed::<HardDiskSelfAssembly>)
             .after(AdvanceSet),
     );
@@ -113,16 +103,4 @@ fn sync_ghosts(
             )
         }),
     );
-}
-
-/// Draw the simulation boundary at its current size.
-fn sync_boundary(
-    entity_rectangle: Single<(Entity, &RectangularBoundary)>,
-    children: Query<&Children>,
-    transforms: Query<&mut Transform>,
-    simulation: Res<HardDiskSelfAssembly>,
-) {
-    let l =
-        simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
-    RectangularBoundary::sync(entity_rectangle, children, transforms, l, l);
 }

@@ -62,7 +62,7 @@ fn ui_system(
 ) -> Result {
     let window = egui::Window::new("")
         .id(egui::Id::new("Parameters"))
-        .resizable([false, false])
+        .auto_sized()
         .open(&mut parameters_window_state.0)
         .collapsible(false);
 

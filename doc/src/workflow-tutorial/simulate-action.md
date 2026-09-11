@@ -19,7 +19,7 @@ Most HPC resources limit the wall time your jobs may execute. To enable
 long-running simulation models, this workflow template monitors the wall time
 used and *serializes* the entire simulation state to a file a few minutes before
 the time is up. At that point, your HPC job ends and [row] will indicate that
-the directory is eligible again. When you submit the new job, `simulate` will
+the directory is eligible again. When you submit a new job, `simulate` will
 *deserialize* the simulation state and continue the simulation from where it
 left off.
 
@@ -35,27 +35,29 @@ necessary logic. It first checks if `model.postcard` exists. If it does,
 it deserializes the simulation state and returns it. If not, it initializes
 a new simulation model from the [signac] state point:
 ```rust,ignore
-fn get_model() -> anyhow::Result<LennardJonesModel> {
-    match fs::read(MODEL_FILE) {
+    let model_file: PathBuf = [Path::new("workspace"), directory, Path::new(MODEL_FILE)]
+        .iter()
+        .collect();
+    match fs::read(&model_file) {
         Ok(bytes) => {
-            debug!("Continuing simulation from `{MODEL_FILE}`.");
+            debug!("Continuing simulation from `{}`.", model_file.display());
 
-            postcard::from_bytes(&bytes).with_context(|| format!("could not read `{MODEL_FILE}`"))
+            postcard::from_bytes(&bytes)
+                .with_context(|| format!("could not read `{}`", model_file.display()))
         }
         Err(error) => match error.kind() {
             io::ErrorKind::NotFound => {
                 debug!("Constructing a new simulation model.");
-                let state_point_bytes = fs::read("signac_statepoint.json")
-                    .context("unable to read `signac_statepoint.json`")?;
-                let state_point: StatePoint = serde_json::from_slice(&state_point_bytes)
-                    .context("could not parse signac_statepoint.json")?;
-                let _ = HoomdGsdFile::create("trajectory.in-progress.gsd");
+                let state_point: StatePoint = hoomd_workspace::state_point(directory)
+                    .context("could not read state point")?
+                    .ok_or(anyhow!("state point not found"))?;
+                let _ =
+                    HoomdGsdFile::create(state_point.path()?.join("trajectory.in-progress.gsd"));
                 LennardJonesModel::new(state_point)
             }
             _ => Err(error).with_context(|| format!("Could not read `{MODEL_FILE}`")),
         },
     }
-}
 ```
 
 `simulate_one` breaks out of the main simulation loop when the wall time is nearly
@@ -83,7 +85,8 @@ while model.step() < TOTAL_STEPS {
 }
 
 let out_bytes: Vec<u8> = postcard::to_stdvec(&model)?;
-let mut file = File::create(MODEL_FILE).context("failed to create `{MODEL_FILE}`")?;
+let mut file =
+    File::create(job_directory.join(MODEL_FILE)).context("failed to create `{MODEL_FILE}`")?;
 file.write_all(&out_bytes)
     .context("failed to write `{MODEL_FILE}`")?;
 ```
@@ -97,7 +100,7 @@ environment variable.
 analysis:
 
 ```rust,ignore
-let mut gsd_file = HoomdGsdFile::open("trajectory.in-progress.gsd")
+let mut gsd_file = HoomdGsdFile::open(job_directory.join("trajectory.in-progress.gsd"))
     .context("error opening trajectory.in-progress.gsd")?;
 ```
 `open` works here because `get_model` created the GSD file.
@@ -114,8 +117,11 @@ drop(gsd_file);
 
 if model.step() == TOTAL_STEPS {
     info!("Simulation complete.");
-    fs::rename("trajectory.in-progress.gsd", "trajectory.gsd")
-        .context("failed to rename `trajectory.in-progress.gsd` to `trajectory.gsd`")?;
+    fs::rename(
+        job_directory.join("trajectory.in-progress.gsd"),
+        job_directory.join("trajectory.gsd"),
+    )
+    .context("failed to rename `trajectory.in-progress.gsd` to `trajectory.gsd`")?;
 }
 ```
 
@@ -130,8 +136,9 @@ The solution suggested by the [parquet] developers is to create multiple files.
 The `create_unique` method creates `log.parquet.0` on the first submission then
 `log.parquet.1` on the second, and so on:
 ```rust,ignore
-let mut parquet_logger = ParquetLogger::<LogRecord>::create_unique("log.parquet")
-    .context("error creating `log.parquet`")?;
+let mut parquet_logger =
+    ParquetLogger::<LogRecord>::create_unique(job_directory.join("log.parquet"))
+        .context("error creating `log.parquet`")?;
 ```
 
 When you visualize or post-process the log later, you should concatenate

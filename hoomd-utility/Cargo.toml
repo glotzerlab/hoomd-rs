@@ -20,8 +20,8 @@ workspace = true
 [dependencies]
 parquet.workspace = true
 parquet_derive.workspace = true
-thiserror.workspace = true
 serde.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
