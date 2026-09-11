@@ -23,6 +23,16 @@ use crate::math::{SphericalHarmonic, SphericalHarmonicOutputs};
 /// q_L &= \sqrt{\frac{4 \pi}{2L + 1} \sum_{m=-L}^L \lvert q_{Lm} \rvert^2} \\
 /// \end{align*}
 /// ```
+///
+/// Construct a [`Steinhardt`] with a given `L`, then call [`q_l`] or [`q_lm`] to evaluate
+/// $` q_L `$ or $` q_{Lm} `$ respectively. Use the same [`Steinhardt`] for may calls to
+/// [`q_l`] and/or [`q_lm`] as [`new`] is computationally expensive.
+///
+/// [`q_l`]: Self::q_l
+/// [`q_lm`]: Self::q_lm
+/// [`new`]: Self::new
+///
+/// TODO: Example with microstate and steinhardt on all sites using `SitesInBall`.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Steinhardt<const L: usize> {
     /// Compute the spherical harmonics.

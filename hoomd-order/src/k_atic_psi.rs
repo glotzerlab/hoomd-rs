@@ -28,6 +28,8 @@ use hoomd_vector::Cartesian;
 ///
 /// assert_relative_eq!(psi, Complex::new(1.0, 0.0), epsilon = 1e-12);
 /// ```
+///
+/// TODO: Example with microstate and `k_atic_psi` on all sites using `SitesInBall`.
 #[inline]
 pub fn k_atic_psi<I: IntoIterator<Item=Cartesian<2>>>(k: f64, r: &Cartesian<2>, neighbors: I) -> Complex<f64> {
     let mut total: Complex<f64> = Complex::default();
