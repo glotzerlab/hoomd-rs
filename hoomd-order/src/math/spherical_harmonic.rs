@@ -13,7 +13,10 @@
 use hoomd_vector::{Cartesian, Unit};
 use num_complex::Complex;
 use std::{
-    array, f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2}, fmt, ops::{Add, AddAssign, Div, Index, Mul},
+    array,
+    f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2},
+    fmt,
+    ops::{Add, AddAssign, Div, Index, Mul},
 };
 
 /// The spherical harmonic of degree `L`.
@@ -308,8 +311,8 @@ impl<const L: usize> Default for SphericalHarmonicOutputs<L> {
     /// # Example
     ///
     /// ```
-    /// use num_complex::Complex;
     /// use hoomd_order::math::SphericalHarmonicOutputs;
+    /// use num_complex::Complex;
     ///
     /// let default = SphericalHarmonicOutputs::<3>::default();
     /// assert_eq!(default[0], Complex::new(0.0, 0.0));
@@ -319,7 +322,10 @@ impl<const L: usize> Default for SphericalHarmonicOutputs<L> {
     /// ```
     #[inline(always)]
     fn default() -> Self {
-        Self { m0: Complex::default(), mp: [Complex::default(); L] }
+        Self {
+            m0: Complex::default(),
+            mp: [Complex::default(); L],
+        }
     }
 }
 
@@ -567,11 +573,19 @@ mod tests {
     fn add_outputs() {
         let a = SphericalHarmonicOutputs {
             m0: Complex::new(1.0, 0.0),
-            mp: [Complex::new(2.0, 3.0), Complex::new(-4.0, -5.0), Complex::new(1.0, 0.5)],
+            mp: [
+                Complex::new(2.0, 3.0),
+                Complex::new(-4.0, -5.0),
+                Complex::new(1.0, 0.5),
+            ],
         };
         let b = SphericalHarmonicOutputs {
             m0: Complex::new(2.0, 0.0),
-            mp: [Complex::new(3.0, -4.0), Complex::new(6.0, -3.0), Complex::new(5.0, 8.0)],
+            mp: [
+                Complex::new(3.0, -4.0),
+                Complex::new(6.0, -3.0),
+                Complex::new(5.0, 8.0),
+            ],
         };
 
         let mut c = a;
@@ -592,7 +606,11 @@ mod tests {
     fn div_outputs() {
         let a = SphericalHarmonicOutputs {
             m0: Complex::new(1.0, 0.0),
-            mp: [Complex::new(2.0, 4.0), Complex::new(-4.0, -6.0), Complex::new(1.0, 0.5)],
+            mp: [
+                Complex::new(2.0, 4.0),
+                Complex::new(-4.0, -6.0),
+                Complex::new(1.0, 0.5),
+            ],
         };
 
         let b = a / 2.0;
@@ -606,7 +624,11 @@ mod tests {
     fn mul_outputs() {
         let a = SphericalHarmonicOutputs {
             m0: Complex::new(1.0, 0.0),
-            mp: [Complex::new(2.0, 4.0), Complex::new(-4.0, -6.0), Complex::new(1.0, 0.5)],
+            mp: [
+                Complex::new(2.0, 4.0),
+                Complex::new(-4.0, -6.0),
+                Complex::new(1.0, 0.5),
+            ],
         };
 
         let b = a * 2.0;

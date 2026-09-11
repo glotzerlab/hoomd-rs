@@ -34,12 +34,12 @@ use crate::math::{SphericalHarmonic, SphericalHarmonicOutputs};
 ///
 /// # Example
 ///
-/// Compute $` \q_4 `$ for all sites in a microstate:
+/// Compute $` q_4 `$ for all sites in a microstate:
 /// ```
 /// use std::collections::HashMap;
 ///
 /// use hoomd_geometry::shape::Cuboid;
-/// use hoomd_microstate::{Microstate, Body, Replicate, boundary::Periodic};
+/// use hoomd_microstate::{Body, Microstate, Replicate, boundary::Periodic};
 /// use hoomd_order::{SitesInBall, Steinhardt};
 /// use hoomd_spatial::VecCell;
 /// use hoomd_vector::Cartesian;
@@ -47,7 +47,8 @@ use crate::math::{SphericalHarmonic, SphericalHarmonicOutputs};
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let model_maximum_interaction_range: f64 = 1.0;
 /// let order_maximum_neighbor_distance: f64 = 1.5;
-/// let maximum_interaction_range = model_maximum_interaction_range.max(order_maximum_neighbor_distance);
+/// let maximum_interaction_range =
+///     model_maximum_interaction_range.max(order_maximum_neighbor_distance);
 ///
 /// let unit_cell_cube = Cuboid::with_equal_edges(1.0.try_into()?);
 /// let periodic_unit_cell = Periodic::new(0.0, unit_cell_cube)?;
@@ -68,8 +69,18 @@ use crate::math::{SphericalHarmonic, SphericalHarmonicOutputs};
 /// let steinhardt = Steinhardt::<4>::new();
 /// let mut q_4 = HashMap::new();
 /// for (site_index, site) in microstate.sites().iter().enumerate() {
-///     let neighbors = SitesInBall::near_site(&microstate, site_index, order_maximum_neighbor_distance);
-///     q_4.insert(site.site_tag, steinhardt.q_l(&site.properties.position, neighbors.iter_site_positions().copied())?);
+///     let neighbors = SitesInBall::near_site(
+///         &microstate,
+///         site_index,
+///         order_maximum_neighbor_distance,
+///     );
+///     q_4.insert(
+///         site.site_tag,
+///         steinhardt.q_l(
+///             &site.properties.position,
+///             neighbors.iter_site_positions().copied(),
+///         )?,
+///     );
 /// }
 /// # Ok(())
 /// # }
@@ -77,7 +88,7 @@ use crate::math::{SphericalHarmonic, SphericalHarmonicOutputs};
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Steinhardt<const L: usize> {
     /// Compute the spherical harmonics.
-    spherical_harmonic: SphericalHarmonic<L>
+    spherical_harmonic: SphericalHarmonic<L>,
 }
 
 impl<const L: usize> Steinhardt<L> {
@@ -93,7 +104,7 @@ impl<const L: usize> Steinhardt<L> {
     #[inline]
     pub fn new() -> Self {
         Self {
-            spherical_harmonic: SphericalHarmonic::new()
+            spherical_harmonic: SphericalHarmonic::new(),
         }
     }
 
@@ -117,17 +128,32 @@ impl<const L: usize> Steinhardt<L> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let steinhardt = Steinhardt::<6>::new();
     /// let fcc_bonds: Vec<Cartesian<3>> = [
-    ///     [-1.0, -1.0,  0.0], [-1.0,  1.0,  0.0], [1.0, -1.0,  0.0], [1.0,  1.0,  0.0],
-    ///     [-1.0,  0.0, -1.0], [-1.0,  0.0,  1.0], [1.0,  0.0, -1.0], [1.0,  0.0,  1.0],
-    ///     [ 0.0, -1.0, -1.0], [ 0.0, -1.0,  1.0], [0.0,  1.0, -1.0], [0.0,  1.0,  1.0],
-    /// ].map(Cartesian::<3>::from).to_vec();
+    ///     [-1.0, -1.0, 0.0],
+    ///     [-1.0, 1.0, 0.0],
+    ///     [1.0, -1.0, 0.0],
+    ///     [1.0, 1.0, 0.0],
+    ///     [-1.0, 0.0, -1.0],
+    ///     [-1.0, 0.0, 1.0],
+    ///     [1.0, 0.0, -1.0],
+    ///     [1.0, 0.0, 1.0],
+    ///     [0.0, -1.0, -1.0],
+    ///     [0.0, -1.0, 1.0],
+    ///     [0.0, 1.0, -1.0],
+    ///     [0.0, 1.0, 1.0],
+    /// ]
+    /// .map(Cartesian::<3>::from)
+    /// .to_vec();
     ///
     /// let q_lm = steinhardt.q_lm(&Cartesian::default(), fcc_bonds)?;
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    pub fn q_lm<I: IntoIterator<Item=Cartesian<3>>>(&self, r: &Cartesian<3>, neighbors: I) -> Result<SphericalHarmonicOutputs<L>, hoomd_vector::Error> {
+    pub fn q_lm<I: IntoIterator<Item = Cartesian<3>>>(
+        &self,
+        r: &Cartesian<3>,
+        neighbors: I,
+    ) -> Result<SphericalHarmonicOutputs<L>, hoomd_vector::Error> {
         let mut total = SphericalHarmonicOutputs::default();
         let mut count: usize = 0;
 
@@ -167,7 +193,7 @@ impl<const L: usize> Steinhardt<L> {
     ///
     /// # Errors
     ///
-    /// [`hoomd_vector::Error::InvalidVectorMagnitude`] when any $` |\vec{r}_j = \vec{r}| = 0 `$.
+    /// [`hoomd_vector::Error::InvalidVectorMagnitude`] when any $` |\vec{r}_j - \vec{r}| = 0 `$.
     ///
     /// # Example
     ///
@@ -180,10 +206,21 @@ impl<const L: usize> Steinhardt<L> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let steinhardt = Steinhardt::<6>::new();
     /// let fcc_bonds: Vec<Cartesian<3>> = [
-    ///     [-1.0, -1.0,  0.0], [-1.0,  1.0,  0.0], [1.0, -1.0,  0.0], [1.0,  1.0,  0.0],
-    ///     [-1.0,  0.0, -1.0], [-1.0,  0.0,  1.0], [1.0,  0.0, -1.0], [1.0,  0.0,  1.0],
-    ///     [ 0.0, -1.0, -1.0], [ 0.0, -1.0,  1.0], [0.0,  1.0, -1.0], [0.0,  1.0,  1.0],
-    /// ].map(Cartesian::<3>::from).to_vec();
+    ///     [-1.0, -1.0, 0.0],
+    ///     [-1.0, 1.0, 0.0],
+    ///     [1.0, -1.0, 0.0],
+    ///     [1.0, 1.0, 0.0],
+    ///     [-1.0, 0.0, -1.0],
+    ///     [-1.0, 0.0, 1.0],
+    ///     [1.0, 0.0, -1.0],
+    ///     [1.0, 0.0, 1.0],
+    ///     [0.0, -1.0, -1.0],
+    ///     [0.0, -1.0, 1.0],
+    ///     [0.0, 1.0, -1.0],
+    ///     [0.0, 1.0, 1.0],
+    /// ]
+    /// .map(Cartesian::<3>::from)
+    /// .to_vec();
     ///
     /// let q_l = steinhardt.q_l(&Cartesian::default(), fcc_bonds)?;
     /// assert_relative_eq!(q_l, 0.57452416, epsilon = 1e-6);
@@ -191,7 +228,11 @@ impl<const L: usize> Steinhardt<L> {
     /// # }
     /// ```
     #[inline]
-    pub fn q_l<I: IntoIterator<Item=Cartesian<3>>>(&self, r: &Cartesian<3>, neighbors: I) -> Result<f64, hoomd_vector::Error> {
+    pub fn q_l<I: IntoIterator<Item = Cartesian<3>>>(
+        &self,
+        r: &Cartesian<3>,
+        neighbors: I,
+    ) -> Result<f64, hoomd_vector::Error> {
         let q_lm = self.q_lm(r, neighbors)?;
         Ok(Self::make_rotationally_invariant(&q_lm))
     }

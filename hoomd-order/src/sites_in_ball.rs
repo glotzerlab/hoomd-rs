@@ -47,15 +47,22 @@ use hoomd_vector::Metric;
 ///
 /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
 ///
-/// let psi_0 = hoomd_order::k_atic_psi(4.0, near_site_0.point(), near_site_0.iter_site_positions().copied());
+/// let psi_0 = hoomd_order::k_atic_psi(
+///     4.0,
+///     near_site_0.point(),
+///     near_site_0.iter_site_positions().copied(),
+/// );
 /// # Ok(())
 /// # }
 /// ```
-/// 
+///
 /// Use [`iter_sites`] to perform additional filtering. For example, compute an order parameter
 /// only on neighboring sites of type *A*:
 /// ```
-/// use hoomd_microstate::{Body, Microstate, Transform, property::{Point, Position}};
+/// use hoomd_microstate::{
+///     Body, Microstate, Transform,
+///     property::{Point, Position},
+/// };
 /// use hoomd_order::SitesInBall;
 /// use hoomd_vector::Cartesian;
 ///
@@ -78,7 +85,10 @@ use hoomd_vector::Metric;
 /// }
 ///
 /// impl Transform<SiteProperties> for BodyProperties {
-///     fn transform(&self, site_properties: &SiteProperties) -> SiteProperties {
+///     fn transform(
+///         &self,
+///         site_properties: &SiteProperties,
+///     ) -> SiteProperties {
 ///         SiteProperties {
 ///             position: self.position + site_properties.position,
 ///             ..*site_properties
@@ -88,19 +98,51 @@ use hoomd_vector::Metric;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::new();
-/// microstate.add_body(Body::single_site(Point::new(Cartesian::from([0.0, 0.0])), SiteProperties::default()))?;
-/// microstate.add_body(Body::single_site(Point::new(Cartesian::from([1.0, 0.0])), SiteProperties::default()))?;
-/// microstate.add_body(Body::single_site(Point::new(Cartesian::from([0.0, 1.0])), SiteProperties::default()))?;
-/// microstate.add_body(Body::single_site(Point::new(Cartesian::from([-1.0, 0.0])), SiteProperties::default()))?;
-/// microstate.add_body(Body::single_site(Point::new(Cartesian::from([0.0, -1.0])), SiteProperties::default()))?;
-/// microstate.add_body(Body::single_site(Point::new(Cartesian::from([1.0, 1.0])), SiteProperties { site_type: SiteType::A, ..Default::default() }))?;
-/// microstate.add_body(Body::single_site(Point::new(Cartesian::from([-1.0, -1.0])), SiteProperties { site_type: SiteType::A, ..Default::default() }))?;
+/// microstate.add_body(Body::single_site(
+///     Point::new(Cartesian::from([0.0, 0.0])),
+///     SiteProperties::default(),
+/// ))?;
+/// microstate.add_body(Body::single_site(
+///     Point::new(Cartesian::from([1.0, 0.0])),
+///     SiteProperties::default(),
+/// ))?;
+/// microstate.add_body(Body::single_site(
+///     Point::new(Cartesian::from([0.0, 1.0])),
+///     SiteProperties::default(),
+/// ))?;
+/// microstate.add_body(Body::single_site(
+///     Point::new(Cartesian::from([-1.0, 0.0])),
+///     SiteProperties::default(),
+/// ))?;
+/// microstate.add_body(Body::single_site(
+///     Point::new(Cartesian::from([0.0, -1.0])),
+///     SiteProperties::default(),
+/// ))?;
+/// microstate.add_body(Body::single_site(
+///     Point::new(Cartesian::from([1.0, 1.0])),
+///     SiteProperties {
+///         site_type: SiteType::A,
+///         ..Default::default()
+///     },
+/// ))?;
+/// microstate.add_body(Body::single_site(
+///     Point::new(Cartesian::from([-1.0, -1.0])),
+///     SiteProperties {
+///         site_type: SiteType::A,
+///         ..Default::default()
+///     },
+/// ))?;
 ///
 /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
 ///
-/// let psi_0_a = hoomd_order::k_atic_psi(4.0, near_site_0.point(), near_site_0.iter_sites()
-///     .filter(|s| s.properties.site_type == SiteType::A)
-///     .map(|s| *s.properties.position()));
+/// let psi_0_a = hoomd_order::k_atic_psi(
+///     4.0,
+///     near_site_0.point(),
+///     near_site_0
+///         .iter_sites()
+///         .filter(|s| s.properties.site_type == SiteType::A)
+///         .map(|s| *s.properties.position()),
+/// );
 /// # Ok(())
 /// # }
 /// ```
@@ -166,7 +208,8 @@ impl<P, B, S, X, C> SitesInBall<'_, P, B, S, X, C> {
     }
 }
 
-impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C> where
+impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C>
+where
     P: Copy + Metric,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
@@ -198,7 +241,7 @@ impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C> where
             point: *microstate.sites()[site_index].properties.position(),
             r,
             ignore_site_tag: Some(microstate.sites()[site_index].site_tag),
-            microstate
+            microstate,
         }
     }
 
@@ -217,7 +260,8 @@ impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C> where
     /// microstate.add_body(Body::point(Cartesian::from([1.0, 0.0])))?;
     /// microstate.add_body(Body::point(Cartesian::from([2.0, 0.0])))?;
     ///
-    /// let near_position_1_0 = SitesInBall::near_point(&microstate, [1.0, 0.0].into(), 1.5);
+    /// let near_position_1_0 =
+    ///     SitesInBall::near_point(&microstate, [1.0, 0.0].into(), 1.5);
     /// assert_eq!(near_position_1_0.iter_sites().count(), 3);
     /// # Ok(())
     /// # }
@@ -232,7 +276,7 @@ impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C> where
             point,
             r,
             ignore_site_tag: None,
-            microstate
+            microstate,
         }
     }
 
@@ -240,7 +284,10 @@ impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C> where
     ///
     /// # Examples
     /// ```
-    /// use hoomd_microstate::{Body, Microstate, Transform, property::{Point, Position}};
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, Transform,
+    ///     property::{Point, Position},
+    /// };
     /// use hoomd_order::SitesInBall;
     /// use hoomd_vector::Cartesian;
     ///
@@ -263,7 +310,10 @@ impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C> where
     /// }
     ///
     /// impl Transform<SiteProperties> for BodyProperties {
-    ///     fn transform(&self, site_properties: &SiteProperties) -> SiteProperties {
+    ///     fn transform(
+    ///         &self,
+    ///         site_properties: &SiteProperties,
+    ///     ) -> SiteProperties {
     ///         SiteProperties {
     ///             position: self.position + site_properties.position,
     ///             ..*site_properties
@@ -273,31 +323,63 @@ impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C> where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
-    /// microstate.add_body(Body::single_site(Point::new(Cartesian::from([0.0, 0.0])), SiteProperties::default()))?;
-    /// microstate.add_body(Body::single_site(Point::new(Cartesian::from([1.0, 0.0])), SiteProperties::default()))?;
-    /// microstate.add_body(Body::single_site(Point::new(Cartesian::from([0.0, 1.0])), SiteProperties::default()))?;
-    /// microstate.add_body(Body::single_site(Point::new(Cartesian::from([-1.0, 0.0])), SiteProperties::default()))?;
-    /// microstate.add_body(Body::single_site(Point::new(Cartesian::from([0.0, -1.0])), SiteProperties::default()))?;
-    /// microstate.add_body(Body::single_site(Point::new(Cartesian::from([1.0, 1.0])), SiteProperties { site_type: SiteType::A, ..Default::default() }))?;
-    /// microstate.add_body(Body::single_site(Point::new(Cartesian::from([-1.0, -1.0])), SiteProperties { site_type: SiteType::A, ..Default::default() }))?;
+    /// microstate.add_body(Body::single_site(
+    ///     Point::new(Cartesian::from([0.0, 0.0])),
+    ///     SiteProperties::default(),
+    /// ))?;
+    /// microstate.add_body(Body::single_site(
+    ///     Point::new(Cartesian::from([1.0, 0.0])),
+    ///     SiteProperties::default(),
+    /// ))?;
+    /// microstate.add_body(Body::single_site(
+    ///     Point::new(Cartesian::from([0.0, 1.0])),
+    ///     SiteProperties::default(),
+    /// ))?;
+    /// microstate.add_body(Body::single_site(
+    ///     Point::new(Cartesian::from([-1.0, 0.0])),
+    ///     SiteProperties::default(),
+    /// ))?;
+    /// microstate.add_body(Body::single_site(
+    ///     Point::new(Cartesian::from([0.0, -1.0])),
+    ///     SiteProperties::default(),
+    /// ))?;
+    /// microstate.add_body(Body::single_site(
+    ///     Point::new(Cartesian::from([1.0, 1.0])),
+    ///     SiteProperties {
+    ///         site_type: SiteType::A,
+    ///         ..Default::default()
+    ///     },
+    /// ))?;
+    /// microstate.add_body(Body::single_site(
+    ///     Point::new(Cartesian::from([-1.0, -1.0])),
+    ///     SiteProperties {
+    ///         site_type: SiteType::A,
+    ///         ..Default::default()
+    ///     },
+    /// ))?;
     ///
     /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
     ///
-    /// let psi_0_a = hoomd_order::k_atic_psi(4.0, near_site_0.point(), near_site_0.iter_sites()
-    ///     .filter(|s| s.properties.site_type == SiteType::A)
-    ///     .map(|s| *s.properties.position()));
+    /// let psi_0_a = hoomd_order::k_atic_psi(
+    ///     4.0,
+    ///     near_site_0.point(),
+    ///     near_site_0
+    ///         .iter_sites()
+    ///         .filter(|s| s.properties.site_type == SiteType::A)
+    ///         .map(|s| *s.properties.position()),
+    /// );
     /// # Ok(())
     /// # }
     /// ```
     #[inline(always)]
     pub fn iter_sites(&self) -> impl Iterator<Item = &Site<S>> {
-        self.microstate.iter_sites_near(&self.point, self.r)
-            .filter(|s| {
-                match self.ignore_site_tag {
-                    None => true,
-                    Some(site_tag) => site_tag != s.site_tag,
-            }})
-            .filter(|s| self.point.distance_squared(s.properties.position()) < self.r.powi(2) )
+        self.microstate
+            .iter_sites_near(&self.point, self.r)
+            .filter(|s| match self.ignore_site_tag {
+                None => true,
+                Some(site_tag) => site_tag != s.site_tag,
+            })
+            .filter(|s| self.point.distance_squared(s.properties.position()) < self.r.powi(2))
     }
 
     /// Iterate over all matching site positions.
@@ -318,7 +400,11 @@ impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C> where
     ///
     /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
     ///
-    /// let psi_0 = hoomd_order::k_atic_psi(4.0, near_site_0.point(), near_site_0.iter_site_positions().copied());
+    /// let psi_0 = hoomd_order::k_atic_psi(
+    ///     4.0,
+    ///     near_site_0.point(),
+    ///     near_site_0.iter_site_positions().copied(),
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -356,10 +442,16 @@ mod tests {
         sorted_sites.sort_by_key(|a| a.site_tag);
 
         itertools::assert_equal(sorted_sites.iter().map(|s| s.site_tag), [0, 2, 5]);
-        itertools::assert_equal(near_site_1.iter_site_tags(), sites.iter().map(|s| s.site_tag));
-        itertools::assert_equal(near_site_1.iter_site_positions().copied(), sites.iter().map(|s| s.properties.position));
-        
-        Ok(())        
+        itertools::assert_equal(
+            near_site_1.iter_site_tags(),
+            sites.iter().map(|s| s.site_tag),
+        );
+        itertools::assert_equal(
+            near_site_1.iter_site_positions().copied(),
+            sites.iter().map(|s| s.properties.position),
+        );
+
+        Ok(())
     }
     #[test]
     fn near_point() -> anyhow::Result<()> {
@@ -377,9 +469,15 @@ mod tests {
         sorted_sites.sort_by_key(|a| a.site_tag);
 
         itertools::assert_equal(sorted_sites.iter().map(|s| s.site_tag), [0, 1, 2, 5]);
-        itertools::assert_equal(near_point.iter_site_tags(), sites.iter().map(|s| s.site_tag));
-        itertools::assert_equal(near_point.iter_site_positions().copied(), sites.iter().map(|s| s.properties.position));
-        
-        Ok(())        
+        itertools::assert_equal(
+            near_point.iter_site_tags(),
+            sites.iter().map(|s| s.site_tag),
+        );
+        itertools::assert_equal(
+            near_point.iter_site_positions().copied(),
+            sites.iter().map(|s| s.properties.position),
+        );
+
+        Ok(())
     }
 }
