@@ -3999,6 +3999,8 @@ version = "1.3.0"
 dependencies = [
  "approxim",
  "divan",
+ "hoomd-microstate",
+ "hoomd-spatial",
  "hoomd-vector",
  "num-complex",
  "rand 0.10.2",

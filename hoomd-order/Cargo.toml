@@ -12,6 +12,8 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+hoomd-microstate.workspace = true
+hoomd-spatial.workspace = true
 hoomd-vector.workspace = true
 num-complex.workspace = true
 
