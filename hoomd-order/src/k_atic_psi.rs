@@ -18,6 +18,7 @@ use hoomd_vector::Cartesian;
 ///
 /// # Example
 ///
+/// Compute $` \psi `$ for a single arrangement of points:
 /// ```
 /// use num_complex::Complex;
 /// use approxim::assert_relative_eq;
@@ -29,7 +30,45 @@ use hoomd_vector::Cartesian;
 /// assert_relative_eq!(psi, Complex::new(1.0, 0.0), epsilon = 1e-12);
 /// ```
 ///
-/// TODO: Example with microstate and `k_atic_psi` on all sites using `SitesInBall`.
+/// Compute $` \psi_4 `$ for all sites in a microstate:
+/// ```
+/// use std::collections::HashMap;
+///
+/// use hoomd_geometry::shape::Rectangle;
+/// use hoomd_microstate::{Microstate, Body, Replicate, boundary::Periodic};
+/// use hoomd_order::SitesInBall;
+/// use hoomd_spatial::VecCell;
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let model_maximum_interaction_range: f64 = 1.0;
+/// let order_maximum_neighbor_distance: f64 = 1.5;
+/// let maximum_interaction_range = model_maximum_interaction_range.max(order_maximum_neighbor_distance);
+///
+/// let unit_cell_square = Rectangle::with_equal_edges(1.0.try_into()?);
+/// let periodic_unit_cell = Periodic::new(0.0, unit_cell_square)?;
+/// let vec_cell = VecCell::builder()
+///     .nominal_search_radius(model_maximum_interaction_range.try_into()?)
+///     .maximum_search_radius(maximum_interaction_range)
+///     .build();
+/// let microstate = Microstate::builder()
+///     .boundary(periodic_unit_cell)
+///     .spatial_data(vec_cell)
+///     .bodies([Body::point(Cartesian::default())])
+///     .try_build()?
+///     .replicate_with_maximum_interaction_range(
+///         [16; 2],
+///         maximum_interaction_range,
+///     )?;
+///
+/// let mut psi_4 = HashMap::new();
+/// for (site_index, site) in microstate.sites().iter().enumerate() {
+///     let neighbors = SitesInBall::near_site(&microstate, site_index, order_maximum_neighbor_distance);
+///     psi_4.insert(site.site_tag, hoomd_order::k_atic_psi(4.0, &site.properties.position, neighbors.iter_site_positions().copied()));
+/// }
+/// # Ok(())
+/// # }
+/// ```
 #[inline]
 pub fn k_atic_psi<I: IntoIterator<Item=Cartesian<2>>>(k: f64, r: &Cartesian<2>, neighbors: I) -> Complex<f64> {
     let mut total: Complex<f64> = Complex::default();
@@ -46,7 +85,7 @@ pub fn k_atic_psi<I: IntoIterator<Item=Cartesian<2>>>(k: f64, r: &Cartesian<2>, 
     total / Complex::new(count as f64, 0.0)
 }
 
- #[cfg(test)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use approxim::assert_relative_eq;

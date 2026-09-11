@@ -32,7 +32,48 @@ use crate::math::{SphericalHarmonic, SphericalHarmonicOutputs};
 /// [`q_lm`]: Self::q_lm
 /// [`new`]: Self::new
 ///
-/// TODO: Example with microstate and steinhardt on all sites using `SitesInBall`.
+/// # Example
+///
+/// Compute $` \q_4 `$ for all sites in a microstate:
+/// ```
+/// use std::collections::HashMap;
+///
+/// use hoomd_geometry::shape::Cuboid;
+/// use hoomd_microstate::{Microstate, Body, Replicate, boundary::Periodic};
+/// use hoomd_order::{SitesInBall, Steinhardt};
+/// use hoomd_spatial::VecCell;
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let model_maximum_interaction_range: f64 = 1.0;
+/// let order_maximum_neighbor_distance: f64 = 1.5;
+/// let maximum_interaction_range = model_maximum_interaction_range.max(order_maximum_neighbor_distance);
+///
+/// let unit_cell_cube = Cuboid::with_equal_edges(1.0.try_into()?);
+/// let periodic_unit_cell = Periodic::new(0.0, unit_cell_cube)?;
+/// let vec_cell = VecCell::builder()
+///     .nominal_search_radius(model_maximum_interaction_range.try_into()?)
+///     .maximum_search_radius(maximum_interaction_range)
+///     .build();
+/// let microstate = Microstate::builder()
+///     .boundary(periodic_unit_cell)
+///     .spatial_data(vec_cell)
+///     .bodies([Body::point(Cartesian::default())])
+///     .try_build()?
+///     .replicate_with_maximum_interaction_range(
+///         [16; 3],
+///         maximum_interaction_range,
+///     )?;
+///
+/// let steinhardt = Steinhardt::<4>::new();
+/// let mut q_4 = HashMap::new();
+/// for (site_index, site) in microstate.sites().iter().enumerate() {
+///     let neighbors = SitesInBall::near_site(&microstate, site_index, order_maximum_neighbor_distance);
+///     q_4.insert(site.site_tag, steinhardt.q_l(&site.properties.position, neighbors.iter_site_positions().copied())?);
+/// }
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Steinhardt<const L: usize> {
     /// Compute the spherical harmonics.
