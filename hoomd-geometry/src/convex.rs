@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping,
     shape::{Circle, Sphere},
-    xenocollide::{collide2d, collide3d},
+    xenocollide::{collide2d, collide3d, collide4d},
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Metric, Rotate, Rotation, RotationMatrix};
@@ -168,5 +168,48 @@ where
         let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
 
         collide3d(self, other, &v_ij, &o_ij)
+    }
+}
+
+impl<A, B, R> IntersectsAt<Convex<A>, Cartesian<4>, R> for Convex<B>
+where
+    A: SupportMapping<Cartesian<4>> + BoundingSphereRadius,
+    B: SupportMapping<Cartesian<4>> + BoundingSphereRadius,
+    R: Copy,
+    RotationMatrix<4>: From<R>,
+{
+    #[inline]
+    fn intersects_at(&self, other: &Convex<A>, v_ij: &Cartesian<4>, o_ij: &R) -> bool {
+        let self_sphere = Sphere::with_radius(self.0.bounding_sphere_radius());
+        let other_sphere = Sphere::with_radius(other.0.bounding_sphere_radius());
+
+        self_sphere.intersects_at(&other_sphere, v_ij, o_ij) && collide4d(self, other, v_ij, o_ij)
+    }
+}
+
+impl<A, B, R> IntersectsAtGlobal<Convex<A>, Cartesian<4>, R> for Convex<B>
+where
+    A: SupportMapping<Cartesian<4>> + BoundingSphereRadius,
+    B: SupportMapping<Cartesian<4>> + BoundingSphereRadius,
+    R: Rotate<Cartesian<4>> + Rotation,
+    RotationMatrix<4>: From<R>,
+{
+    #[inline]
+    fn intersects_at_global(
+        &self,
+        other: &Convex<A>,
+        r_self: &Cartesian<4>,
+        o_self: &R,
+        r_other: &Cartesian<4>,
+        o_other: &R,
+    ) -> bool {
+        let r_cut = self.0.bounding_sphere_radius().get() + other.0.bounding_sphere_radius().get();
+        if r_self.distance_squared(r_other) >= r_cut.powi(2) {
+            return false;
+        }
+
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
+
+        collide4d(self, other, &v_ij, &o_ij)
     }
 }
