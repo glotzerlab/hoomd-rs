@@ -5,6 +5,7 @@
 *Added:*
 
 * `[hoomd-microstate]`: Add the `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and `max_ghosts_64` cargo features that set the maximum number of ghosts per site. The largest enabled feature is used when multiple are set simultaneously.
+* `[hoomd-geometry]`: Implement `MinkowskiPortalRefinement` for `Cartesian<4>` (#306).
 
 *Changed:*
 
