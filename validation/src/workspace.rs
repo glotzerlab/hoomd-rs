@@ -1,5 +1,8 @@
+use std::fs::File;
+
+use hoomd_workspace::Entry;
+use parquet::file::reader::SerializedFileReader;
 use serde::{Deserialize, Serialize};
-// use toml::Table;
 use itertools::iproduct;
 use strum_macros::Display;
 
@@ -85,4 +88,18 @@ pub fn identifiers() -> Vec<String> {
         .collect();
 
     ids
+}
+
+/// Check if the log file for a statepoint has more than the expected number of rows for a finished simulation.
+pub fn is_finished(sp: &StatePoint) -> anyhow::Result<bool> {
+    let path = sp.path()?.join(crate::LOG_NAME);
+    let log_file = File::open(path)?;
+    let reader = SerializedFileReader::new(log_file)?;
+
+    let rows: Vec<_> = reader.into_iter()
+        .map(|r| r.unwrap())
+        .collect();
+
+    let max_rows = crate::DURATION / crate::LOG_PERIOD;
+    Ok(rows.len() >= max_rows.try_into().unwrap())
 }
