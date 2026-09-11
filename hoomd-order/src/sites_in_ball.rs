@@ -333,3 +333,53 @@ impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C> where
         self.iter_sites().map(|s| s.site_tag)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hoomd_microstate::Body;
+    use hoomd_vector::Cartesian;
+
+    #[test]
+    fn near_site() -> anyhow::Result<()> {
+        let mut microstate = Microstate::new();
+        microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
+        microstate.add_body(Body::point(Cartesian::from([1.0, 0.0])))?;
+        microstate.add_body(Body::point(Cartesian::from([2.0, 0.0])))?;
+        microstate.add_body(Body::point(Cartesian::from([1.0, 2.0])))?;
+        microstate.add_body(Body::point(Cartesian::from([1.0, -2.0])))?;
+        microstate.add_body(Body::point(Cartesian::from([1.0, 0.0])))?;
+
+        let near_site_1 = SitesInBall::near_site(&microstate, 1, 1.5);
+        let sites = near_site_1.iter_sites().collect::<Vec<_>>();
+        let mut sorted_sites = sites.clone();
+        sorted_sites.sort_by_key(|a| a.site_tag);
+
+        itertools::assert_equal(sorted_sites.iter().map(|s| s.site_tag), [0, 2, 5]);
+        itertools::assert_equal(near_site_1.iter_site_tags(), sites.iter().map(|s| s.site_tag));
+        itertools::assert_equal(near_site_1.iter_site_positions().copied(), sites.iter().map(|s| s.properties.position));
+        
+        Ok(())        
+    }
+    #[test]
+    fn near_point() -> anyhow::Result<()> {
+        let mut microstate = Microstate::new();
+        microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
+        microstate.add_body(Body::point(Cartesian::from([1.0, 0.0])))?;
+        microstate.add_body(Body::point(Cartesian::from([2.0, 0.0])))?;
+        microstate.add_body(Body::point(Cartesian::from([1.0, 2.0])))?;
+        microstate.add_body(Body::point(Cartesian::from([1.0, -2.0])))?;
+        microstate.add_body(Body::point(Cartesian::from([1.0, 0.0])))?;
+
+        let near_point = SitesInBall::near_point(&microstate, [1.0, 0.0].into(), 1.5);
+        let sites = near_point.iter_sites().collect::<Vec<_>>();
+        let mut sorted_sites = sites.clone();
+        sorted_sites.sort_by_key(|a| a.site_tag);
+
+        itertools::assert_equal(sorted_sites.iter().map(|s| s.site_tag), [0, 1, 2, 5]);
+        itertools::assert_equal(near_point.iter_site_tags(), sites.iter().map(|s| s.site_tag));
+        itertools::assert_equal(near_point.iter_site_positions().copied(), sites.iter().map(|s| s.properties.position));
+        
+        Ok(())        
+    }
+}
