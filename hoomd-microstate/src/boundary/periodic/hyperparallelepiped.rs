@@ -68,7 +68,7 @@ where
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     fn wrap(&self, properties: P) -> Result<P, Error> {
         let mut properties = properties;
         let r = properties.position_mut();
@@ -97,7 +97,7 @@ where
     }
 
     /// Place periodic images of sites near the edge of the periodic boundary.
-    #[inline]
+    #[inline(always)]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
 

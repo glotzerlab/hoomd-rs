@@ -85,7 +85,7 @@ where
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     fn wrap(&self, mut properties: P) -> Result<P, Error> {
         let r = properties.position_mut();
         let mut fractional = self.shape.fractional(r);
@@ -146,7 +146,7 @@ where
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
 

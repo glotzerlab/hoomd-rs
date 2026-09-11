@@ -85,6 +85,7 @@ impl GenerateGhosts<SiteProperties> for Boundary {
         self.0.maximum_interaction_range()
     }
 
+    #[inline(always)]
     fn generate_ghosts(
         &self,
         site_properties: &SiteProperties,

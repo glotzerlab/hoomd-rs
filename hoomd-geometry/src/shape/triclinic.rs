@@ -268,7 +268,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn fractional(&self, absolute: &Cartesian<3>) -> Cartesian<3> {
         let l: Cartesian<3> = self.extents.map(|x| x.get()).into();
         let mut fractional = *absolute;
@@ -311,7 +311,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn absolute(&self, fractional: &Cartesian<3>) -> Cartesian<3> {
         let mut pos: Cartesian<3> = Cartesian::from([1.0, 1.0, 1.0]);
         for i in 0..3 {
@@ -353,7 +353,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn edge_vectors(&self) -> [Cartesian<3>; 3] {
         let mut edge_vectors = [Cartesian::<3>::default(); 3];
         edge_vectors[0] = [self.lx().get(), 0., 0.].into();
@@ -442,7 +442,7 @@ impl Triclinic {
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     #[expect(
         clippy::missing_panics_doc,
         reason = "Panic would occur due to a bug in hoomd-rs."

@@ -36,7 +36,7 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
     /// Note that the function fails to wrap points that are outside the
     /// dodecagon and further than `TwelveTwelve::EDGE_LENGTH/2` from any of
     /// the vertices.
-    #[inline]
+    #[inline(always)]
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     fn wrap(&self, properties: Point<Hyperbolic<3>>) -> Result<Point<Hyperbolic<3>>, Error> {
         let mut properties = properties;
@@ -563,7 +563,7 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
         self.maximum_interaction_range
     }
     /// Place periodic images of sites near the edges of the periodic boundary
-    #[inline]
+    #[inline(always)]
     fn generate_ghosts(
         &self,
         site_properties: &Point<Hyperbolic<3>>,
@@ -662,7 +662,7 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<TwelveTwelve
         self.maximum_interaction_range
     }
     /// Place periodic images of sites near the edge of the periodic boundary.
-    #[inline]
+    #[inline(always)]
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     fn generate_ghosts(
         &self,
