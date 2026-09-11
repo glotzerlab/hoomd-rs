@@ -12,15 +12,23 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-hoomd-vector.workspace = true
 num-complex.workspace = true
+thiserror.workspace = true
+
+hoomd-microstate.workspace = true
+hoomd-spatial.workspace = true
+hoomd-vector.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
 approxim.workspace = true
 divan.workspace = true
+itertools.workspace = true
 rand.workspace = true
 rstest.workspace = true
 sphrs.workspace = true
+
+hoomd-geometry.workspace = true
 
 [lints]
 workspace = true
