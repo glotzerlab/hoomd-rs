@@ -13,6 +13,7 @@ categories.workspace = true
 
 [dependencies]
 num-complex.workspace = true
+thiserror.workspace = true
 
 hoomd-microstate.workspace = true
 hoomd-spatial.workspace = true

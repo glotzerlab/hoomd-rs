@@ -7,7 +7,10 @@ use std::f64::consts::PI;
 
 use hoomd_vector::{Cartesian, InnerProduct};
 
-use crate::math::{SphericalHarmonic, SphericalHarmonicOutputs};
+use crate::{
+    Error,
+    math::{SphericalHarmonic, SphericalHarmonicOutputs},
+};
 
 /// Compute the 3D Steinhardt order parameters $` q_{Lm} `$ and $` q_L `$.
 ///
@@ -32,7 +35,7 @@ use crate::math::{SphericalHarmonic, SphericalHarmonicOutputs};
 /// [`q_lm`]: Self::q_lm
 /// [`new`]: Self::new
 ///
-/// # Example
+/// # Examples
 ///
 /// Compute $` q_4 `$ for all sites in a microstate:
 /// ```
@@ -85,6 +88,77 @@ use crate::math::{SphericalHarmonic, SphericalHarmonicOutputs};
 /// # Ok(())
 /// # }
 /// ```
+///
+/// Compute the averaged $` q_4 `$ for all sites in a microstate using
+/// [`average_over_neighbors`]. First, compute the  $` q_{Lm} `$ values for each
+/// site. Then average them over the site *and* all its neighbors (by using a
+/// `near_point` query). Finally, compute $` q_4 `$ by applying the rotational
+/// invariance operation to the averaged $` q_{Lm} `$:
+/// ```
+/// use std::collections::HashMap;
+///
+/// use hoomd_geometry::shape::Cuboid;
+/// use hoomd_microstate::{Body, Microstate, Replicate, boundary::Periodic};
+/// use hoomd_order::{SitesInBall, Steinhardt};
+/// use hoomd_spatial::VecCell;
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let model_maximum_interaction_range: f64 = 1.0;
+/// let order_maximum_neighbor_distance: f64 = 1.5;
+/// let maximum_interaction_range =
+///     model_maximum_interaction_range.max(order_maximum_neighbor_distance);
+///
+/// let unit_cell_cube = Cuboid::with_equal_edges(1.0.try_into()?);
+/// let periodic_unit_cell = Periodic::new(0.0, unit_cell_cube)?;
+/// let vec_cell = VecCell::builder()
+///     .nominal_search_radius(model_maximum_interaction_range.try_into()?)
+///     .maximum_search_radius(maximum_interaction_range)
+///     .build();
+/// let microstate = Microstate::builder()
+///     .boundary(periodic_unit_cell)
+///     .spatial_data(vec_cell)
+///     .bodies([Body::point(Cartesian::default())])
+///     .try_build()?
+///     .replicate_with_maximum_interaction_range(
+///         [16; 3],
+///         maximum_interaction_range,
+///     )?;
+///
+/// let steinhardt = Steinhardt::<4>::new();
+/// let mut q_lm = HashMap::new();
+/// for (site_index, site) in microstate.sites().iter().enumerate() {
+///     let neighbors = SitesInBall::near_site(
+///         &microstate,
+///         site_index,
+///         order_maximum_neighbor_distance,
+///     );
+///     q_lm.insert(
+///         site.site_tag,
+///         steinhardt.q_lm(
+///             &site.properties.position,
+///             neighbors.iter_site_positions().copied(),
+///         )?,
+///     );
+/// }
+///
+/// let q_average_lm = hoomd_order::average_over_neighbors(&q_lm, |site_tag| {
+///    let site_index = microstate.site_indices()[site_tag].expect("site tag should be present");
+///    SitesInBall::near_point(&microstate,
+///    microstate.sites()[site_index].properties.position,
+///    order_maximum_neighbor_distance,
+///    )
+///    .iter_site_tags()
+///    .collect::<Vec<_>>()
+/// })?;
+///
+/// let q_average_4: HashMap<usize, f64> = q_average_lm.iter().map(|(&site_tag, q_lm_j)|
+///    (site_tag, Steinhardt::make_rotationally_invariant(q_lm_j))).collect();
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`average_over_neighbors`]: crate::average_over_neighbors
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Steinhardt<const L: usize> {
     /// Compute the spherical harmonics.
@@ -117,7 +191,7 @@ impl<const L: usize> Steinhardt<L> {
     ///
     /// # Errors
     ///
-    /// [`hoomd_vector::Error::InvalidVectorMagnitude`] when any $` |\vec{r}_j - \vec{r}| = 0 `$.
+    /// [`Error::InvalidDeltaR3`] when any $` |\vec{r}_j - \vec{r}| = 0 `$.
     ///
     /// # Example
     ///
@@ -153,12 +227,14 @@ impl<const L: usize> Steinhardt<L> {
         &self,
         r: &Cartesian<3>,
         neighbors: I,
-    ) -> Result<SphericalHarmonicOutputs<L>, hoomd_vector::Error> {
+    ) -> Result<SphericalHarmonicOutputs<L>, Error> {
         let mut total = SphericalHarmonicOutputs::default();
         let mut count: usize = 0;
 
         for r_j in neighbors {
-            let (delta_r_unit, _) = (r_j - *r).to_unit()?;
+            let (delta_r_unit, _) = (r_j - *r)
+                .to_unit()
+                .map_err(|e| Error::InvalidDeltaR3(r_j, *r, e))?;
             total += self.spherical_harmonic.evaluate(&delta_r_unit);
             count += 1;
         }
@@ -193,7 +269,7 @@ impl<const L: usize> Steinhardt<L> {
     ///
     /// # Errors
     ///
-    /// [`hoomd_vector::Error::InvalidVectorMagnitude`] when any $` |\vec{r}_j - \vec{r}| = 0 `$.
+    /// [`Error::InvalidDeltaR3`] when any $` |\vec{r}_j - \vec{r}| = 0 `$.
     ///
     /// # Example
     ///
@@ -232,8 +308,25 @@ impl<const L: usize> Steinhardt<L> {
         &self,
         r: &Cartesian<3>,
         neighbors: I,
-    ) -> Result<f64, hoomd_vector::Error> {
+    ) -> Result<f64, Error> {
         let q_lm = self.q_lm(r, neighbors)?;
         Ok(Self::make_rotationally_invariant(&q_lm))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn invalid_delta_r() {
+        let steinhardt = Steinhardt::<6>::new();
+
+        let neighbors = [[1.0, 1.0, 1.0].into()];
+
+        assert!(matches!(
+            steinhardt.q_lm(&[1.0, 1.0, 1.0].into(), neighbors),
+            Err(Error::InvalidDeltaR3(_, _, _))
+        ));
     }
 }
