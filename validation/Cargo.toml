@@ -26,6 +26,14 @@ toml = "1.1.4"
 anyhow.workspace = true
 itertools.workspace = true
 hoomd-rand.workspace = true
+rand.workspace = true
+hoomd-gsd.workspace = true
+strum = "0.28.0"
+strum_macros = "0.28.0"
+parquet_derive.workspace = true
+parquet.workspace = true
+hoomd-utility.workspace = true
+indicatif = "0.18.6"
 
 [lints]
 workspace = true
