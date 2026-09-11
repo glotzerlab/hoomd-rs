@@ -1,11 +1,10 @@
 use serde::{Deserialize, Serialize};
 // use toml::Table;
 use itertools::iproduct;
-// use hoomd_workspace::Entry;
-
+use strum_macros::Display;
 
 /// The names of variants for the body type.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Display)]
 pub enum BodyVariants {
     #[serde(rename = "sphere")]
     Sphere,
@@ -14,7 +13,7 @@ pub enum BodyVariants {
 }
 
 /// The names of variants for the method type.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Display)]
 pub enum MethodVariants {
     #[serde(rename = "constant-volume")]
     ConstantVolume,
@@ -23,7 +22,7 @@ pub enum MethodVariants {
 }
 
 /// The names of variants for the thermostat type.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Display)]
 pub enum ThermostatVariants {
     #[serde(rename = "no-thermostat")]
     NoThermostat,
