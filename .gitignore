@@ -16,3 +16,4 @@ mc_*.json
 *.postcard
 *.py
 .lycheecache
+validation/workspace/*
