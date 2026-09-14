@@ -7,24 +7,29 @@ use serde::{Deserialize, Serialize};
 
 use super::{UnivariateEnergy, UnivariateForce};
 
-/// Smoothly shift a potential (and its force) to 0 at some `r_cut`, beginning at `r_smooth`.
+/// Smoothly shift a potential (and its force) to 0 at some `r_cut`, beginning
+/// at `r_smooth`. The smoothed potential or force is the product of the
+/// original univariate function $`f(r)`$ and the smoothing function $`S(r)`$
 ///
 /// ```math
 /// U(r) = S(r) \cdot f(r)
 /// ```
-/// where:
+/// 
+/// where
+/// 
 /// ```math
 /// S(r) =
 /// \begin{cases}
-/// 1 & r < r_{\mathrm{on}} \\
+/// 1 & r < r_{\mathrm{smooth}} \\
 /// \frac{(r_{\mathrm{cut}}^2 - r^2)^2 \cdot
 /// (r_{\mathrm{cut}}^2 + 2r^2 -
-/// 3r_{\mathrm{on}}^2)}{(r_{\mathrm{cut}}^2 -
-/// r_{\mathrm{on}}^2)^3}
-/// & r_{\mathrm{on}} < r \le r_{\mathrm{cut}} \\
+/// 3r_{\mathrm{smooth}}^2)}{(r_{\mathrm{cut}}^2 -
+/// r_{\mathrm{smooth}}^2)^3}
+/// & r_{\mathrm{smooth}} < r \le r_{\mathrm{cut}} \\
 /// 0 & r \ge r_{\mathrm{cut}} \\
 /// \end{cases}
 /// ```
+/// 
 /// # Example
 ///
 /// ```

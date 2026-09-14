@@ -21,7 +21,7 @@ workspace = true
 proc-macro = true
 
 [dependencies]
-syn = "3.0.0"
+syn = { version = "3.0.0", features = ["full"] }
 quote = "1.0.44"
 proc-macro2 = "1.0.106"
 serde.workspace = true

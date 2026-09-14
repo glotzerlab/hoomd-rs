@@ -1,13 +1,13 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement the derive(DeltaEnergyOne) macro
+//! Implement the derive(SitePairEnergy) macro
 
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{Data, DeriveInput, Fields, GenericParam, Ident, Index, parse_quote, spanned::Spanned};
 
-/// Implement the derive(DeltaEnergyOne) macro.
+/// Implement the derive(SitePairEnergy) macro.
 pub(crate) fn site_pair_energy(input: DeriveInput) -> TokenStream {
     let name = &input.ident;
 
