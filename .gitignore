@@ -17,3 +17,4 @@ mc_*.json
 *.py
 .lycheecache
 validation/workspace/*
+mwe/*
