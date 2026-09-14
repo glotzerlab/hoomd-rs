@@ -93,13 +93,23 @@ pub fn identifiers() -> Vec<String> {
 /// Check if the log file for a statepoint has more than the expected number of rows for a finished simulation.
 pub fn is_finished(sp: &StatePoint) -> anyhow::Result<bool> {
     let path = sp.path()?.join(crate::LOG_NAME);
-    let log_file = File::open(path)?;
-    let reader = SerializedFileReader::new(log_file)?;
+    let file_result = File::open(path);
 
-    let rows: Vec<_> = reader.into_iter()
-        .map(|r| r.unwrap())
-        .collect();
+    match file_result {
+        Ok(file) => {
+            // ensure the file isn't empty
+            if file.metadata()?.len() < 8 {
+                return Ok(false)
+            };
 
-    let max_rows = crate::DURATION / crate::LOG_PERIOD;
-    Ok(rows.len() >= max_rows.try_into().unwrap())
+            let reader = SerializedFileReader::new(file)?;
+            let rows: Vec<_> = reader.into_iter()
+                .map(|r| r.unwrap())
+                .collect();
+
+            let max_rows = crate::DURATION / crate::LOG_PERIOD;
+            Ok(rows.len() >= max_rows.try_into().unwrap())
+        },
+        _ => Ok(false)
+    }
 }
