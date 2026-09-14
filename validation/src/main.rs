@@ -17,7 +17,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 // Workspace constants
 const NDIMS: [usize; 1] = [3];
-const PARTICLE_TYPES: [BodyVariants; 1] = [BodyVariants::Dumbbell];
+const PARTICLE_TYPES: [BodyVariants; 2] = [BodyVariants::Sphere, BodyVariants::Dumbbell];
 const METHODS: [MethodVariants; 2] = [MethodVariants::ConstantVolume, MethodVariants::Langevin];
 const THERMOSTATS: [ThermostatVariants; 3] = [
     ThermostatVariants::NoThermostat,
