@@ -101,8 +101,8 @@ rustc-hash = "2.1.1"
 serde-json-fmt = "0.2.0"
 serde_with = "3.16.1"
 wildmatch = "2.4.0"
-parquet = { version = "59.0.0", default-features=false }
-parquet_derive = { version = "59.0.0", default-features=false }
+parquet = { version = "60.0.0", default-features=false }
+parquet_derive = { version = "60.0.0", default-features=false }
 
 # Dependencies exposed via Public APIs.
 anyhow = "1.0.100"
