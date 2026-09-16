@@ -19,7 +19,8 @@ use serde_with::serde_as;
 use std::array;
 
 use hoomd_geometry::shape::Hypercuboid;
-use hoomd_microstate::boundary::{Closed, Periodic};
+use hoomd_manifold::Spherical;
+use hoomd_microstate::boundary::{Closed, OpenSpherical, Periodic};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
@@ -133,6 +134,26 @@ impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
     #[inline]
     fn num_spaces(&self) -> usize {
         self.shape.iter().product()
+    }
+}
+
+impl<const N: usize> Checkerboard<Spherical<N>> for HypercuboidCheckerboard<N> {
+    #[inline]
+    fn point_to_space_index(&self, point: &Spherical<N>) -> Option<usize> {
+        <Self as Checkerboard<Cartesian<N>>>::point_to_space_index(
+            self,
+            &Cartesian::from(*point.coordinates()),
+        )
+    }
+
+    #[inline]
+    fn space_indices_by_color(&self) -> &[Vec<usize>] {
+        <Self as Checkerboard<Cartesian<N>>>::space_indices_by_color(self)
+    }
+
+    #[inline]
+    fn num_spaces(&self) -> usize {
+        <Self as Checkerboard<Cartesian<N>>>::num_spaces(self)
     }
 }
 
@@ -363,6 +384,38 @@ impl<const N: usize> Cover<Cartesian<N>> for Periodic<Hypercuboid<N>> {
         interaction_range: PositiveReal,
     ) {
         checkerboard.update(rng, interaction_range, self.shape().edge_lengths, [true; N]);
+    }
+}
+
+impl<const N: usize> Cover<Spherical<N>> for OpenSpherical<N> {
+    type Checkerboard = HypercuboidCheckerboard<N>;
+    #[inline]
+    fn cover<R: Rng + ?Sized>(
+        &self,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+    ) -> Self::Checkerboard {
+        HypercuboidCheckerboard::new(
+            rng,
+            interaction_range,
+            [2.0.try_into().expect("hard-coded positive number"); N],
+            [false; N],
+        )
+    }
+
+    #[inline]
+    fn cover_into<R: Rng + ?Sized>(
+        &self,
+        checkerboard: &mut Self::Checkerboard,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+    ) {
+        checkerboard.update(
+            rng,
+            interaction_range,
+            [2.0.try_into().expect("hard-coded positive number"); N],
+            [false; N],
+        );
     }
 }
 
