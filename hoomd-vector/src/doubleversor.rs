@@ -19,11 +19,12 @@ use crate::{Cartesian, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Ver
 /// A pair of [`Versor`]s that represent a 4D rotation.
 ///
 /// Every rotation in SO(4) factors into a *left-isoclinic* and a *right-isoclinic*
-/// rotation via the Van Elfrinkhof decomposition, each of which can be described as an
-/// ordinary 3D [`Versor`] with fully independent degrees of freedom. [`DoubleVersor`]
-/// stores one unit quaternion for each factor, $`\mathbf{q_l}`$ and $`\mathbf{q_r}`$.
-/// The two rotate a [`Cartesian<4>`] vector $`\vec{a}`$ (viewed as a quaternion) with a
-/// double-sided product that mirrors the three-dimensional [`Versor::rotate`]:
+/// rotation via a [Cayley factorization](doi.org/10.1007/s00006-016-0683-9), each of
+/// which can be described as an ordinary 3D [`Versor`] with fully independent degrees
+/// of freedom. [`DoubleVersor`] stores one unit quaternion for each factor,
+/// $`\mathbf{q_l}`$ and $`\mathbf{q_r}`$. The two rotate a [`Cartesian<4>`] vector
+/// $`\vec{a}`$ (viewed as a quaternion) with a double-sided product that mirrors the
+/// three-dimensional [`Versor::rotate`]:
 ///
 /// ```math
 /// \vec{a}' = \mathbf{q}_l \, \vec{a} \, \mathbf{q}_r
