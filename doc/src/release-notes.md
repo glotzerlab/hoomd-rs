@@ -5,6 +5,7 @@
 *Added:*
 
 * `[hoomd-microstate]`: Add the `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and `max_ghosts_64` cargo features that set the maximum number of ghosts per site. The largest enabled feature is used when multiple are set simultaneously.
+* `[hoomd-utility]`: Add a macro to generate compile-time-checked `PositiveReal` values (#421)
 
 *Changed:*
 

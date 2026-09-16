@@ -16,6 +16,8 @@ use super::Error;
 ///
 /// # Example
 ///
+/// Construct from a value known at runtime with [`PositiveReal::try_from`]:
+///
 /// ```
 /// use hoomd_utility::valid::PositiveReal;
 ///
@@ -24,10 +26,39 @@ use super::Error;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// Construct from a value known at compile time with [`crate::positive_real!`]:
+///
+/// ```
+/// use hoomd_utility::valid::PositiveReal;
+///
+/// const HALF: PositiveReal = hoomd_utility::positive_real!(0.5);
+/// const SUM: PositiveReal = hoomd_utility::positive_real!(1.0 + 1.0);
+///
+/// assert_eq!(HALF.get(), 0.5);
+/// assert_eq!(SUM.get(), 2.0);
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PositiveReal(f64);
 
 impl PositiveReal {
+    /// Construct from a value, checking that it is finite and greater than 0.
+    ///
+    /// This is a const-callable equivalent of [`PositiveReal::try_from`] used
+    /// by the [`crate::positive_real!`] macro, which cannot build the value
+    /// directly because the field is private.
+    #[doc(hidden)]
+    #[inline]
+    pub const fn from_f64(v: f64) -> Result<Self, Error> {
+        if !v.is_finite() {
+            Err(Error::NotFinite(v))
+        } else if v <= 0.0 {
+            Err(Error::NotPositive(v))
+        } else {
+            Ok(Self(v))
+        }
+    }
+
     /// Access the value.
     ///
     /// # Example
@@ -43,7 +74,7 @@ impl PositiveReal {
     /// # }
     #[must_use]
     #[inline]
-    pub fn get(&self) -> f64 {
+    pub const fn get(&self) -> f64 {
         self.0
     }
 }
@@ -98,14 +129,47 @@ impl TryFrom<f64> for PositiveReal {
     /// [`Error::NotPositive`] when `v` is not a positive value
     #[inline]
     fn try_from(v: f64) -> Result<PositiveReal, Error> {
-        if !v.is_finite() {
-            Err(Error::NotFinite(v))
-        } else if v <= 0.0 {
-            Err(Error::NotPositive(v))
-        } else {
-            Ok(PositiveReal(v))
-        }
+        PositiveReal::from_f64(v)
     }
+}
+
+/// Construct a [`PositiveReal`] from a const-evaluatable value.
+///
+/// The value is validated during compilation: it must be finite and greater than zero
+/// or the invocation fails to compile. Values that are not known at compile time must
+/// be constructed with [`PositiveReal::try_from`] instead.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_utility::valid::PositiveReal;
+///
+/// const HALF: PositiveReal = hoomd_utility::positive_real!(0.5);
+/// const SUM: PositiveReal = hoomd_utility::positive_real!(1.0 + 1.0);
+///
+/// assert_eq!(HALF.get(), 0.5);
+/// assert_eq!(SUM.get(), 2.0);
+/// ```
+///
+/// This does not compile:
+///
+/// ```compile_fail
+/// use hoomd_utility::valid::PositiveReal;
+///
+/// const BAD: PositiveReal = hoomd_utility::positive_real!(-1.0);
+/// ```
+#[macro_export]
+macro_rules! positive_real {
+    ($value:expr) => {
+        const {
+            match $crate::valid::PositiveReal::from_f64($value) {
+                ::core::result::Result::Ok(value) => value,
+                ::core::result::Result::Err(_) => {
+                    ::core::panic!("value must be finite and greater than 0")
+                }
+            }
+        }
+    };
 }
 
 impl Default for PositiveReal {
@@ -176,5 +240,21 @@ mod tests {
 
         let result = PositiveReal::try_from(-1.0);
         check!(result == Err(Error::NotPositive(-1.0)));
+    }
+
+    #[test]
+    fn positive_real_macro_construction() {
+        const ONE: PositiveReal = positive_real!(1.0);
+        const SUFFIXED_INT: PositiveReal = positive_real!(2f64);
+        const UNDERSCORES: PositiveReal = positive_real!(1_000.5);
+        const EXPRESSION: PositiveReal = positive_real!(0.5 + 0.5);
+
+        check!(ONE.get() == 1.0);
+        check!(SUFFIXED_INT.get() == 2.0);
+        check!(UNDERSCORES.get() == 1000.5);
+        check!(EXPRESSION.get() == 1.0);
+
+        let runtime = positive_real!(2.5);
+        check!(runtime.get() == 2.5);
     }
 }
