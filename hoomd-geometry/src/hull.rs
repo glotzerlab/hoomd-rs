@@ -80,6 +80,11 @@ pub trait ConvexHull: Sized {
 
 impl ConvexHull for Cartesian<2> {
     /// Compute the convex hull of points in 2D with the Graham scan algorithm.
+    ///
+    /// The orientation tests use robust adaptive predicates that compute the
+    /// exact sign of the orientation determinant, so the resulting hull does
+    /// not depend on where the point set lies relative to the origin (up to
+    /// the precision of the coordinates themselves).
     #[inline]
     fn convex_hull<I>(points: I) -> Result<Vec<Self>, Error>
     where
@@ -158,29 +163,28 @@ fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
 
 /// Determines whether a point `test` is to the left, right, or collinear with `edge`.
 ///
-/// # Warning
+/// The sign of the orientation determinant is computed with [`robust::orient2d`],
+/// Shewchuk's adaptive precision predicate: the sign is therefore *exact* for the
+/// coordinates as stored, and the resulting hull is exact up to the precision of the
+/// cooridinates themselves.
 ///
-/// This predicate is not robust: points very close to the line may be misclassified
-/// due to floating-point precision limits. For all practical inputs, this will not
-/// result in issues.
+/// Returns 1 when `test` lies to the left of the directed edge, -1 when it lies to the
+/// right, and 0 when the three points are exactly collinear.
 ///
 /// # Note
 ///
-/// This formulation (often referred to as the shoelace formula) guarantees
-/// **cyclic invariance**, or the property that the orientation sign is identical
-/// for any ordering of the three points `(e0, e1, t)`, `(e1, t, e0)`, and
-/// `(t, e0, e1)`. As a result, the result is antisymmetric about the edge `e`
-/// such that `p == -p'` for any `p'` reflected over `e`.
-///
-/// These properties do *not* prevent misclassification of points near the line, they
-/// only ensure consistent behavior for related inputs.
-///
-/// **Source:** [Robust Arithmetic in Computational Geometry](https://observablehq.com/@mourner/non-robust-arithmetic-as-art)
+/// Because the sign is exact, it is antisymmetric in its arguments (swapping two points
+/// points negates the sign) and invariant under cyclic permutation of the three inputs.
 #[inline]
 fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) -> i64 {
-    let orientation = (p[0] * q[1] - p[1] * q[0])
-        + (q[0] * test[1] - q[1] * test[0])
-        + (test[0] * p[1] - test[1] * p[0]);
+    let orientation = robust::orient2d(
+        robust::Coord { x: p[0], y: p[1] },
+        robust::Coord { x: q[0], y: q[1] },
+        robust::Coord {
+            x: test[0],
+            y: test[1],
+        },
+    );
 
     match orientation.total_cmp(&0.0) {
         Ordering::Greater => 1,
@@ -702,5 +706,66 @@ mod tests {
         let from_iterator = Cartesian::<2>::convex_hull(points.iter().copied())
             .expect("hard-coded points should lie on a convex hull");
         itertools::assert_equal(&from_iterator, &hull);
+    }
+
+    #[rstest]
+    fn test_translation_invariance() {
+        //  nearly collinear points far from the origin should classsify correctly
+        for offset in [0.0, 1.0, 1e3, 1e5] {
+            let offset = Cartesian::from([offset, offset]);
+            let points: Vec<Cartesian<2>> = [[0.0, 0.0], [1.0, 1.0 - 1e-8], [2.0, 2.0], [0.0, 2.0]]
+                .into_iter()
+                .map(|p| Cartesian::from(p) + offset)
+                .collect();
+
+            let vertices = Cartesian::<2>::convex_hull(&points)
+                .expect("hard-coded points should lie on a convex hull");
+
+            let hull: Vec<Cartesian<2>> = [
+                Cartesian::from([0.0, 0.0]),
+                Cartesian::from([1.0, 1.0 - 1e-8]),
+                Cartesian::from([2.0, 2.0]),
+                Cartesian::from([0.0, 2.0]),
+            ]
+            .into_iter()
+            .map(|p| p + offset)
+            .collect();
+            itertools::assert_equal(&vertices, &hull);
+        }
+
+        // When the point is exactly on the diagonal, the hull is the plain
+        // triangle at every offset.
+        for offset in [0.0, 1.0, 1e3, 1e5] {
+            let offset = Cartesian::from([offset, offset]);
+            let points: Vec<Cartesian<2>> = [[0.0, 0.0], [1.0, 1.0], [2.0, 2.0], [0.0, 2.0]]
+                .into_iter()
+                .map(|p| Cartesian::from(p) + offset)
+                .collect();
+
+            let vertices = Cartesian::<2>::convex_hull(&points)
+                .expect("hard-coded points should lie on a convex hull");
+            assert_eq!(vertices.len(), 3, "at offset {offset:?}");
+        }
+    }
+
+    #[rstest]
+    fn test_predicate_translation_invariance() {
+        let p = Cartesian::from([0.0, 0.0]);
+        let q = Cartesian::from([1.0, 1.0 - 1e-8]);
+        let test = Cartesian::from([2.0, 2.0]);
+
+        for offset in [0.0, 1.0, 1e3, 1e5, 1e8] {
+            let offset = Cartesian::from([offset, offset]);
+            check!(predicate_orient2d((p + offset, q + offset), test + offset) == 1);
+        }
+
+        // The same holds for collinear and right-turning triples.
+        let q_collinear = Cartesian::from([1.0, 1.0]);
+        let q_right = Cartesian::from([1.0, 1.0 + 1e-8]);
+        for offset in [0.0, 1e3, 1e8] {
+            let offset = Cartesian::from([offset, offset]);
+            check!(predicate_orient2d((p + offset, q_collinear + offset), test + offset) == 0);
+            check!(predicate_orient2d((p + offset, q_right + offset), test + offset) == -1);
+        }
     }
 }
