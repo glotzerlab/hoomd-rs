@@ -49,6 +49,8 @@
 //!
 //! [`IsPointInside`] checks if a point is inside or outside a shape.
 //!
+//! [`ConvexHull`] computes the convex hull of a set of points.
+//!
 //! Many shapes implement the `Distribution` trait from **rand** to randomly sample
 //! interior points.
 //!
@@ -123,6 +125,9 @@ use thiserror::Error;
 
 mod convex;
 pub use convex::Convex;
+
+mod hull;
+pub use hull::ConvexHull;
 
 pub mod shape;
 pub mod xenocollide;
