@@ -12,8 +12,8 @@
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
-    ConvexHull, platonic,
-    shape::{Hypercuboid, Hypersphere},
+    ConvexHull,
+    shape::{ConvexPolyhedron, Hypercuboid, Hypersphere, Simplex3},
 };
 use hoomd_vector::{Cartesian, Rotate, Versor};
 use rand::{RngExt, SeedableRng, distr::Distribution, rngs::StdRng};
@@ -194,34 +194,25 @@ mod platonic_solids {
 
     #[divan::bench]
     fn tetrahedron(bencher: Bencher) {
-        bench_fixed_points(&platonic::tetrahedron(), bencher);
-    }
-
-    #[divan::bench]
-    fn octahedron(bencher: Bencher) {
-        bench_fixed_points(&platonic::octahedron(), bencher);
-    }
-
-    #[divan::bench]
-    fn cube(bencher: Bencher) {
-        bench_fixed_points(&platonic::cube(), bencher);
+        bench_fixed_points(&Simplex3::default().vertices(), bencher);
     }
 
     #[divan::bench]
     fn icosahedron(bencher: Bencher) {
-        bench_fixed_points(&platonic::icosahedron(), bencher);
+        bench_fixed_points(ConvexPolyhedron::icosahedron().vertices(), bencher);
     }
 
     #[divan::bench]
     fn dodecahedron(bencher: Bencher) {
-        bench_fixed_points(&platonic::dodecahedron(), bencher);
+        bench_fixed_points(ConvexPolyhedron::dodecahedron().vertices(), bencher);
     }
 
     #[divan::bench]
     fn rotated_dodecahedron(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(42);
         let versor: Versor = rng.random();
-        let rotated: Vec<Cartesian<3>> = platonic::dodecahedron()
+        let rotated: Vec<Cartesian<3>> = ConvexPolyhedron::dodecahedron()
+            .vertices()
             .iter()
             .map(|p| versor.rotate(p))
             .collect();

@@ -450,8 +450,7 @@ mod tests {
     use super::*;
     use crate::{
         Volume,
-        platonic::{cube, dodecahedron, icosahedron, octahedron, tetrahedron},
-        shape::Simplex3,
+        shape::{ConvexPolyhedron, Simplex3},
     };
     use approxim::assert_relative_eq;
     use assert2::check;
@@ -1028,14 +1027,40 @@ mod tests {
             check!(predicate_orient2d((p + offset, q_right + offset), test + offset) == -1);
         }
     }
+    /// The 8 vertices of a cube with edge length 2.
+    fn cube() -> Vec<Cartesian<3>> {
+        let mut points = Vec::with_capacity(8);
+        for x in [-1.0, 1.0] {
+            for y in [-1.0, 1.0] {
+                for z in [-1.0, 1.0] {
+                    points.push(Cartesian::from([x, y, z]));
+                }
+            }
+        }
+        points
+    }
+
+    /// The 6 vertices of an octahedron with edge length `sqrt(2)`.
+    fn octahedron() -> Vec<Cartesian<3>> {
+        let mut points = Vec::with_capacity(6);
+        for axis in 0..3 {
+            for sign in [-1.0, 1.0] {
+                let mut p = [0.0; 3];
+                p[axis] = sign;
+                points.push(Cartesian::from(p));
+            }
+        }
+        points
+    }
+
     /// The vertex sets of the platonic solids, shared by the 3d hull tests.
     #[template]
     #[rstest]
-    #[case::tetrahedron(tetrahedron())]
+    #[case::tetrahedron(Simplex3::default().vertices().to_vec())]
     #[case::cube(cube())]
     #[case::octahedron(octahedron())]
-    #[case::dodecahedron(dodecahedron())]
-    #[case::icosahedron(icosahedron())]
+    #[case::dodecahedron(ConvexPolyhedron::dodecahedron().vertices().to_vec())]
+    #[case::icosahedron(ConvexPolyhedron::icosahedron().vertices().to_vec())]
     fn platonic_solids(#[case] points: Vec<Cartesian<3>>) {}
 
     /// Validate a triangulated 3d hull.
@@ -1158,7 +1183,7 @@ mod tests {
         check!(vertices == (0..8).collect::<Vec<usize>>());
 
         let hull: Vec<Cartesian<3>> = vertices.iter().map(|&i| points[i]).collect();
-        itertools::assert_equal(hull, cube());
+        itertools::assert_equal(&hull, &cube());
     }
 
     #[rstest]
@@ -1203,9 +1228,10 @@ mod tests {
         // The exact predicates measure differences, so the hull is the same
         // wherever the point set lies and however it is scaled.
         let offset = Cartesian::from([offset, -offset, offset]);
-        let points: Vec<Cartesian<3>> = dodecahedron()
-            .into_iter()
-            .map(|p| p * scale + offset)
+        let points: Vec<Cartesian<3>> = ConvexPolyhedron::dodecahedron()
+            .vertices()
+            .iter()
+            .map(|&p| p * scale + offset)
             .collect();
 
         let (vertices, faces) =
@@ -1219,7 +1245,7 @@ mod tests {
     fn test_3d_input_types() {
         let points = octahedron();
 
-        let from_slice = Cartesian::<3>::convex_hull(&points[..])
+        let from_slice = Cartesian::<3>::convex_hull(&points)
             .expect("hard-coded points should form a convex body");
         let from_vec = Cartesian::<3>::convex_hull(points.clone())
             .expect("hard-coded points should form a convex body");
