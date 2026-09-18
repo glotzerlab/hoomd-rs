@@ -1163,8 +1163,7 @@ mod tests {
 
     #[rstest]
     fn test_3d_random_point_clouds(#[values(0, 1, 2, 3, 4)] seed: u64) {
-        // The points are drawn from the uniform distribution over the cube
-        // [-1, 1]^3.
+        // The points are drawn from the uniform distribution over the cube [-1, 1]^3.
         let mut rng = StdRng::seed_from_u64(seed);
         let points: Vec<Cartesian<3>> = (0..30).map(|_| rng.random()).collect();
 
@@ -1177,8 +1176,7 @@ mod tests {
 
     #[rstest]
     fn test_3d_fibonacci_sphere() {
-        // The points of a Fibonacci lattice on the unit sphere are all
-        // vertices of their hull.
+        // The points of a Fibonacci lattice on the unit sphere are all on the hull
         let n = 20;
         let golden_angle = std::f64::consts::PI * (5.0_f64.sqrt() - 1.0);
         let points: Vec<Cartesian<3>> = (0..n)
@@ -1236,8 +1234,7 @@ mod tests {
     #[rstest]
     fn test_3d_volume() {
         // The hull volume is the sum of the volumes of the tetrahedra formed
-        // by the faces and any interior point. The origin, the centroid of
-        // the cube, is interior.
+        // by the faces and any interior point. The origin (cube centroid) is interior.
         let points = cube();
 
         let (vertices, faces) =
