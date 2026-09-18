@@ -304,6 +304,14 @@ impl Quaternion {
     pub fn to_versor_unchecked(self) -> Versor {
         Versor(self / self.norm())
     }
+
+    /// Embed this quaternion as a point in R^4.
+    #[inline]
+    #[must_use]
+    pub fn embed_in_cartesian_4(&self) -> Cartesian<4> {
+        let [x, y, z] = self.vector.coordinates;
+        [self.scalar, x, y, z].into()
+    }
 }
 
 impl From<[f64; 4]> for Quaternion {
@@ -530,7 +538,7 @@ pub struct Versor(Quaternion);
 impl Versor {
     /// Take the dot product of the Versor as an element of $`\mathbb{R}^4`$.
     #[inline]
-    fn dot_as_cartesian(&self, other: &Self) -> f64 {
+    pub(crate) fn dot_as_cartesian(&self, other: &Self) -> f64 {
         self.get().scalar * other.get().scalar + self.get().vector.dot(&other.get().vector)
     }
     /// Create a [`Versor`] that rotates by an angle (in radians)
@@ -600,16 +608,20 @@ impl Versor {
 
     /// A metric quantifying the angle (in radians) of the spherical arc separating two Versors.
     ///
-    /// $`d : \mathbb{H} \times \mathbb{H} \to \mathbb{R}^+, \quad d(q_0, q_1) = \arccos(|q_0 \cdot q_1|)`$
+    /// $`d : \mathbb{H} \times \mathbb{H} \to \mathbb{R}^+, \quad d(q_0, q_1) = \operatorname{atan2}(\lVert \vec{v} \rVert, s)`$
     ///
-    /// This value always lies in the range $`[0, \pi]`$, and is symmetric: while there
-    /// are multiple arcs separating a pair of quaternions, this metric always chooses
-    /// the shortest.
+    /// where $`(s, \vec{v}) = \mathbf{q}_0^{*} \mathbf{q}_1`$.
+    ///
+    /// For unit versors, $`s = \mathbf{q}_0 \cdot \mathbf{q}_1 = \cos\phi`$ and
+    /// $`\lVert \vec{v} \rVert = \sin\phi`$, so this equals the standard equation
+    /// $`\arccos(\mathbf{q}_0 \cdot \mathbf{q}_1)`$ exactly.
     #[inline]
     #[must_use]
     pub fn arc_distance(&self, other: &Self) -> f64 {
-        self.dot_as_cartesian(other).acos()
+        let relative_quat = *self.inverted().combine(other).get();
+        f64::atan2(relative_quat.vector.norm(), relative_quat.scalar)
     }
+
     /// A fast metric on Versors representing elements of SO(3).
     ///
     /// $`d : \mathbb{H} \times \mathbb{H} \to \mathbb{R}^+, \quad d(q_0, q_1) = 1 - |q_0 \cdot q_1 |`$
