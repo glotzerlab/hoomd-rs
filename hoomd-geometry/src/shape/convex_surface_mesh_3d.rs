@@ -129,9 +129,9 @@ impl Volume for ConvexSurfaceMesh3d {
                     rows: face.indices().map(|i| self.vertices[i].coordinates),
                 }
                 .determinant()
-                    / 6.0
             })
             .sum::<f64>()
             .abs()
+            / 6.0
     }
 }
