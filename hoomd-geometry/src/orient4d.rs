@@ -27,7 +27,7 @@
 //!    determinant exceeds the bound, its sign is known and can be returned.
 //! 2. Otherwise, [`orient4d_exact`] evaluates the determinant exactly: the
 //!    coordinates are converted to integers with a common power-of-two
-//!    scale, and the determinant is computed with checked 512-bit integer
+//!    scale, and the determinant is computed with 512-bit integer
 //!    arithmetic ([`I512`]). The sign is then exact for the coordinates as
 //!    stored.
 //!
@@ -42,6 +42,7 @@
 
 use crate::Error;
 use hoomd_linear_algebra::matrix::Matrix44;
+use hoomd_utility::dyad::Dyad;
 use hoomd_vector::Cartesian;
 use i256::I512;
 
@@ -127,6 +128,10 @@ const UNDERFLOW_ERROR: f64 = 32.0 * MIN_SUBNORMAL;
 /// with `216 = 4·54` the four-entry product exponent and `221 = 216 + 5` the sum
 /// exponent. Requiring that bound to fit the signed 512-bit range, `|x| ≤ 2⁵¹¹` gives
 /// `221 + 4·span ≤ 511`, i.e. `span ≤ ⌊290/4⌋ = 72`: a dynamic range of 72 powers of 2
+///
+/// The same argument bounds every intermediate of the Laplace evaluation (each is a
+/// partial sum of at most 24 terms bounded as above), so with this budget enforced the
+/// [`I512`] arithmetic of the exact stage cannot overflow and is used unchecked.
 pub const MAX_EXPONENT_SPAN: i32 = 72;
 
 /// Compute the sign of the four-dimensional orientation determinant.
@@ -178,15 +183,16 @@ pub fn orient4d(
 /// Compute the exact sign of the four-dimensional orientation determinant.
 ///
 /// The coordinates are converted to large integers scaled by a common power of two,
-/// and the determinant is evaluated with checked [`I512`] arithmetic so the returned
-/// sign is exact for the coordinates as stored.
+/// and the determinant is evaluated with [`I512`] arithmetic so the returned
+/// sign is exact for the coordinates as stored. The budget of [`MAX_EXPONENT_SPAN`]
+/// bounds every intermediate below the 512-bit range, so the arithmetic cannot overflow
 ///
 /// # Errors
 ///
 /// Returns [`Error::NumericallyAmbiguousPolytope`] when any coordinate is not finite,
-/// or when the exponents of the coordinates span too many powers of two (or when any
-/// intermediate would overflow the 512-bit arithmetic). This is uncommon for normal
-/// geometries, but can occur with very large or very inaccurate point sets.
+/// or when the exponents of the coordinates span too many powers of two. This is
+/// uncommon for normal geometries, but can occur with very large or very inaccurate
+/// point sets.
 #[inline]
 pub fn orient4d_exact(
     pa: Cartesian<4>,
@@ -210,18 +216,18 @@ pub fn orient4d_exact(
     let mut scaled = [[I512::ZERO; 4]; 5];
     for (row, coordinates) in scaled.iter_mut().zip(&coordinates) {
         for (entry, &coordinate) in row.iter_mut().zip(coordinates) {
-            *entry = scaled_coordinate(coordinate, min_exponent)?;
+            *entry = coordinate.scale_to(min_exponent);
         }
     }
 
     let mut matrix = [[I512::ZERO; 4]; 4];
     for i in 0..4 {
         for j in 0..4 {
-            matrix[i][j] = checked_sub(scaled[i][j], scaled[4][j])?;
+            matrix[i][j] = scaled[i][j] - scaled[4][j];
         }
     }
 
-    Ok(sign(det4_i512(&matrix)?))
+    Ok(det44i(&matrix).signum().as_i64())
 }
 
 /// Compute the sign of the determinant of a 4×4 matrix of differences, if f64 is safe.
@@ -300,34 +306,32 @@ fn permanent_abs<const N: usize>(m: &[[f64; N]; N]) -> f64 {
 /// The largest absolute entry of a 4×4 matrix.
 #[inline]
 fn max_absolute_value(m: &Matrix44) -> f64 {
-    m.rows
-        .iter()
-        .flatten()
-        .fold(0.0_f64, |max, &entry| max.max(entry.abs()))
+    m.iter_elements()
+        .fold(0.0_f64, |max, entry| max.max(entry.abs()))
 }
 
-/// Decompose every coordinate of five points into an exact dyadic representation.
+/// Decompose every coordinate of five points into an exact dyadic rational.
 ///
 /// # Errors
 ///
 /// Returns [`Error::NumericallyAmbiguousPolytope`] when any coordinate is not finite.
-fn decode_points(points: &[Cartesian<4>; 5]) -> Result<[[(i128, i32); 4]; 5], Error> {
-    let mut decoded = [[(0, 0); 4]; 5];
+fn decode_points(points: &[Cartesian<4>; 5]) -> Result<[[Dyad; 4]; 5], Error> {
+    let mut decoded = [[Dyad::ZERO; 4]; 5];
     for (row, point) in decoded.iter_mut().zip(points) {
         for (entry, &value) in row.iter_mut().zip(&point.coordinates) {
-            *entry = decode(value)?;
+            *entry = Dyad::try_from_f64(value).ok_or(Error::NumericallyAmbiguousPolytope)?;
         }
     }
     Ok(decoded)
 }
 
 /// The range of exponents of the nonzero mantissas, or [`None`] when all of them are 0.
-fn exponent_range(coordinates: &[[(i128, i32); 4]; 5]) -> Option<(i32, i32)> {
+fn exponent_range(coordinates: &[[Dyad; 4]; 5]) -> Option<(i32, i32)> {
     coordinates
         .iter()
         .flatten()
-        .filter(|(mantissa, _)| *mantissa != 0)
-        .map(|&(_, exponent)| exponent)
+        .filter(|dyad| !dyad.is_zero())
+        .map(|dyad| dyad.exponent())
         .fold(None, |range, exponent| {
             Some(match range {
                 Some((min, max)) => (min.min(exponent), max.max(exponent)),
@@ -336,152 +340,34 @@ fn exponent_range(coordinates: &[[(i128, i32); 4]; 5]) -> Option<(i32, i32)> {
         })
 }
 
-/// Scale one decoded coordinate to the common exponent as an [`I512`].
-///
-/// # Errors
-///
-/// Returns [`Error::NumericallyAmbiguousPolytope`] when the scaled value
-/// would overflow the 512-bit arithmetic.
-fn scaled_coordinate(entry: (i128, i32), min_exponent: i32) -> Result<I512, Error> {
-    // Zero coordinates scale to zero: their exponent is arbitrary and must
-    // not enter the shift computation.
-    if entry.0 == 0 {
-        return Ok(I512::ZERO);
+/// Scale a dyadic coordinate to the common exponent of a point set.
+trait ScaleTo {
+    /// The value scaled by `2^(exponent - min_exponent)`, as an [`I512`].
+    fn scale_to(self, min_exponent: i32) -> I512;
+}
+
+impl ScaleTo for Dyad {
+    #[inline]
+    fn scale_to(self, min_exponent: i32) -> I512 {
+        if self.is_zero() {
+            return I512::ZERO;
+        }
+
+        let shift = u32::try_from(self.exponent() - min_exponent)
+            .expect("nonzero mantissas are at or above the minimum exponent");
+        I512::from_i128(self.mantissa() << shift)
     }
-
-    // Multiply by 2^(e - min_exponent) through a power of two held in an
-    // i128: `checked_shl` only checks the shift amount, not the overflow.
-    // The shift is nonnegative by construction and at most the span, which
-    // the caller has already checked against the budget.
-    let shift = u32::try_from(entry.1 - min_exponent)
-        .expect("nonzero mantissas are at or above the minimum exponent");
-    let power = I512::from_i128(1_i128 << shift);
-    I512::from_i128(entry.0)
-        .checked_mul(power)
-        .ok_or(Error::NumericallyAmbiguousPolytope)
-}
-
-/// Decompose an f64 into a `Dyad { mantissa: i128, exponent: i32 }`.
-///
-/// # Errors
-///
-/// Returns [`Error::NumericallyAmbiguousPolytope`] when `value` is not finite.
-fn decode(value: f64) -> Result<(i128, i32), Error> {
-    if !value.is_finite() {
-        return Err(Error::NumericallyAmbiguousPolytope);
-    }
-
-    let bits = value.to_bits();
-    let biased = (bits >> 52) & 0x7ff;
-    let fraction = bits & ((1_u64 << 52) - 1);
-
-    // A normal value is (1 + fraction / 2^52) * 2^(biased - 1023), i.e.
-    // (2^52 + fraction) * 2^(biased - 1075). A subnormal value has no hidden
-    // bit and the minimum exponent; zero decodes to a zero mantissa, whose
-    // exponent does not constrain the common scale.
-    let (mantissa, exponent) = if biased == 0 {
-        (i128::from(fraction), -1074)
-    } else {
-        (
-            i128::from(fraction | (1_u64 << 52)),
-            i32::try_from(biased).expect("11 bits") - 1075,
-        )
-    };
-
-    Ok((if bits >> 63 == 1 { -mantissa } else { mantissa }, exponent))
-}
-
-/// The checked difference of two [`I512`] values.
-#[inline]
-fn checked_sub(a: I512, b: I512) -> Result<I512, Error> {
-    a.checked_sub(b).ok_or(Error::NumericallyAmbiguousPolytope)
-}
-
-/// The checked sum of two [`I512`] values.
-#[inline]
-fn checked_add(a: I512, b: I512) -> Result<I512, Error> {
-    a.checked_add(b).ok_or(Error::NumericallyAmbiguousPolytope)
-}
-
-/// The checked product of two [`I512`] values.
-#[inline]
-fn checked_mul(a: I512, b: I512) -> Result<I512, Error> {
-    a.checked_mul(b).ok_or(Error::NumericallyAmbiguousPolytope)
-}
-
-/// The determinant of a 3x3 matrix of [`I512`] values, by Laplace expansion.
-fn det3_i512(m: &[[I512; 3]; 3]) -> Result<I512, Error> {
-    let first = checked_mul(
-        m[0][0],
-        checked_sub(
-            checked_mul(m[1][1], m[2][2])?,
-            checked_mul(m[1][2], m[2][1])?,
-        )?,
-    )?;
-    let second = checked_mul(
-        m[0][1],
-        checked_sub(
-            checked_mul(m[1][0], m[2][2])?,
-            checked_mul(m[1][2], m[2][0])?,
-        )?,
-    )?;
-    let third = checked_mul(
-        m[0][2],
-        checked_sub(
-            checked_mul(m[1][0], m[2][1])?,
-            checked_mul(m[1][1], m[2][0])?,
-        )?,
-    )?;
-
-    checked_add(checked_sub(first, second)?, third)
 }
 
 /// The determinant of a 4x4 matrix of [`I512`] values, by Laplace expansion.
-fn det4_i512(m: &[[I512; 4]; 4]) -> Result<I512, Error> {
-    let term0 = checked_mul(
-        m[0][0],
-        det3_i512(&[
-            [m[1][1], m[1][2], m[1][3]],
-            [m[2][1], m[2][2], m[2][3]],
-            [m[3][1], m[3][2], m[3][3]],
-        ])?,
-    )?;
-    let term1 = checked_mul(
-        m[0][1],
-        det3_i512(&[
-            [m[1][0], m[1][2], m[1][3]],
-            [m[2][0], m[2][2], m[2][3]],
-            [m[3][0], m[3][2], m[3][3]],
-        ])?,
-    )?;
-    let term2 = checked_mul(
-        m[0][2],
-        det3_i512(&[
-            [m[1][0], m[1][1], m[1][3]],
-            [m[2][0], m[2][1], m[2][3]],
-            [m[3][0], m[3][1], m[3][3]],
-        ])?,
-    )?;
-    let term3 = checked_mul(
-        m[0][3],
-        det3_i512(&[
-            [m[1][0], m[1][1], m[1][2]],
-            [m[2][0], m[2][1], m[2][2]],
-            [m[3][0], m[3][1], m[3][2]],
-        ])?,
-    )?;
+#[expect(clippy::many_single_char_names, reason = "clarity")]
+fn det44i(mat: &[[I512; 4]; 4]) -> I512 {
+    let [[a, b, c, d], [e, f, g, h], [i, j, k, l], [m, n, o, p]] = *mat;
 
-    checked_sub(checked_add(checked_sub(term0, term1)?, term2)?, term3)
-}
-
-/// The sign of an [`I512`] value as an i64.
-#[inline]
-fn sign(det: I512) -> i64 {
-    if det.is_negative() {
-        -1
-    } else {
-        i64::from(det != I512::ZERO)
-    }
+    a * (f * (k * p - l * o) - g * (j * p - l * n) + h * (j * o - k * n))
+        - b * (e * (k * p - l * o) - g * (i * p - l * m) + h * (i * o - k * m))
+        + c * (e * (j * p - l * n) - f * (i * p - l * m) + h * (i * n - j * m))
+        - d * (e * (j * o - k * n) - f * (i * o - k * m) + g * (i * n - j * m))
 }
 
 #[cfg(test)]
@@ -499,12 +385,11 @@ mod tests {
     }
 
     /// Convert a 5-tuple of integer coordinates to points.
-    fn to_points(x: &[[i64; 4]; 5]) -> [Cartesian<4>; 5] {
-        std::array::from_fn(|i| to_point(&x[i]))
+    fn integer_arrs_to_cart(x: &[[i64; 4]; 5]) -> [Cartesian<4>; 5] {
+        x.map(|v| to_point(&v))
     }
 
-    /// An independent exact oracle: the determinant of the difference matrix
-    /// over i128, for integer-valued coordinates.
+    /// Exact, simple (ish) orientation predicate for integer coordinates.
     fn orient4d_i128(points: &[[i64; 4]; 5]) -> i64 {
         let mut m = [[0_i128; 4]; 4];
         for i in 0..4 {
@@ -601,7 +486,7 @@ mod tests {
         (-2.0 * u1.ln()).sqrt() * (std::f64::consts::TAU * u2).cos()
     }
 
-    /// TODO: use DoubleVersor
+    /// TODO: use ``DoubleVersor``
     /// A random orthonormal basis of R^4, by Gram-Schmidt over gaussian
     /// vectors. The basis vectors are the columns of the transformation.
     fn random_rotation(rng: &mut StdRng) -> [Cartesian<4>; 4] {
@@ -643,7 +528,7 @@ mod tests {
 
     #[rstest]
     fn test_axis_convention() {
-        let points = to_points(&[
+        let points = integer_arrs_to_cart(&[
             [0, 0, 0, 0],
             [1, 0, 0, 0],
             [0, 1, 0, 0],
@@ -678,7 +563,7 @@ mod tests {
             let points: [[i64; 4]; 5] = std::array::from_fn(|_| {
                 std::array::from_fn(|_| i64::from(rng.random_range(-9_i32..=9)))
             });
-            let cartesian = to_points(&points);
+            let cartesian = integer_arrs_to_cart(&points);
             let base = orient4d(
                 cartesian[0],
                 cartesian[1],
@@ -749,7 +634,7 @@ mod tests {
             }
 
             let oracle = orient4d_i128(&points);
-            let cartesian = to_points(&points);
+            let cartesian = integer_arrs_to_cart(&points);
             let sign = orient4d(
                 cartesian[0],
                 cartesian[1],
@@ -775,7 +660,7 @@ mod tests {
         let facet: Vec<[i64; 4]> = tesseract().into_iter().filter(|p| p[0] == 1).collect();
         assert_eq!(facet.len(), 8);
         for subset in subsets_of_5(&facet) {
-            let p = to_points(&subset);
+            let p = integer_arrs_to_cart(&subset);
             check!(
                 orient4d(p[0], p[1], p[2], p[3], p[4]) == Ok(0),
                 "facet subset {subset:?}"
@@ -790,7 +675,7 @@ mod tests {
             .collect();
         assert_eq!(facet.len(), 6);
         for subset in subsets_of_5(&facet) {
-            let p = to_points(&subset);
+            let p = integer_arrs_to_cart(&subset);
             check!(orient4d(p[0], p[1], p[2], p[3], p[4]) == Ok(0));
         }
 
@@ -956,7 +841,7 @@ mod tests {
     #[rstest]
     fn test_unresolvable_configurations() {
         // The exponents of 1.0 and 2^-73 span 73 powers of two.
-        let points = to_points(&[
+        let points = integer_arrs_to_cart(&[
             [0, 0, 0, 0],
             [1, 0, 0, 0],
             [0, 1, 0, 0],
@@ -1527,7 +1412,7 @@ mod tests {
                             std::array::from_fn(|_| i64::from(rng.random_range(-16_i32..=16)))
                         });
                         let oracle = orient4d_i128(&integer);
-                        let p = to_points(&integer);
+                        let p = integer_arrs_to_cart(&integer);
                         let sign = orient4d(p[0], p[1], p[2], p[3], p[4])
                             .expect("integer coordinates are in range");
                         check!(sign == oracle);
@@ -1545,7 +1430,7 @@ mod tests {
                             p[3] = 0;
                             p
                         });
-                        let p = to_points(&integer);
+                        let p = integer_arrs_to_cart(&integer);
                         let sign = orient4d(p[0], p[1], p[2], p[3], p[4])
                             .expect("integer coordinates are in range");
                         check!(sign == 0);
@@ -1616,14 +1501,20 @@ mod tests {
                 }))
             });
 
-            let decoded: Vec<(i128, i32)> = points
+            let decoded: Vec<Dyad> = points
                 .iter()
-                .flat_map(|p| p.coordinates.iter().map(|&x| decode(x).expect("finite")))
+                .flat_map(|p| {
+                    p.coordinates
+                        .iter()
+                        .map(|&x| Dyad::try_from_f64(x).expect("finite"))
+                })
                 .collect();
             let (min_e, max_e) = decoded
                 .iter()
-                .filter(|&&(m, _)| m != 0)
-                .fold((i32::MAX, i32::MIN), |(a, b), &(_, e)| (a.min(e), b.max(e)));
+                .filter(|dyad| !dyad.is_zero())
+                .fold((i32::MAX, i32::MIN), |(a, b), dyad| {
+                    (a.min(dyad.exponent()), b.max(dyad.exponent()))
+                });
             let actual_span = if min_e > max_e {
                 0
             } else {
