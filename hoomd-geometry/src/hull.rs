@@ -448,9 +448,17 @@ fn collinear(points: &[Cartesian<3>], a: usize, b: usize, c: usize) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        Volume,
+        platonic::{cube, dodecahedron, icosahedron, octahedron, tetrahedron},
+        shape::Simplex3,
+    };
+    use approxim::assert_relative_eq;
     use assert2::check;
+    use hoomd_vector::{Rotate, Versor};
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
+    use rstest_reuse::{self, apply, template};
 
     #[rstest]
     #[case::single_point(vec![[1.0, 2.0]], 0)]
@@ -1019,5 +1027,229 @@ mod tests {
             check!(predicate_orient2d((p + offset, q_collinear + offset), test + offset) == 0);
             check!(predicate_orient2d((p + offset, q_right + offset), test + offset) == -1);
         }
+    }
+    /// The vertex sets of the platonic solids, shared by the 3d hull tests.
+    #[template]
+    #[rstest]
+    #[case::tetrahedron(tetrahedron())]
+    #[case::cube(cube())]
+    #[case::octahedron(octahedron())]
+    #[case::dodecahedron(dodecahedron())]
+    #[case::icosahedron(icosahedron())]
+    fn platonic_solids(#[case] points: Vec<Cartesian<3>>) {}
+
+    /// Validate a triangulated 3d hull.
+    ///
+    /// * Every face is a supporting plane
+    /// * The faces form a closed oriented surface: every directed edge is unique and
+    ///   matched by its reverse.
+    /// * Euler's formula `V - E + F = 2` holds.
+    /// * The reported vertices are exactly the vertices of the faces, in order
+    fn validate_3d_hull(points: &[Cartesian<3>], vertices: &[usize], faces: &[[usize; 3]]) {
+        // No point is strictly outside any face.
+        for &face in faces {
+            for q in 0..points.len() {
+                check!(
+                    orient3d_at(points, face[0], face[1], face[2], q) <= 0.0,
+                    "point {q} lies outside the face {face:?}"
+                );
+            }
+        }
+
+        // The surface is closed and consistently oriented.
+        let mut edges: Vec<(usize, usize)> = faces
+            .iter()
+            .flat_map(|&[a, b, c]| [(a, b), (b, c), (c, a)])
+            .collect();
+        edges.sort_unstable();
+        // Every directed edge appears exactly once ...
+        for pair in edges.windows(2) {
+            check!(
+                pair[0] != pair[1],
+                "the directed edge {:?} appears twice",
+                pair[0]
+            );
+        }
+        // ... and is matched by its reverse.
+        for &(u, v) in &edges {
+            check!(
+                edges.binary_search(&(v, u)).is_ok(),
+                "the edge ({u}, {v}) has no matching reverse"
+            );
+        }
+
+        // Euler's formula.
+        let n_edges = edges.len() / 2;
+        check!(
+            vertices.len() + faces.len() == n_edges + 2,
+            "Euler's formula fails: {} - {n_edges} + {} != 2",
+            vertices.len(),
+            faces.len()
+        );
+
+        // The vertices are the face vertices in increasing order.
+        let mut face_vertices: Vec<usize> = faces.iter().flatten().copied().collect();
+        face_vertices.sort_unstable();
+        face_vertices.dedup();
+        check!(
+            vertices == face_vertices,
+            "vertices are not the face vertices"
+        );
+    }
+
+    #[apply(platonic_solids)]
+    fn test_3d_platonic_solids(#[case] points: Vec<Cartesian<3>>) {
+        // The solids are in their axis-aligned orientations, where the facet
+        // vertices are exactly coplanar.
+        let (vertices, faces) =
+            incremental_hull(&points).expect("platonic solid vertices should form a convex body");
+
+        validate_3d_hull(&points, &vertices, &faces);
+        // Every vertex of a platonic solid is on the hull.
+        check!(vertices == (0..points.len()).collect::<Vec<usize>>());
+    }
+
+    #[apply(platonic_solids)]
+    fn test_3d_platonic_solids_random_orientations(#[case] points: Vec<Cartesian<3>>) {
+        let mut rng = StdRng::seed_from_u64(27);
+
+        for _ in 0..10_000 {
+            let versor: Versor = rng.random();
+            let rotated: Vec<Cartesian<3>> = points.iter().map(|p| versor.rotate(p)).collect();
+
+            let (vertices, faces) = incremental_hull(&rotated)
+                .expect("platonic solid vertices should form a convex body");
+
+            validate_3d_hull(&rotated, &vertices, &faces);
+            // A rotation maps vertices to vertices.
+            check!(vertices == (0..points.len()).collect::<Vec<usize>>());
+        }
+    }
+
+    #[rstest]
+    #[case::one_point(vec![[0.0, 0.0, 0.0]])]
+    #[case::two_points(vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])]
+    #[case::three_points(vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])]
+    #[case::collinear(vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [2.0, 0.0, 0.0], [3.0, 0.0, 0.0]])]
+    #[case::coplanar(vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0]])]
+    #[case::identical(vec![[1.0, 2.0, 3.0], [1.0, 2.0, 3.0], [1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])]
+    fn test_3d_degenerate(#[case] points: Vec<[f64; 3]>) {
+        let points: Vec<Cartesian<3>> = points.into_iter().map(Cartesian::from).collect();
+        check!(Cartesian::<3>::convex_hull(&points) == Err(Error::DegeneratePolytope));
+    }
+
+    #[rstest]
+    fn test_3d_non_vertex_points_dropped() {
+        // The center, two face points and a duplicate corner of the cube are
+        // not vertices of its hull.
+        let mut points = cube();
+        points.extend([
+            Cartesian::from([0.0, 0.0, 0.0]),
+            Cartesian::from([1.0, 0.0, 0.0]),
+            Cartesian::from([1.0, 1.0, 0.0]),
+            Cartesian::from([-1.0, -1.0, -1.0]),
+        ]);
+
+        let (vertices, faces) =
+            incremental_hull(&points).expect("hard-coded points should form a convex body");
+
+        validate_3d_hull(&points, &vertices, &faces);
+        // Only the corners of the cube remain, in input order.
+        check!(vertices == (0..8).collect::<Vec<usize>>());
+
+        let hull: Vec<Cartesian<3>> = vertices.iter().map(|&i| points[i]).collect();
+        itertools::assert_equal(hull, cube());
+    }
+
+    #[rstest]
+    fn test_3d_random_point_clouds(#[values(0, 1, 2, 3, 4)] seed: u64) {
+        // The points are drawn from the uniform distribution over the cube
+        // [-1, 1]^3.
+        let mut rng = StdRng::seed_from_u64(seed);
+        let points: Vec<Cartesian<3>> = (0..30).map(|_| rng.random()).collect();
+
+        let (vertices, faces) =
+            incremental_hull(&points).expect("random points should form a convex body");
+
+        validate_3d_hull(&points, &vertices, &faces);
+        check!(vertices.len() >= 4);
+    }
+
+    #[rstest]
+    fn test_3d_fibonacci_sphere() {
+        // The points of a Fibonacci lattice on the unit sphere are all
+        // vertices of their hull.
+        let n = 20;
+        let golden_angle = std::f64::consts::PI * (5.0_f64.sqrt() - 1.0);
+        let points: Vec<Cartesian<3>> = (0..n)
+            .map(|i| {
+                let z = 1.0 - 2.0 * (i as f64 + 0.5) / n as f64;
+                let r = (1.0 - z * z).sqrt();
+                let theta = golden_angle * i as f64;
+                Cartesian::from([r * theta.cos(), r * theta.sin(), z])
+            })
+            .collect();
+
+        let (vertices, faces) =
+            incremental_hull(&points).expect("points on a sphere should form a convex body");
+
+        validate_3d_hull(&points, &vertices, &faces);
+        check!(vertices == (0..n).collect::<Vec<usize>>());
+    }
+
+    #[rstest]
+    fn test_3d_translation_and_scale_invariance(
+        #[values(0.0, 1.0, 1e3, 1e5)] offset: f64,
+        #[values(1e-6, 1.0, 1e6)] scale: f64,
+    ) {
+        // The exact predicates measure differences, so the hull is the same
+        // wherever the point set lies and however it is scaled.
+        let offset = Cartesian::from([offset, -offset, offset]);
+        let points: Vec<Cartesian<3>> = dodecahedron()
+            .into_iter()
+            .map(|p| p * scale + offset)
+            .collect();
+
+        let (vertices, faces) =
+            incremental_hull(&points).expect("hard-coded points should form a convex body");
+
+        validate_3d_hull(&points, &vertices, &faces);
+        check!(vertices == (0..20).collect::<Vec<usize>>());
+    }
+
+    #[rstest]
+    fn test_3d_input_types() {
+        let points = octahedron();
+
+        let from_slice = Cartesian::<3>::convex_hull(&points[..])
+            .expect("hard-coded points should form a convex body");
+        let from_vec = Cartesian::<3>::convex_hull(points.clone())
+            .expect("hard-coded points should form a convex body");
+        let from_iterator = Cartesian::<3>::convex_hull(points.iter().copied())
+            .expect("hard-coded points should form a convex body");
+
+        assert_eq!(from_slice.len(), 6);
+        itertools::assert_equal(&from_slice, &from_vec);
+        itertools::assert_equal(&from_slice, &from_iterator);
+    }
+
+    #[rstest]
+    fn test_3d_volume() {
+        // The hull volume is the sum of the volumes of the tetrahedra formed
+        // by the faces and any interior point. The origin, the centroid of
+        // the cube, is interior.
+        let points = cube();
+
+        let (vertices, faces) =
+            incremental_hull(&points).expect("hard-coded points should form a convex body");
+        validate_3d_hull(&points, &vertices, &faces);
+
+        let origin = Cartesian::<3>::default();
+        let volume: f64 = faces
+            .iter()
+            .map(|&[a, b, c]| Simplex3::from([points[a], points[b], points[c], origin]).volume())
+            .sum();
+
+        assert_relative_eq!(volume, 8.0);
     }
 }
