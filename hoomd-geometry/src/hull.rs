@@ -8,7 +8,7 @@ use std::{borrow::Borrow, cmp::Ordering};
 use itertools::Itertools;
 
 use crate::Error;
-use hoomd_vector::{Cartesian, InnerProduct};
+use hoomd_vector::{Cartesian, Cross, InnerProduct};
 
 /// Compute the convex hull of a set of points.
 ///
@@ -47,7 +47,8 @@ pub trait ConvexHull: Sized {
     ///
     /// The resulting vector contains a subset of the given points, including
     /// only the non-degenerate points on the convex hull. The output vertices
-    /// are arranged in a counter-clockwise order.
+    /// are arranged in a deterministic order: counter-clockwise in two dimensions, and
+    /// in the order of the input in three dimensions and higher.
     ///
     /// # Errors
     ///
@@ -191,6 +192,257 @@ fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) 
         Ordering::Less => -1,
         Ordering::Equal => 0,
     }
+}
+
+impl ConvexHull for Cartesian<3> {
+    /// Compute the convex hull of points in 3D with an incremental algorithm.
+    ///
+    /// Orientation tests are evaluated with [`robust::orient3d`], Shewchuk's
+    /// adaptive precision predicate, which computes the exact sign of the
+    /// orientation determinant. No tolerance is needed, and the hull does not
+    /// depend on where the point set lies relative to the origin (up to the
+    /// precision of the coordinates themselves).
+    ///
+    /// This is an O(n*f) algorithm, where f is the number of faces, and is suited for
+    /// high-symmetry solids and polyhedra with fewer than ~1000 vertices.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error`] if the input points do not form a convex body with 4 or more points.
+    ///
+    /// [`Error`]: enum@Error
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::ConvexHull;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let cube = [
+    ///     [-1.0, -1.0, -1.0].into(),
+    ///     [1.0, -1.0, -1.0].into(),
+    ///     [1.0, 1.0, -1.0].into(),
+    ///     [-1.0, 1.0, -1.0].into(),
+    ///     [-1.0, -1.0, 1.0].into(),
+    ///     [1.0, -1.0, 1.0].into(),
+    ///     [1.0, 1.0, 1.0].into(),
+    ///     [-1.0, 1.0, 1.0].into(),
+    /// ];
+    ///
+    /// let hull_vertices = Cartesian::<3>::convex_hull(&cube)?;
+    ///
+    /// assert_eq!(hull_vertices.len(), 8);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn convex_hull<I>(points: I) -> Result<Vec<Self>, Error>
+    where
+        I: IntoIterator,
+        I::Item: Borrow<Self>,
+    {
+        let points: Vec<Self> = points.into_iter().map(|p| *p.borrow()).collect();
+
+        // No convex body without at least 4 points.
+        if points.len() < 4 {
+            return Err(Error::DegeneratePolytope);
+        }
+
+        let (vertices, _faces) = incremental_hull(&points)?;
+
+        Ok(vertices.into_iter().map(|i| points[i]).collect())
+    }
+}
+
+/// Compute the convex hull of points in 3D with an incremental algorithm.
+///
+/// Returns the indices of the points that are vertices of the hull in increasing order,
+/// and the triangular faces of the hull as oriented index triples. A point `p` lies
+/// strictly outside a face `(a, b, c)` when `orient3d(a, b, c, p) > 0`. Faces are
+/// oriented so that all points of the hull evaluate to zero or less against them.
+///
+/// Starting from an initial tetrahedron, each point is inserted in turn.
+/// Points strictly outside the current hull see a connected set of faces,
+/// which are removed and replaced by new faces joining the point to the
+/// boundary (horizon) of that set. Points that see no face lie inside or on
+/// the surface of the current hull and are skipped.
+fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 3]>), Error> {
+    let (t0, t1, t2, t3) = initial_tetrahedron(points)?;
+
+    // The four faces of the initial tetrahedron. Each face is oriented so
+    // that the vertex opposite it is on its negative side, which places
+    // points strictly outside a face on its positive side.
+    let mut faces: Vec<[usize; 3]> = vec![[t0, t1, t2], [t0, t2, t3], [t0, t3, t1], [t1, t3, t2]];
+    let opposite = [t3, t1, t2, t0];
+    for (face, o) in faces.iter_mut().zip(opposite) {
+        if orient3d_at(points, face[0], face[1], face[2], o) > 0.0 {
+            face.swap(0, 1);
+        }
+    }
+
+    let in_initial = |i: usize| i == t0 || i == t1 || i == t2 || i == t3;
+
+    // Reused scratch storage for the directed edges of the visible faces.
+    let mut edges: Vec<(usize, usize)> = Vec::new();
+    let mut horizon: Vec<(usize, usize)> = Vec::new();
+
+    for p in 0..points.len() {
+        if in_initial(p) {
+            continue;
+        }
+
+        // Remove the faces that p strictly sees and collect their directed edges
+        edges.clear();
+        faces.retain(|&face| {
+            if orient3d_at(points, face[0], face[1], face[2], p) > 0.0 {
+                edges.push((face[0], face[1]));
+                edges.push((face[1], face[2]));
+                edges.push((face[2], face[0]));
+                false
+            } else {
+                true
+            }
+        });
+        // p sees no face: it must be inside (or on) the hull
+        if edges.is_empty() {
+            continue;
+        }
+
+        // The boundary (horizon) of the visible region is formed by the directed edges
+        // `ab` whose reverse `ba` is not also an edge of a visible face. Each becomes
+        // a new face joined to point `p`, with consistent orientations.
+        edges.sort_unstable();
+        horizon.clear();
+        horizon.extend(
+            edges
+                .iter()
+                .copied()
+                .filter(|&(u, v)| edges.binary_search(&(v, u)).is_err()),
+        );
+
+        for &(u, v) in &horizon {
+            faces.push([u, v, p]);
+        }
+    }
+
+    // The vertices of the hull are the vertices of the final faces.
+    let mut on_hull = vec![false; points.len()];
+    for face in &faces {
+        for &i in face {
+            on_hull[i] = true;
+        }
+    }
+    // let on_hull = (0..points.len())
+    //     .map(|i| faces.iter().any(|f| f.contains(&i)))
+    //     .collect::<Vec<bool>>();
+
+    Ok(((0..points.len()).filter(|&i| on_hull[i]).collect(), faces))
+}
+
+/// Find an initial tetrahedron for the incremental hull.
+///
+/// The four points are vertices of the hull: `a` is the lexographically smallest point,
+/// `b` is the furthest from that, `c` is the furthest noncolinear point from the line
+/// `ab`, and `d` is the furthest noncoplanar point to the triangle `abc`.
+///
+/// # Errors
+///
+/// Returns [`Error::DegeneratePolytope`] when all points coincide, all are colinear, or
+/// all are coplanar.
+fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, usize), Error> {
+    // a is the lowest, leftmost point in the set
+    let a = points
+        .iter()
+        .position_min_by(|x, y| {
+            x[0].total_cmp(&y[0])
+                .then(x[1].total_cmp(&y[1]))
+                .then(x[2].total_cmp(&y[2]))
+        })
+        .expect("the point set is not empty");
+
+    // b is the point farthest from a.
+    let b = (0..points.len())
+        .filter(|&i| i != a)
+        .max_by(|&i, &j| {
+            (points[i] - points[a])
+                .norm_squared()
+                .total_cmp(&(points[j] - points[a]).norm_squared())
+        })
+        .expect("there are at least two points");
+    if (points[b] - points[a]).norm_squared() == 0.0 {
+        return Err(Error::DegeneratePolytope); // Every point coincides with a.
+    }
+
+    // c is the farthest noncolinear point from the segment ab.
+    let direction = points[b] - points[a];
+    let (c, _) = points
+        .iter()
+        .enumerate()
+        .filter(|&(i, _)| i != a && i != b && !collinear(points, a, b, i))
+        .fold((None, 0.0), |(c, cd), (i, &p)| {
+            let d = (p - points[a]).cross(&direction).norm_squared();
+            if d > cd { (Some(i), d) } else { (c, cd) }
+        });
+
+    // Otherwise, all points are collinear.
+    let c = c.ok_or(Error::DegeneratePolytope)?;
+
+    // d is the point farthest from the plane through a, b and c.
+    // Any nonzero value from the robust predicate guarantees our tetrahedron is valid.
+    let (mut d, mut d_volume) = (None, 0.0);
+    for i in 0..points.len() {
+        if i == a || i == b || i == c {
+            continue;
+        }
+        let volume = orient3d_at(points, a, b, c, i).abs();
+        if volume > d_volume {
+            d_volume = volume;
+            d = Some(i);
+        }
+    }
+
+    // Otherwise, all points are coplanar.
+    let d = d.ok_or(Error::DegeneratePolytope)?;
+
+    Ok((a, b, c, d))
+}
+
+/// The orientation determinant of four points given by index.
+///
+/// The sign of the returned value is positive when `d` lies strictly outside the face
+/// `(a, b, c)` oriented as by [`incremental_hull`], negative when it lies strictly
+/// inside, and zero when the four points are coplanar.
+#[inline]
+fn orient3d_at(points: &[Cartesian<3>], a: usize, b: usize, c: usize, d: usize) -> f64 {
+    let coord = |p: &Cartesian<3>| robust::Coord3D {
+        x: p[0],
+        y: p[1],
+        z: p[2],
+    };
+
+    robust::orient3d(
+        coord(&points[a]),
+        coord(&points[b]),
+        coord(&points[c]),
+        coord(&points[d]),
+    )
+}
+
+/// Whether three points given by index are exactly collinear.
+///
+/// The points are collinear when they are collinear in each of the three coordinate
+/// plane projections, decided by the two-dimensional exact predicate.
+#[inline]
+fn collinear(points: &[Cartesian<3>], a: usize, b: usize, c: usize) -> bool {
+    let coord = |p: &Cartesian<3>, i: usize, j: usize| robust::Coord { x: p[i], y: p[j] };
+    [(0, 1), (0, 2), (1, 2)].iter().all(|&(i, j)| {
+        robust::orient2d(
+            coord(&points[a], i, j),
+            coord(&points[b], i, j),
+            coord(&points[c], i, j),
+        ) == 0.0
+    })
 }
 
 #[cfg(test)]
