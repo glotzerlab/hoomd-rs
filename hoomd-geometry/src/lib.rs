@@ -127,7 +127,7 @@ mod convex;
 pub use convex::Convex;
 
 mod hull;
-pub use hull::ConvexHull;
+pub use hull::{ConvexHull, Facet};
 
 pub mod shape;
 pub mod xenocollide;

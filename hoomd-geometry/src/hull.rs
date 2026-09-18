@@ -6,9 +6,40 @@
 use std::{borrow::Borrow, cmp::Ordering};
 
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 use crate::Error;
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
+
+/// A facet of a convex hull: the indices of the `N` vertices of the hull that bound it,
+/// in the order given by [`ConvexHull::convex_hull`].
+///
+/// A facet of a two-dimensional hull is an edge (`Facet<2>`) and a facet of a
+/// three-dimensional hull is a triangle (`Facet<3>`).
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Facet<const N: usize> {
+    /// The indices of the vertices of the facet.
+    #[serde_as(as = "[_; N]")]
+    indices: [usize; N],
+}
+
+impl<const N: usize> Facet<N> {
+    /// Create a facet from the indices of its vertices.
+    #[inline]
+    #[must_use]
+    pub const fn new(indices: [usize; N]) -> Self {
+        Self { indices }
+    }
+
+    /// The indices of the vertices of the facet.
+    #[inline]
+    #[must_use]
+    pub const fn indices(&self) -> [usize; N] {
+        self.indices
+    }
+}
 
 /// Compute the convex hull of a set of points.
 ///
@@ -36,19 +67,24 @@ use hoomd_vector::{Cartesian, Cross, InnerProduct};
 ///     [0.0, 0.0].into(), // This point is in the interior of the hull.
 /// ];
 ///
-/// let hull_vertices = Cartesian::<2>::convex_hull(&points)?;
+/// let (hull_vertices, edges) = Cartesian::<2>::convex_hull(&points)?;
 ///
 /// assert_eq!(hull_vertices.len(), 4);
+/// assert_eq!(edges.len(), 4); // A square is bounded by four edges.
+/// //
 /// # Ok(())
 /// # }
 /// ```
-pub trait ConvexHull: Sized {
+pub trait ConvexHull<const N: usize>: Sized {
     /// Compute the convex hull of a set of points.
     ///
-    /// The resulting vector contains a subset of the given points, including
-    /// only the non-degenerate points on the convex hull. The output vertices
-    /// are arranged in a deterministic order: counter-clockwise in two dimensions, and
-    /// in the order of the input in three dimensions and higher.
+    /// Returns the vertices of the hull together with the facets that bound
+    /// it. The vertices are a subset of the given points, including only the
+    /// non-degenerate points on the convex hull, arranged in a deterministic
+    /// order: counter-clockwise in two dimensions, and in the order of the
+    /// input in three dimensions and higher. Each facet is a set of indices
+    /// into the returned vector of vertices: an edge (`Facet<2>`) in two
+    /// dimensions and a triangle (`Facet<3>`) in three.
     ///
     /// # Errors
     ///
@@ -64,22 +100,25 @@ pub trait ConvexHull: Sized {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
-    /// let hull_vertices = Cartesian::<2>::convex_hull((0..3).map(|i| {
-    ///     let angle = 2.0 * std::f64::consts::PI * f64::from(i) / 3.0;
-    ///     Cartesian::from([angle.cos(), angle.sin()])
-    /// }))?;
+    /// let (hull_vertices, edges) =
+    ///     Cartesian::<2>::convex_hull((0..3).map(|i| {
+    ///         let angle = 2.0 * std::f64::consts::PI * f64::from(i) / 3.0;
+    ///         Cartesian::from([angle.cos(), angle.sin()])
+    ///     }))?;
     ///
     /// assert_eq!(hull_vertices.len(), 3);
+    /// assert_eq!(edges.len(), 3); // A triangle is bounded by three edges.
+    /// //
     /// # Ok(())
     /// # }
     /// ```
-    fn convex_hull<I>(points: I) -> Result<Vec<Self>, Error>
+    fn convex_hull<I>(points: I) -> Result<(Vec<Self>, Vec<Facet<N>>), Error>
     where
         I: IntoIterator,
         I::Item: Borrow<Self>;
 }
 
-impl ConvexHull for Cartesian<2> {
+impl ConvexHull<2> for Cartesian<2> {
     /// Compute the convex hull of points in 2D with the Graham scan algorithm.
     ///
     /// The orientation tests use robust adaptive predicates that compute the
@@ -87,7 +126,7 @@ impl ConvexHull for Cartesian<2> {
     /// not depend on where the point set lies relative to the origin (up to
     /// the precision of the coordinates themselves).
     #[inline]
-    fn convex_hull<I>(points: I) -> Result<Vec<Self>, Error>
+    fn convex_hull<I>(points: I) -> Result<(Vec<Self>, Vec<Facet<2>>), Error>
     where
         I: IntoIterator,
         I::Item: Borrow<Self>,
@@ -138,11 +177,17 @@ impl ConvexHull for Cartesian<2> {
         }
 
         points.truncate(n_vertices_on_hull);
-        if points.len() >= 3 {
-            Ok(points)
-        } else {
-            Err(Error::DegeneratePolytope)
+        if points.len() < 3 {
+            return Err(Error::DegeneratePolytope);
         }
+
+        // The facets of a polygon are its edges, implied by the cyclic
+        // counter-clockwise order of the vertices.
+        let facets = (0..points.len())
+            .map(|i| Facet::new([i, (i + 1) % points.len()]))
+            .collect();
+
+        Ok((points, facets))
     }
 }
 
@@ -194,7 +239,7 @@ fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) 
     }
 }
 
-impl ConvexHull for Cartesian<3> {
+impl ConvexHull<3> for Cartesian<3> {
     /// Compute the convex hull of points in 3D with an incremental algorithm.
     ///
     /// Orientation tests are evaluated with [`robust::orient3d`], Shewchuk's
@@ -230,14 +275,15 @@ impl ConvexHull for Cartesian<3> {
     ///     [-1.0, 1.0, 1.0].into(),
     /// ];
     ///
-    /// let hull_vertices = Cartesian::<3>::convex_hull(&cube)?;
+    /// let (hull_vertices, facets) = Cartesian::<3>::convex_hull(&cube)?;
     ///
     /// assert_eq!(hull_vertices.len(), 8);
+    /// assert_eq!(facets.len(), 12); // Each square face is split into two triangles.
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn convex_hull<I>(points: I) -> Result<Vec<Self>, Error>
+    fn convex_hull<I>(points: I) -> Result<(Vec<Self>, Vec<Facet<3>>), Error>
     where
         I: IntoIterator,
         I::Item: Borrow<Self>,
@@ -249,9 +295,23 @@ impl ConvexHull for Cartesian<3> {
             return Err(Error::DegeneratePolytope);
         }
 
-        let (vertices, _faces) = incremental_hull(&points)?;
+        let (indices, faces) = incremental_hull(&points)?;
 
-        Ok(vertices.into_iter().map(|i| points[i]).collect())
+        // The faces index the input points, so remap them to the compacted list of hull
+        // vertices this method returns. The vertex indices are sorted, so a binary
+        // search locates the new position of each vertex.
+        let position = |i: usize| {
+            indices
+                .binary_search(&i)
+                .expect("the vertices of a face are vertices of the hull")
+        };
+        let facets = faces
+            .iter()
+            .map(|&[a, b, c]| Facet::new([position(a), position(b), position(c)]))
+            .collect();
+        let vertices = indices.into_iter().map(|i| points[i]).collect();
+
+        Ok((vertices, facets))
     }
 }
 
@@ -498,7 +558,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
@@ -522,7 +582,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
@@ -550,7 +610,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // Hull should have 4 corners (interior edge points excluded)
         assert_eq!(vertices.len(), 4);
@@ -583,7 +643,7 @@ mod tests {
             pts.push([0.0, f64::from(i) / 19.0]);
         }
         let points: Vec<Cartesian<2>> = pts.into_iter().map(Cartesian::from).collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
@@ -605,7 +665,7 @@ mod tests {
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // All points on circle should be in hull
         assert_eq!(vertices.len(), n);
@@ -622,7 +682,7 @@ mod tests {
             .collect();
         // Add interior points
         points.extend([[0.0, 0.0], [0.3, 0.3], [-0.2, 0.1], [0.1, -0.4]].map(Cartesian::from));
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // Only boundary points should be in hull
         assert_eq!(vertices.len(), n_boundary);
@@ -637,7 +697,7 @@ mod tests {
                 Cartesian::from([angle.cos(), angle.sin()])
             })
             .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // All points on partial arc should be in hull
         assert_eq!(vertices.len(), 10);
@@ -650,7 +710,7 @@ mod tests {
             .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
             .collect();
         let points = original.clone();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // Hull should have at least 3 points
         assert!(vertices.len() >= 3);
@@ -671,7 +731,7 @@ mod tests {
                 ])
             })
             .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         assert!(vertices.len() >= 3);
     }
@@ -683,14 +743,14 @@ mod tests {
             let points1: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-            let vertices1 = Cartesian::<2>::convex_hull(&points1)
+            let (vertices1, _) = Cartesian::<2>::convex_hull(&points1)
                 .expect("hard-coded points should lie on a convex hull");
 
             let mut rng = StdRng::seed_from_u64(123);
             let points2: Vec<Cartesian<2>> = (0..30)
                 .map(|_| Cartesian::from([rng.random::<f64>(), rng.random::<f64>()]))
                 .collect();
-            let vertices2 = Cartesian::<2>::convex_hull(&points2)
+            let (vertices2, _) = Cartesian::<2>::convex_hull(&points2)
                 .expect("hard-coded points should lie on a convex hull");
 
             assert_eq!(vertices1.len(), vertices2.len());
@@ -710,7 +770,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         assert!(vertices.len() >= 3);
 
@@ -738,7 +798,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // Should handle duplicates gracefully
         assert!(vertices.len() >= 3);
@@ -759,7 +819,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // Should pick leftmost of bottom points and include apex
         assert!(vertices.len() >= 3);
@@ -779,7 +839,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // [0, 0] should be the anchor point
         let hull = [[0.0, 0.0].into(), [1.0, 0.0].into(), [0.5, 1.0].into()];
@@ -793,7 +853,7 @@ mod tests {
             .chain([[1.0, 1.0]])
             .map(Cartesian::from)
             .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // Leftmost [0,0] and rightmost [2,0] should be in hull with apex
         assert!(vertices.len() >= 3);
@@ -812,7 +872,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // Should only keep furthest point in each direction
         assert!(vertices.len() >= 3);
@@ -844,7 +904,7 @@ mod tests {
         .into_iter()
         .map(Cartesian::from)
         .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // Should keep only outermost points
         assert!(vertices.len() >= 3);
@@ -860,7 +920,7 @@ mod tests {
                 points.push(Cartesian::from([r * angle.cos(), r * angle.sin()]));
             }
         }
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         // Outer points should form the hull
         assert!(vertices.len() >= 8); // At least 8 outer points
@@ -872,7 +932,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 3);
 
@@ -886,7 +946,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
@@ -905,7 +965,7 @@ mod tests {
             .into_iter()
             .map(Cartesian::from)
             .collect();
-        let vertices = Cartesian::<2>::convex_hull(&points)
+        let (vertices, _) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should lie on a convex hull");
         assert_eq!(vertices.len(), 4);
 
@@ -952,17 +1012,17 @@ mod tests {
         let hull = [[0.0, 0.0].into(), [2.0, 0.0].into(), [1.0, 1.0].into()];
 
         // A slice of points.
-        let from_slice = Cartesian::<2>::convex_hull(&points[..])
+        let (from_slice, _) = Cartesian::<2>::convex_hull(&points[..])
             .expect("hard-coded points should lie on a convex hull");
         itertools::assert_equal(&from_slice, &hull);
 
         // An owned Vec of points.
-        let from_vec = Cartesian::<2>::convex_hull(points.clone())
+        let (from_vec, _) = Cartesian::<2>::convex_hull(points.clone())
             .expect("hard-coded points should lie on a convex hull");
         itertools::assert_equal(&from_vec, &hull);
 
         // An iterator of points.
-        let from_iterator = Cartesian::<2>::convex_hull(points.iter().copied())
+        let (from_iterator, _) = Cartesian::<2>::convex_hull(points.iter().copied())
             .expect("hard-coded points should lie on a convex hull");
         itertools::assert_equal(&from_iterator, &hull);
     }
@@ -977,7 +1037,7 @@ mod tests {
                 .map(|p| Cartesian::from(p) + offset)
                 .collect();
 
-            let vertices = Cartesian::<2>::convex_hull(&points)
+            let (vertices, _) = Cartesian::<2>::convex_hull(&points)
                 .expect("hard-coded points should lie on a convex hull");
 
             let hull: Vec<Cartesian<2>> = [
@@ -1001,7 +1061,7 @@ mod tests {
                 .map(|p| Cartesian::from(p) + offset)
                 .collect();
 
-            let vertices = Cartesian::<2>::convex_hull(&points)
+            let (vertices, _) = Cartesian::<2>::convex_hull(&points)
                 .expect("hard-coded points should lie on a convex hull");
             assert_eq!(vertices.len(), 3, "at offset {offset:?}");
         }
@@ -1187,6 +1247,36 @@ mod tests {
     }
 
     #[rstest]
+    fn test_3d_public_hull_facets() {
+        // The public API remaps the facet indices to the compacted vertex
+        // list, dropping the points interior to the hull.
+        let mut points = cube();
+        points.extend([
+            Cartesian::from([0.0, 0.0, 0.0]),
+            Cartesian::from([1.0, 0.0, 0.0]),
+            Cartesian::from([1.0, 1.0, 0.0]),
+            Cartesian::from([-1.0, -1.0, -1.0]),
+        ]);
+
+        let (vertices, facets) = Cartesian::<3>::convex_hull(&points)
+            .expect("hard-coded points should form a convex body");
+
+        assert_eq!(vertices.len(), 8);
+        assert_eq!(facets.len(), 12); // Each square face is split into two triangles.
+
+        let mut referenced = vec![false; vertices.len()];
+        for facet in &facets {
+            let indices = facet.indices();
+            for &i in &indices {
+                assert!(i < vertices.len(), "facet index {i} is out of bounds");
+                referenced[i] = true;
+            }
+        }
+        // Every returned vertex is part of a facet.
+        assert!(referenced.iter().all(|&r| r));
+    }
+
+    #[rstest]
     fn test_3d_random_point_clouds(#[values(0, 1, 2, 3, 4)] seed: u64) {
         // The points are drawn from the uniform distribution over the cube [-1, 1]^3.
         let mut rng = StdRng::seed_from_u64(seed);
@@ -1245,11 +1335,11 @@ mod tests {
     fn test_3d_input_types() {
         let points = octahedron();
 
-        let from_slice = Cartesian::<3>::convex_hull(&points)
+        let (from_slice, _) = Cartesian::<3>::convex_hull(&points)
             .expect("hard-coded points should form a convex body");
-        let from_vec = Cartesian::<3>::convex_hull(points.clone())
+        let (from_vec, _) = Cartesian::<3>::convex_hull(points.clone())
             .expect("hard-coded points should form a convex body");
-        let from_iterator = Cartesian::<3>::convex_hull(points.iter().copied())
+        let (from_iterator, _) = Cartesian::<3>::convex_hull(points.iter().copied())
             .expect("hard-coded points should form a convex body");
 
         assert_eq!(from_slice.len(), 6);
