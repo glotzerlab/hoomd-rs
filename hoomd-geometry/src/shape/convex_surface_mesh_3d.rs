@@ -3,7 +3,8 @@
 
 //! Convex polygon represented by vertices and edges.
 
-use crate::{ConvexHull, Error, Facet, shape::ConvexPolytope};
+use crate::{ConvexHull, Error, Facet, Volume, shape::ConvexPolytope};
+use hoomd_linear_algebra::matrix::Matrix33;
 use serde::{Deserialize, Serialize};
 
 use hoomd_utility::valid::PositiveReal;
@@ -90,5 +91,47 @@ impl ConvexSurfaceMesh3d {
             vertices,
             faces,
         })
+    }
+}
+
+impl Volume for ConvexSurfaceMesh3d {
+    /// Compute the volume of the polyhedron.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{Volume, shape::ConvexSurfaceMesh3d};
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// // Cube with edge length 2.0
+    /// let cube = ConvexSurfaceMesh3d::from_point_set([
+    ///     [-1.0, -1.0, -1.0].into(),
+    ///     [1.0, -1.0, -1.0].into(),
+    ///     [1.0, 1.0, -1.0].into(),
+    ///     [-1.0, 1.0, -1.0].into(),
+    ///     [-1.0, -1.0, 1.0].into(),
+    ///     [1.0, -1.0, 1.0].into(),
+    ///     [1.0, 1.0, 1.0].into(),
+    ///     [-1.0, 1.0, 1.0].into(),
+    /// ])?;
+    ///
+    /// assert_relative_eq!(cube.volume(), 8.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn volume(&self) -> f64 {
+        self.faces
+            .iter()
+            .map(|face| {
+                Matrix33 {
+                    rows: face.indices().map(|i| self.vertices[i].coordinates),
+                }
+                .determinant()
+                    / 6.0
+            })
+            .sum::<f64>()
+            .abs()
     }
 }
