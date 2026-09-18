@@ -129,6 +129,7 @@ pub use convex::Convex;
 mod hull;
 pub use hull::ConvexHull;
 
+pub mod orient4d;
 pub mod shape;
 pub mod xenocollide;
 
@@ -461,4 +462,8 @@ pub enum Error {
     /// Too many vertices were provided.
     #[error("too many vertices")]
     TooManyVertices,
+
+    /// The orientation of the point set cannot be resolved numerically.
+    #[error("cannot resolve the orientation of the given points")]
+    NumericallyAmbiguousPolytope,
 }
