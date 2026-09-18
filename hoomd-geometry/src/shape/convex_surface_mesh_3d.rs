@@ -3,21 +3,20 @@
 
 //! Convex polygon represented by vertices and edges.
 
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
-use crate::{
-    BoundingSphereRadius, ConvexHull, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside,
-    Scale, SupportMapping, Volume, shape::ConvexPolytope,
-};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
+use hoomd_vector::Cartesian;
 
-
-
-pub struct Simplex<const N: usize> {
+/// TODO
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Facet<const N: usize> {
+    /// TODO
+    #[serde_as(as = "[_; N]")]
     indices: [i32; N],
-};
+}
 
 /// The vertices and edges that make up a convex polygon.
 ///
@@ -58,7 +57,7 @@ pub struct ConvexSurfaceMesh3d {
     /// The vertices of the polyhedron.
     vertices: Vec<Cartesian<3>>,
     /// .
-    facets: Vec<Simplex<3>>,
+    facets: Vec<Facet<3>>,
     /// The radius of a bounding sphere of the geometry.
     bounding_radius: PositiveReal,
 }
