@@ -102,14 +102,88 @@ impl Default for QuadQuaternion {
     }
 }
 
+impl TryFrom<[[Quaternion; 2]; 2]> for QuadQuaternion {
+    type Error = Error;
+
+    /// Create a [`QuadQuaternion`] by projecting the rows of a quaternionic matrix onto
+    /// the manifold of unitary matrices.
+    ///
+    /// The projection is a quaternionic Gram-Schmidt orthonormalization of the
+    /// matrix columns, following `Quaternion::to_versor`: like normalizing a
+    /// single quaternion, it corrects nearly unitary input and only fails when
+    /// the blocks do not determine a unitary matrix at all (a zero or linearly
+    /// dependent column). Note that the projection is the Gram-Schmidt
+    /// factorization, not the nearest unitary matrix (the polar factorization).
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{Error, QuadQuaternion, Quaternion};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// // The identity blocks are projected to the identity rotation.
+    /// let one = Quaternion::from([1.0, 0.0, 0.0, 0.0]);
+    /// let zero = Quaternion::from([0.0; 4]);
+    /// let q = QuadQuaternion::try_from([[one, zero], [zero, one]])?;
+    ///
+    /// // Linearly dependent blocks do not span H^2 and cannot be projected.
+    /// assert_eq!(
+    ///     QuadQuaternion::try_from([[one, one], [zero, zero]]),
+    ///     Err(Error::InvalidQuadQuaternionSpan)
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    // Reference: F. Mezzadri, "How to generate random matrices from the classical
+    // compact groups", arxiv.org/abs/math-ph/0609050. Section 4
+    #[inline]
+    fn try_from(rows: [[Quaternion; 2]; 2]) -> Result<Self, Self::Error> {
+        Self::project(rows).ok_or(Error::InvalidQuadQuaternionSpan)
+    }
+}
+
 impl QuadQuaternion {
-    /// Promote a [`Cartesian<5>`] to a hermitian traceless
+    /// Project the columns of a quaternionic matrix onto the unit sphere in `H^2`.
+    ///
+    /// Returns `None` when the columns are linearly dependent (the first column is zero
+    /// or the second column lies in the span of the first), because then the blocks do
+    /// not determine a unitary matrix.
+    #[inline]
+    fn project(rows: [[Quaternion; 2]; 2]) -> Option<Self> {
+        let [[a, b], [c, d]] = rows;
+
+        // Normalize the first column.
+        let column_0_norm = (a.norm_squared() + c.norm_squared()).sqrt();
+        if !(column_0_norm > 0.0 && column_0_norm.is_finite()) {
+            return None;
+        }
+        let column_scale = 1.0 / column_0_norm;
+        let (a, c) = (a * column_scale, c * column_scale);
+
+        // Remove the component of the second column along the first, then notmalize:
+        // <u, v - u<u, v>> = <u, v> - <u, u><u, v> = 0.
+        let overlap = a.conjugate() * b + c.conjugate() * d;
+        let b_orthogonal = b - a * overlap;
+        let d_orthogonal = d - c * overlap;
+        let column_1_norm = (b_orthogonal.norm_squared() + d_orthogonal.norm_squared()).sqrt();
+        if !(column_1_norm > 0.0 && column_1_norm.is_finite()) {
+            return None;
+        }
+        let new_scale = 1.0 / column_1_norm;
+
+        Some(Self {
+            rows: [[a, b_orthogonal * new_scale], [c, d_orthogonal * new_scale]],
+        })
+    }
+
+    /// Promote a [`Cartesian<5>`] to a Hermitian traceless quaternionic matrix.
+    ///
+    /// The promotion identifies `R^5` with the traceless quaternion-Hermitian
+    /// matrices, on which `Sp(2)` acts by conjugation (see the struct
+    /// documentation).
     #[inline]
     fn promote_vec5(v: Cartesian<5>) -> Self {
-        let [p, np] = std::array::from_fn(|i| Quaternion {
-            scalar: v[0] * if i == 0 { 1.0 } else { -1.0 },
-            vector: [0.0; 3].into(),
-        });
+        let p = Quaternion::from([v[0], 0.0, 0.0, 0.0]);
+        let np = Quaternion::from([-v[0], 0.0, 0.0, 0.0]);
         let q = Quaternion::from([v[1], v[2], v[3], v[4]]);
         Self {
             rows: [[p, q], [q.conjugate(), np]],
