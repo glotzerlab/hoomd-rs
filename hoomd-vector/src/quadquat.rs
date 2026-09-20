@@ -11,11 +11,13 @@ use rand::{
     distr::{Distribution, StandardUniform},
 };
 use rand_distr::StandardNormal;
+use serde::{Deserialize, Serialize};
+
+use crate::{Cartesian, Error, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Versor};
 
 use crate::{Cartesian, Quaternion, Rotate, RotationMatrix};
 
 /// A unitary quaternion-valued matrix representing a rotation in SO(5).
-///
 ///
 /// All quaternions composing this matrix are subject to the following constraints:
 /// ```math
@@ -25,9 +27,11 @@ use crate::{Cartesian, Quaternion, Rotate, RotationMatrix};
 /// q_{00}^* q_{01} + q_{10}^* q_{11} &= 0
 /// \end{aligned}
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct QuadQuaternion {
-    /// Rows of the quad-quaternion matrix.
+// Reference: D. Haydys, "Holonomy groups in Riemannian geometry", Lecture 8, slide 10
+// https://www.math.uni-bielefeld.de/~haydys/teaching/tcc11holonomy_files/lect08.pdf
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct QuadQuaternion {
+    /// Rows of the quaternionic matrix.
     rows: [[Quaternion; 2]; 2],
 }
 
