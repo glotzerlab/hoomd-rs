@@ -3,7 +3,7 @@
 
 //! Implement `AppendMicrostate` for built-in site and boundary types.
 
-use hoomd_geometry::shape::Hypercuboid;
+use hoomd_geometry::shape::{Hypercuboid, Rhomboid, Triclinic};
 use hoomd_gsd::hoomd::{AppendError, Dimensions, Frame, HoomdGsdFile};
 use hoomd_manifold::{Hyperbolic, Spherical};
 use hoomd_vector::{Angle, Cartesian, Versor};
@@ -116,6 +116,108 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Periodic<H
     }
 }
 
+impl<B, X> AppendMicrostate<B, Point<Cartesian<2>>, X, Closed<Rhomboid>> for HoomdGsdFile {
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, Point<Cartesian<2>>, X, Closed<Rhomboid>>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().0.to_gsd_box())?
+            .configuration_dimensions(Dimensions::Two)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position)
+                    .map(|p| [p[0], p[1], 0.0].into()),
+            )
+    }
+}
+
+impl<B, X> AppendMicrostate<B, Point<Cartesian<2>>, X, Periodic<Rhomboid>> for HoomdGsdFile {
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, Point<Cartesian<2>>, X, Periodic<Rhomboid>>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().shape().to_gsd_box())?
+            .configuration_dimensions(Dimensions::Two)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position)
+                    .map(|p| [p[0], p[1], 0.0].into()),
+            )
+    }
+}
+
+impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Closed<Rhomboid>>
+    for HoomdGsdFile
+{
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, OrientedPoint<Cartesian<2>, Angle>, X, Closed<Rhomboid>>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().0.to_gsd_box())?
+            .configuration_dimensions(Dimensions::Two)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position)
+                    .map(|p| [p[0], p[1], 0.0].into()),
+            )?
+            .particles_orientation(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.orientation.theta)
+                    .map(|a| {
+                        Versor::from_axis_angle(
+                            [0.0, 0.0, 1.0]
+                                .try_into()
+                                .expect("hard-coded vector can be normalized"),
+                            a,
+                        )
+                    }),
+            )
+    }
+}
+
+impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Periodic<Rhomboid>>
+    for HoomdGsdFile
+{
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, OrientedPoint<Cartesian<2>, Angle>, X, Periodic<Rhomboid>>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().shape().to_gsd_box())?
+            .configuration_dimensions(Dimensions::Two)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position)
+                    .map(|p| [p[0], p[1], 0.0].into()),
+            )?
+            .particles_orientation(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.orientation.theta)
+                    .map(|a| {
+                        Versor::from_axis_angle(
+                            [0.0, 0.0, 1.0]
+                                .try_into()
+                                .expect("hard-coded vector can be normalized"),
+                            a,
+                        )
+                    }),
+            )
+    }
+}
+
 impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Closed<Hypercuboid<3>>> for HoomdGsdFile {
     #[inline]
     fn append_microstate(
@@ -138,6 +240,40 @@ impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Periodic<Hypercuboid<3>>>
     fn append_microstate(
         &mut self,
         microstate: &Microstate<B, Point<Cartesian<3>>, X, Periodic<Hypercuboid<3>>>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().shape().to_gsd_box())?
+            .configuration_dimensions(Dimensions::Three)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position),
+            )
+    }
+}
+
+impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Closed<Triclinic>> for HoomdGsdFile {
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, Point<Cartesian<3>>, X, Closed<Triclinic>>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().0.to_gsd_box())?
+            .configuration_dimensions(Dimensions::Three)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position),
+            )
+    }
+}
+
+impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Periodic<Triclinic>> for HoomdGsdFile {
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, Point<Cartesian<3>>, X, Periodic<Triclinic>>,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().shape().to_gsd_box())?
@@ -186,6 +322,54 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<
             X,
             Periodic<Hypercuboid<3>>,
         >,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().shape().to_gsd_box())?
+            .configuration_dimensions(Dimensions::Three)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position),
+            )?
+            .particles_orientation(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.orientation),
+            )
+    }
+}
+
+impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Closed<Triclinic>>
+    for HoomdGsdFile
+{
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, OrientedPoint<Cartesian<3>, Versor>, X, Closed<Triclinic>>,
+    ) -> Result<Frame<'_>, AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().0.to_gsd_box())?
+            .configuration_dimensions(Dimensions::Three)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position),
+            )?
+            .particles_orientation(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.orientation),
+            )
+    }
+}
+
+impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Triclinic>>
+    for HoomdGsdFile
+{
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Triclinic>>,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().shape().to_gsd_box())?
@@ -320,7 +504,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -364,7 +548,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -412,7 +596,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -465,7 +649,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -505,7 +689,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -547,7 +731,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -612,7 +796,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -678,7 +862,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -747,7 +931,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -755,11 +939,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 0.0], [-1.0, 2.0, 0.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;
@@ -816,7 +1000,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -824,11 +1008,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 0.0], [-1.0, 2.0, 0.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;
@@ -864,7 +1048,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -908,7 +1092,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -967,7 +1151,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -975,11 +1159,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 4.0], [-1.0, 2.0, -2.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;
@@ -1036,7 +1220,7 @@ mod test {
 
         let gsd_file = GsdFile::open(path, Mode::Read)?;
 
-        assert!(gsd_file.n_frames() == 1);
+        assert_eq!(gsd_file.n_frames(), 1);
 
         let step = gsd_file.iter_scalars::<u64>(0, "configuration/step")?;
         itertools::assert_equal(step, [1234]);
@@ -1044,11 +1228,11 @@ mod test {
         let positions = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
         itertools::assert_equal(positions, [[1.0, 0.0, 4.0], [-1.0, 2.0, -2.0]]);
 
-        assert!(
+        assert_eq!(
             gsd_file
                 .iter_arrays::<f32, 4>(0, "particles/orientation")?
-                .count()
-                == 2
+                .count(),
+            2
         );
 
         let dimensions = gsd_file.iter_scalars::<u8>(0, "configuration/dimensions")?;

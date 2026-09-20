@@ -36,7 +36,7 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
     /// Note that the function fails to wrap points that are outside the
     /// dodecagon and further than `TwelveTwelve::EDGE_LENGTH/2` from any of
     /// the vertices.
-    #[inline]
+    #[inline(always)]
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     fn wrap(&self, properties: Point<Hyperbolic<3>>) -> Result<Point<Hyperbolic<3>>, Error> {
         let mut properties = properties;
@@ -563,7 +563,7 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<TwelveTwelve> {
         self.maximum_interaction_range
     }
     /// Place periodic images of sites near the edges of the periodic boundary
-    #[inline]
+    #[inline(always)]
     fn generate_ghosts(
         &self,
         site_properties: &Point<Hyperbolic<3>>,
@@ -662,7 +662,7 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<TwelveTwelve
         self.maximum_interaction_range
     }
     /// Place periodic images of sites near the edge of the periodic boundary.
-    #[inline]
+    #[inline(always)]
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     fn generate_ghosts(
         &self,
@@ -922,7 +922,8 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<TwelveTwelve
 }
 
 // TODO!!! Write test code for oriented bodies
-#[cfg(test)]
+// TwelveTwelve requires up to 12 ghost slots
+#[cfg(all(test, feature = "max_ghosts_12"))]
 mod tests {
     use super::*;
     use crate::property::Point;
@@ -1277,7 +1278,8 @@ mod tests {
         let point = Point::new(point);
         let periodic = Periodic::new(0.5, TwelveTwelve {}).expect("hard-coded positive number");
 
-        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 12> = periodic.generate_ghosts(&point);
+        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, MAX_GHOSTS> =
+            periodic.generate_ghosts(&point);
         let ghost_10 = ghost_array[10];
 
         let ans_10 = Hyperbolic::<3>::from_polar_coordinates(v + offset_boost, PI);
@@ -1317,7 +1319,8 @@ mod tests {
         let point = Point::new(point);
         let periodic = Periodic::new(0.5, TwelveTwelve {}).expect("hard-coded positive number");
 
-        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 12> = periodic.generate_ghosts(&point);
+        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, MAX_GHOSTS> =
+            periodic.generate_ghosts(&point);
 
         // check double transformations
         let ghost_2_poincare = ghost_array[2].position.to_poincare();

@@ -20,6 +20,15 @@ pub use convex_polytope::{ConvexPolygon, ConvexPolyhedron, ConvexPolytope};
 mod cuboid;
 pub use cuboid::{Cuboid, Hypercuboid, Rectangle};
 
+mod hyperparallelepiped;
+pub use hyperparallelepiped::Hyperparallelepiped;
+
+mod rhomboid;
+pub use rhomboid::Rhomboid;
+
+mod triclinic;
+pub use triclinic::Triclinic;
+
 mod cylinder;
 pub use cylinder::Cylinder;
 

@@ -16,7 +16,7 @@ use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 pub struct Open;
 
 impl<P> Wrap<P> for Open {
-    #[inline]
+    #[inline(always)]
     fn wrap(&self, properties: P) -> Result<P, Error> {
         Ok(properties)
     }
@@ -31,7 +31,7 @@ where
         f64::INFINITY
     }
 
-    #[inline]
+    #[inline(always)]
     fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         ArrayVec::new()
     }

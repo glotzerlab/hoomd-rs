@@ -189,7 +189,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
         self.spaces
             .resize_with(self.checkerboard.num_spaces(), Vec::default);
         for space in &mut self.spaces {
-            space.truncate(0);
+            space.clear();
         }
         for (body_index, body) in microstate.bodies().iter().enumerate() {
             let space_index = self
@@ -206,7 +206,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
         reason = "many arguments must be passed to avoid too many lines of code in other methods"
     )]
     #[inline(always)]
-    fn generate_trial_moves<P, X, C, H>(
+    fn generate_trial_moves<P1, P2, X, C, H>(
         local_trial: &L,
         body_trials: &mut Vec<BodyTrial<B, S>>,
         microstate: &Microstate<B, S, X, C>,
@@ -216,13 +216,14 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
         spaces: &[Vec<usize>],
         space_indices: &Vec<usize>,
     ) where
-        P: Copy,
-        B: Copy + Default + Transform<S> + Position<Position = P> + Send + Sync,
-        S: Copy + Default + Position<Position = P> + Send + Sync,
+        P1: Copy,
+        P2: Copy,
+        B: Copy + Default + Transform<S> + Position<Position = P1> + Send + Sync,
+        S: Copy + Default + Position<Position = P2> + Send + Sync,
         L: LocalTrial<B> + Sync,
         H: DeltaEnergyOne<B, S, X, C> + Sync,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + Sync,
-        K: Checkerboard<P> + Sync,
+        K: Checkerboard<P1> + Sync,
         X: Sync,
     {
         body_trials.resize_with(space_indices.len(), Default::default);
@@ -277,15 +278,16 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
 
     /// Update the properties of bodies with accepted moves.
     #[inline(always)]
-    fn update_bodies<P, X, C>(
+    fn update_bodies<P1, P2, X, C>(
         microstate: &mut Microstate<B, S, X, C>,
         body_trials: &Vec<BodyTrial<B, S>>,
     ) -> Count
     where
-        P: Copy,
-        B: Copy + Default + Transform<S> + Position<Position = P>,
-        S: Copy + Default + Position<Position = P>,
-        X: PointUpdate<P, SiteKey>,
+        P1: Copy,
+        P2: Copy,
+        B: Copy + Default + Transform<S> + Position<Position = P1>,
+        S: Copy + Default + Position<Position = P2>,
+        X: PointUpdate<P2, SiteKey>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     {
         let mut count = Count::default();
@@ -310,17 +312,19 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
     }
 }
 
-impl<P, B, S, X, C, L, H, MA, K> Trial<Microstate<B, S, X, C>, H, MA> for ParallelSweep<L, K, B, S>
+impl<P1, P2, B, S, X, C, L, H, MA, K> Trial<Microstate<B, S, X, C>, H, MA>
+    for ParallelSweep<L, K, B, S>
 where
-    P: Copy,
-    B: Copy + Default + Transform<S> + Position<Position = P> + Send + Sync,
-    S: Copy + Default + Position<Position = P> + Send + Sync,
-    X: PointUpdate<P, SiteKey> + Sync,
+    P1: Copy,
+    P2: Copy,
+    B: Copy + Default + Transform<S> + Position<Position = P1> + Send + Sync,
+    S: Copy + Default + Position<Position = P2> + Send + Sync,
+    X: PointUpdate<P2, SiteKey> + Sync,
     L: LocalTrial<B> + Sync,
     H: DeltaEnergyOne<B, S, X, C> + Sync,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + Cover<P, Checkerboard = K> + Sync,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + Cover<P1, Checkerboard = K> + Sync,
     MA: Temperature,
-    K: Checkerboard<P> + Sync,
+    K: Checkerboard<P1> + Sync,
 {
     type Count = Count;
 
@@ -415,12 +419,13 @@ where
     }
 }
 
-impl<P, B, S, X, C, L, H, MA, K> Tune<P, B, S, X, C, L, H, MA> for ParallelSweep<L, K, B, S>
+impl<P1, P2, B, S, X, C, L, H, MA, K> Tune<P1, B, S, X, C, L, H, MA> for ParallelSweep<L, K, B, S>
 where
-    P: Copy,
-    B: Copy + Default + Transform<S> + Position<Position = P>,
-    S: Copy + Default + Position<Position = P>,
-    X: PointUpdate<P, SiteKey>,
+    P1: Copy,
+    P2: Copy,
+    B: Copy + Default + Transform<S> + Position<Position = P1>,
+    S: Copy + Default + Position<Position = P2>,
+    X: PointUpdate<P2, SiteKey>,
     L: LocalTrial<B> + Adjust + Display,
     H: DeltaEnergyOne<B, S, X, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,

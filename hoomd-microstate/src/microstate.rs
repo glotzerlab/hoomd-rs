@@ -4,9 +4,10 @@
 //! Implement [`Microstate`] and related types.
 
 use arrayvec::ArrayVec;
-use hoomd_vector::Outer;
+use hoomd_vector::{Outer, Vector};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::{cmp::Reverse, collections::BinaryHeap, fmt, mem};
+use std::{array, cmp::Reverse, collections::BinaryHeap, fmt, mem};
 
 use crate::{
     Body, Error, Site, Transform,
@@ -600,13 +601,55 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     pub fn boundary(&self) -> &C {
         &self.boundary
     }
+
+    /// Build a replicated microstate
+    ///
+    /// This helper method is used in the various `Replicate` implementations.
+    #[inline]
+    pub(crate) fn build_replicate<const N: usize, V1, V2>(
+        &self,
+        counts: [usize; N],
+        new_boundary: C,
+        basis_vectors: [V1; N],
+        base_offset: V1,
+    ) -> Result<Microstate<B, S, X, C>, crate::Error>
+    where
+        V1: Vector,
+        V2: Copy,
+        B: Transform<S> + Position<Position = V1>,
+        S: Position<Position = V2> + Default,
+        Body<B, S>: Clone,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+        X: PointUpdate<V2, SiteKey> + Clone,
+    {
+        let mut microstate = Microstate::builder()
+            .step(self.step())
+            .seed(self.seed())
+            .spatial_data(self.spatial_data().clone())
+            .boundary(new_boundary)
+            .try_build()?;
+        let count_ranges = array::from_fn::<_, N, _>(|i| 0..counts[i]);
+        for indices in count_ranges.into_iter().multi_cartesian_product() {
+            let mut offset = base_offset;
+            for (i, x) in indices.iter().enumerate() {
+                offset += basis_vectors[i] * (*x as f64);
+            }
+
+            for body in self.iter_bodies_tag_order() {
+                let mut new_body = body.item.clone();
+                *new_body.properties.position_mut() += offset;
+                microstate.add_body(new_body)?;
+            }
+        }
+        Ok(microstate)
+    }
 }
 
 /// Manage bodies in the microstate.
 impl<P, B, S, X, C> Microstate<B, S, X, C>
 where
     P: Copy,
-    B: Transform<S> + Position<Position = P>,
+    B: Transform<S>,
     S: Position<Position = P> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     X: PointUpdate<P, SiteKey>,
@@ -941,7 +984,7 @@ where
     )]
     pub fn update_body_properties(&mut self, body_index: usize, properties: B) -> Result<(), Error>
     where
-        B: Transform<S> + Position<Position = P>,
+        B: Transform<S>,
         S: Position<Position = P>,
         C: Wrap<B> + Wrap<S>,
     {
@@ -1324,6 +1367,42 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
         self.sites.iter_tag_order()
     }
 
+    /// Iterate over all bodies in monotonically increasing tag order.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::{Body, Microstate};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::builder()
+    ///     .bodies([
+    ///         Body::point(Cartesian::from([1.0, 0.0])),
+    ///         Body::point(Cartesian::from([-1.0, 2.0])),
+    ///     ])
+    ///     .try_build()?;
+    ///
+    /// microstate.remove_body(0);
+    /// microstate.add_body(Body::point(Cartesian::from([3.0, 1.0])))?;
+    ///
+    /// let body_positions_tag_order: Vec<_> = microstate
+    ///     .iter_bodies_tag_order()
+    ///     .map(|s| s.item.properties.position)
+    ///     .collect();
+    /// assert_eq!(
+    ///     body_positions_tag_order,
+    ///     vec![[3.0, 1.0].into(), [-1.0, 2.0].into()]
+    /// );
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn iter_bodies_tag_order(&self) -> impl Iterator<Item = &Tagged<Body<B, S>>> {
+        self.bodies.iter_tag_order()
+    }
+
     /// Get the spatial data structure.
     #[inline]
     pub fn spatial_data(&self) -> &X {
@@ -1378,13 +1457,14 @@ where
 }
 
 /// Manipulate the microstate as a whole.
-impl<P, B, S, X, C> Microstate<B, S, X, C>
+impl<P1, P2, B, S, X, C> Microstate<B, S, X, C>
 where
-    P: Copy,
-    B: Clone + Transform<S> + Position<Position = P>,
-    S: Clone + Position<Position = P> + Default,
-    C: Clone + Wrap<B> + Wrap<S> + GenerateGhosts<S> + MapPoint<P>,
-    X: Clone + PointUpdate<P, SiteKey>,
+    P1: Copy,
+    P2: Copy,
+    B: Clone + Transform<S> + Position<Position = P1>,
+    S: Clone + Position<Position = P2> + Default,
+    C: Clone + Wrap<B> + Wrap<S> + GenerateGhosts<S> + MapPoint<P1>,
+    X: Clone + PointUpdate<P2, SiteKey>,
 {
     /// Clone the microstate, mapping or wrapping bodies into a new boundary.
     ///
@@ -1769,7 +1849,7 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     pub fn try_build<P>(self) -> Result<Microstate<B, S, X, C>, Error>
     where
         P: Copy,
-        B: Transform<S> + Position<Position = P>,
+        B: Transform<S>,
         S: Position<Position = P> + Default,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
         X: PointUpdate<P, SiteKey>,
@@ -2025,17 +2105,17 @@ mod tests {
                 );
             }
 
-            assert!(microstate.bodies().len() == microstate.bodies_sites.len());
+            assert_eq!(microstate.bodies().len(), microstate.bodies_sites.len());
             for (body, body_sites) in microstate
                 .bodies()
                 .iter()
                 .zip(microstate.bodies_sites.iter())
             {
-                assert!(body.item.sites.len() == body_sites.len());
+                assert_eq!(body.item.sites.len(), body_sites.len());
                 for site_tag in body_sites {
                     let site_index = microstate.site_indices()[*site_tag]
                         .expect("body_sites should be consistent with site_indices");
-                    assert!(microstate.sites()[site_index].body_tag == body.tag);
+                    assert_eq!(microstate.sites()[site_index].body_tag, body.tag);
                 }
             }
 
@@ -2225,7 +2305,10 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            assert!(microstate.add_body(Body::point(Cartesian::from([11.0, -21.0]))) == Ok(0));
+            assert_eq!(
+                microstate.add_body(Body::point(Cartesian::from([11.0, -21.0]))),
+                Ok(0)
+            );
 
             let body = &microstate.bodies()[0].item;
             assert_relative_eq!(body.properties.position, [1.0, -1.0].into(), epsilon = 1e-6);
@@ -2275,7 +2358,7 @@ mod tests {
             let site = &microstate.sites()[0];
             assert_relative_eq!(site.properties.position, [-4.5, 1.0].into(), epsilon = 1e-6);
 
-            assert!(microstate.ghosts().len() == 1);
+            assert_eq!(microstate.ghosts().len(), 1);
             let ghost = &microstate.ghosts()[0];
             assert_relative_eq!(ghost.properties.position, [5.5, 1.0].into(), epsilon = 1e-6);
 
@@ -2296,13 +2379,14 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            assert!(
+            assert_eq!(
                 microstate.update_body_properties(
                     0,
                     Point {
                         position: [4.5, 1.0].into()
                     }
-                ) == Ok(())
+                ),
+                Ok(())
             );
 
             let body = &microstate.bodies()[0].item;
@@ -2311,20 +2395,21 @@ mod tests {
             let site = &microstate.sites()[0];
             assert_relative_eq!(site.properties.position, [-4.5, 1.0].into(), epsilon = 1e-6);
 
-            assert!(microstate.ghosts().len() == 1);
+            assert_eq!(microstate.ghosts().len(), 1);
             let ghost = &microstate.ghosts()[0];
             assert_relative_eq!(ghost.properties.position, [5.5, 1.0].into(), epsilon = 1e-6);
 
-            assert!(ghost.site_tag == site.site_tag);
-            assert!(ghost.body_tag == site.body_tag);
+            assert_eq!(ghost.site_tag, site.site_tag);
+            assert_eq!(ghost.body_tag, site.body_tag);
 
-            assert!(
+            assert_eq!(
                 microstate.update_body_properties(
                     0,
                     Point {
                         position: [0.0, 0.0].into()
                     }
-                ) == Ok(())
+                ),
+                Ok(())
             );
 
             assert_eq!(microstate.ghosts().len(), 0);

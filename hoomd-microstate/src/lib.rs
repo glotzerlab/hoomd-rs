@@ -150,6 +150,12 @@
 //! When using [`Open`] or [`Closed`] boundary conditions, [`ghosts`] will always
 //! be empty.
 //!
+//! Each site stores its ghosts in an array-backed container with a capacity of
+//! [`MAX_GHOSTS`](crate::boundary::MAX_GHOSTS), chosen at compile time with the
+//! `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and `max_ghosts_64` cargo
+//! features of `hoomd-microstate`. The default value of 8 ghosts is sufficient for
+//! 2-D and 3-D Cartesian periodic boundaries and the `EightEight` hyperbolic tiling.
+//!
 //! [`ghosts`]: Microstate::ghosts
 //! [`Open`]: crate::boundary::Open
 //! [`Closed`]: crate::boundary::Closed
@@ -179,6 +185,11 @@
 //!
 //! [serde]: https://serde.rs/
 //! [postcard]: https://docs.rs/postcard/latest/postcard/
+//! # Feature flags
+//! * `max_ghosts_12`: Set [`MAX_GHOSTS`] to at least 12.
+//! * `max_ghosts_16`: Set [`MAX_GHOSTS`] to at least 16.
+//! * `max_ghosts_32`: Set [`MAX_GHOSTS`] to at least 32.
+//! * `max_ghosts_64`: Set [`MAX_GHOSTS`] to at least 64.
 //!
 //! # Complete documentation
 //!
@@ -391,10 +402,13 @@ impl<B, S> Body<B, S> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_microstate::Body;
+    /// use hoomd_microstate::{Body, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
-    /// let body = Body::point(Cartesian::from([-3.0, 5.0]));
+    /// let body = Body::single_site(
+    ///     Point::new(Cartesian::from([-3.0, 5.0])),
+    ///     Point::new(Cartesian::from([0.0, 0.0])),
+    /// );
     /// assert_eq!(body.properties.position, [-3.0, 5.0].into());
     /// assert_eq!(body.sites.len(), 1);
     /// assert_eq!(body.sites[0].position, [0.0, 0.0].into());
@@ -434,6 +448,10 @@ pub enum Error {
     /// Failed to update a body in a [`Microstate`].
     #[error("failed to update body (tag={0})")]
     UpdateBody(usize, #[source] boundary::Error),
+
+    /// Cannot replicate 0 times in any direction.
+    #[error("requested invalid replication amount")]
+    NoReplication(#[source] hoomd_utility::valid::Error),
 }
 
 /// Write a frame to a GSD file with the contents of a microstate.
@@ -549,4 +567,61 @@ pub trait AppendMicrostate<B, S, X, C> {
         &mut self,
         microstate: &Microstate<B, S, X, C>,
     ) -> Result<Frame<'_>, AppendError>;
+}
+
+/// Make a new microstate with the original bodies repeated following the periodic
+/// boundary conditions.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_geometry::shape::Hypercuboid;
+/// use hoomd_microstate::{Body, Microstate, Replicate, boundary::Periodic};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let cuboid = Hypercuboid {
+///     edge_lengths: [10.0.try_into()?, 20.0.try_into()?, 30.0.try_into()?],
+/// };
+///
+/// let periodic = Periodic::new(1.0, cuboid)?;
+/// let microstate = Microstate::builder()
+///     .boundary(periodic)
+///     .bodies([Body::point(Cartesian::from([0.0, 0.0, 0.0]))])
+///     .try_build()?;
+///
+/// let replicated = microstate.replicate([2, 2, 2])?;
+/// # Ok(())
+/// # }
+/// ```
+pub trait Replicate<const N: usize, B, S, X, C> {
+    /// Replicate the bodies in `self` `count[0]` by `count[1]` by ... by `count[N-1]` times and
+    /// expand the periodic boundary accordingly.
+    ///
+    /// The new microstate is built with the same step, seed, and spatial data
+    /// structure, as if it were cloned. The new microstate's boundary keeps
+    /// the same interaction range but is extended by `counts[i]` along each
+    /// relevant (shape-dependent) axis.
+    ///
+    /// # Errors
+    ///
+    /// * [`Error::NoReplication`] when any of the counts is 0.
+    fn replicate(&self, counts: [usize; N]) -> Result<Microstate<B, S, X, C>, Error>;
+
+    /// Replicate the bodies in `self` `count[0]` by `count[1]` by ... by `count[N-1]` times and
+    /// expand the periodic boundary accordingly.
+    ///
+    /// The new microstate is built with the same step, seed, and spatial data
+    /// structure, as if it were cloned. The new microstate's boundary sets
+    /// the given interaction range and is extended by `counts[i]` along each
+    /// relevant (shape-dependent) axis.
+    ///
+    /// # Errors
+    ///
+    /// * [`Error::NoReplication`] when any of the counts is 0.
+    fn replicate_with_maximum_interaction_range(
+        &self,
+        counts: [usize; N],
+        maximum_interaction_range: f64,
+    ) -> Result<Microstate<B, S, X, C>, Error>;
 }

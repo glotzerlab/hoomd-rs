@@ -915,7 +915,9 @@ pub trait NetBodyForceAndVirial<B, S, X, C> {
     /// of the body to compute.
     ///
     /// Returns:
-    ///     TODO
+    /// ```math
+    /// \left( \vec{F}_{body}, \mathbf{W}_{body} \right)
+    /// ```
     #[must_use]
     fn net_body_force_and_virial(
         &self,
@@ -943,7 +945,9 @@ pub trait NetBodyForceVirialAndTorque<B, S, X, C> {
     /// of the body to compute.
     ///
     /// Returns:
-    ///     TODO
+    /// ```math
+    /// \left( \vec{F}_{body}, \mathbf{W}_{body}, \vec{\tau}_{body} \right)
+    /// ```
     #[must_use]
     fn net_body_force_virial_and_torque(
         &self,
@@ -1002,8 +1006,9 @@ pub trait NetSiteForceVirialAndTorque<B, S, X, C> {
     /// of the site to compute.
     ///
     /// Returns:
-    ///
-    /// TODO
+    /// ```math
+    /// \left( \vec{F}_{site}, \mathbf{W}_{site}, \vec{\tau}_{site} \right)
+    /// ```
     #[must_use]
     fn net_site_force_virial_and_torque(
         &self,
@@ -1062,8 +1067,9 @@ pub trait NetSiteForceAndVirial<B, S, X, C> {
     /// of the site to compute.
     ///
     /// Returns:
-    ///
-    /// TODO
+    /// ```math
+    /// \left( \vec{F}_{site}, \mathbf{W}_{site} \right)
+    /// ```
     #[must_use]
     fn net_site_force_and_virial(
         &self,

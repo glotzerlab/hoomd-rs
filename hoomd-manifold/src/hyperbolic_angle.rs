@@ -4,7 +4,7 @@
 //! Implements a three-dimensional representation of SO(3,1) on Minkowski
 //! space.
 
-use num::complex::Complex;
+use num_complex::Complex;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},

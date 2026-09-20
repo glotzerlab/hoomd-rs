@@ -852,8 +852,8 @@ mod tests {
         #[test]
         fn from_array() {
             let q = Quaternion::from([2.0, -3.0, 4.0, 7.0]);
-            assert!(q.scalar == 2.0);
-            assert!(q.vector == [-3.0, 4.0, 7.0].into());
+            assert_eq!(q.scalar, 2.0);
+            assert_eq!(q.vector, [-3.0, 4.0, 7.0].into());
         }
 
         #[test]
@@ -950,13 +950,13 @@ mod tests {
         #[test]
         fn default() {
             let a = Versor::default();
-            assert!(a.get() == &[1.0, 0.0, 0.0, 0.0].into());
+            assert_eq!(a.get(), &[1.0, 0.0, 0.0, 0.0].into());
         }
 
         #[test]
         fn identity() {
             let a = Versor::identity();
-            assert!(a.get() == &[1.0, 0.0, 0.0, 0.0].into());
+            assert_eq!(a.get(), &[1.0, 0.0, 0.0, 0.0].into());
         }
 
         #[rstest(
