@@ -78,10 +78,19 @@ impl RelativeEq for QuadQuaternion {
 }
 
 impl Default for QuadQuaternion {
+    /// Create an identity rotation.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::QuadQuaternion;
+    ///
+    /// let q = QuadQuaternion::default();
+    /// ```
+    #[inline]
     fn default() -> Self {
-        let one = Quaternion::from([1.0, 0.0, 0.0, 0.0]);
+        let one = *Versor::default().get();
         let zero = Quaternion::from([0.0; 4]);
-        QuadQuaternion {
+        Self {
             rows: [[one, zero], [zero, one]],
         }
     }
