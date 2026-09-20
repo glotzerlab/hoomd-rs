@@ -18,7 +18,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Cartesian, Error, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Versor};
 
-use crate::{Cartesian, Quaternion, Rotate, RotationMatrix};
+/// The four components of the quaternion algebra as [`Quaternion`] values.
+const QUATERNION_BASIS: [Quaternion; 4] = [
+    crate::quaternion!(1.0, [0.0, 0.0, 0.0]),
+    crate::quaternion!(0.0, [1.0, 0.0, 0.0]),
+    crate::quaternion!(0.0, [0.0, 1.0, 0.0]),
+    crate::quaternion!(0.0, [0.0, 0.0, 1.0]),
+];
 
 /// A unitary quaternion-valued matrix representing a rotation in SO(5).
 ///
