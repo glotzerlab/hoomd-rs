@@ -6,7 +6,7 @@
 //! numerically stable and space efficient than the equivalent matrix representation,
 //! but slower when applying rotations.
 
-use std::fmt;
+use std::{fmt, ops::Mul};
 
 use approxim::{AbsDiffEq, RelativeEq};
 use rand::{
@@ -306,10 +306,46 @@ impl Rotate<Cartesian<5>> for QuadQuaternion {
     }
 }
 
+impl Mul for QuadQuaternion {
+    type Output = Self;
+
+    /// Multiply two `QuadQuaternion` matrices.
+    ///
+    /// This operation is a matrix multiplication, and is not commutative, so the order
+    /// of the operands matters: in the product `a * b`, the columns of `b` are
+    /// transformed by `a`.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{QuadQuaternion, Quaternion};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let zero = Quaternion::from([0.0; 4]);
+    /// let i = Quaternion::from([0.0, 1.0, 0.0, 0.0]);
+    /// let rotation = QuadQuaternion::try_from([[i, zero], [zero, i]])?;
+    ///
+    /// // The identity is the neutral element of the product.
+    /// assert_eq!(rotation * QuadQuaternion::default(), rotation);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn mul(self, rhs: Self) -> Self {
+        let [[q_a, q_b], [q_c, q_d]] = self.rows;
+        let [[r_a, r_b], [r_c, r_d]] = rhs.rows;
+        Self {
+            rows: [
+                [q_a * r_a + q_b * r_c, q_a * r_b + q_b * r_d],
+                [q_c * r_a + q_d * r_c, q_c * r_b + q_d * r_d],
+            ],
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approxim::{assert_abs_diff_eq, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_relative_eq, assert_relative_ne};
     use hoomd_linear_algebra::matrix::Matrix;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
 
@@ -391,8 +427,28 @@ mod tests {
         // E[Tr M^2] ~ 1.001 (exact from the SO(5) Weyl density).
         assert_abs_diff_eq!(trace_sq / n, 1.0, epsilon = 0.03);
     }
-}
 
+    #[test]
+    fn mul() {
+        let mut rng = StdRng::seed_from_u64(1);
+        let identity = QuadQuaternion::default();
+
+        for _ in 0..64 {
+            let p: QuadQuaternion = rng.random();
+            let q: QuadQuaternion = rng.random();
+            let r: QuadQuaternion = rng.random();
+
+            // The identity is the neutral element on both sides.
+            assert_relative_eq!(p * identity, p);
+            assert_relative_eq!(identity * p, p);
+
+            // The product is associative.
+            assert_relative_eq!((p * q) * r, p * (q * r), epsilon = 1e-12);
+
+            // The product is not commutative for generic rotations.
+            assert_relative_ne!(p * q, q * p);
+        }
+    }
     #[test]
     fn serde_and_display() {
         let mut rng = StdRng::seed_from_u64(1);
@@ -407,3 +463,4 @@ mod tests {
         assert!(formatted.starts_with("[["));
         assert!(formatted.contains('\n'));
     }
+}
