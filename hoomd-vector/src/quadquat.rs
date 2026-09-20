@@ -322,3 +322,18 @@ mod tests {
         assert_abs_diff_eq!(trace_sq / n, 1.0, epsilon = 0.03);
     }
 }
+
+    #[test]
+    fn serde_and_display() {
+        let mut rng = StdRng::seed_from_u64(1);
+        let q: QuadQuaternion = rng.random();
+
+        let serialized = postcard::to_allocvec(&q).expect("serialization should succeed");
+        let deserialized: QuadQuaternion =
+            postcard::from_bytes(&serialized).expect("deserialization should succeed");
+        assert_relative_eq!(deserialized, q);
+
+        let formatted = format!("{q}");
+        assert!(formatted.starts_with("[["));
+        assert!(formatted.contains('\n'));
+    }
