@@ -29,6 +29,7 @@ hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
 
 [dev-dependencies]
+postcard.workspace = true
 anyhow.workspace = true
 assert2.workspace = true
 divan.workspace = true

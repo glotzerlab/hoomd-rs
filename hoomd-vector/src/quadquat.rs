@@ -16,15 +16,7 @@ use rand::{
 use rand_distr::StandardNormal;
 use serde::{Deserialize, Serialize};
 
-use crate::{Cartesian, Error, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Versor};
-
-/// The four components of the quaternion algebra as [`Quaternion`] values.
-const QUATERNION_BASIS: [Quaternion; 4] = [
-    crate::quaternion!(1.0, [0.0, 0.0, 0.0]),
-    crate::quaternion!(0.0, [1.0, 0.0, 0.0]),
-    crate::quaternion!(0.0, [0.0, 1.0, 0.0]),
-    crate::quaternion!(0.0, [0.0, 0.0, 1.0]),
-];
+use crate::{Cartesian, Error, Quaternion, Rotate, RotationMatrix, Versor};
 
 /// A unitary quaternion-valued matrix representing a rotation in SO(5).
 ///
@@ -176,16 +168,6 @@ impl QuadQuaternion {
     }
 
     /// Promote a [`Cartesian<5>`] to a Hermitian traceless quaternionic matrix.
-    #[inline]
-    fn promote_vec5(v: Cartesian<5>) -> Self {
-        let p = Quaternion::from([v[0], 0.0, 0.0, 0.0]);
-        let np = Quaternion::from([-v[0], 0.0, 0.0, 0.0]);
-        let q = Quaternion::from([v[1], v[2], v[3], v[4]]);
-        Self {
-            rows: [[p, q], [q.conjugate(), np]],
-        }
-    }
-
     #[inline]
     pub(crate) fn a(&self) -> Quaternion {
         self.rows[0][0]
@@ -339,6 +321,29 @@ impl Mul for QuadQuaternion {
                 [q_c * r_a + q_d * r_c, q_c * r_b + q_d * r_d],
             ],
         }
+    }
+}
+
+impl fmt::Display for QuadQuaternion {
+    /// Format a [`QuadQuaternion`] as `[[a, b],\n [c, d]]`.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::QuadQuaternion;
+    ///
+    /// let q = QuadQuaternion::default();
+    /// assert_eq!(
+    ///     format!("{q}"),
+    ///     "[[[1, [0, 0, 0]], [0, [0, 0, 0]]],\n [[0, [0, 0, 0]], [1, [0, 0, 0]]]]"
+    /// );
+    /// ```
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "[[{}, {}],\n [{}, {}]]",
+            self.rows[0][0], self.rows[0][1], self.rows[1][0], self.rows[1][1]
+        )
     }
 }
 
