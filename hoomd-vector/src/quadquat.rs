@@ -176,10 +176,6 @@ impl QuadQuaternion {
     }
 
     /// Promote a [`Cartesian<5>`] to a Hermitian traceless quaternionic matrix.
-    ///
-    /// The promotion identifies `R^5` with the traceless quaternion-Hermitian
-    /// matrices, on which `Sp(2)` acts by conjugation (see the struct
-    /// documentation).
     #[inline]
     fn promote_vec5(v: Cartesian<5>) -> Self {
         let p = Quaternion::from([v[0], 0.0, 0.0, 0.0]);
