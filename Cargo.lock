@@ -483,7 +483,7 @@ dependencies = [
  "parquet",
  "parquet_derive",
  "postcard",
- "rand 0.10.2",
+ "rand 0.10.3",
  "rayon",
  "serde",
  "wildmatch",
@@ -1275,7 +1275,7 @@ dependencies = [
  "glam 0.32.1",
  "itertools 0.14.0",
  "libm",
- "rand 0.10.2",
+ "rand 0.10.3",
  "rand_distr",
  "serde",
  "thiserror 2.0.20",
@@ -3087,7 +3087,7 @@ dependencies = [
  "itertools 0.15.0",
  "parquet",
  "parquet_derive",
- "rand 0.10.2",
+ "rand 0.10.3",
  "strum",
  "strum_macros",
  "thiserror 2.0.20",
@@ -3531,7 +3531,7 @@ dependencies = [
  "bytemuck",
  "encase",
  "libm",
- "rand 0.10.2",
+ "rand 0.10.3",
  "serde_core",
 ]
 
@@ -3849,7 +3849,7 @@ dependencies = [
  "hoomd-utility",
  "hoomd-vector",
  "itertools 0.15.0",
- "rand 0.10.2",
+ "rand 0.10.3",
  "robust",
  "rstest",
  "rstest_reuse",
@@ -3887,7 +3887,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
- "rand 0.10.2",
+ "rand 0.10.3",
  "rstest",
  "serde",
 ]
@@ -3900,7 +3900,7 @@ dependencies = [
  "divan",
  "faer",
  "nalgebra",
- "rand 0.10.2",
+ "rand 0.10.3",
  "rstest",
  "serde",
  "serde_with",
@@ -3916,7 +3916,7 @@ dependencies = [
  "hoomd-vector",
  "num-complex",
  "paste",
- "rand 0.10.2",
+ "rand 0.10.3",
  "rstest",
  "serde",
  "serde_with",
@@ -3941,7 +3941,7 @@ dependencies = [
  "hoomd-vector",
  "itertools 0.15.0",
  "log",
- "rand 0.10.2",
+ "rand 0.10.3",
  "rand_distr",
  "rayon",
  "rstest",
@@ -3963,7 +3963,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
- "rand 0.10.2",
+ "rand 0.10.3",
  "rand_distr",
  "rayon",
  "rstest",
@@ -3990,7 +3990,7 @@ dependencies = [
  "hoomd-vector",
  "itertools 0.15.0",
  "log",
- "rand 0.10.2",
+ "rand 0.10.3",
  "robust",
  "rstest",
  "serde",
@@ -4007,7 +4007,7 @@ dependencies = [
  "chacha20",
  "clap",
  "divan",
- "rand 0.10.2",
+ "rand 0.10.3",
  "rand_sfc",
  "rstest",
  "serde",
@@ -4029,7 +4029,7 @@ dependencies = [
  "hoomd-utility",
  "hoomd-vector",
  "log",
- "rand 0.10.2",
+ "rand 0.10.3",
  "rstest",
  "rustc-hash 2.1.3",
  "serde",
@@ -4061,7 +4061,7 @@ dependencies = [
  "hoomd-rand",
  "hoomd-utility",
  "paste",
- "rand 0.10.2",
+ "rand 0.10.3",
  "rand_distr",
  "rstest",
  "serde",
@@ -5788,9 +5788,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.10.2"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7f5fa3a058cd35567ef9bfa5e75732bee0f9e4c55fa90477bef2dfcdbc4be80"
+checksum = "65c9fb96cbc91e3478eaae79a69fcd3f1ae4ad052e471fe6732fff548984b4af"
 dependencies = [
  "chacha20",
  "getrandom 0.4.3",
@@ -5829,7 +5829,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d431c2703ccf129de4d45253c03f49ebb22b97d6ad79ee3ecfc7e3f4862c1d8"
 dependencies = [
  "num-traits",
- "rand 0.10.2",
+ "rand 0.10.3",
 ]
 
 [[package]]
@@ -6684,7 +6684,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.4",
  "windows-sys 0.61.2",
