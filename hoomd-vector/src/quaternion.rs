@@ -342,8 +342,10 @@ impl From<[f64; 4]> for Quaternion {
 /// ```
 /// use hoomd_vector::Quaternion;
 ///
-/// const HALF_HALF: Quaternion = hoomd_vector::quaternion!(0.5, [0.5, 0.5, 0.5]);
-/// const SUM: Quaternion = hoomd_vector::quaternion!(0.25 + 0.25, [0.0, 1.0, 0.0]);
+/// const HALF_HALF: Quaternion =
+///     hoomd_vector::quaternion!(0.5, [0.5, 0.5, 0.5]);
+/// const SUM: Quaternion =
+///     hoomd_vector::quaternion!(0.25 + 0.25, [0.0, 1.0, 0.0]);
 ///
 /// assert_eq!(HALF_HALF.scalar, 0.5);
 /// assert_eq!(SUM.vector, [0.0, 1.0, 0.0].into());
