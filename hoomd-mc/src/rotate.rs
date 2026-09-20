@@ -25,9 +25,9 @@ mod versor;
 /// When proposing trial moves for [`Versor`], [`maximum_rotation`] is measured
 /// in radians and the width of a Gaussian distribution centered on 0.
 ///
-/// When proposing trial moves for [`DoubleVersor`], [`maximum_rotation`] is the
-/// width of a Gaussian distribution centered on 0 in each of the two isoclinic
-/// components.
+/// When proposing trial moves for [`DoubleVersor`], [`maximum_rotation`] is measured
+/// in radians and is the width of a Gaussian distribution centered on 0 in each of
+/// the two isoclinic components.
 ///
 /// [`Angle`]: hoomd_vector::Angle
 /// [`Versor`]: hoomd_vector::Versor
