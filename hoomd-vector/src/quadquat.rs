@@ -3,7 +3,8 @@
 
 //! Implement [`QuadQuaternion`], a representation of rotations in five dimensions.
 //! Similar to [`Versor`] in 3D and [`DoubleVersor`] in 4D, this approach is more
-//! numerically stable and space efficient than a 5x5 matrix representation.
+//! numerically stable and space efficient than the equivalent matrix representation,
+//! but slower when applying rotations.
 
 use rand::{
     Rng, RngExt,
