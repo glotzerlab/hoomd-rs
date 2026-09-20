@@ -6,6 +6,9 @@
 //! numerically stable and space efficient than the equivalent matrix representation,
 //! but slower when applying rotations.
 
+use std::fmt;
+
+use approxim::{AbsDiffEq, RelativeEq};
 use rand::{
     Rng, RngExt,
     distr::{Distribution, StandardUniform},
@@ -33,6 +36,45 @@ use crate::{Cartesian, Quaternion, Rotate, RotationMatrix};
 pub struct QuadQuaternion {
     /// Rows of the quaternionic matrix.
     rows: [[Quaternion; 2]; 2],
+}
+
+impl AbsDiffEq for QuadQuaternion {
+    type Epsilon = <Quaternion as AbsDiffEq>::Epsilon;
+
+    #[inline]
+    fn default_epsilon() -> Self::Epsilon {
+        Quaternion::default_epsilon()
+    }
+
+    #[inline]
+    fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+        self.rows
+            .iter()
+            .flatten()
+            .zip(other.rows.iter().flatten())
+            .all(|(a, b)| a.abs_diff_eq(b, epsilon))
+    }
+}
+
+impl RelativeEq for QuadQuaternion {
+    #[inline]
+    fn default_max_relative() -> Self::Epsilon {
+        Quaternion::default_max_relative()
+    }
+
+    #[inline]
+    fn relative_eq(
+        &self,
+        other: &Self,
+        epsilon: Self::Epsilon,
+        max_relative: Self::Epsilon,
+    ) -> bool {
+        self.rows
+            .iter()
+            .flatten()
+            .zip(other.rows.iter().flatten())
+            .all(|(a, b)| a.relative_eq(b, epsilon, max_relative))
+    }
 }
 
 impl Default for QuadQuaternion {
