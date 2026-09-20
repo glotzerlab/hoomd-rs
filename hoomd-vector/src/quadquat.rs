@@ -6,8 +6,7 @@
 //! numerically stable and space efficient than a 5x5 matrix representation.
 
 use rand::{
-    Rng,
-    RngExt,
+    Rng, RngExt,
     distr::{Distribution, StandardUniform},
 };
 use rand_distr::StandardNormal;
@@ -91,28 +90,13 @@ impl Distribution<QuadQuaternion> for StandardUniform {
         // (x1, x2).
         let v: [f64; 8] = std::array::from_fn(|_| rng.sample::<f64, _>(StandardNormal));
         let v_norm = v.iter().map(|x| x * x).sum::<f64>().sqrt();
-        let x1 = Quaternion::from([
-            v[0] / v_norm,
-            v[1] / v_norm,
-            v[2] / v_norm,
-            v[3] / v_norm,
-        ]);
-        let x2 = Quaternion::from([
-            v[4] / v_norm,
-            v[5] / v_norm,
-            v[6] / v_norm,
-            v[7] / v_norm,
-        ]);
+        let x1 = Quaternion::from([v[0] / v_norm, v[1] / v_norm, v[2] / v_norm, v[3] / v_norm]);
+        let x2 = Quaternion::from([v[4] / v_norm, v[5] / v_norm, v[6] / v_norm, v[7] / v_norm]);
 
         // Residual Sp(1) ~ S^3 freedom: a uniform unit quaternion (as for Versor).
         let q: [f64; 4] = std::array::from_fn(|_| rng.sample::<f64, _>(StandardNormal));
         let q_norm = q.iter().map(|x| x * x).sum::<f64>().sqrt();
-        let q = Quaternion::from([
-            q[0] / q_norm,
-            q[1] / q_norm,
-            q[2] / q_norm,
-            q[3] / q_norm,
-        ]);
+        let q = Quaternion::from([q[0] / q_norm, q[1] / q_norm, q[2] / q_norm, q[3] / q_norm]);
 
         // Phase q1 of the first component x1 (Mezzadri eq 7.26). The -conj(q1)
         // prefactor on the Householder reflection below is mandatory for Haar
@@ -147,7 +131,9 @@ impl Distribution<QuadQuaternion> for StandardUniform {
         let c = h01.conjugate();
         let d = h11.conjugate() * q;
 
-        QuadQuaternion { rows: [[a, b], [c, d]] }
+        QuadQuaternion {
+            rows: [[a, b], [c, d]],
+        }
     }
 }
 
