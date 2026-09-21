@@ -6,7 +6,6 @@
 use std::{borrow::Borrow, cmp::Ordering};
 
 use itertools::Itertools;
-use robust::Coord;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
