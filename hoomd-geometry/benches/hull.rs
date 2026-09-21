@@ -143,6 +143,26 @@ mod random {
             .with_inputs(|| create_ball_points::<3>(N, &mut rng))
             .bench_local_values(|pts| black_box(Cartesian::<3>::convex_hull(&pts)));
     }
+
+    #[divan::bench(consts = NUM_POINTS)]
+    fn unit_tesseract<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(42);
+
+        bencher
+            .counter(ItemsCount::from(N as u32))
+            .with_inputs(|| create_random_points::<4>(N, &mut rng))
+            .bench_local_values(|pts| black_box(Cartesian::<4>::convex_hull(&pts)));
+    }
+
+    #[divan::bench(consts = NUM_POINTS)]
+    fn unit_hyperball<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(42);
+
+        bencher
+            .counter(ItemsCount::from(N as u32))
+            .with_inputs(|| create_ball_points::<4>(N, &mut rng))
+            .bench_local_values(|pts| black_box(Cartesian::<4>::convex_hull(&pts)));
+    }
 }
 
 #[divan::bench_group]
