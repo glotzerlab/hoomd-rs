@@ -378,48 +378,76 @@ mod tests {
 
     #[test]
     fn random_rotation() {
-        // Every random QuadQuaternion must act as a proper SO(5) rotation
-        // (orthogonal, determinant +1), and the ensemble must be Haar-uniform.
-        // Correctness is a per-sample property, so it is checked on a small prefix;
-        // the Haar moments are statistical and use the full sample. Exact targets
-        // are derived oracle-free from the Weyl eigenangle density and Weingarten
-        // calculus (see /tmp/claude/haar_higher_moments.py for the cross-check).
-        const SAMPLES: u32 = 40_000;
-        const CORRECTNESS_CHECKS: u32 = 100;
-
+        // Check that samples are proper rotations (orthogonal, det +1) and
+        // the ensemble matches the exact Haar-SO(5) moments from the Weyl
+        // eigenangle density: E[M_ij^2] = 1/5, E[M_ij^4] = 3/35,
+        // E[Tr M] = 0, E[Tr M^2] = 1.
+        const N: usize = 40_000;
         let mut rng = StdRng::seed_from_u64(1);
 
-        let mut entry_sq = 0.0; // E[Mij^2]
-        let mut entry_4th = 0.0; // E[Mij^4]
-        let mut trace = 0.0; // E[Tr M]
-        let mut trace_sq = 0.0; // E[Tr M^2]
+        let (mut e2, mut e4, mut tr, mut tr2) = (0.0, 0.0, 0.0, 0.0);
+        for i in 0..N {
+            let m = Matrix {
+                rows: so5_matrix(&rng.random::<QuadQuaternion>()),
+            };
 
-        for i in 0..SAMPLES {
-            let m = so5_matrix(&rng.random::<QuadQuaternion>());
-
-            if i < CORRECTNESS_CHECKS {
-                // Orthogonality: M^T M = I.
-                for row in 0..5 {
-                    for col in 0..5 {
-                        let dot = (0..5).map(|k| m[k][row] * m[k][col]).sum::<f64>();
-                        let target = if row == col { 1.0 } else { 0.0 };
-                        assert_abs_diff_eq!(dot, target, epsilon = 1e-10);
-                    }
-                }
-                // det M = +1.
-                assert_abs_diff_eq!(Matrix { rows: m }.determinant(), 1.0, epsilon = 1e-9);
+            if i < 100 {
+                // Orthogonality: M^T M = I, and det = +1.
+                let gram = m.transpose().matmul(&m);
+                assert!(
+                    gram.rows
+                        .iter()
+                        .flatten()
+                        .zip(Matrix::<5, 5>::identity().rows.iter().flatten())
+                        .all(|(a, b)| (a - b).abs() <= 1e-10)
+                );
+                assert_abs_diff_eq!(m.determinant(), 1.0, epsilon = 1e-9);
             }
 
-            entry_sq += m[0][0] * m[0][0];
-            entry_4th += m[0][0].powi(4);
-            trace += (0..5).map(|d| m[d][d]).sum::<f64>();
-            let mut tr2 = 0.0;
-            for row in 0..5 {
-                for col in 0..5 {
-                    tr2 += m[row][col] * m[col][row];
-                }
+            e2 += m.rows[0][0] * m.rows[0][0];
+            e4 += m.rows[0][0].powi(4);
+            tr += m.trace();
+            tr2 += m.matmul(&m).trace();
+        }
+
+        let n = N as f64;
+        assert_abs_diff_eq!(e2 / n, 0.2, epsilon = 0.01);
+        assert_abs_diff_eq!(e4 / n, 3.0 / 35.0, epsilon = 0.005);
+        assert_abs_diff_eq!(tr / n, 0.0, epsilon = 0.02);
+        assert_abs_diff_eq!(tr2 / n, 1.0, epsilon = 0.03);
+    }
+
+    #[test]
+    fn group_operations() {
+        let mut rng = StdRng::seed_from_u64(1);
+        let identity = QuadQuaternion::identity();
+        for _ in 0..64 {
+            let p: QuadQuaternion = rng.random();
+            let q: QuadQuaternion = rng.random();
+            let r: QuadQuaternion = rng.random();
+
+            // Inverse and associativity.
+            assert_relative_eq!(p.combine(&p.inverted()), identity, epsilon = 1e-12);
+            assert_relative_eq!(
+                p.combine(&q).combine(&r),
+                p.combine(&q.combine(&r)),
+                epsilon = 1e-12
+            );
+
+            // Composition matches the product of the matrix representations.
+            let product = Matrix {
+                rows: so5_matrix(&p),
             }
-            trace_sq += tr2;
+            .matmul(&Matrix {
+                rows: so5_matrix(&q),
+            });
+            assert!(
+                so5_matrix(&p.combine(&q))
+                    .iter()
+                    .flatten()
+                    .zip(product.rows.iter().flatten())
+                    .all(|(a, b)| (a - b).abs() <= 1e-12)
+            );
         }
 
         let n = f64::from(SAMPLES);
@@ -469,3 +497,4 @@ mod tests {
         assert!(formatted.contains('\n'));
     }
 }
+    }
