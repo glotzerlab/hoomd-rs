@@ -361,6 +361,37 @@ impl ConvexHull<3> for Cartesian<3> {
     }
 }
 
+/// The cells of an initial simplex, oriented.
+///
+/// Each cell collects the vertices of the simplex but one, in order, and is
+/// oriented so that the vertex opposite it is on its negative side, which
+/// places points strictly outside a cell on its positive side, as `outside`
+/// decides. Note that in even dimensions this orientation is the opposite of
+/// the one the boundary chain of the simplex induces on its cells.
+///
+/// # Errors
+///
+/// Propagates the errors of `outside`.
+fn initial_cells<const N: usize>(
+    simplex: &[usize],
+    mut outside: impl FnMut(Facet<N>, usize) -> Result<bool, Error>,
+) -> Result<Vec<Facet<N>>, Error> {
+    debug_assert_eq!(simplex.len(), N + 1, "the simplex spans the space");
+    simplex
+        .iter()
+        .enumerate()
+        .map(|(omitted, &opposite)| {
+            let mut cell = Facet::new(std::array::from_fn(|k| {
+                simplex[if k < omitted { k } else { k + 1 }]
+            }));
+            if outside(cell, opposite)? {
+                cell.indices.swap(1, 2);
+            }
+            Ok(cell)
+        })
+        .collect()
+}
+
 /// Compute the convex hull of points in 3D with an incremental algorithm.
 ///
 /// Returns the indices of the points that are vertices of the hull in increasing order,
@@ -374,35 +405,17 @@ impl ConvexHull<3> for Cartesian<3> {
 /// boundary (horizon) of that set. Points that see no face lie inside or on
 /// the surface of the current hull and are skipped.
 fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<Facet<3>>), Error> {
-    let (t0, t1, t2, t3) = initial_tetrahedron(points)?;
-
-    // The four faces of the initial tetrahedron. Each face is oriented so
-    // that the vertex opposite it is on its negative side, which places
-    // points strictly outside a face on its positive side.
-    let mut faces: Vec<Facet<3>> = vec![
-        Facet::new([t0, t1, t2]),
-        Facet::new([t0, t2, t3]),
-        Facet::new([t0, t3, t1]),
-        Facet::new([t1, t3, t2]),
-    ];
-    let opposite = [t3, t1, t2, t0];
-    for (face, o) in faces.iter_mut().zip(opposite) {
-        if orient3d_at(points, *face, o) > 0.0 {
-            face.indices.swap(0, 1);
-        }
-    }
-
-    let in_initial = |i: usize| i == t0 || i == t1 || i == t2 || i == t3;
+    let simplex = initial_tetrahedron(points)?;
+    let mut faces = initial_cells(&simplex, |face, opposite| {
+        Ok(orient3d_at(points, face, opposite) > 0.0)
+    })?;
 
     // Reused scratch storage for the directed edges of the visible faces.
     let mut edges: Vec<(usize, usize)> = Vec::new();
     let mut horizon: Vec<(usize, usize)> = Vec::new();
 
-    for p in 0..points.len() {
-        if in_initial(p) {
-            continue;
-        }
-
+    // Insert every point that is not a vertex of the initial tetrahedron.
+    for p in (0..points.len()).filter(|&p| !simplex.contains(&p)) {
         // Remove the faces that p strictly sees and collect their directed edges
         edges.clear();
         faces.retain(|&face| {
@@ -546,7 +559,7 @@ fn find_third_point_on_hull<const N: usize>(
 ///
 /// Returns [`Error::DegeneratePolytope`] when all points coincide, all are colinear, or
 /// all are coplanar.
-fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, usize), Error> {
+fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<[usize; 4], Error> {
     let (a, b) = find_two_points_on_hull(points)?;
     let c = find_third_point_on_hull(points, a, b)?;
 
@@ -561,7 +574,7 @@ fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, 
         |i| orient3d_at(points, abc, i).abs(),
     )?;
 
-    Ok((a, b, c, d))
+    Ok([a, b, c, d])
 }
 
 /// The orientation determinant of four points given by index.
@@ -657,26 +670,9 @@ impl ConvexHull<4> for Cartesian<4> {
 /// hull evaluate to zero or less against them.
 fn incremental_hull_4d(points: &[Cartesian<4>]) -> Result<(Vec<usize>, Vec<Facet<4>>), Error> {
     let pentachoron = initial_pentachoron(points)?;
-
-    // The five cells of the initial pentachoron: the one that omits a vertex
-    // collects the other four, in order. Each is oriented so that the vertex
-    // opposite it is on its negative side, which places points strictly
-    // outside a cell on its positive side. Note that unlike in three
-    // dimensions, this orientation is the opposite of the one the boundary
-    // chain of the pentachoron induces on its cells.
-    let mut cells: Vec<Facet<4>> = pentachoron
-        .iter()
-        .enumerate()
-        .map(|(omitted, &opposite)| {
-            let mut cell = Facet::new(std::array::from_fn(|k| {
-                pentachoron[if k < omitted { k } else { k + 1 }]
-            }));
-            if orient4d_at(points, cell, opposite)? > 0 {
-                cell.indices.swap(1, 2);
-            }
-            Ok(cell)
-        })
-        .collect::<Result<_, Error>>()?;
+    let mut cells = initial_cells(&pentachoron, |cell, opposite| {
+        Ok(orient4d_at(points, cell, opposite)? > 0)
+    })?;
 
     // Reused scratch storage for the oriented boundary triangles of the visible
     // cells and for the cells that survive an insertion; swapping the buffers
