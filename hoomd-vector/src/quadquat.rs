@@ -332,6 +332,36 @@ impl Mul for QuadQuaternion {
     }
 }
 
+impl Rotation for QuadQuaternion {
+    /// Combine two rotations.
+    ///
+    /// The resulting rotation rotates by **first** `other` _followed by_
+    /// `self`, which is the quaternionic matrix product `self * other`.
+    #[inline]
+    fn combine(&self, other: &Self) -> Self {
+        *self * *other
+    }
+
+    /// The identity rotation.
+    #[inline]
+    fn identity() -> Self {
+        Self::default()
+    }
+
+    /// Inverse the rotation.
+    ///
+    /// The inverse of a unitary matrix is its conjugate transpose.
+    #[inline]
+    fn inverted(self) -> Self {
+        Self {
+            rows: [
+                [self.a().conjugate(), self.c().conjugate()],
+                [self.b().conjugate(), self.d().conjugate()],
+            ],
+        }
+    }
+}
+
 impl fmt::Display for QuadQuaternion {
     /// Format a [`QuadQuaternion`] as `[[a, b],\n [c, d]]`.
     ///
