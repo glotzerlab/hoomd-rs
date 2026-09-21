@@ -192,61 +192,60 @@ impl QuadQuaternion {
 impl Distribution<QuadQuaternion> for StandardUniform {
     /// Sample a uniformly random 5D rotation (Haar measure on SO(5)).
     ///
-    /// A [`QuadQuaternion`] is a 2×2 quaternionic unitary matrix, i.e. an element
-    /// of Sp(2) ≅ Spin(5), the double cover of SO(5). Since `Q` and `-Q` act
-    /// identically on a 5-vector, a Haar-distributed element of Sp(2) is exactly a
-    /// uniformly random SO(5) rotation. This implements the subgroup algorithm
-    /// specialized to Sp(2) ≅ S⁷ × S³ (Mezzadri 2007, "How to generate random
-    /// matrices from the classical compact groups", §6–8; Diaconis & Shahshahani
-    /// 1987), the direct generalization of the `Versor` sampler. No 5×5 matrix is
-    /// constructed.
+    /// A [`QuadQuaternion`] is an element of Sp(2) ≅ Spin(5), the double
+    /// cover of SO(5), so uniformly sampling Sp(2) is uniform on SO(5) as well.
+    /// This implements the Mezzadri subgroup algorithm specialized to
+    /// Sp(2) ≅ S⁷ × Sp(1), generalizing how we sample `Versor`s.
+    ///
+    /// Reference: F. Mezzadri, "How to generate random matrices from the
+    /// classical compact groups", Notices AMS 54, 592 (2007),
+    /// arXiv:math-ph/0609050, sections 5-8. <https://arxiv.org/pdf/math-ph/0609050>
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> QuadQuaternion {
-        // First column of the 2x2 quaternionic matrix, uniform on S^7 (the unit
-        // sphere in H^2 ~ R^8): normalize 8 i.i.d. standard normals into the pair
-        // (x1, x2).
-        let v: [f64; 8] = std::array::from_fn(|_| rng.sample::<f64, _>(StandardNormal));
-        let v_norm = v.iter().map(|x| x * x).sum::<f64>().sqrt();
-        let x1 = Quaternion::from([v[0] / v_norm, v[1] / v_norm, v[2] / v_norm, v[3] / v_norm]);
-        let x2 = Quaternion::from([v[4] / v_norm, v[5] / v_norm, v[6] / v_norm, v[7] / v_norm]);
+        // First column (a, b), uniform on S^7 in H^2: (Mezzadri eq. (8.10))
+        let a_unnormalized = Quaternion::from(std::array::from_fn(|_| {
+            rng.sample::<f64, _>(StandardNormal)
+        }));
+        let b_unnormalized = Quaternion::from(std::array::from_fn(|_| {
+            rng.sample::<f64, _>(StandardNormal)
+        }));
+        let norm = (a_unnormalized.norm_squared() + b_unnormalized.norm_squared()).sqrt();
+        let a = a_unnormalized * (1.0 / norm);
+        let c = b_unnormalized * (1.0 / norm);
 
-        // Residual Sp(1) ~ S^3 freedom: a uniform unit quaternion (as for Versor).
-        let q: [f64; 4] = std::array::from_fn(|_| rng.sample::<f64, _>(StandardNormal));
-        let q_norm = q.iter().map(|x| x * x).sum::<f64>().sqrt();
-        let q = Quaternion::from([q[0] / q_norm, q[1] / q_norm, q[2] / q_norm, q[3] / q_norm]);
+        // Uniform element of O(N) / O(N-1) ~ S^{N-1} (Mezzadri theorem 5).
+        // "Intuitively", I think this is similar to sampling an axis (a point on a
+        // 3-1=2-sphere) in the SO(3) case, but here our "axis" is a fiber (?) on S^7
+        let phase = *rng.random::<Versor>().get();
 
-        // Phase q1 of the first component x1 (Mezzadri eq 7.26). The -conj(q1)
-        // prefactor on the Householder reflection below is mandatory for Haar
-        // measure; without it the distribution is wrong.
-        let x1_norm = x1.norm();
-        let q1 = if x1_norm > 1e-12 {
-            x1 * (1.0 / x1_norm)
+        // Phase of x1 (Mezzadri eq. (7.26): x1 = q1 |x1|).
+        let a_norm = a.norm();
+        let q1 = if a_norm > 1e-12 {
+            a / a_norm
         } else {
             // Measure-zero degenerate case: x1 ~ 0, so the direction is e1.
             Quaternion::from([1.0, 0.0, 0.0, 0.0])
         };
 
-        // Householder vector u = normalize(v + q1*e1), with e1 = (1, 0) in H^2.
-        let u0 = x1 + q1;
-        let u1 = x2;
-        let u_norm = (u0.norm_squared() + u1.norm_squared()).sqrt();
-        let u0 = u0 * (1.0 / u_norm);
-        let u1 = u1 * (1.0 / u_norm);
+        // Householder vector u = normalize(v + q1 e1) (Mezzadri eq. (7.26)),
+        // with the closed form ||v + q1 e1||^2 = 2(1 + |x1|) (eq. (7.16)).
+        let u_norm = (2.0 * (1.0 + a_norm)).sqrt();
+        let u0 = (a + q1) * (1.0 / u_norm);
+        let u1 = c * (1.0 / u_norm);
 
-        // 2x2 quaternionic Householder reflection H2 = -conj(q1) * (I - 2 u u^*).
-        let one = Quaternion::from([1.0, 0.0, 0.0, 0.0]);
-        let mq1 = q1.conjugate() * -1.0;
-        let h00 = mq1 * (one - (u0 * u0.conjugate()) * 2.0);
-        let h01 = mq1 * ((u0 * u1.conjugate()) * -2.0);
-        let h10 = mq1 * ((u1 * u0.conjugate()) * -2.0);
-        let h11 = mq1 * (one - (u1 * u1.conjugate()) * 2.0);
+        // Householder reflection H = -conj(q1)(I - 2 u u^dagger) : (eq. (7.25-7.27)),
+        let neg_q1 = q1.conjugate() * -1.0;
+        let h00 = neg_q1 * (QUATERNION_BASIS[0] - u0 * u0.conjugate() * 2.0);
+        let h01 = neg_q1 * (u0 * u1.conjugate() * -2.0);
+        let h10 = neg_q1 * (u1 * u0.conjugate() * -2.0);
+        let h11 = neg_q1 * (QUATERNION_BASIS[0] - u1 * u1.conjugate() * 2.0);
 
-        // S = H2^dagger * diag(1, q): conjugate-transpose, then right-multiply the
-        // second column by q. The four blocks of S are the QuadQuaternion.
+        // Reconstruct the full group element from the blocks we've calculated
+        // S = H^dagger * diag(1, phase) (eq. 8.15).
         QuadQuaternion {
             rows: [
-                [h00.conjugate(), h10.conjugate() * q],
-                [h01.conjugate(), h11.conjugate() * q],
+                [h00.conjugate(), h10.conjugate() * phase],
+                [h01.conjugate(), h11.conjugate() * phase],
             ],
         }
     }
