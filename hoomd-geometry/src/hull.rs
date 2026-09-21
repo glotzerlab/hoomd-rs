@@ -486,6 +486,30 @@ fn find_two_points_on_hull<const N: usize>(
     Ok((a, b))
 }
 
+/// Find the next vertex of an initial simplex.
+///
+/// The point returned is the one that maximizes `rank` among those that are
+/// affinely independent of the `chosen` vertices, as `independent` decides
+/// exactly: it is a vertex of the hull, whatever the ranking breaks ties over.
+///
+/// # Errors
+///
+/// Returns [`Error::DegeneratePolytope`] when every point of the set lies in
+/// the span of the `chosen` vertices. Propagates the errors of `independent`.
+fn find_next_point_on_hull<const N: usize>(
+    points: &[Cartesian<N>],
+    chosen: &[usize],
+    mut is_independent: impl FnMut(usize) -> Result<bool, Error>,
+    rank: impl FnMut(usize) -> f64,
+) -> Result<usize, Error> {
+    farthest_point(
+        points,
+        |i| Ok(!chosen.contains(&i) && is_independent(i)?),
+        rank,
+    )?
+    .ok_or(Error::DegeneratePolytope)
+}
+
 /// Find an initial tetrahedron for the incremental hull.
 ///
 /// The four points are vertices of the hull: `a` is the lexographically smallest point,
@@ -502,28 +526,26 @@ fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, 
 
     // c is the farthest noncolinear point from the line ab, ranked by the
     // squared area of the triangle abp (Lagrange's identity).
-    let c = farthest_point(
+    let c = find_next_point_on_hull(
         points,
-        |i| Ok(![a, b].contains(&i) && !collinear([points[a], points[b], points[i]])),
+        &[a, b],
+        |i| Ok(!collinear([points[a], points[b], points[i]])),
         |i| {
             let ap = points[i] - points[a];
             ab.norm_squared() * ap.norm_squared() - ap.dot(&ab).powi(2)
         },
-    )?
-    // Otherwise, all points are collinear.
-    .ok_or(Error::DegeneratePolytope)?;
+    )?;
 
     // d is the farthest point from the plane through a, b and c, ranked by
     // the magnitude of the orientation determinant. Any nonzero value from
     // the exact predicate guarantees a valid tetrahedron.
     let abc = Facet::new([a, b, c]);
-    let d = farthest_point(
+    let d = find_next_point_on_hull(
         points,
-        |i| Ok(![a, b, c].contains(&i) && orient3d_at(points, abc, i) != 0.0),
+        &[a, b, c],
+        |i| Ok(orient3d_at(points, abc, i) != 0.0),
         |i| orient3d_at(points, abc, i).abs(),
-    )?
-    // Otherwise, all points are coplanar.
-    .ok_or(Error::DegeneratePolytope)?;
+    )?;
 
     Ok((a, b, c, d))
 }
@@ -726,26 +748,23 @@ fn initial_pentachoron(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
 
     // c is the farthest noncolinear point from the line ab, ranked by the
     // squared area of the triangle abp (Lagrange's identity).
-    let c = farthest_point(
+    let c = find_next_point_on_hull(
         points,
-        |i| Ok(![a, b].contains(&i) && !collinear([points[a], points[b], points[i]])),
+        &[a, b],
+        |i| Ok(!collinear([points[a], points[b], points[i]])),
         |i| {
             let ap = points[i] - points[a];
             ab.norm_squared() * ap.norm_squared() - ap.dot(&ab).powi(2)
         },
-    )?
-    // Otherwise, all points are colinear.
-    .ok_or(Error::DegeneratePolytope)?;
+    )?;
     let ac = points[c] - points[a];
 
     // d is the farthest noncoplanar point from the plane abc, ranked by the
     // squared volume of the parallelepiped spanned by ab, ac and ad.
-    let d = farthest_point(
+    let d = find_next_point_on_hull(
         points,
-        |i| {
-            Ok(![a, b, c].contains(&i)
-                && !coplanar_4d([points[a], points[b], points[c], points[i]]))
-        },
+        &[a, b, c],
+        |i| Ok(!coplanar_4d([points[a], points[b], points[c], points[i]])),
         |i| {
             let edges = Matrix {
                 rows: [
@@ -756,18 +775,17 @@ fn initial_pentachoron(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
             };
             edges.matmul(&edges.transpose()).determinant()
         },
-    )?
-    // Otherwise, all points are coplanar.
-    .ok_or(Error::DegeneratePolytope)?;
+    )?;
 
     // e is the farthest point off the hyperplane through a, b, c and d, ranked
     // by the magnitude of the determinant of the difference matrix. The exact
     // predicate must filter the candidates: a point can have a larger spurious
     // filtered determinant than another that is exactly off the hyperplane.
     let cell = Facet::new([a, b, c, d]);
-    let e = farthest_point(
+    let e = find_next_point_on_hull(
         points,
-        |i| Ok(![a, b, c, d].contains(&i) && orient4d_at(points, cell, i)? != 0),
+        &[a, b, c, d],
+        |i| Ok(orient4d_at(points, cell, i)? != 0),
         |i| {
             Matrix {
                 rows: cell.as_simplex(points).map(|p| (p - points[i]).coordinates),
@@ -775,9 +793,7 @@ fn initial_pentachoron(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
             .determinant()
             .abs()
         },
-    )?
-    // Otherwise, all points are hypercoplanar.
-    .ok_or(Error::DegeneratePolytope)?;
+    )?;
 
     Ok([a, b, c, d, e])
 }
