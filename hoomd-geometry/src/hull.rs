@@ -11,7 +11,7 @@ use serde_with::serde_as;
 
 use crate::{Error, orient4d::orient4d};
 use hoomd_linear_algebra::{MatMul, matrix::Matrix};
-use hoomd_vector::{Cartesian, Cross, InnerProduct};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 /// A facet of a convex hull: the indices of the `N` vertices of the hull that bound it,
 /// in the order given by [`ConvexHull::convex_hull`].
@@ -274,6 +274,31 @@ fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) 
     }
 }
 
+/// Compact a set of points to the vertices on a hull, provided as indices.
+///
+/// Returns the hull vertices in the order of the input points, and remaps the
+/// cells from indices of the input points to indices into the returned vertex
+/// list. The vertex indices are sorted, so a binary search locates the new
+/// position of each vertex.
+fn compact_hull<const N: usize>(
+    points: &[Cartesian<N>],
+    indices: Vec<usize>,
+    cells: &[Facet<N>],
+) -> (Vec<Cartesian<N>>, Vec<Facet<N>>) {
+    let position = |i: usize| {
+        indices
+            .binary_search(&i)
+            .expect("the vertices of a cell are vertices of the hull")
+    };
+    let facets = cells
+        .iter()
+        .map(|cell| Facet::new(cell.indices().map(position)))
+        .collect();
+    let vertices = indices.into_iter().map(|i| points[i]).collect();
+
+    (vertices, facets)
+}
+
 impl ConvexHull<3> for Cartesian<3> {
     /// Compute the convex hull of points in 3D with an incremental algorithm.
     ///
@@ -332,21 +357,7 @@ impl ConvexHull<3> for Cartesian<3> {
 
         let (indices, faces) = incremental_hull(&points)?;
 
-        // The faces index the input points, so remap them to the compacted list of hull
-        // vertices this method returns. The vertex indices are sorted, so a binary
-        // search locates the new position of each vertex.
-        let position = |i: usize| {
-            indices
-                .binary_search(&i)
-                .expect("the vertices of a face are vertices of the hull")
-        };
-        let facets = faces
-            .iter()
-            .map(|&[a, b, c]| Facet::new([position(a), position(b), position(c)]))
-            .collect();
-        let vertices = indices.into_iter().map(|i| points[i]).collect();
-
-        Ok((vertices, facets))
+        Ok(compact_hull(&points, indices, &faces))
     }
 }
 
@@ -362,17 +373,22 @@ impl ConvexHull<3> for Cartesian<3> {
 /// which are removed and replaced by new faces joining the point to the
 /// boundary (horizon) of that set. Points that see no face lie inside or on
 /// the surface of the current hull and are skipped.
-fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 3]>), Error> {
+fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<Facet<3>>), Error> {
     let (t0, t1, t2, t3) = initial_tetrahedron(points)?;
 
     // The four faces of the initial tetrahedron. Each face is oriented so
     // that the vertex opposite it is on its negative side, which places
     // points strictly outside a face on its positive side.
-    let mut faces: Vec<[usize; 3]> = vec![[t0, t1, t2], [t0, t2, t3], [t0, t3, t1], [t1, t3, t2]];
+    let mut faces: Vec<Facet<3>> = vec![
+        Facet::new([t0, t1, t2]),
+        Facet::new([t0, t2, t3]),
+        Facet::new([t0, t3, t1]),
+        Facet::new([t1, t3, t2]),
+    ];
     let opposite = [t3, t1, t2, t0];
     for (face, o) in faces.iter_mut().zip(opposite) {
-        if orient3d_at(points, face[0], face[1], face[2], o) > 0.0 {
-            face.swap(0, 1);
+        if orient3d_at(points, *face, o) > 0.0 {
+            face.indices.swap(0, 1);
         }
     }
 
@@ -390,10 +406,11 @@ fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 
         // Remove the faces that p strictly sees and collect their directed edges
         edges.clear();
         faces.retain(|&face| {
-            if orient3d_at(points, face[0], face[1], face[2], p) > 0.0 {
-                edges.push((face[0], face[1]));
-                edges.push((face[1], face[2]));
-                edges.push((face[2], face[0]));
+            if orient3d_at(points, face, p) > 0.0 {
+                let [a, b, c] = face.indices();
+                edges.push((a, b));
+                edges.push((b, c));
+                edges.push((c, a));
                 false
             } else {
                 true
@@ -417,22 +434,56 @@ fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 
         );
 
         for &(u, v) in &horizon {
-            faces.push([u, v, p]);
+            faces.push(Facet::new([u, v, p]));
         }
     }
 
     // The vertices of the hull are the vertices of the final faces.
-    let mut on_hull = vec![false; points.len()];
-    for face in &faces {
-        for &i in face {
-            on_hull[i] = true;
-        }
-    }
-    // let on_hull = (0..points.len())
-    //     .map(|i| faces.iter().any(|f| f.contains(&i)))
-    //     .collect::<Vec<bool>>();
+    let mut vertices: Vec<usize> = faces.iter().flat_map(Facet::indices).collect();
+    vertices.sort_unstable();
+    vertices.dedup();
 
-    Ok(((0..points.len()).filter(|&i| on_hull[i]).collect(), faces))
+    Ok((vertices, faces))
+}
+
+/// Seed an initial simplex with two vertices of the hull.
+///
+/// The first vertex `a` is the lexicographically smallest point of the set,
+/// and the second `b` is the point farthest from it.
+///
+/// # Errors
+///
+/// Returns [`Error::DegeneratePolytope`] when every point coincides with `a`.
+fn find_two_points_on_hull<const N: usize>(
+    points: &[Cartesian<N>],
+) -> Result<(usize, usize), Error> {
+    // a is the lowest, leftmost point in the set.
+    let a = points
+        .iter()
+        .position_min_by(|x, y| {
+            x.coordinates
+                .iter()
+                .zip(&y.coordinates)
+                .fold(Ordering::Equal, |order, (&x, &y)| {
+                    order.then(x.total_cmp(&y))
+                })
+        })
+        .expect("the point set is not empty");
+
+    // b is the point farthest from a.
+    let b = (0..points.len())
+        .filter(|&i| i != a)
+        .max_by(|&i, &j| {
+            (points[i] - points[a])
+                .norm_squared()
+                .total_cmp(&(points[j] - points[a]).norm_squared())
+        })
+        .expect("there are at least two points");
+    if points[b] == points[a] {
+        return Err(Error::DegeneratePolytope); // Every point coincides with a.
+    }
+
+    Ok((a, b))
 }
 
 /// Find an initial tetrahedron for the incremental hull.
@@ -446,59 +497,33 @@ fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 
 /// Returns [`Error::DegeneratePolytope`] when all points coincide, all are colinear, or
 /// all are coplanar.
 fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, usize), Error> {
-    // a is the lowest, leftmost point in the set
-    let a = points
-        .iter()
-        .position_min_by(|x, y| {
-            x[0].total_cmp(&y[0])
-                .then(x[1].total_cmp(&y[1]))
-                .then(x[2].total_cmp(&y[2]))
-        })
-        .expect("the point set is not empty");
+    let (a, b) = find_two_points_on_hull(points)?;
+    let ab = points[b] - points[a];
 
-    // b is the point farthest from a.
-    let b = (0..points.len())
-        .filter(|&i| i != a)
-        .max_by(|&i, &j| {
-            (points[i] - points[a])
-                .norm_squared()
-                .total_cmp(&(points[j] - points[a]).norm_squared())
-        })
-        .expect("there are at least two points");
-    if (points[b] - points[a]).norm_squared() == 0.0 {
-        return Err(Error::DegeneratePolytope); // Every point coincides with a.
-    }
-
-    // c is the farthest noncolinear point from the segment ab.
-    let direction = points[b] - points[a];
-    let (c, _) = points
-        .iter()
-        .enumerate()
-        .filter(|&(i, _)| i != a && i != b && !collinear(points, a, b, i))
-        .fold((None, 0.0), |(c, cd), (i, &p)| {
-            let d = (p - points[a]).cross(&direction).norm_squared();
-            if d > cd { (Some(i), d) } else { (c, cd) }
-        });
-
+    // c is the farthest noncolinear point from the line ab, ranked by the
+    // squared area of the triangle abp (Lagrange's identity).
+    let c = farthest_point(
+        points,
+        |i| Ok(![a, b].contains(&i) && !collinear([points[a], points[b], points[i]])),
+        |i| {
+            let ap = points[i] - points[a];
+            ab.norm_squared() * ap.norm_squared() - ap.dot(&ab).powi(2)
+        },
+    )?
     // Otherwise, all points are collinear.
-    let c = c.ok_or(Error::DegeneratePolytope)?;
+    .ok_or(Error::DegeneratePolytope)?;
 
-    // d is the point farthest from the plane through a, b and c.
-    // Any nonzero value from the robust predicate guarantees our tetrahedron is valid.
-    let (mut d, mut d_volume) = (None, 0.0);
-    for i in 0..points.len() {
-        if i == a || i == b || i == c {
-            continue;
-        }
-        let volume = orient3d_at(points, a, b, c, i).abs();
-        if volume > d_volume {
-            d_volume = volume;
-            d = Some(i);
-        }
-    }
-
+    // d is the farthest point from the plane through a, b and c, ranked by
+    // the magnitude of the orientation determinant. Any nonzero value from
+    // the exact predicate guarantees a valid tetrahedron.
+    let abc = Facet::new([a, b, c]);
+    let d = farthest_point(
+        points,
+        |i| Ok(![a, b, c].contains(&i) && orient3d_at(points, abc, i) != 0.0),
+        |i| orient3d_at(points, abc, i).abs(),
+    )?
     // Otherwise, all points are coplanar.
-    let d = d.ok_or(Error::DegeneratePolytope)?;
+    .ok_or(Error::DegeneratePolytope)?;
 
     Ok((a, b, c, d))
 }
@@ -509,35 +534,15 @@ fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, 
 /// `(a, b, c)` oriented as by [`incremental_hull`], negative when it lies strictly
 /// inside, and zero when the four points are coplanar.
 #[inline]
-fn orient3d_at(points: &[Cartesian<3>], a: usize, b: usize, c: usize, d: usize) -> f64 {
+fn orient3d_at(points: &[Cartesian<3>], face: Facet<3>, test: usize) -> f64 {
+    let [a, b, c] = face.as_simplex(points);
     let coord = |p: &Cartesian<3>| robust::Coord3D {
         x: p[0],
         y: p[1],
         z: p[2],
     };
 
-    robust::orient3d(
-        coord(&points[a]),
-        coord(&points[b]),
-        coord(&points[c]),
-        coord(&points[d]),
-    )
-}
-
-/// Whether three points given by index are exactly collinear.
-///
-/// The points are collinear when they are collinear in each of the three coordinate
-/// plane projections, decided by the two-dimensional exact predicate.
-#[inline]
-fn collinear(points: &[Cartesian<3>], a: usize, b: usize, c: usize) -> bool {
-    let coord = |p: &Cartesian<3>, i: usize, j: usize| robust::Coord { x: p[i], y: p[j] };
-    [(0, 1), (0, 2), (1, 2)].iter().all(|&(i, j)| {
-        robust::orient2d(
-            coord(&points[a], i, j),
-            coord(&points[b], i, j),
-            coord(&points[c], i, j),
-        ) == 0.0
-    })
+    robust::orient3d(coord(&a), coord(&b), coord(&c), coord(&points[test]))
 }
 
 impl ConvexHull<4> for Cartesian<4> {
@@ -603,21 +608,7 @@ impl ConvexHull<4> for Cartesian<4> {
 
         let (indices, cells) = incremental_hull_4d(&points)?;
 
-        // The cells index the input points, so remap them to the compacted list
-        // of hull vertices this method returns. The vertex indices are sorted,
-        // so a binary search locates the new position of each vertex.
-        let position = |i: usize| {
-            indices
-                .binary_search(&i)
-                .expect("the vertices of a cell are vertices of the hull")
-        };
-        let facets = cells
-            .iter()
-            .map(|cell| Facet::new(cell.indices().map(position)))
-            .collect();
-        let vertices = indices.into_iter().map(|i| points[i]).collect();
-
-        Ok((vertices, facets))
+        Ok(compact_hull(&points, indices, &cells))
     }
 }
 
@@ -730,36 +721,14 @@ fn build_cone(p: usize, triangle: Facet<3>, flipped: bool) -> Facet<4> {
 /// resolved exactly.
 #[expect(clippy::many_single_char_names, reason = "clarity")]
 fn initial_pentachoron(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
-    // a is the lexicographically smallest point in the set.
-    let a = points
-        .iter()
-        .position_min_by(|x, y| {
-            x[0].total_cmp(&y[0])
-                .then(x[1].total_cmp(&y[1]))
-                .then(x[2].total_cmp(&y[2]))
-                .then(x[3].total_cmp(&y[3]))
-        })
-        .expect("the point set is not empty");
-
-    // b is the point farthest from a.
-    let b = (0..points.len())
-        .filter(|&i| i != a)
-        .max_by(|&i, &j| {
-            (points[i] - points[a])
-                .norm_squared()
-                .total_cmp(&(points[j] - points[a]).norm_squared())
-        })
-        .expect("there are at least two points");
-    if points[b] == points[a] {
-        return Err(Error::DegeneratePolytope); // Every point coincides with a.
-    }
+    let (a, b) = find_two_points_on_hull(points)?;
     let ab = points[b] - points[a];
 
     // c is the farthest noncolinear point from the line ab, ranked by the
     // squared area of the triangle abp (Lagrange's identity).
     let c = farthest_point(
         points,
-        |i| Ok(![a, b].contains(&i) && !collinear_4d(points, a, b, i)),
+        |i| Ok(![a, b].contains(&i) && !collinear([points[a], points[b], points[i]])),
         |i| {
             let ap = points[i] - points[a];
             ab.norm_squared() * ap.norm_squared() - ap.dot(&ab).powi(2)
@@ -773,7 +742,10 @@ fn initial_pentachoron(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
     // squared volume of the parallelepiped spanned by ab, ac and ad.
     let d = farthest_point(
         points,
-        |i| Ok(![a, b, c].contains(&i) && !coplanar_4d(points, a, b, c, i)),
+        |i| {
+            Ok(![a, b, c].contains(&i)
+                && !coplanar_4d([points[a], points[b], points[c], points[i]]))
+        },
         |i| {
             let edges = Matrix {
                 rows: [
@@ -823,8 +795,8 @@ fn initial_pentachoron(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
 /// # Errors
 ///
 /// Propagates the errors of `eligible`.
-fn farthest_point(
-    points: &[Cartesian<4>],
+fn farthest_point<const N: usize>(
+    points: &[Cartesian<N>],
     mut eligible: impl FnMut(usize) -> Result<bool, Error>,
     mut rank: impl FnMut(usize) -> f64,
 ) -> Result<Option<usize>, Error> {
@@ -856,21 +828,22 @@ fn orient4d_at(points: &[Cartesian<4>], cell: Facet<4>, test: usize) -> Result<i
     orient4d(a, b, c, d, points[test])
 }
 
-/// Whether three points given by index are exactly collinear.
+/// Whether the three vertices of a simplex are exactly collinear.
 ///
-/// The points are collinear when they are collinear in each of the six coordinate plane
-/// projections, decided by the two-dimensional exact predicate. The projected
-/// coordinates are first divided by a common power of two, which is exact and keeps the
-/// projected determinants from overflowing. Unlike `orient4d`, the lower-dimensional
-/// predicates are exact only while their products remain finite.
+/// The points are collinear when they are collinear in each coordinate plane
+/// projection, decided by the two-dimensional exact predicate. The projected
+/// coordinates are first divided by a common power of two, which is exact and
+/// keeps the projected determinants from overflowing: unlike `orient4d`, the
+/// lower-dimensional predicates are exact only while their products remain
+/// finite.
 #[inline]
-fn collinear_4d(points: &[Cartesian<4>], a: usize, b: usize, c: usize) -> bool {
-    let scale = coordinate_scale(&[points[a], points[b], points[c]]);
-    let scaled = [points[a] / scale, points[b] / scale, points[c] / scale];
-    let coord = |p: &Cartesian<4>, i: usize, j: usize| robust::Coord { x: p[i], y: p[j] };
-    [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]
-        .iter()
-        .all(|&(i, j)| {
+fn collinear<const N: usize>(simplex: [Cartesian<N>; 3]) -> bool {
+    let scale = coordinate_scale(&simplex);
+    let scaled = simplex.map(|p| p / scale);
+    let coord = |p: &Cartesian<N>, i: usize, j: usize| robust::Coord { x: p[i], y: p[j] };
+    (0..N)
+        .flat_map(|i| (i + 1..N).map(move |j| (i, j)))
+        .all(|(i, j)| {
             robust::orient2d(
                 coord(&scaled[0], i, j),
                 coord(&scaled[1], i, j),
@@ -879,19 +852,15 @@ fn collinear_4d(points: &[Cartesian<4>], a: usize, b: usize, c: usize) -> bool {
         })
 }
 
-/// Check whether four points given by index are exactly coplanar.
+/// Whether the four vertices of a simplex are exactly coplanar.
 ///
-/// The points are coplanar when they are coplanar in each of the four coordinate
-/// triple projections, decided by the three-dimensional exact predicate.
+/// The points are coplanar when they are coplanar in each coordinate triple
+/// projection, decided by the three-dimensional exact predicate, again after
+/// division by a common power of two (see [`collinear`]).
 #[inline]
-fn coplanar_4d(points: &[Cartesian<4>], a: usize, b: usize, c: usize, d: usize) -> bool {
-    let scale = coordinate_scale(&[points[a], points[b], points[c], points[d]]);
-    let scaled = [
-        points[a] / scale,
-        points[b] / scale,
-        points[c] / scale,
-        points[d] / scale,
-    ];
+fn coplanar_4d(simplex: [Cartesian<4>; 4]) -> bool {
+    let scale = coordinate_scale(&simplex);
+    let scaled = simplex.map(|p| p / scale);
     let coord = |p: &Cartesian<4>, i: usize, j: usize, k: usize| robust::Coord3D {
         x: p[i],
         y: p[j],
@@ -914,7 +883,7 @@ fn coplanar_4d(points: &[Cartesian<4>], a: usize, b: usize, c: usize, d: usize) 
 /// Dividing the coordinates by `scale` is exact and brings them into `[-2, 2)`, so the
 /// products inside the 2D and 3D predicates cannot overflow.
 #[inline]
-fn coordinate_scale(points: &[Cartesian<4>]) -> f64 {
+fn coordinate_scale<const N: usize>(points: &[Cartesian<N>]) -> f64 {
     /// The fraction bits of an `f64`; `MANTISSA_DIGITS` counts the implicit one.
     const FRACTION_BITS: u32 = f64::MANTISSA_DIGITS - 1;
 
@@ -1592,12 +1561,12 @@ mod tests {
     ///   matched by its reverse.
     /// * Euler's formula `V - E + F = 2` holds.
     /// * The reported vertices are exactly the vertices of the faces, in order
-    fn validate_3d_hull(points: &[Cartesian<3>], vertices: &[usize], faces: &[[usize; 3]]) {
+    fn validate_3d_hull(points: &[Cartesian<3>], vertices: &[usize], faces: &[Facet<3>]) {
         // No point is strictly outside any face.
         for &face in faces {
             for q in 0..points.len() {
                 check!(
-                    orient3d_at(points, face[0], face[1], face[2], q) <= 0.0,
+                    orient3d_at(points, face, q) <= 0.0,
                     "point {q} lies outside the face {face:?}"
                 );
             }
@@ -1606,7 +1575,10 @@ mod tests {
         // The surface is closed and consistently oriented.
         let mut edges: Vec<(usize, usize)> = faces
             .iter()
-            .flat_map(|&[a, b, c]| [(a, b), (b, c), (c, a)])
+            .flat_map(|&face| {
+                let [a, b, c] = face.indices();
+                [(a, b), (b, c), (c, a)]
+            })
             .collect();
         edges.sort_unstable();
         // Every directed edge appears exactly once ...
@@ -1635,7 +1607,7 @@ mod tests {
         );
 
         // The vertices are the face vertices in increasing order.
-        let mut face_vertices: Vec<usize> = faces.iter().flatten().copied().collect();
+        let mut face_vertices: Vec<usize> = faces.iter().flat_map(Facet::indices).collect();
         face_vertices.sort_unstable();
         face_vertices.dedup();
         check!(
@@ -1822,7 +1794,10 @@ mod tests {
         let origin = Cartesian::<3>::default();
         let volume: f64 = faces
             .iter()
-            .map(|&[a, b, c]| Simplex3::from([points[a], points[b], points[c], origin]).volume())
+            .map(|&face| {
+                let [a, b, c] = face.as_simplex(&points);
+                Simplex3::from([a, b, c, origin]).volume()
+            })
             .sum();
 
         assert_relative_eq!(volume, 8.0);
