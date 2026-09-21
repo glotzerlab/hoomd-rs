@@ -18,7 +18,7 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 workspace = true
 
 [dependencies]
-approxim.workspace = true
+approxim = { workspace = true, features = ["array_impl"] }
 rand.workspace = true
 rand_distr.workspace = true
 serde.workspace = true
