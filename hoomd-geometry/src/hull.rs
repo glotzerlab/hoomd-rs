@@ -6,6 +6,7 @@
 use std::{borrow::Borrow, cmp::Ordering};
 
 use itertools::Itertools;
+use robust::Coord;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -193,13 +194,11 @@ impl ConvexHull<2> for Cartesian<2> {
 
         // Repeat until all interior points are gone
         while next_candidate < points.len() {
-            let c = points[next_candidate];
             while n_vertices_on_hull >= 2 {
-                let p = points[n_vertices_on_hull - 2];
-                let n = points[n_vertices_on_hull - 1];
+                let edge = Facet::new([n_vertices_on_hull - 2, n_vertices_on_hull - 1]);
 
-                if predicate_orient2d((p, n), c) <= 0 {
-                    // Point n is inside the hull, remove it by shrinking the hull
+                if orient(&points, edge, next_candidate)? <= 0 {
+                    // The last vertex of the edge is inside the hull, remove it
                     n_vertices_on_hull -= 1;
                 } else {
                     break;
@@ -242,32 +241,65 @@ fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
     (f64::atan2(diff[1], diff[0]), diff.dot(&diff))
 }
 
-/// Determines whether a point `test` is to the left, right, or collinear with `edge`.
+/// The orientation of a point against a facet of the hull, in two, three or four dimensions.
 ///
-/// The sign of the orientation determinant is computed with [`robust::orient2d`],
-/// Shewchuk's adaptive precision predicate: the sign is therefore *exact* for the
-/// coordinates as stored, and the resulting hull is exact up to the precision of the
-/// cooridinates themselves.
+/// The sign of the returned value is positive when `test` lies strictly outside the
+/// facet oriented as the hull builds it, negative when it lies strictly inside, and
+/// zero when it lies on it.
 ///
-/// Returns 1 when `test` lies to the left of the directed edge, -1 when it lies to the
-/// right, and 0 when the three points are exactly collinear.
+/// The two- and three-dimensional tests use the `robust` adaptive precision
+/// predicates, which compute the exact sign of the orientation determinant using a
+/// floating-point expansion; the computes the exact sign with integer arithmetic.
+/// The sign is therefore exact for the coordinates as stored: it is antisymmetric in
+/// its arguments (swapping two points negates the sign) and invariant under cyclic
+/// permutation.
 ///
-/// # Note
+/// # Panics
 ///
-/// Because the sign is exact, it is antisymmetric in its arguments (swapping two points
-/// points negates the sign) and invariant under cyclic permutation of the three inputs.
+/// Panics when `N` is not 2, 3 or 4.
+///
+/// # Errors
+///
+/// Returns [`Error::NumericallyAmbiguousPolytope`] when a four-dimensional
+/// orientation cannot be resolved exactly.
+#[expect(clippy::many_single_char_names, reason = "clarity")]
+#[expect(clippy::panic, reason = "the dimension is a compile-time parameter")]
 #[inline]
-fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) -> i64 {
-    let orientation = robust::orient2d(
-        robust::Coord { x: p[0], y: p[1] },
-        robust::Coord { x: q[0], y: q[1] },
-        robust::Coord {
-            x: test[0],
-            y: test[1],
-        },
-    );
+fn orient<const N: usize>(
+    points: &[Cartesian<N>],
+    facet: Facet<N>,
+    test: usize,
+) -> Result<i64, Error> {
+    let simplex = facet.as_simplex(points);
+    let t = points[test];
+    match N {
+        2 => {
+            let [a, b, t] = [simplex[0], simplex[1], t].map(|p| robust::Coord { x: p[0], y: p[1] });
+            Ok(sign(robust::orient2d(a, b, t)))
+        }
+        3 => {
+            let [a, b, c, t] = [simplex[0], simplex[1], simplex[2], t].map(|p| robust::Coord3D {
+                x: p[0],
+                y: p[1],
+                z: p[2],
+            });
 
-    match orientation.total_cmp(&0.0) {
+            Ok(sign(robust::orient3d(a, b, c, t)))
+        }
+
+        4 => {
+            let [a, b, c, d, t] = [simplex[0], simplex[1], simplex[2], simplex[3], t]
+                .map(|p: Cartesian<N>| Cartesian::from(std::array::from_fn(|k| p[k])));
+            orient4d(a, b, c, d, t)
+        }
+        _ => panic!("the orientation predicate requires a dimension of 2, 3 or 4, not {N}"),
+    }
+}
+
+/// The sign of a value: 1, -1, or 0.
+#[inline]
+fn sign(value: f64) -> i64 {
+    match value.total_cmp(&0.0) {
         Ordering::Greater => 1,
         Ordering::Less => -1,
         Ordering::Equal => 0,
@@ -407,7 +439,7 @@ fn initial_cells<const N: usize>(
 fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<Facet<3>>), Error> {
     let simplex = initial_tetrahedron(points)?;
     let mut faces = initial_cells(&simplex, |face, opposite| {
-        Ok(orient3d_at(points, face, opposite) > 0.0)
+        Ok(orient(points, face, opposite)? > 0)
     })?;
 
     // Reused scratch storage for the directed edges of the visible faces.
@@ -416,10 +448,15 @@ fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<Facet<3>
 
     // Insert every point that is not a vertex of the initial tetrahedron.
     for p in (0..points.len()).filter(|&p| !simplex.contains(&p)) {
-        // Remove the faces that p strictly sees and collect their directed edges
+        // Remove the faces that p strictly sees and collect their directed
+        // edges. The orientation predicate is fallible, so the faces are
+        // partitioned into two buffers instead of retained in place.
         edges.clear();
+        // The adaptive two- and three-dimensional predicates are total, so
+        // the orientation never fails here; retaining the faces in place
+        // keeps the scan cheaper than partitioning into two buffers.
         faces.retain(|&face| {
-            if orient3d_at(points, face, p) > 0.0 {
+            if orient(points, face, p).is_ok_and(|sign| sign > 0) {
                 let [a, b, c] = face.indices();
                 edges.push((a, b));
                 edges.push((b, c));
@@ -564,34 +601,23 @@ fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<[usize; 4], Error> {
     let c = find_third_point_on_hull(points, a, b)?;
 
     // d is the farthest point from the plane through a, b and c, ranked by
-    // the magnitude of the orientation determinant. Any nonzero value from
-    // the exact predicate guarantees a valid tetrahedron.
+    // the magnitude of the determinant of the difference matrix. Any nonzero
+    // value from the exact predicate guarantees a valid tetrahedron.
     let abc = Facet::new([a, b, c]);
     let d = find_next_point_on_hull(
         points,
         &[a, b, c],
-        |i| Ok(orient3d_at(points, abc, i) != 0.0),
-        |i| orient3d_at(points, abc, i).abs(),
+        |i| Ok(orient(points, abc, i)? != 0),
+        |i| {
+            Matrix {
+                rows: abc.as_simplex(points).map(|p| (p - points[i]).coordinates),
+            }
+            .determinant()
+            .abs()
+        },
     )?;
 
     Ok([a, b, c, d])
-}
-
-/// The orientation determinant of four points given by index.
-///
-/// The sign of the returned value is positive when `d` lies strictly outside the face
-/// `(a, b, c)` oriented as by [`incremental_hull`], negative when it lies strictly
-/// inside, and zero when the four points are coplanar.
-#[inline]
-fn orient3d_at(points: &[Cartesian<3>], face: Facet<3>, test: usize) -> f64 {
-    let [a, b, c] = face.as_simplex(points);
-    let coord = |p: &Cartesian<3>| robust::Coord3D {
-        x: p[0],
-        y: p[1],
-        z: p[2],
-    };
-
-    robust::orient3d(coord(&a), coord(&b), coord(&c), coord(&points[test]))
 }
 
 impl ConvexHull<4> for Cartesian<4> {
@@ -671,7 +697,7 @@ impl ConvexHull<4> for Cartesian<4> {
 fn incremental_hull_4d(points: &[Cartesian<4>]) -> Result<(Vec<usize>, Vec<Facet<4>>), Error> {
     let pentachoron = initial_pentachoron(points)?;
     let mut cells = initial_cells(&pentachoron, |cell, opposite| {
-        Ok(orient4d_at(points, cell, opposite)? > 0)
+        Ok(orient(points, cell, opposite)? > 0)
     })?;
 
     // Reused scratch storage for the oriented boundary triangles of the visible
@@ -686,7 +712,7 @@ fn incremental_hull_4d(points: &[Cartesian<4>]) -> Result<(Vec<usize>, Vec<Facet
         triangles.clear();
         retained.clear();
         for cell in cells.drain(..) {
-            if orient4d_at(points, cell, p)? > 0 {
+            if orient(points, cell, p)? > 0 {
                 triangles.extend(boundary_triangles(cell));
             } else {
                 retained.push(cell);
@@ -784,7 +810,7 @@ fn initial_pentachoron(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
     let e = find_next_point_on_hull(
         points,
         &[a, b, c, d],
-        |i| Ok(orient4d_at(points, cell, i)? != 0),
+        |i| Ok(orient(points, cell, i)? != 0),
         |i| {
             Matrix {
                 rows: cell.as_simplex(points).map(|p| (p - points[i]).coordinates),
@@ -825,22 +851,6 @@ fn farthest_point<const N: usize>(
             Ok(if rank > best.1 { (Some(i), rank) } else { best })
         })
         .map(|best| best.0)
-}
-
-/// The orientation determinant of five points given by index.
-///
-/// The sign of the returned value is positive when `test` lies strictly outside the
-/// cell `(a, b, c, d)` oriented as by [`incremental_hull_4d`], negative when it lies
-/// strictly inside, and zero when the five points are hypercoplanar.
-///
-/// # Errors
-///
-/// Returns [`Error::NumericallyAmbiguousPolytope`] when the orientation cannot be
-/// resolved exactly.
-#[inline]
-fn orient4d_at(points: &[Cartesian<4>], cell: Facet<4>, test: usize) -> Result<i64, Error> {
-    let [a, b, c, d] = cell.as_simplex(points);
-    orient4d(a, b, c, d, points[test])
 }
 
 /// Whether the three vertices of a simplex are exactly collinear.
@@ -1514,23 +1524,26 @@ mod tests {
     }
 
     #[rstest]
-    fn test_predicate_translation_invariance() {
-        let p = Cartesian::from([0.0, 0.0]);
-        let q = Cartesian::from([1.0, 1.0 - 1e-8]);
+    fn test_orient_translation_invariance() {
+        let edge = Cartesian::from([1.0, 1.0 - 1e-8]);
         let test = Cartesian::from([2.0, 2.0]);
+        let collinear = Cartesian::from([1.0, 1.0]);
+        let right = Cartesian::from([1.0, 1.0 + 1e-8]);
+
+        let orient_from_origin = |edge: Cartesian<2>, offset: f64| {
+            let offset = Cartesian::from([offset, offset]);
+            let points = [Cartesian::default(), edge + offset, test + offset];
+            orient(&points, Facet::new([0, 1]), 2)
+        };
 
         for offset in [0.0, 1.0, 1e3, 1e5, 1e8] {
-            let offset = Cartesian::from([offset, offset]);
-            check!(predicate_orient2d((p + offset, q + offset), test + offset) == 1);
+            check!(orient_from_origin(edge, offset) == Ok(1));
         }
 
         // The same holds for collinear and right-turning triples.
-        let q_collinear = Cartesian::from([1.0, 1.0]);
-        let q_right = Cartesian::from([1.0, 1.0 + 1e-8]);
         for offset in [0.0, 1e3, 1e8] {
-            let offset = Cartesian::from([offset, offset]);
-            check!(predicate_orient2d((p + offset, q_collinear + offset), test + offset) == 0);
-            check!(predicate_orient2d((p + offset, q_right + offset), test + offset) == -1);
+            check!(orient_from_origin(collinear, offset) == Ok(0));
+            check!(orient_from_origin(right, offset) == Ok(-1));
         }
     }
     /// The 8 vertices of a cube with edge length 2.
@@ -1581,7 +1594,7 @@ mod tests {
         for &face in faces {
             for q in 0..points.len() {
                 check!(
-                    orient3d_at(points, face, q) <= 0.0,
+                    orient(points, face, q).expect("the coordinates are resolvable") <= 0,
                     "point {q} lies outside the face {face:?}"
                 );
             }
@@ -1904,7 +1917,7 @@ mod tests {
         // No point is strictly outside any cell.
         for (&cell, q) in cells.iter().cartesian_product(0..points.len()) {
             check!(
-                orient4d_at(points, cell, q).expect("the coordinates are resolvable") <= 0,
+                orient(points, cell, q).expect("the coordinates are resolvable") <= 0,
                 "point {q} lies outside the cell {cell:?}"
             );
         }
