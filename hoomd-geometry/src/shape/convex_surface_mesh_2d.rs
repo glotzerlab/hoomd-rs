@@ -112,7 +112,9 @@ impl ConvexSurfaceMesh2d {
     where
         I: IntoIterator<Item = Cartesian<2>>,
     {
-        let vertices = Cartesian::<2>::convex_hull(points)?;
+        // The edges of the hull are implied by the counter-clockwise order of the
+        // vertices, so we just discard the facets.
+        let (vertices, _edges) = Cartesian::<2>::convex_hull(points)?;
 
         Ok(Self {
             bounding_radius: ConvexPolytope::<2>::bounding_radius(&vertices),

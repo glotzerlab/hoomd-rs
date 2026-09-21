@@ -881,11 +881,8 @@ mod tests {
             assert_relative_eq!(vertex.norm_squared(), solid.vertices()[0].norm_squared());
         }
 
-        assert_eq!(
-            Cartesian::<3>::convex_hull(solid.vertices())
-                .expect("platonic solid vertices form a convex body")
-                .len(),
-            n
-        );
+        let (hull_vertices, _facets) = Cartesian::<3>::convex_hull(solid.vertices())
+            .expect("platonic solid vertices form a convex body");
+        assert_eq!(hull_vertices.len(), n);
     }
 }

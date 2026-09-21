@@ -6,6 +6,9 @@
 
 * `[hoomd-microstate]`: Add the `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and `max_ghosts_64` cargo features that set the maximum number of ghosts per site. The largest enabled feature is used when multiple are set simultaneously.
 * `[hoomd-geometry]`: Four-dimensional exact orientation predicate (#416).
+* `[hoomd-geometry]`: New `ConvexHull` trait, which subsumes `ConvexSurfaceMesh2d::construct_convex_hull` and adds a new implementation for three-dimensional hulls (#426).
+* `[hoomd-geometry]`: New `ConvexSurfaceMesh3d` type for explicit convex faceted bodies in three dimensions (#426).
+
 
 *Changed:*
 
