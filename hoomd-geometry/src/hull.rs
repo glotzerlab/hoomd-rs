@@ -940,10 +940,13 @@ mod tests {
         Volume,
         shape::{ConvexPolyhedron, Simplex3},
     };
+    use std::iter::once;
+
     use approxim::assert_relative_eq;
     use assert2::check;
-    use hoomd_vector::{Rotate, Versor};
-    use rand::{RngExt, SeedableRng, rngs::StdRng};
+    use hoomd_vector::{Angle, Rotate, Versor};
+    use itertools::iproduct;
+    use rand::{RngExt, SeedableRng, rngs::StdRng, seq::SliceRandom};
     use rstest::*;
     use rstest_reuse::{self, apply, template};
 
@@ -1792,5 +1795,409 @@ mod tests {
             .sum();
 
         assert_relative_eq!(volume, 8.0);
+    }
+
+    /// TODO: replace when the Xenocollide 4d pr is merged
+    /// The 5 vertices of a pentachoron with edge length `2*sqrt(2)`.
+    fn pentachoron() -> Vec<Cartesian<4>> {
+        vec![
+            [1.0, 1.0, 1.0, 1.0].into(),
+            [1.0, -1.0, -1.0, 1.0].into(),
+            [-1.0, 1.0, -1.0, 1.0].into(),
+            [-1.0, -1.0, 1.0, 1.0].into(),
+            [0.0, 0.0, 0.0, 1.0 + f64::sqrt(5.0)].into(),
+        ]
+    }
+
+    /// A point with `sign` in coordinate `axis` and zero in the others.
+    fn axis_point(axis: usize, sign: f64) -> Cartesian<4> {
+        Cartesian::from(std::array::from_fn(|k| if k == axis { sign } else { 0.0 }))
+    }
+
+    /// The 16 vertices of a tesseract (hypercube) with edge length 2.
+    fn tesseract() -> Vec<Cartesian<4>> {
+        iproduct!([-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0])
+            .map(|(x, y, z, w)| Cartesian::from([x, y, z, w]))
+            .collect()
+    }
+
+    /// The 8 vertices of a 16-cell with edge length `sqrt(2)`.
+    fn hexadecachoron() -> Vec<Cartesian<4>> {
+        iproduct!(0..4, [-1.0, 1.0])
+            .map(|(axis, sign)| axis_point(axis, sign))
+            .collect()
+    }
+
+    /// The 24 vertices of a 24-cell: permutations of (+-1, +-1, 0, 0).
+    fn icositetrachoron() -> Vec<Cartesian<4>> {
+        iproduct!((0..4).array_combinations::<2>(), [-1.0, 1.0], [-1.0, 1.0])
+            .map(|([i, j], a, b)| {
+                let mut point = [0.0; 4];
+                point[i] = a;
+                point[j] = b;
+                Cartesian::from(point)
+            })
+            .collect()
+    }
+
+    /// Rotate a point by the given angles in the xy and zw coordinate planes.
+    fn rotate_in_planes(point: Cartesian<4>, xy: Angle, zw: Angle) -> Cartesian<4> {
+        let rotate_plane =
+            |angle: &Angle, [a, b]: [f64; 2]| angle.rotate(&Cartesian::from([a, b])).coordinates;
+        let [x, y] = rotate_plane(&xy, [point[0], point[1]]);
+        let [z, w] = rotate_plane(&zw, [point[2], point[3]]);
+        Cartesian::from([x, y, z, w])
+    }
+
+    /// The hypervolume of a hull, as the sum of the hypervolumes of the
+    /// 4-simplices formed by the cells and an interior point. The centroid of
+    /// the vertices is interior.
+    fn hull_volume(points: &[Cartesian<4>], vertices: &[usize], cells: &[Facet<4>]) -> f64 {
+        let apex =
+            vertices.iter().map(|&i| points[i]).sum::<Cartesian<4>>() / vertices.len() as f64;
+        cells
+            .iter()
+            .map(|cell| {
+                Matrix {
+                    rows: cell.indices().map(|i| (points[i] - apex).coordinates),
+                }
+                .determinant()
+            })
+            .sum::<f64>()
+            .abs()
+            / 24.0 // volume of simplex is parallelepiped / N!
+    }
+
+    /// Validate a triangulated 4d hull.
+    ///
+    /// * Every cell is a supporting hyperplane: no point lies strictly outside any cell.
+    /// * The cells form a closed, consistently oriented manifold: every oriented
+    ///   boundary triangle appears exactly once and is matched by its opposite.
+    /// * Euler's formula `V - E + F - C = 0` holds, the Euler characteristic of the
+    ///   3-sphere the cells triangulate.
+    /// * The reported vertices are exactly the vertices of the cells, in order.
+    ///
+    /// Together these conditions certify that the cells triangulate the boundary
+    /// of the convex hull of the points.
+    fn validate_4d_hull(points: &[Cartesian<4>], vertices: &[usize], cells: &[Facet<4>]) {
+        // No point is strictly outside any cell.
+        for (&cell, q) in cells.iter().cartesian_product(0..points.len()) {
+            check!(
+                orient4d_at(points, cell, q).expect("the coordinates are resolvable") <= 0,
+                "point {q} lies outside the cell {cell:?}"
+            );
+        }
+
+        // The surface is closed and consistently oriented: every oriented
+        // boundary triangle appears exactly once and is matched by its reverse.
+        let mut triangles: Vec<(Facet<3>, bool)> = cells
+            .iter()
+            .flat_map(|&cell| boundary_triangles(cell))
+            .collect();
+        triangles.sort_unstable();
+        for (triangle, next) in triangles.iter().tuple_windows() {
+            check!(
+                triangle != next,
+                "the oriented triangle {triangle:?} appears twice"
+            );
+        }
+        for &(triangle, flipped) in &triangles {
+            check!(
+                triangles.contains(&(triangle, !flipped)),
+                "the triangle {triangle:?} is not matched by its opposite orientation"
+            );
+        }
+
+        // Euler's formula.
+        let cell_vertices: Vec<usize> = cells
+            .iter()
+            .flat_map(Facet::indices)
+            .sorted()
+            .dedup()
+            .collect();
+
+        // Each triangle is in canonical (sorted) order, so each of its edges is sorted.
+        let edges: Vec<[usize; 2]> = triangles
+            .iter()
+            .flat_map(|&(triangle, _)| {
+                let [a, b, c] = triangle.indices();
+                [[a, b], [a, c], [b, c]]
+            })
+            .sorted()
+            .dedup()
+            .collect();
+
+        check!(
+            cell_vertices.len() + triangles.len() / 2 == edges.len() + cells.len(),
+            "Euler's formula fails: {} - {} + {} - {} != 0",
+            cell_vertices.len(),
+            edges.len(),
+            triangles.len() / 2,
+            cells.len()
+        );
+
+        // The vertices are the cell vertices in increasing order.
+        check!(
+            vertices == cell_vertices,
+            "vertices are not the cell vertices"
+        );
+    }
+
+    /// The vertex sets of the regular convex 4-polytopes, shared by the 4d hull tests.
+    #[template]
+    #[rstest]
+    #[case::pentachoron(pentachoron())]
+    #[case::tesseract(tesseract())]
+    #[case::hexadecachoron(hexadecachoron())]
+    #[case::icositetrachoron(icositetrachoron())]
+    fn regular_polytopes(#[case] points: Vec<Cartesian<4>>) {}
+
+    #[apply(regular_polytopes)]
+    fn test_4d_regular_polytopes(#[case] points: Vec<Cartesian<4>>) {
+        // The polytopes are in their axis-aligned orientations, where the facet
+        // vertices are exactly hypercoplanar.
+        let (vertices, cells) = incremental_hull_4d(&points)
+            .expect("regular polytope vertices should form a convex body");
+
+        validate_4d_hull(&points, &vertices, &cells);
+        // Every vertex of a regular polytope is on the hull.
+        check!(vertices == (0..points.len()).collect::<Vec<usize>>());
+    }
+
+    #[apply(regular_polytopes)]
+    fn test_4d_regular_polytopes_rotated(#[case] points: Vec<Cartesian<4>>) {
+        // A double rotation by irrational angles breaks the exact hypercoplanarity
+        // of the facet vertices, exercising the exact fallback of the predicate.
+        for iteration in 0..50 {
+            let xy = Angle::from(0.3 + 0.17 * f64::from(iteration));
+            let zw = Angle::from(0.7 + 0.11 * f64::from(iteration));
+            let rotated: Vec<Cartesian<4>> = points
+                .iter()
+                .map(|&p| rotate_in_planes(p, xy, zw))
+                .collect();
+
+            let (vertices, cells) = incremental_hull_4d(&rotated)
+                .expect("regular polytope vertices should form a convex body");
+
+            validate_4d_hull(&rotated, &vertices, &cells);
+            // A rotation maps vertices to vertices.
+            check!(vertices == (0..points.len()).collect::<Vec<usize>>());
+        }
+    }
+
+    #[rstest]
+    #[case::tesseract(tesseract(), 16.0)]
+    #[case::hexadecachoron(hexadecachoron(), 2.0 / 3.0)]
+    #[case::icositetrachoron(icositetrachoron(), 8.0)]
+    #[case::pentachoron(pentachoron(), 2.0 * f64::sqrt(5.0) / 3.0)]
+    fn test_4d_volume(#[case] points: Vec<Cartesian<4>>, #[case] expected: f64) {
+        let (vertices, cells) = incremental_hull_4d(&points)
+            .expect("regular polytope vertices should form a convex body");
+        validate_4d_hull(&points, &vertices, &cells);
+
+        assert_relative_eq!(hull_volume(&points, &vertices, &cells), expected);
+    }
+
+    #[rstest]
+    #[case::pentachoron(pentachoron(), 5)]
+    #[case::hexadecachoron(hexadecachoron(), 16)]
+    #[case::icositetrachoron(icositetrachoron(), 96)]
+    fn test_4d_cell_counts(#[case] points: Vec<Cartesian<4>>, #[case] expected: usize) {
+        // The simplicial polytopes have a unique triangulation, so their cell
+        // counts are fixed. The count for the tesseract is not: its cubical
+        // facets triangulate into different numbers of tetrahedra depending on
+        // the insertion order.
+        let (vertices, cells) = incremental_hull_4d(&points)
+            .expect("regular polytope vertices should form a convex body");
+        validate_4d_hull(&points, &vertices, &cells);
+
+        check!(cells.len() == expected);
+    }
+
+    /// The grid `{0, 1}^3` embedded in the hyperplane `w = f(x, y, z)`.
+    fn hyperplanar_grid(f: impl Fn(f64, f64, f64) -> f64) -> Vec<[f64; 4]> {
+        iproduct!([0.0, 1.0], [0.0, 1.0], [0.0, 1.0])
+            .map(|(x, y, z)| [x, y, z, f(x, y, z)])
+            .collect()
+    }
+
+    #[rstest]
+    #[case::four_points(vec![[0.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]])]
+    #[case::identical(vec![[1.0, 2.0, 3.0, 4.0]; 6])]
+    #[case::collinear((0..8).map(|i| [f64::from(i), 2.0 * f64::from(i), -f64::from(i), 3.0 * f64::from(i)]).collect())]
+    #[case::planar((0..3).flat_map(|i| (0..3).map(move |j| [f64::from(i), f64::from(j), 0.0, 0.0])).collect())]
+    #[case::hyperplanar(hyperplanar_grid(|_, _, _| 0.0))]
+    #[case::tilted_hyperplanar(hyperplanar_grid(|x, y, z| x + y + 2.0 * z))]
+    fn test_4d_degenerate(#[case] points: Vec<[f64; 4]>) {
+        let points: Vec<Cartesian<4>> = points.into_iter().map(Cartesian::from).collect();
+        check!(Cartesian::<4>::convex_hull(&points) == Err(Error::DegeneratePolytope));
+    }
+
+    #[rstest]
+    fn test_4d_numerically_ambiguous() {
+        // All points lie in the hyperplane w = 0 except the last, which breaks
+        // the degeneracy. The candidate orientations against the hypercoplanar
+        // points combine coordinates whose exponents span 80 powers of two,
+        // beyond the budget of the exact predicate, so the hull is rejected.
+        let tiny = 2.0_f64.powi(-80);
+        let points: Vec<Cartesian<4>> = vec![
+            [0.0, 0.0, 0.0, 0.0].into(),
+            [1.0, 0.0, 0.0, 0.0].into(),
+            [0.0, 1.0, 0.0, 0.0].into(),
+            [0.0, 0.0, 1.0, 0.0].into(),
+            [tiny, tiny, tiny, 0.0].into(),
+            [0.0, 0.0, 0.0, 1.0].into(),
+        ];
+
+        check!(Cartesian::<4>::convex_hull(&points) == Err(Error::NumericallyAmbiguousPolytope));
+    }
+
+    #[rstest]
+    #[case::overflowed_ranking(256, 256)]
+    #[case::overflowed_projections(498, 448)]
+    fn test_4d_huge_coordinates(#[case] exponent: i32, #[case] spacing: i32) {
+        // A tesseract far from the origin, with coordinates of order 2^exponent
+        // and edges of order 2^spacing. Two expressions of the initial
+        // pentachoron overflow at these magnitudes, and used to reject this
+        // full-dimensional input (whose orientations the exact predicates
+        // resolve, the coordinate exponent span staying well below 72):
+        //
+        // * the candidate rankings: squared distances of order 2^512 and more
+        //   overflow, and their indeterminate differences are NaN, which
+        //   discarded every candidate for the third simplex vertex;
+        //
+        // * the collinearity and coplanarity filters: the products inside the
+        //   lower-dimensional predicates overflow, which reported coplanar
+        //   points as noncoplanar and produced a degenerate simplex.
+        let offset = 2.0_f64.powi(exponent);
+        let edge = 2.0_f64.powi(spacing);
+        let points: Vec<Cartesian<4>> = tesseract()
+            .into_iter()
+            .map(|p| p * edge + Cartesian::from([offset; 4]))
+            .collect();
+
+        let (vertices, cells) =
+            incremental_hull_4d(&points).expect("a far tesseract should form a convex body");
+        validate_4d_hull(&points, &vertices, &cells);
+        check!(vertices == (0..16).collect::<Vec<usize>>());
+    }
+
+    #[rstest]
+    fn test_4d_non_vertex_points_dropped() {
+        // The center, a facet point, an edge point and a duplicate corner of
+        // the tesseract are not vertices of its hull.
+        let mut points = tesseract();
+        points.extend(
+            [
+                [0.0; 4],
+                [1.0, 0.5, 0.25, 0.0],
+                [1.0, 1.0, 0.5, 0.0],
+                [-1.0; 4],
+            ]
+            .map(Cartesian::from),
+        );
+
+        let (vertices, cells) =
+            incremental_hull_4d(&points).expect("hard-coded points should form a convex body");
+        validate_4d_hull(&points, &vertices, &cells);
+        // Only the corners of the tesseract remain, in input order.
+        check!(vertices == (0..16).collect::<Vec<usize>>());
+    }
+
+    #[rstest]
+    fn test_4d_boundary_points_random_orders() {
+        // The exact facet centers and edge midpoints of the tesseract, two interior
+        // points and a duplicate corner, shuffled into random insertion orders.
+        // A boundary point that is inserted while it lies strictly outside the
+        // intermediate hull may remain a vertex of the triangulation even though it is
+        // not an extreme point, so only the corners and the hull itself are checked.
+        // TODO: this could be an issue! While the triangulations (and therefore
+        // volumes) are correct, this is technically not a minimal hull. It's not clear
+        // to me how one would solve this though, as the body is correct even if the
+        // point set is not.
+        let mut points = tesseract();
+        points.extend(iproduct!(0..4, [-1.0, 1.0]).flat_map(|(axis, sign)| {
+            // The facet center, then the midpoints of its edges that
+            // meet the positive corner on `axis`.
+            let midpoints = (0..4)
+                .filter(move |&other| other != axis)
+                .map(move |other| {
+                    let mut midpoint = axis_point(axis, sign).coordinates;
+                    midpoint[other] = 1.0;
+                    Cartesian::from(midpoint)
+                });
+            once(axis_point(axis, sign)).chain(midpoints)
+        }));
+        points.extend([[0.0; 4], [0.25; 4], [-1.0; 4]].map(Cartesian::from));
+
+        let mut rng = StdRng::seed_from_u64(44);
+        for _ in 0..50 {
+            let mut shuffled = points.clone();
+            shuffled.shuffle(&mut rng);
+
+            let (vertices, cells) = incremental_hull_4d(&shuffled)
+                .expect("hard-coded points should form a convex body");
+            validate_4d_hull(&shuffled, &vertices, &cells);
+
+            // Every corner is a vertex, and the hull is still the tesseract.
+            // The duplicated corner appears once among the hull vertices.
+            let is_corner = |i: usize| shuffled[i].coordinates.iter().all(|&c| c.abs() == 1.0);
+            let corners_on_hull = vertices.iter().filter(|&&i| is_corner(i)).count();
+            check!(
+                corners_on_hull == 16,
+                "only {corners_on_hull} corners are hull vertices"
+            );
+            let volume = hull_volume(&shuffled, &vertices, &cells);
+            assert_relative_eq!(volume, 16.0, epsilon = 1e-9);
+        }
+    }
+
+    #[rstest]
+    fn test_4d_public_hull_facets() {
+        let points = tesseract();
+        let (vertices, facets) = Cartesian::<4>::convex_hull(&points)
+            .expect("hard-coded points should form a convex body");
+
+        check!(vertices.len() == 16);
+        // Each of the eight cubical facets triangulates into at least five
+        // tetrahedra, and the exact count depends on the insertion order.
+        check!(facets.len() >= 40);
+        // Every facet references an existing vertex, and every vertex of the
+        // hull is referenced by some facet.
+        let referenced = || facets.iter().flat_map(Facet::indices);
+        check!(referenced().all(|index| index < vertices.len()));
+        check!(referenced().sorted().dedup().eq(0..16));
+    }
+
+    #[rstest]
+    fn test_4d_random_point_clouds(#[values(0, 1, 2, 3, 4)] seed: u64) {
+        // The points are drawn from the uniform distribution over the hypercube
+        // [-1, 1]^4.
+        let mut rng = StdRng::seed_from_u64(seed);
+        let points: Vec<Cartesian<4>> = (0..30)
+            .map(|_| std::array::from_fn(|_| rng.random::<f64>() * 2.0 - 1.0).into())
+            .collect();
+
+        let (vertices, cells) =
+            incremental_hull_4d(&points).expect("random points should form a convex body");
+
+        validate_4d_hull(&points, &vertices, &cells);
+        check!(vertices.len() >= 5);
+    }
+
+    #[rstest]
+    fn test_4d_input_types() {
+        let points = hexadecachoron();
+
+        let (from_slice, _) = Cartesian::<4>::convex_hull(&points[..])
+            .expect("hard-coded points should form a convex body");
+        let (from_vec, _) = Cartesian::<4>::convex_hull(points.clone())
+            .expect("hard-coded points should form a convex body");
+        let (from_iterator, _) = Cartesian::<4>::convex_hull(points.iter().copied())
+            .expect("hard-coded points should form a convex body");
+
+        assert_eq!(from_slice.len(), 8);
+        itertools::assert_equal(&from_slice, &from_vec);
+        itertools::assert_equal(&from_slice, &from_iterator);
     }
 }
