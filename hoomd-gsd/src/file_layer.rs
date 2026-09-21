@@ -2293,7 +2293,13 @@ impl GsdFile {
         let old_end =
             usize::try_from(self.header.namelist_location + self.name_list.insert_position)
                 .expect("namelist should be validated addressable previously");
-        self.file.write_all(&self.mmap[old_start..old_end])?;
+
+        #[expect(
+            clippy::unnecessary_to_owned,
+            reason = "must copy data before writing to avoid hangs on macos"
+        )]
+        self.file
+            .write_all(&self.mmap[old_start..old_end].to_vec())?;
         self.file.set_len(new_location + new_size)?;
         self.file_len = new_location + new_size;
 
@@ -2342,7 +2348,13 @@ impl GsdFile {
                 old_end as u64,
             ));
         }
-        self.file.write_all(&self.mmap[old_start..old_end])?;
+
+        #[expect(
+            clippy::unnecessary_to_owned,
+            reason = "must copy data before writing to avoid hangs on macos"
+        )]
+        self.file
+            .write_all(&self.mmap[old_start..old_end].to_vec())?;
         self.file.set_len(new_location + new_size)?;
         self.file_len = new_location + new_size;
 
