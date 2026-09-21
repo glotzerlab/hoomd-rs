@@ -505,4 +505,3 @@ mod tests {
         assert!(formatted.contains('\n'));
     }
 }
-    }
