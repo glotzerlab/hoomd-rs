@@ -41,6 +41,39 @@ impl<const N: usize> Facet<N> {
     pub const fn indices(&self) -> [usize; N] {
         self.indices
     }
+
+    /// The simplex the facet spans: its vertices, looked up in `points`.
+    ///
+    /// A facet of an `N`-dimensional hull is an `(N - 1)`-simplex bounded by
+    /// `N` vertices of the hull. An edge of a polygon returns its two
+    /// endpoints, a triangle of a polyhedron its three corners.
+    ///
+    /// # Panics
+    ///
+    /// Panics when a vertex index is out of bounds, like indexing `points`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::Facet;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let points = [
+    ///     Cartesian::from([1.0, 1.0]),
+    ///     Cartesian::from([1.0, -1.0]),
+    ///     Cartesian::from([-1.0, -1.0]),
+    /// ];
+    /// let edge = Facet::new([0, 2]);
+    ///
+    /// let [start, end] = edge.as_simplex(&points);
+    /// assert_eq!(start, points[0]);
+    /// assert_eq!(end, points[2]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn as_simplex(&self, points: &[Cartesian<N>]) -> [Cartesian<N>; N] {
+        self.indices.map(|i| points[i])
+    }
 }
 
 /// Compute the convex hull of a set of points.
@@ -759,15 +792,13 @@ fn initial_pentachoron(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
     // by the magnitude of the determinant of the difference matrix. The exact
     // predicate must filter the candidates: a point can have a larger spurious
     // filtered determinant than another that is exactly off the hyperplane.
+    let cell = Facet::new([a, b, c, d]);
     let e = farthest_point(
         points,
-        |i| {
-            Ok(![a, b, c, d].contains(&i)
-                && orient4d(points[a], points[b], points[c], points[d], points[i])? != 0)
-        },
+        |i| Ok(![a, b, c, d].contains(&i) && orient4d_at(points, cell, i)? != 0),
         |i| {
             Matrix {
-                rows: [a, b, c, d].map(|j| (points[j] - points[i]).coordinates),
+                rows: cell.as_simplex(points).map(|p| (p - points[i]).coordinates),
             }
             .determinant()
             .abs()
@@ -821,8 +852,8 @@ fn farthest_point(
 /// resolved exactly.
 #[inline]
 fn orient4d_at(points: &[Cartesian<4>], cell: Facet<4>, test: usize) -> Result<i64, Error> {
-    let [a, b, c, d] = cell.indices();
-    orient4d(points[a], points[b], points[c], points[d], points[test])
+    let [a, b, c, d] = cell.as_simplex(points);
+    orient4d(a, b, c, d, points[test])
 }
 
 /// Whether three points given by index are exactly collinear.
