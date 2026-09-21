@@ -220,11 +220,10 @@ impl Distribution<QuadQuaternion> for StandardUniform {
 
         // Phase of x1 (Mezzadri eq. (7.26): x1 = q1 |x1|).
         let a_norm = a.norm();
-        let q1 = if a_norm > 1e-12 {
+        let q1 = if a_norm != 0.0 && a_norm.is_finite() {
             a / a_norm
         } else {
-            // Measure-zero degenerate case: x1 ~ 0, so the direction is e1.
-            Quaternion::from([1.0, 0.0, 0.0, 0.0])
+            QUATERNION_BASIS[0]
         };
 
         // Householder vector u = normalize(v + q1 e1) (Mezzadri eq. (7.26)),
