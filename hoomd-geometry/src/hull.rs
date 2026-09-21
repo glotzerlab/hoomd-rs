@@ -510,6 +510,32 @@ fn find_next_point_on_hull<const N: usize>(
     .ok_or(Error::DegeneratePolytope)
 }
 
+/// Find the third vertex of an initial simplex.
+///
+/// The point returned is the farthest from the line through `a` and `b` among those not
+/// exactly noncolinear with it, ranked by the squared area of the triangle they span.
+///
+/// # Errors
+///
+/// Returns [`Error::DegeneratePolytope`] when every point of the set is
+/// colinear with `a` and `b`.
+fn find_third_point_on_hull<const N: usize>(
+    points: &[Cartesian<N>],
+    a: usize,
+    b: usize,
+) -> Result<usize, Error> {
+    let ab = points[b] - points[a];
+    find_next_point_on_hull(
+        points,
+        &[a, b],
+        |i| Ok(!collinear([points[a], points[b], points[i]])),
+        |i| {
+            let ap = points[i] - points[a];
+            ab.norm_squared() * ap.norm_squared() - ap.dot(&ab).powi(2)
+        },
+    )
+}
+
 /// Find an initial tetrahedron for the incremental hull.
 ///
 /// The four points are vertices of the hull: `a` is the lexographically smallest point,
@@ -522,19 +548,7 @@ fn find_next_point_on_hull<const N: usize>(
 /// all are coplanar.
 fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, usize), Error> {
     let (a, b) = find_two_points_on_hull(points)?;
-    let ab = points[b] - points[a];
-
-    // c is the farthest noncolinear point from the line ab, ranked by the
-    // squared area of the triangle abp (Lagrange's identity).
-    let c = find_next_point_on_hull(
-        points,
-        &[a, b],
-        |i| Ok(!collinear([points[a], points[b], points[i]])),
-        |i| {
-            let ap = points[i] - points[a];
-            ab.norm_squared() * ap.norm_squared() - ap.dot(&ab).powi(2)
-        },
-    )?;
+    let c = find_third_point_on_hull(points, a, b)?;
 
     // d is the farthest point from the plane through a, b and c, ranked by
     // the magnitude of the orientation determinant. Any nonzero value from
@@ -744,19 +758,8 @@ fn build_cone(p: usize, triangle: Facet<3>, flipped: bool) -> Facet<4> {
 #[expect(clippy::many_single_char_names, reason = "clarity")]
 fn initial_pentachoron(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
     let (a, b) = find_two_points_on_hull(points)?;
+    let c = find_third_point_on_hull(points, a, b)?;
     let ab = points[b] - points[a];
-
-    // c is the farthest noncolinear point from the line ab, ranked by the
-    // squared area of the triangle abp (Lagrange's identity).
-    let c = find_next_point_on_hull(
-        points,
-        &[a, b],
-        |i| Ok(!collinear([points[a], points[b], points[i]])),
-        |i| {
-            let ap = points[i] - points[a];
-            ab.norm_squared() * ap.norm_squared() - ap.dot(&ab).powi(2)
-        },
-    )?;
     let ac = points[c] - points[a];
 
     // d is the farthest noncoplanar point from the plane abc, ranked by the
