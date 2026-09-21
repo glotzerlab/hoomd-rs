@@ -664,6 +664,7 @@ impl ConvexHull<4> for Cartesian<4> {
     ///
     /// assert_eq!(hull_vertices.len(), 8);
     /// assert_eq!(cells.len(), 16); // The 16-cell is bounded by 16 tetrahedra.
+    /// //
     /// # Ok(())
     /// # }
     /// ```
