@@ -9,7 +9,7 @@
 * `[hoomd-geometry]`: New `ConvexSurfaceMesh3d` type for explicit convex faceted bodies in three dimensions (#426).
 * `[hoomd-geometry]`: New four-dimensional `ConvexHull` implementation that computes tetrahedral cells with the exact `orient4d` predicate (#426).
 * `[hoomd-geometry]`: `Facet::<N>::as_simplex` expands the vertex-index form of a simplicial facet into a full `N`-simplex's vertices.
-
+* `[hoomd-geometry]`: Four-dimensional exact orientation predicate (#416).
 
 *Changed:*
 
