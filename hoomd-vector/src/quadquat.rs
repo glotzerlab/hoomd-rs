@@ -167,19 +167,22 @@ impl QuadQuaternion {
         })
     }
 
-    /// Promote a [`Cartesian<5>`] to a Hermitian traceless quaternionic matrix.
+    /// Get the element of the matrix in position `self.rows[0][0]`.
     #[inline]
     pub(crate) fn a(&self) -> Quaternion {
         self.rows[0][0]
     }
+    /// Get the element of the matrix in position `self.rows[0][1]`.
     #[inline]
     pub(crate) fn b(&self) -> Quaternion {
         self.rows[0][1]
     }
+    /// Get the element of the matrix in position `self.rows[1][0]`.
     #[inline]
     pub(crate) fn c(&self) -> Quaternion {
         self.rows[1][0]
     }
+    /// Get the element of the matrix in position `self.rows[1][1]`.
     #[inline]
     pub(crate) fn d(&self) -> Quaternion {
         self.rows[1][1]
@@ -240,13 +243,11 @@ impl Distribution<QuadQuaternion> for StandardUniform {
 
         // S = H2^dagger * diag(1, q): conjugate-transpose, then right-multiply the
         // second column by q. The four blocks of S are the QuadQuaternion.
-        let a = h00.conjugate();
-        let b = h10.conjugate() * q;
-        let c = h01.conjugate();
-        let d = h11.conjugate() * q;
-
         QuadQuaternion {
-            rows: [[a, b], [c, d]],
+            rows: [
+                [h00.conjugate(), h10.conjugate() * q],
+                [h01.conjugate(), h11.conjugate() * q],
+            ],
         }
     }
 }
@@ -258,6 +259,7 @@ impl Rotate<Cartesian<5>> for QuadQuaternion {
     /// ```math
     /// \mathbf{M} \vec{a} \mathbf{M}^\dagger
     /// ```
+    #[inline]
     fn rotate(&self, vector: &Cartesian<5>) -> Cartesian<5> {
         // Promote a Cartesian<5> to the components of a Hermitian, traceless QuadQuat
         // [
