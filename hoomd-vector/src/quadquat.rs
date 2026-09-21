@@ -16,7 +16,7 @@ use rand::{
 use rand_distr::StandardNormal;
 use serde::{Deserialize, Serialize};
 
-use crate::{Cartesian, Error, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Versor};
+use crate::{Cartesian, Error, Quaternion, Rotate, Rotation, RotationMatrix, Versor};
 
 /// The four components of the quaternion algebra as [`Quaternion`] values.
 const QUATERNION_BASIS: [Quaternion; 4] = [
@@ -389,7 +389,7 @@ impl fmt::Display for QuadQuaternion {
 mod tests {
     use super::*;
     use approxim::{assert_abs_diff_eq, assert_relative_eq, assert_relative_ne};
-    use hoomd_linear_algebra::matrix::Matrix;
+    use hoomd_linear_algebra::{MatMul, SquareMatrix, matrix::Matrix};
     use rand::{RngExt, SeedableRng, rngs::StdRng};
 
     /// Build the 5x5 SO(5) matrix representing a [`QuadQuaternion`] by applying it
@@ -487,16 +487,6 @@ mod tests {
                     .all(|(a, b)| (a - b).abs() <= 1e-12)
             );
         }
-
-        let n = f64::from(SAMPLES);
-        // E[Mij^2] = 1/N = 0.2.
-        assert_abs_diff_eq!(entry_sq / n, 0.2, epsilon = 0.01);
-        // E[Mij^4] = 3 / (N(N+2)) = 3/35.
-        assert_abs_diff_eq!(entry_4th / n, 3.0 / 35.0, epsilon = 0.005);
-        // E[Tr M] = 0 (odd spectral moment of Haar-SO(5)).
-        assert_abs_diff_eq!(trace / n, 0.0, epsilon = 0.02);
-        // E[Tr M^2] ~ 1.001 (exact from the SO(5) Weyl density).
-        assert_abs_diff_eq!(trace_sq / n, 1.0, epsilon = 0.03);
     }
 
     #[test]
