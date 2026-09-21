@@ -296,6 +296,95 @@ impl Rotate<Cartesian<5>> for QuadQuaternion {
     }
 }
 
+impl From<QuadQuaternion> for RotationMatrix<5> {
+    /// Construct a rotation matrix equivalent to this rotation.
+    ///
+    /// When rotating many vectors by the same [`QuadQuaternion`], improve performance
+    /// by converting to a matrix first and applying that matrix to the vectors.
+    ///
+    /// The entries are the inner products
+    /// ```math
+    /// R_{ij} = \langle E_i, \mathbf{M} E_j \mathbf{M}^\dagger \rangle
+    /// ```
+    /// in the following basis:
+    /// ```math
+    /// \{E_0, \ldots, E_4\} = \left\{\frac{\mathrm{diag}(1, -1)}{\sqrt 2},
+    /// \frac{B(1)}{\sqrt 2}, \frac{B(i)}{\sqrt 2}, \frac{B(j)}{\sqrt 2},
+    /// \frac{B(k)}{\sqrt 2}\right\}
+    /// ```
+    /// where $`B(u)`$ is the matrix with the quaternion $`u`$ in both off-diagonal
+    /// entries. Index 0 selects the $`\mathrm{diag}(1, -1)`$ component and indices 1-4
+    /// select the quaternion components $`1, i, j, k`$
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, QuadQuaternion, Quaternion, Rotate, RotationMatrix};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let i_quat = Quaternion::from([0.0, 1.0, 0.0, 0.0]);
+    /// let zero = Quaternion::from([0.0; 4]);
+    /// let rotation = QuadQuaternion::try_from([[i_quat, zero], [zero, i_quat]])?;
+    ///
+    /// // The rotation by PI in the (j, k) plane fixes the first three
+    /// // components and negates the last two.
+    /// let matrix = RotationMatrix::from(rotation);
+    /// assert_relative_eq!(
+    ///     matrix.rotate(&Cartesian::from([0.0, 0.0, 0.0, 1.0, 0.0])),
+    ///     Cartesian::from([0.0, 0.0, 0.0, -1.0, 0.0])
+    /// );
+    /// assert_relative_eq!(
+    ///     matrix.rotate(&Cartesian::from([1.0, 0.0, 0.0, 0.0, 0.0])),
+    ///     Cartesian::from([1.0, 0.0, 0.0, 0.0, 0.0])
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn from(value: QuadQuaternion) -> RotationMatrix<5> {
+        let (block_00, block_01, block_10, block_11) = (value.a(), value.b(), value.c(), value.d());
+
+        let mut result = [[0.0; 5]; 5];
+
+        // Corner: <diag(1, -1), M diag(1, -1) M^dagger>, in a form symmetrized
+        // over the two column norms so rounding errors in the blocks cancel.
+        result[0][0] = 0.5
+            * (block_00.norm_squared() + block_11.norm_squared()
+                - block_01.norm_squared()
+                - block_10.norm_squared());
+
+        // First column: the components of a c^dagger - b d^dagger.
+        let first_column = block_00 * block_10.conjugate() - block_01 * block_11.conjugate();
+        result[1][0] = first_column.scalar;
+        result[2][0] = first_column.vector[0];
+        result[3][0] = first_column.vector[1];
+        result[4][0] = first_column.vector[2];
+
+        // First row: 2 Re[(b^dagger a) v] for the basis quaternions v.
+        let first_row = block_01.conjugate() * block_00;
+        result[0][1] = 2.0 * first_row.scalar;
+        result[0][2] = -2.0 * first_row.vector[0];
+        result[0][3] = -2.0 * first_row.vector[1];
+        result[0][4] = -2.0 * first_row.vector[2];
+
+        // Block: for each basis quaternion v, the components of
+        // (b v^dagger) c^dagger + (a v) d^dagger.
+        for (column_index, &basis_quaternion) in QUATERNION_BASIS.iter().enumerate() {
+            let column_quaternion = (block_01 * basis_quaternion.conjugate())
+                * block_10.conjugate()
+                + (block_00 * basis_quaternion) * block_11.conjugate();
+            result[1][column_index + 1] = column_quaternion.scalar;
+            result[2][column_index + 1] = column_quaternion.vector[0];
+            result[3][column_index + 1] = column_quaternion.vector[1];
+            result[4][column_index + 1] = column_quaternion.vector[2];
+        }
+
+        RotationMatrix {
+            rows: result.map(Cartesian::from),
+        }
+    }
+}
+
 impl Mul for QuadQuaternion {
     type Output = Self;
 
@@ -510,6 +599,37 @@ mod tests {
             assert_relative_ne!(p * q, q * p);
         }
     }
+
+    #[test]
+    fn rotation_matrix_conversion() {
+        // The identity rotation converts to the identity matrix exactly.
+        let identity_matrix: [[f64; 5]; 5] = RotationMatrix::from(QuadQuaternion::identity())
+            .rows()
+            .map(|row| row.coordinates);
+        assert_eq!(identity_matrix, Matrix::<5, 5>::identity().rows);
+
+        let mut rng = StdRng::seed_from_u64(1);
+
+        for _ in 0..4096 {
+            let rotation: QuadQuaternion = rng.random();
+            let converted = RotationMatrix::from(rotation);
+            let converted_rows = converted.rows().map(|row| row.coordinates);
+
+            assert_abs_diff_eq!(converted_rows, so5_matrix(&rotation), epsilon = 1e-14);
+
+            // Double cover -> -M and M should rotate V the same.
+            let negated = QuadQuaternion {
+                rows: rotation.rows.map(|row| row.map(|block| block * -1.0)),
+            };
+            assert_eq!(
+                RotationMatrix::from(negated)
+                    .rows()
+                    .map(|row| row.coordinates),
+                converted_rows
+            );
+        }
+    }
+
     #[test]
     fn serde_and_display() {
         let mut rng = StdRng::seed_from_u64(1);
