@@ -49,6 +49,8 @@
 //!
 //! [`IsPointInside`] checks if a point is inside or outside a shape.
 //!
+//! [`ConvexHull`] computes the convex hull of a set of points.
+//!
 //! Many shapes implement the `Distribution` trait from **rand** to randomly sample
 //! interior points.
 //!
@@ -124,6 +126,10 @@ use thiserror::Error;
 mod convex;
 pub use convex::Convex;
 
+mod hull;
+pub use hull::{ConvexHull, Facet};
+
+pub mod orient4d;
 pub mod shape;
 pub mod xenocollide;
 
@@ -456,4 +462,8 @@ pub enum Error {
     /// Too many vertices were provided.
     #[error("too many vertices")]
     TooManyVertices,
+
+    /// The orientation of the point set cannot be resolved numerically.
+    #[error("cannot resolve the orientation of the given points")]
+    NumericallyAmbiguousPolytope,
 }

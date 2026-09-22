@@ -6,6 +6,11 @@
 
 * `[hoomd-microstate]`: Add the `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and `max_ghosts_64` cargo features that set the maximum number of ghosts per site. The largest enabled feature is used when multiple are set simultaneously.
 * `[hoomd-geometry]`: Implement `MinkowskiPortalRefinement` for `Cartesian<4>` (#306).
+* `[hoomd-geometry]`: New `ConvexHull` trait, which subsumes `ConvexSurfaceMesh2d::construct_convex_hull` and adds a new implementation for three-dimensional hulls (#426).
+* `[hoomd-geometry]`: New `ConvexSurfaceMesh3d` type for explicit convex faceted bodies in three dimensions (#426).
+* `[hoomd-geometry]`: New four-dimensional `ConvexHull` implementation that computes tetrahedral cells with the exact `orient4d` predicate (#430).
+* `[hoomd-geometry]`: `Facet::<N>::as_simplex` expands the vertex-index form of a simplicial facet into a full `N`-simplex's vertices.
+* `[hoomd-geometry]`: Four-dimensional exact orientation predicate (#416).
 
 *Changed:*
 
