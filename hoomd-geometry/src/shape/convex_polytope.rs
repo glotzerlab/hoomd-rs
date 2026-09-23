@@ -3,6 +3,8 @@
 
 //! N-Dimensional generalization of a convex polyhedron.
 
+use std::f64::consts::SQRT_2;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{BoundingSphereRadius, Error, SupportMapping};
@@ -205,6 +207,269 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
             .try_into()
             .expect("convex polytope should have a positive bounding radius")
     }
+
+    /// Build the N-dimensional generalization of an octahedron with unit
+    /// volume.
+    ///
+    /// This shape, also referred to as the hyperoctahedron or cross polytope, has `2N`
+    /// vertices, one pair on each coordinate axis.
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{
+    ///     BoundingSphereRadius,
+    ///     shape::{ConvexPolyhedron, ConvexPolytope},
+    /// };
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let diamond = ConvexPolytope::<2>::orthoplex();
+    /// // A 2D orthoplex is a square, with edges rotated 45° relative to the x axis.
+    /// assert_relative_eq!(
+    ///     diamond.bounding_sphere_radius().get(),
+    ///     f64::sqrt(2.0) / 2.0
+    /// );
+    /// assert_eq!(diamond.vertices().len(), 2 * 2);
+    ///
+    /// let octahedron = ConvexPolyhedron::orthoplex();
+    /// assert_relative_eq!(
+    ///     octahedron.bounding_sphere_radius().get(),
+    ///     6.0_f64.cbrt() / 2.0 // (3!)^(1/3) / 2
+    /// );
+    /// assert_eq!(octahedron.vertices().len(), 2 * 3);
+    ///
+    /// // Cross polytopes always have 2*N vertices
+    /// let octachoron = ConvexPolytope::<4, 8>::orthoplex();
+    /// assert_relative_eq!(
+    ///     octachoron.bounding_sphere_radius().get(),
+    ///     24.0_f64.sqrt().sqrt() / 2.0 // (4!)^(1/4) / 2
+    /// );
+    /// assert_eq!(octachoron.vertices().len(), 2 * 4);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Panics
+    /// If `N=0` or `N > MAX_VERTICES/2`.
+    #[inline]
+    #[must_use]
+    pub fn orthoplex() -> Self {
+        assert!(
+            N != 0,
+            "An orthoplex is not well-defined in zero dimensions!"
+        );
+        // (2r)^N / N! == 1
+        let n_factorial = (1..=N).map(|k| k as f64).product::<f64>();
+        let circumradius = n_factorial.powf((N as f64).recip()) / 2.0;
+        let vertices = (0..N).flat_map(|nonzero_index| {
+            let coord = Cartesian::<N>::from(std::array::from_fn(|i| {
+                f64::from(i == nonzero_index) * circumradius
+            }));
+            [coord, -coord]
+        });
+
+        Self {
+            vertices: ArrayVec::<_, MAX_VERTICES>::from_iter(vertices),
+            bounding_radius: circumradius
+                .try_into()
+                .expect("the circumradius of a unit-volume orthoplex is positive"),
+        }
+    }
+
+    /// Build the N-dimensional generalization of a tetrahedron with unit
+    /// volume.
+    ///
+    /// A regular simplex is the convex hull of `N+1` mutually equidistant points:
+    /// an equilateral triangle in 2D, a tetrahedron in 3D, and so on.
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{
+    ///     BoundingSphereRadius,
+    ///     shape::{ConvexPolygon, ConvexPolyhedron, ConvexPolytope},
+    /// };
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let triangle = ConvexPolygon::simplex();
+    /// assert_relative_eq!(
+    ///     triangle.bounding_sphere_radius().get(),
+    ///     2.0 / 3.0_f64.powf(0.75) // 2 / 3^(3/4)
+    /// );
+    ///
+    /// let tetrahedron = ConvexPolyhedron::simplex();
+    /// assert_relative_eq!(
+    ///     tetrahedron.bounding_sphere_radius().get(),
+    ///     (9.0 * f64::sqrt(3.0) / 8.0).cbrt() // (9 sqrt(3) / 8)^(1/3)
+    /// );
+    ///
+    /// // Simplices always have N+1 vertices
+    /// let pentachoron = ConvexPolytope::<4, 5>::simplex();
+    /// assert_relative_eq!(
+    ///     pentachoron.bounding_sphere_radius().get(),
+    ///     (384.0 / (25.0 * f64::sqrt(5.0))).powf(0.25) // (384 / (25 sqrt(5)))^(1/4)
+    /// );
+    /// assert_eq!(pentachoron.vertices().len(), 5);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Panics
+    /// If `N+1 > MAX_VERTICES`.
+    #[inline]
+    #[must_use]
+    pub fn simplex() -> Self {
+        // https://en.wikipedia.org/wiki/Simplex#Cartesian_coordinates_for_a_regular_n-dimensional_simplex_in_Rn
+        let inv_sqrt2 = SQRT_2.recip();
+
+        let mut vertices = ArrayVec::<_, MAX_VERTICES>::new();
+
+        // Un-centered: N vertices at scaled standard basis positions + 1 shared vertex
+        for k in 0..N {
+            vertices.push(std::array::from_fn(|i| f64::from(i == k) * inv_sqrt2).into());
+        }
+
+        let c = (1.0 - f64::sqrt(N as f64 + 1.0)) / (f64::sqrt(2.0) * N as f64);
+        vertices.push([c; N].into());
+
+        // Center by subtracting centroid
+        let center = Cartesian::from([(inv_sqrt2 + c) / (N as f64 + 1.0); N]);
+        vertices.iter_mut().for_each(|vertex| *vertex -= center);
+
+        // Rescale the unit-edge simplex to unit volume:
+        // s = (2^(N/2) N! / sqrt(N+1))^(1/N).
+        let n_factorial = (1..=N).map(|k| k as f64).product::<f64>();
+        let scale = (2.0_f64.powf(N as f64 / 2.0) * n_factorial / f64::sqrt(N as f64 + 1.0))
+            .powf((N as f64).recip());
+        vertices.iter_mut().for_each(|vertex| *vertex *= scale);
+
+        Self {
+            vertices,
+            bounding_radius: (scale * f64::sqrt(N as f64 / (2.0 * (N as f64 + 1.0))))
+                .try_into()
+                .expect("sqrt of positive is positive"),
+        }
+    }
+
+    /// Build the N-dimensional generalization of a cube with unit volume.
+    ///
+    /// This shape, also referred to as the hypercube or orthotope, has `2^N` vertices
+    /// at the signed combinations of `{±0.5}`.
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{
+    ///     BoundingSphereRadius,
+    ///     shape::{ConvexPolygon, ConvexPolyhedron, ConvexPolytope},
+    /// };
+    ///
+    /// # fn main() -> Result<(), hoomd_geometry::Error> {
+    /// let square = ConvexPolygon::hypercube();
+    /// assert_relative_eq!(
+    ///     square.bounding_sphere_radius().get(),
+    ///     f64::sqrt(2.0) / 2.0
+    /// );
+    ///
+    /// let cube = ConvexPolyhedron::hypercube();
+    /// assert_relative_eq!(
+    ///     cube.bounding_sphere_radius().get(),
+    ///     f64::sqrt(3.0) / 2.0
+    /// );
+    ///
+    /// // Hypercubes have 2^N vertices
+    /// let hypercube = ConvexPolytope::<4, 16>::hypercube();
+    /// assert_eq!(hypercube.vertices().len(), 16);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Panics
+    /// If `N=0` or `2^N > MAX_VERTICES`.
+    #[inline]
+    #[must_use]
+    pub fn hypercube() -> Self {
+        #[inline]
+        fn signed_combinations_of_one_half<const N: usize>() -> impl Iterator<Item = Cartesian<N>> {
+            (0..(1usize << N)).map(|bits| {
+                std::array::from_fn(|i| if bits & (1 << i) == 0 { 0.5 } else { -0.5 }).into()
+            })
+        }
+        assert!(
+            N != 0,
+            "A hypercube is not well-defined in zero dimensions!"
+        );
+        let bounding_radius = (f64::sqrt(N as f64) / 2.0)
+            .try_into()
+            .expect("sqrt(positive) is positive.");
+
+        Self {
+            vertices: ArrayVec::<_, MAX_VERTICES>::from_iter(signed_combinations_of_one_half::<N>()),
+            bounding_radius,
+        }
+    }
+}
+
+impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
+    /// Create an icosahedron with edge length 2.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_geometry::shape::ConvexPolyhedron;
+    ///
+    /// let icosahedron = ConvexPolyhedron::icosahedron();
+    ///
+    /// assert_eq!(icosahedron.vertices().len(), 12);
+    /// ```
+    /// # Panics
+    ///
+    /// If the shape is initialized with `MAX_VERTICES` < 12.
+    #[inline]
+    #[must_use]
+    pub fn icosahedron() -> ConvexPolytope<3, MAX_VERTICES> {
+        ConvexPolytope::with_vertices(cyclic_permutations(1.0, std::f64::consts::GOLDEN_RATIO))
+            .expect("an icosahedron requires at least 12 vertices")
+    }
+
+    /// Create a dodecahedron with edge length `2 / phi`.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_geometry::shape::ConvexPolyhedron;
+    ///
+    /// let dodecahedron = ConvexPolyhedron::dodecahedron();
+    ///
+    /// assert_eq!(dodecahedron.vertices().len(), 20);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// If the shape is initialized with `MAX_VERTICES` < 20.
+    #[inline]
+    pub fn dodecahedron() -> ConvexPolytope<3, MAX_VERTICES> {
+        let phi = std::f64::consts::GOLDEN_RATIO;
+        // An edge-2 cube together with the cyclic permutations of `(0, ±1/phi, ±phi)`.
+        let hypercube = Self::hypercube();
+        let vertices = hypercube
+            .vertices()
+            .iter()
+            .copied()
+            .map(|vertex| 2.0 * vertex)
+            .chain(cyclic_permutations(phi.recip(), phi));
+        ConvexPolytope::with_vertices(vertices)
+            .expect("a dodecahedron requires at least 20 vertices")
+    }
+}
+
+/// The cyclic coordinate permutations of `(0, ±x, ±y)`
+///
+/// Returns the set `{(0, ±x, ±y), (±x, ±y, 0), (±y, 0, ±x)}`.
+#[inline]
+fn cyclic_permutations(x: f64, y: f64) -> impl Iterator<Item = Cartesian<3>> {
+    itertools::iproduct!([-1.0, 1.0], [-1.0, 1.0]).flat_map(move |(a, b)| {
+        let v = (0.0, a * x, b * y); // v.0, v.1, v.2
+        [v, (v.1, v.2, v.0), (v.2, v.0, v.1)].map(Cartesian::from)
+    })
 }
 
 /// Compute the matrix-vector multiplication of an `ArrayVec` against a `Cartesian<N>`.
@@ -256,7 +521,7 @@ impl<const N: usize, const MAX_VERTICES: usize> BoundingSphereRadius
 mod tests {
     use super::*;
     use crate::{Convex, IntersectsAt};
-    use hoomd_vector::{Angle, Cartesian, Rotate, Rotation, Versor};
+    use hoomd_vector::{Angle, Cartesian, InnerProduct, Rotate, Rotation, Versor};
 
     use approxim::assert_relative_eq;
     use rstest::*;
@@ -800,5 +1065,37 @@ mod tests {
         assert_symmetric_overlap([-0.9, 0.899, 0.001].into(), &cube, &cube, q_a, q_b, true);
         assert_symmetric_overlap([0.9, -0.9, 0.0].into(), &cube, &cube, q_a, q_b, true);
         assert_symmetric_overlap([-0.9, 0.9, 0.1].into(), &cube, &cube, q_a, q_b, true);
+    }
+    /// Each platonic solid has the expected number of vertices, all at a common
+    /// distance from the center and separated by a known edge length.
+    #[rstest]
+    #[case::icosahedron(ConvexPolyhedron::icosahedron(), 12, 2.0)]
+    #[case::dodecahedron(
+        ConvexPolyhedron::dodecahedron(),
+        20,
+        2.0 / std::f64::consts::GOLDEN_RATIO
+    )]
+    #[case::octahedron(ConvexPolyhedron::orthoplex(), 6, (3.0 / 2f64.sqrt()).cbrt())]
+    #[case::cube(ConvexPolyhedron::hypercube(), 8, 1.0)]
+    #[case::tetrahedron(ConvexPolyhedron::simplex(), 4, 2f64.sqrt() * 3f64.cbrt())]
+    fn platonic_solids(#[case] solid: ConvexPolyhedron, #[case] n: usize, #[case] edge: f64) {
+        assert_eq!(solid.vertices().len(), n);
+
+        for vertex in solid.vertices() {
+            assert_relative_eq!(
+                vertex.norm_squared(),
+                solid.vertices()[0].norm_squared(),
+                max_relative = 5e-16
+            );
+        }
+
+        // The shortest vertex-to-vertex distance is the edge length.
+        let mut min_distance = f64::INFINITY;
+        for (i, vertex) in solid.vertices().iter().enumerate() {
+            for other in &solid.vertices()[i + 1..] {
+                min_distance = min_distance.min((*vertex - *other).norm());
+            }
+        }
+        assert_relative_eq!(min_distance, edge, max_relative = 1e-13);
     }
 }
