@@ -604,9 +604,9 @@ impl Versor {
     ///
     /// where $`(s, \vec{v}) = \mathbf{q}_0^{*} \mathbf{q}_1`$.
     ///
-    /// For unit versors, $`s = \mathbf{q}_0 \cdot \mathbf{q}_1 = \cos\phi`$ and
-    /// $`\lVert \vec{v} \rVert = \sin\phi`$, so this equals the standard equation
-    /// $`\arccos(\mathbf{q}_0 \cdot \mathbf{q}_1)`$ exactly.
+    /// This value always lies in the range $`[0, \pi]`$, and is symmetric: while there
+    /// are multiple arcs separating a pair of quaternions, this metric always chooses
+    /// the shortest.
     #[inline]
     #[must_use]
     pub fn arc_distance(&self, other: &Self) -> f64 {
