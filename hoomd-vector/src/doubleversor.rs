@@ -212,13 +212,9 @@ impl From<DoubleVersor> for RotationMatrix<4> {
         let (a, [b, c, d]) = (q_l.scalar, q_l.vector.coordinates);
         let (p, [q, r, s]) = (q_r.scalar, q_r.vector.coordinates);
 
-        // Construct the left-isoclinic matrix L(Q_L)
         let l_mat = [[a, -b, -c, -d], [b, a, -d, c], [c, d, a, -b], [d, -c, b, a]];
-
-        // Construct the right-isoclinic matrix R(Q_R)
         let r_mat = [[p, -q, -r, -s], [q, p, s, -r], [r, -s, p, q], [s, r, -q, p]];
 
-        // Combine the left and right isoclinic parts as L@R
         let rows = Matrix44 { rows: l_mat }
             .matmul(&Matrix44 { rows: r_mat })
             .rows
