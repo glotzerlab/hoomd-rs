@@ -16,17 +16,11 @@ use crate::{Adjust, LocalTrial, Rotate, rotate::versor::VersorDisplacement};
 /// A normal distribution of random [`DoubleVersor`] displacements, centered on
 /// the identity with some standard deviation.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct DoubleVersorDisplacement {
+struct DoubleVersorDisplacement {
     /// The standard deviation of the normal distribution of quaternions around the identity.
     std_dev: f64,
 }
 
-impl From<f64> for DoubleVersorDisplacement {
-    #[inline]
-    fn from(value: f64) -> Self {
-        Self { std_dev: value }
-    }
-}
 impl Distribution<DoubleVersor> for DoubleVersorDisplacement {
     /// Sample a random [`DoubleVersor`] displacement centered on the identity.
     ///
