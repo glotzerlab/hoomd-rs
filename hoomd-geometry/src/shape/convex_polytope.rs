@@ -520,7 +520,7 @@ impl<const N: usize, const MAX_VERTICES: usize> BoundingSphereRadius
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Convex, IntersectsAt};
+    use crate::{Convex, IntersectsAt, shape::sphere::factorial};
     use hoomd_vector::{Angle, Cartesian, InnerProduct, Rotate, Rotation, Versor};
 
     use approxim::assert_relative_eq;
@@ -1088,6 +1088,74 @@ mod tests {
                 max_relative = 5e-16
             );
         }
+
+        // The shortest vertex-to-vertex distance is the edge length.
+        let mut min_distance = f64::INFINITY;
+        for (i, vertex) in solid.vertices().iter().enumerate() {
+            for other in &solid.vertices()[i + 1..] {
+                min_distance = min_distance.min((*vertex - *other).norm());
+            }
+        }
+        assert_relative_eq!(min_distance, edge, max_relative = 1e-13);
+    }
+
+    #[rstest]
+    #[case::orthoplex_2(ConvexPolytope::<2>::orthoplex(), 4, 1.0)]
+    #[case::orthoplex_3(ConvexPolytope::<3>::orthoplex(), 6, 6f64.cbrt() / SQRT_2)]
+    #[case::orthoplex_4(ConvexPolytope::<4>::orthoplex(), 8, 24f64.sqrt().sqrt() / SQRT_2)]
+    #[case::orthoplex_5(ConvexPolytope::<5>::orthoplex(), 10, 120f64.powf(0.2) / SQRT_2)]
+    #[case::orthoplex_6(
+        ConvexPolytope::<6>::orthoplex(),
+        12,
+        720f64.powf(1.0 / 6.0) / SQRT_2
+    )]
+    #[case::hypercube_2(ConvexPolytope::<2>::hypercube(), 4, 1.0)]
+    #[case::hypercube_3(ConvexPolytope::<3>::hypercube(), 8, 1.0)]
+    #[case::hypercube_4(ConvexPolytope::<4>::hypercube(), 16, 1.0)]
+    #[case::hypercube_5(ConvexPolytope::<5>::hypercube(), 32, 1.0)]
+    #[case::hypercube_6(ConvexPolytope::<6>::hypercube(), 64, 1.0)]
+    #[case::simplex_2(
+        ConvexPolytope::<2>::simplex(),
+        3,
+        (4.0 / 3f64.sqrt()).sqrt()
+    )]
+    #[case::simplex_3(ConvexPolytope::<3>::simplex(), 4, 2f64.sqrt() * 3f64.cbrt())]
+    #[case::simplex_4(
+        ConvexPolytope::<4>::simplex(),
+        5,
+        (96.0 / 5f64.sqrt()).sqrt().sqrt()
+    )]
+    #[case::simplex_5(
+        ConvexPolytope::<5>::simplex(),
+        6,
+        (480.0 / 3f64.sqrt()).powf(1.0 / 5.0)
+    )]
+    #[case::simplex_6(
+        ConvexPolytope::<6>::simplex(),
+        7,
+        (5760.0 / 7f64.sqrt()).powf(1.0 / 6.0)
+    )]
+    fn hyperplatonic_solids<const N: usize>(
+        #[case] solid: ConvexPolytope<N>,
+        #[case] n: usize,
+        #[case] edge: f64,
+    ) {
+        assert_eq!(solid.vertices().len(), n);
+
+        for vertex in solid.vertices() {
+            assert_relative_eq!(
+                vertex.norm_squared(),
+                solid.vertices()[0].norm_squared(),
+                max_relative = 5e-16
+            );
+        }
+
+        // The stored bounding radius matches the vertices.
+        assert_relative_eq!(
+            solid.bounding_sphere_radius().get(),
+            solid.vertices()[0].norm(),
+            max_relative = 1e-13
+        );
 
         // The shortest vertex-to-vertex distance is the edge length.
         let mut min_distance = f64::INFINITY;
