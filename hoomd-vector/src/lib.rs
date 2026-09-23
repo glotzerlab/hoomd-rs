@@ -148,6 +148,10 @@
 //! # }
 //! ```
 //!
+//! Convert to a [`RotationMatrix`] when you need to rotate many vectors by the same
+//! rotation. [`RotationMatrix::rotate`] is typically several times faster than
+//! [`Versor::rotate`].
+//!
 //! [`DoubleVersor`] implements rotations on [`Cartesian<4>`] vectors:
 //! ```
 //! use approxim::assert_relative_eq;
@@ -164,10 +168,6 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
-//! Convert to a [`RotationMatrix`] when you need to rotate many vectors by the same
-//! rotation. [`RotationMatrix::rotate`] is typically several times faster than
-//! [`Versor::rotate`].
 //!
 //! # Random distributions
 //!
