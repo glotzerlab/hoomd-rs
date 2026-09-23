@@ -258,7 +258,8 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     #[inline]
     fn rotate(&self, vector: &Cartesian<4>) -> Cartesian<4> {
         let q = *self.l.get() * Quaternion::from(vector.coordinates) * *self.r.get();
-        q.embed_in_cartesian_4()
+        let [x, y, z] = q.vector.coordinates;
+        [q.scalar, x, y, z].into()
     }
 }
 
