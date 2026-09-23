@@ -220,9 +220,11 @@ impl From<DoubleVersor> for RotationMatrix<4> {
         let r_mat = [[p, -q, -r, -s], [q, p, s, -r], [r, -s, p, q], [s, r, -q, p]];
 
         // Combine the left and right isoclinic parts as L@R
-        Matrix44 { rows: l_mat }
+        let rows = Matrix44 { rows: l_mat }
             .matmul(&Matrix44 { rows: r_mat })
-            .into()
+            .rows
+            .map(Cartesian::from);
+        RotationMatrix { rows }
     }
 }
 
