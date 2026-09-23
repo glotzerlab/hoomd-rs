@@ -293,7 +293,7 @@ impl Rotation for DoubleVersor {
     /// Combine two rotations.
     ///
     /// The resulting versor is obtained by left and right quaternion
-    /// multiplications. As with [`Versor`], `self.combine(other)` first applies
+    /// multiplications. `self.combine(other)` first applies
     /// `other`, then `self`. Note that the right components multiply in the
     /// reverse order!
     /// ```math
