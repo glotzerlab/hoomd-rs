@@ -6,7 +6,7 @@
 use std::f64::consts::PI;
 
 use hoomd_microstate::property::Orientation;
-use hoomd_utility::valid::PositiveReal;
+use hoomd_utility::{positive_real, valid::PositiveReal};
 use hoomd_vector::{DoubleVersor, Rotation};
 use rand::Rng;
 use rand_distr::Distribution;
@@ -78,9 +78,7 @@ impl Adjust for Rotate<DoubleVersor> {
         self.maximum_rotation *= factor;
 
         if self.maximum_rotation.get() > PI / 2.0 {
-            self.maximum_rotation = (PI / 2.0)
-                .try_into()
-                .expect("PI/2.0 should be a positive real");
+            self.maximum_rotation = positive_real!(PI / 2.0);
         }
     }
 }
