@@ -156,10 +156,10 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let a = Cartesian::from([1.0, 2.0, 0.0, 0.0]);
-//! let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
-//!     [1.0, 0.0, 0.0].try_into()?,
-//!     PI,
-//! ));
+//! let v = DoubleVersor {
+//!     q_l: Versor::from_axis_angle([1.0, 0.0, 0.0].try_into()?, PI),
+//!     q_r: Versor::default(),
+//! };
 //! assert_relative_eq!(v.rotate(&a), [-2.0, 1.0, 0.0, 0.0].into());
 //! # Ok(())
 //! # }

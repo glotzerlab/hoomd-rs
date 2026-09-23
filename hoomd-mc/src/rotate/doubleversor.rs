@@ -47,8 +47,7 @@ impl Distribution<DoubleVersor> for DoubleVersorDisplacement {
         let q_l = single_displacement.sample(rng);
         let q_r = single_displacement.sample(rng);
 
-        // Combine them into a DoubleVersor
-        (q_l, q_r).into()
+        DoubleVersor { q_l, q_r }
     }
 }
 
@@ -185,10 +184,10 @@ mod tests {
 
         for _ in 0..100_000 {
             let d = displacement.sample(&mut rng);
-            check!(d.left_isoclinic().get().scalar >= 0.0);
-            check!(d.right_isoclinic().get().scalar >= 0.0);
-            check!((d.left_isoclinic().get().norm_squared() - 1.0).abs() < 1e-15);
-            check!((d.right_isoclinic().get().norm_squared() - 1.0).abs() < 1e-15);
+            check!(d.q_l.get().scalar >= 0.0);
+            check!(d.q_r.get().scalar >= 0.0);
+            check!((d.q_l.get().norm_squared() - 1.0).abs() < 1e-15);
+            check!((d.q_r.get().norm_squared() - 1.0).abs() < 1e-15);
         }
     }
 }
