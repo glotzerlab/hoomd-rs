@@ -402,7 +402,7 @@ impl Metric for DoubleVersor {
     fn n_dimensions() -> usize {
         6
     }
-    #[inline]
+
     /// The intrinsic distance between two [`DoubleVersor`]s.
     ///
     /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on the
@@ -423,6 +423,7 @@ impl Metric for DoubleVersor {
     ///
     /// This is equivalent to the scaled matrix logarithm form $`||\log(R_u^T R_v)||_F`$,
     /// measuring the shortest path along the curved manifold.
+    #[inline]
     fn distance(&self, other: &Self) -> f64 {
         self.distance_squared(other).sqrt()
     }
