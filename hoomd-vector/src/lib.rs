@@ -181,12 +181,7 @@
 //! - Versors are uniformly sampled from the surface of the `3-Sphere`, which doubly
 //!   covers `SO(3)`, the manifold of rotations in three dimensions.
 //! - Double versors are sampled as independent pairs of versors, which uniformly
-//!   covers `SO(4)`, the manifold of rotations in four dimensions. Four-dimensional
-//!   rotations are either *simple*, leaving an entire two-dimensional plane fixed
-//!   (analogously to how three-dimensional rotations leave a one-dimensional axis
-//!   fixed), or *double*, rotating two orthogonal planes by independent angles. This is
-//!   fundementally different from lower-dimensional rotation groups, which do not admit
-//!   these additional rotational behaviors.
+//!   covers `SO(4)`, the manifold of rotations in four dimensions.
 //!
 //! ```
 //! use hoomd_vector::{Angle, Cartesian, Versor};
