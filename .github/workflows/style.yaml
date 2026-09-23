@@ -21,7 +21,7 @@ env:
 
 jobs:
   cargo-check-clippy:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:
@@ -115,7 +115,7 @@ jobs:
         --keep-going
 
   cargo-fmt:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:
@@ -133,7 +133,7 @@ jobs:
     - run: cargo +nightly-2025-09-17 fmt --all --check
 
   prek:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:
@@ -144,10 +144,10 @@ jobs:
     - name: prek
       uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
       with:
-        prek-version: '0.3.8'
+        prek-version: 'v0.5.3'
 
   zizmor:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:
@@ -166,7 +166,7 @@ jobs:
     name: All style checks
     if: always()
     needs: [cargo-check-clippy, cargo-fmt, prek, zizmor]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
     - run: jq --exit-status 'all(.result == "success")' <<< "${NEEDS}"

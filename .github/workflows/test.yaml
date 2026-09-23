@@ -144,7 +144,7 @@ jobs:
     name: All tests
     if: always()
     needs: [unit_test]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
     - run: jq --exit-status 'all(.result == "success")' <<< "${NEEDS}"

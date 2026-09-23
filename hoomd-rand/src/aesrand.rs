@@ -67,8 +67,8 @@ impl Generator for AESRandCore {
         let data = unsafe { self.gen_array() };
         // SAFETY: As long as size_of::<[uint8x16_t; 2]>() == 32
         let bytes: [u8; 32] = unsafe { std::mem::transmute(data) };
-        for (i, chunk) in bytes.chunks_exact(8).enumerate() {
-            output[i] = u64::from_ne_bytes(chunk.try_into().expect("Not enough bytes to read."));
+        for (i, chunk) in bytes.as_chunks::<8>().0.iter().enumerate() {
+            output[i] = u64::from_ne_bytes(*chunk);
         }
     }
 }
