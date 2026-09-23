@@ -319,7 +319,6 @@ impl Rotation for DoubleVersor {
     ///     q_r: Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI / 3.0),
     /// };
     ///
-    /// // Combining applies `right` first, then `left`.
     /// let combined = left.combine(&right);
     /// assert_relative_eq!(
     ///     combined.rotate(&a),
