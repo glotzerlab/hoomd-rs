@@ -116,8 +116,7 @@ impl DoubleVersor {
     /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{8 \left(1 - (\vec{u}_l \cdot \vec{v}_l)\,(\vec{u}_r \cdot \vec{v}_r)\right)}
     /// ```
     ///
-    /// This is equivalent to the matrix form $`\lVert R_u - R_v \rVert_F`$, but does not require
-    /// forming the matrix representation of each rotation.
+    /// This is equivalent to the matrix form $`\lVert R_u - R_v \rVert_F`$.
     ///
     /// # Example
     ///
