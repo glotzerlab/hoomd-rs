@@ -31,30 +31,12 @@ use crate::{Cartesian, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Ver
 /// ```
 /// As normal [`Versor`]s do with SO(3), the pair $`(\mathbf{q}_l, \mathbf{q}_r)`$ forms
 /// a double cover of SO(4).
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct DoubleVersor {
     /// The left-isoclinic part of the rotation.
     l: Versor,
     /// The right-isoclinic part of the rotation.
     r: Versor,
-}
-
-impl Default for DoubleVersor {
-    /// Create an identity rotation.
-    ///
-    /// # Example
-    /// ```
-    /// use hoomd_vector::DoubleVersor;
-    ///
-    /// let v = DoubleVersor::default();
-    /// ```
-    #[inline]
-    fn default() -> Self {
-        Self {
-            l: Versor::default(),
-            r: Versor::default(),
-        }
-    }
 }
 
 impl From<(Versor, Versor)> for DoubleVersor {
