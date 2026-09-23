@@ -136,7 +136,6 @@ impl DoubleVersor {
     /// };
     ///
     /// assert_relative_eq!(v.chordal_distance(&identity), 8.0_f64.sqrt());
-    /// // The intrinsic distance along the manifold is longer than the chord.
     /// assert!(v.distance(&identity) > 8.0_f64.sqrt());
     /// # Ok(())
     /// # }
