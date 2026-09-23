@@ -39,15 +39,6 @@ pub struct DoubleVersor {
     r: Versor,
 }
 
-impl From<(Versor, Versor)> for DoubleVersor {
-    #[inline]
-    fn from(value: (Versor, Versor)) -> Self {
-        Self {
-            l: value.0,
-            r: value.1,
-        }
-    }
-}
 
 impl DoubleVersor {
     #[inline]
