@@ -94,7 +94,8 @@ mod tests {
     /// Number of trial moves to test.
     const N: usize = 262_144;
 
-    /// Expected geodesic distance for small a:E[χ₆] = sqrt2*Γ(7/2)/Γ(3) = 15sqrt(2π)/16
+    /// Expected geodesic distance for small angles:
+    /// $`E[\chi_6] = \sqrt{2}\,\Gamma(7/2)/\Gamma(3) = 15\sqrt{2\pi}/16`$
     #[inline]
     fn expected_chi6_mean() -> f64 {
         15.0 * (2.0 * PI).sqrt() / 16.0
