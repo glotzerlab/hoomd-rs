@@ -446,7 +446,7 @@ mod tests {
     use rstest::rstest;
     use std::{
         collections::HashSet,
-        f64::consts::{FRAC_PI_2, PI, TAU},
+        f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_6, PI, TAU},
     };
 
     use crate::{
@@ -521,6 +521,37 @@ mod tests {
 
             assert_eq!(images, expected, "rotation {rotation:?}");
         }
+    }
+
+    /// Check general double rotations (neither purely isoclinic nor simple,
+    /// different angle in each plane) against the closed-form plane rotations
+    /// verified symbolically in tools/doubleversor_symbolic_proof.wl.
+    #[rstest]
+    #[case::double_rotation(0.7, 1.1, [1.0, 2.0, 3.0, 4.0])]
+    #[case::mixed_pi_fractions(FRAC_PI_3, -FRAC_PI_6, [0.5, -1.0, 2.0, 3.0])]
+    #[case::large_angles(2.0, 0.4, [-3.0, 0.7, 1.2, -2.5])]
+    fn general_double_rotations_match_reference(
+        #[case] left: f64,
+        #[case] right: f64,
+        #[case] v: [f64; 4],
+    ) {
+        let x: Unit<Cartesian<3>> = [1.0, 0.0, 0.0].try_into().expect("non-zero axis");
+        let double_versor = DoubleVersor {
+            q_l: Versor::from_axis_angle(x, left),
+            q_r: Versor::from_axis_angle(x, right),
+        };
+        let (t1, t2) = ((left + right) / 2.0, (left - right) / 2.0);
+        let expected = [
+            v[0] * t1.cos() - v[1] * t1.sin(),
+            v[0] * t1.sin() + v[1] * t1.cos(),
+            v[2] * t2.cos() - v[3] * t2.sin(),
+            v[2] * t2.sin() + v[3] * t2.cos(),
+        ];
+        assert_relative_eq!(
+            double_versor.rotate(&Cartesian::from(v)),
+            Cartesian::from(expected),
+            epsilon = 1e-14
+        );
     }
 
     #[test]
