@@ -8,6 +8,7 @@
 * `[hoomd-microstate`]: Add the `OpenSpherical` boundary condition for use with the `SphericalVecCell` data structure (#313).
 * `[hoomd-spatial`]: Add `SphericalVecCell` that can perform efficient spatial searches in spherical space (#313).
 * `[hoomd-utility]`: Add the `positive_real` macro that generates compile-time-checked `PositiveReal` values (#421).
+* `[hoomd-vector]`: Add the `DoubleVersor` type for rotations of `Cartesian<4>` (#346)
 
 *Changed:*
 
