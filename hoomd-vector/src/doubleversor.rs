@@ -444,8 +444,10 @@ mod tests {
     use approxim::assert_relative_eq;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
-    use std::collections::HashSet;
-    use std::f64::consts::{FRAC_PI_2, PI, TAU};
+    use std::{
+        collections::HashSet,
+        f64::consts::{FRAC_PI_2, PI, TAU},
+    };
 
     use crate::{
         Cartesian, DoubleVersor, InnerProduct, Metric, Rotate, Rotation, RotationMatrix, Unit,
