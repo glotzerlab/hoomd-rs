@@ -523,9 +523,6 @@ mod tests {
         }
     }
 
-    /// Check general double rotations (neither purely isoclinic nor simple,
-    /// different angle in each plane) against the closed-form plane rotations
-    /// verified symbolically in tools/doubleversor_symbolic_proof.wl.
     #[rstest]
     #[case::double_rotation(0.7, 1.1, [1.0, 2.0, 3.0, 4.0])]
     #[case::mixed_pi_fractions(FRAC_PI_3, -FRAC_PI_6, [0.5, -1.0, 2.0, 3.0])]
@@ -540,7 +537,8 @@ mod tests {
             q_l: Versor::from_axis_angle(x, left),
             q_r: Versor::from_axis_angle(x, right),
         };
-        let (t1, t2) = ((left + right) / 2.0, (left - right) / 2.0);
+        let t1 = left.midpoint(right);
+        let t2 = t1 - right;
         let expected = [
             v[0] * t1.cos() - v[1] * t1.sin(),
             v[0] * t1.sin() + v[1] * t1.cos(),
