@@ -129,7 +129,6 @@ impl DoubleVersor {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let identity = DoubleVersor::default();
-    /// // A rotation by PI/2 in both invariant planes.
     /// let v = DoubleVersor {
     ///     q_l: Versor::from_axis_angle([1.0, 0.0, 0.0].try_into()?, PI),
     ///     q_r: Versor::default(),
