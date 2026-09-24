@@ -444,7 +444,8 @@ mod tests {
     use approxim::assert_relative_eq;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
-    use std::f64::consts::{PI, TAU};
+    use std::collections::HashSet;
+    use std::f64::consts::{FRAC_PI_2, PI, TAU};
 
     use crate::{
         Cartesian, DoubleVersor, InnerProduct, Metric, Rotate, Rotation, RotationMatrix, Unit,
@@ -465,6 +466,58 @@ mod tests {
                 RotationMatrix::from(dv).rotate(&v),
                 epsilon = 1e-14,
             );
+        }
+    }
+
+    #[test]
+    fn sixteen_cell_vertices_are_invariant_under_point_group() {
+        let vertices: Vec<[f64; 4]> = (0..4)
+            .flat_map(|i| {
+                let mut positive = [0.0_f64; 4];
+                positive[i] = 1.0;
+                [positive, positive.map(|x| -x)]
+            })
+            .collect();
+        // Round to 1e-9, as integers so we can then hash the values.
+        #[expect(clippy::cast_possible_truncation, reason = "values are exact integers")]
+        let key = |v: [f64; 4]| v.map(|c| (c * 1e9).round() as i64);
+
+        let expected: HashSet<_> = vertices.iter().map(|&v| key(v)).collect();
+
+        let axes: [Unit<Cartesian<3>>; 3] = [
+            [1.0, 0.0, 0.0].try_into().expect("non-zero axis"),
+            [0.0, 1.0, 0.0].try_into().expect("non-zero axis"),
+            [0.0, 0.0, 1.0].try_into().expect("non-zero axis"),
+        ];
+        let mut rotations: Vec<_> = axes
+            .map(|axis| {
+                let quarter_turn = Versor::from_axis_angle(axis, FRAC_PI_2);
+                DoubleVersor {
+                    q_l: quarter_turn,
+                    q_r: quarter_turn,
+                }
+            })
+            .into_iter()
+            .collect();
+
+        let half_turn = Versor::from_axis_angle(axes[0], PI);
+        rotations.push(DoubleVersor {
+            q_l: half_turn,
+            q_r: Versor::default(),
+        });
+        rotations.push(DoubleVersor {
+            q_l: Versor::default(),
+            q_r: half_turn,
+        });
+
+        for rotation in rotations {
+            let images: HashSet<_> = vertices
+                .iter()
+                .map(|&v| rotation.rotate(&Cartesian::from(v)))
+                .map(|image| key(image.coordinates))
+                .collect();
+
+            assert_eq!(images, expected, "rotation {rotation:?}");
         }
     }
 
