@@ -95,6 +95,18 @@ impl DoubleVersor {
     /// Nominally, all [`DoubleVersor`] instances have unit components. Due to limited
     /// floating point precision, this assumption may not hold after repeated
     /// operations. Normalize double versors when needed to correct this issue.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{DoubleVersor, Versor};
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let q = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI / 2.0);
+    /// let a = DoubleVersor { q_l: q, q_r: q };
+    /// let b = a.normalized();
+    /// # Ok(()) }
+    /// ```
     pub fn normalized(self) -> Self {
         // Normalization is a projection onto the manifold as normal, and projection
         // onto a product manifold can be separated into the components in the product.
