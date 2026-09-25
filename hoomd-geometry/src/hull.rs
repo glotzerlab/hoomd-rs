@@ -174,7 +174,18 @@ impl PointPlaneOrientation<3> for Cartesian<3> {
     fn orientation(simplex: &[Cartesian<3>; 3], point: &Cartesian<3>) -> Result<Side, Error> {
         // Shewchuk's orient3d is positive *below* the oriented plane, so we negate such
         // that Above is the side the vertex order's normal points to, as in 2D.
-        sign(-orient3d_of(simplex[0], simplex[1], simplex[2], *point)).ok_or(Error::NotFinite)
+        let coord = |p: Cartesian<3>| robust::Coord3D {
+            x: p[0],
+            y: p[1],
+            z: p[2],
+        };
+        sign(-robust::orient3d(
+            coord(simplex[0]),
+            coord(simplex[1]),
+            coord(simplex[2]),
+            coord(*point),
+        ))
+        .ok_or(Error::NotFinite)
     }
 }
 
@@ -370,7 +381,7 @@ impl ConvexHull<2> for Cartesian<2> {
                 let p = points[n_vertices_on_hull - 2];
                 let n = points[n_vertices_on_hull - 1];
 
-                if predicate_orient2d((p, n), c)? == Side::Above {
+                if Cartesian::<2>::orientation(&[p, n], &c)? == Side::Above {
                     break;
                 }
                 // Point n is not to the left of the edge, so it lies inside the hull
@@ -411,36 +422,6 @@ fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> Option<usize> {
 fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
     let diff = p - anchor;
     (f64::atan2(diff[1], diff[0]), diff.dot(&diff))
-}
-
-/// Determines whether a point `test` is to the left, right, or collinear with `edge`.
-///
-/// The sign of the orientation determinant is computed with [`robust::orient2d`],
-/// Shewchuk's adaptive precision predicate: the sign is therefore *exact* for the
-/// coordinates as stored, and the resulting hull is exact up to the precision of the
-/// coordinates themselves.
-///
-/// Returns 1 when `test` lies to the left of the directed edge, -1 when it lies to the
-/// right, and 0 when the three points are exactly collinear.
-///
-/// # Note
-///
-/// Because the sign is exact, it is antisymmetric in its arguments (swapping two points
-/// points negates the sign) and invariant under cyclic permutation of the three inputs.
-#[inline]
-fn predicate_orient2d(
-    (p, q): (Cartesian<2>, Cartesian<2>),
-    test: Cartesian<2>,
-) -> Result<Side, Error> {
-    sign(robust::orient2d(
-        robust::Coord { x: p[0], y: p[1] },
-        robust::Coord { x: q[0], y: q[1] },
-        robust::Coord {
-            x: test[0],
-            y: test[1],
-        },
-    ))
-    .ok_or(Error::NotFinite)
 }
 
 impl ConvexHull<3> for Cartesian<3> {
@@ -527,9 +508,10 @@ impl ConvexHull<3> for Cartesian<3> {
 /// Compute the convex hull of points in 3D with an incremental algorithm.
 ///
 /// Returns the indices of the points that are vertices of the hull in increasing order,
-/// and the triangular faces of the hull as oriented index triples. A point `p` lies
-/// strictly outside a face `(a, b, c)` when `orient3d(a, b, c, p) > 0`. Faces are
-/// oriented so that all points of the hull evaluate to zero or less against them.
+/// and the triangular faces of the hull as oriented index triples. A point lies
+/// strictly outside a face when its orientation against it is [`Side::Below`], and
+/// the faces are oriented so that all points of the hull lie [`Side::Above`] or
+/// [`Side::On`] them.
 ///
 /// Starting from an initial tetrahedron, each point is inserted in turn.
 /// Points strictly outside the current hull see a connected set of faces,
@@ -539,13 +521,16 @@ impl ConvexHull<3> for Cartesian<3> {
 fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 3]>), Error> {
     let (t0, t1, t2, t3) = initial_tetrahedron(points)?;
 
-    // The four faces of the initial tetrahedron. Each face is oriented so
-    // that the vertex opposite it is on its negative side, which places
-    // points strictly outside a face on its positive side.
+    // The four faces of the initial tetrahedron. Each face is oriented so the vertex
+    // opposite it, and with it the hull, lies Above or On the face
     let mut faces: Vec<[usize; 3]> = vec![[t0, t1, t2], [t0, t2, t3], [t0, t3, t1], [t1, t3, t2]];
     let opposite = [t3, t1, t2, t0];
     for (face, o) in faces.iter_mut().zip(opposite) {
-        if orient3d_at(points, face[0], face[1], face[2], o) > 0.0 {
+        if Cartesian::<3>::orientation(
+            &[points[face[0]], points[face[1]], points[face[2]]],
+            &points[o],
+        )? == Side::Below
+        {
             face.swap(0, 1);
         }
     }
@@ -564,7 +549,10 @@ fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 
         // Remove the faces that p strictly sees and collect their directed edges
         edges.clear();
         faces.retain(|&face| {
-            if orient3d_at(points, face[0], face[1], face[2], p) > 0.0 {
+            let outside = [points[face[0]], points[face[1]], points[face[2]]];
+            if Cartesian::<3>::orientation(&outside, &points[p])
+                .is_ok_and(|side| side == Side::Below)
+            {
                 edges.push((face[0], face[1]));
                 edges.push((face[1], face[2]));
                 edges.push((face[2], face[0]));
@@ -655,15 +643,17 @@ fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, 
     let c = c.ok_or(Error::DegeneratePolytope)?;
 
     // d is the point farthest from the plane through a, b and c.
-    // Any nonzero value from the robust predicate guarantees our tetrahedron is valid.
-    let (mut d, mut d_volume) = (None, 0.0);
+    let face = [points[a], points[b], points[c]];
+    let normal = (points[b] - points[a]).cross(&(points[c] - points[a]));
+    let (mut d, mut rank) = (None, f64::NEG_INFINITY);
     for i in 0..points.len() {
         if i == a || i == b || i == c {
             continue;
         }
-        let volume = orient3d_at(points, a, b, c, i).abs();
-        if volume > d_volume {
-            d_volume = volume;
+        if Cartesian::<3>::orientation(&face, &points[i])? != Side::On
+            && normal.dot(&(points[i] - points[a])).abs() > rank
+        {
+            rank = normal.dot(&(points[i] - points[a])).abs();
             d = Some(i);
         }
     }
@@ -674,41 +664,19 @@ fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, 
     Ok((a, b, c, d))
 }
 
-/// The orientation determinant of four points given by index.
-///
-/// The sign of the returned value is positive when `d` lies strictly outside the face
-/// `(a, b, c)` oriented as by [`incremental_hull`], negative when it lies strictly
-/// inside, and zero when the four points are coplanar.
-#[inline]
-fn orient3d_at(points: &[Cartesian<3>], a: usize, b: usize, c: usize, d: usize) -> f64 {
-    orient3d_of(points[a], points[b], points[c], points[d])
-}
-
-/// The orientation determinant of four points.
-#[inline]
-fn orient3d_of(a: Cartesian<3>, b: Cartesian<3>, c: Cartesian<3>, d: Cartesian<3>) -> f64 {
-    let coord = |p: Cartesian<3>| robust::Coord3D {
-        x: p[0],
-        y: p[1],
-        z: p[2],
-    };
-
-    robust::orient3d(coord(a), coord(b), coord(c), coord(d))
-}
-
 /// Whether three points given by index are exactly collinear.
 ///
 /// The points are collinear when they are collinear in each of the three coordinate
 /// plane projections, decided by the two-dimensional exact predicate.
 #[inline]
 fn collinear(points: &[Cartesian<3>], a: usize, b: usize, c: usize) -> bool {
-    let coord = |p: &Cartesian<3>, i: usize, j: usize| robust::Coord { x: p[i], y: p[j] };
+    let projected =
+        |p: usize, i: usize, j: usize| Cartesian::<2>::from([points[p][i], points[p][j]]);
     [(0, 1), (0, 2), (1, 2)].iter().all(|&(i, j)| {
-        robust::orient2d(
-            coord(&points[a], i, j),
-            coord(&points[b], i, j),
-            coord(&points[c], i, j),
-        ) == 0.0
+        Cartesian::<2>::orientation(
+            &[projected(a, i, j), projected(b, i, j)],
+            &projected(c, i, j),
+        ) == Ok(Side::On)
     })
 }
 
@@ -1298,7 +1266,10 @@ mod tests {
 
         for offset in [0.0, 1.0, 1e3, 1e5, 1e8] {
             let offset = Cartesian::from([offset, offset]);
-            check!(predicate_orient2d((p + offset, q + offset), test + offset) == Ok(Side::Above));
+            check!(
+                Cartesian::<2>::orientation(&[p + offset, q + offset], &(test + offset))
+                    == Ok(Side::Above)
+            );
         }
 
         // The same holds for collinear and right-turning triples.
@@ -1307,11 +1278,11 @@ mod tests {
         for offset in [0.0, 1e3, 1e8] {
             let offset = Cartesian::from([offset, offset]);
             check!(
-                predicate_orient2d((p + offset, q_collinear + offset), test + offset)
+                Cartesian::<2>::orientation(&[p + offset, q_collinear + offset], &(test + offset),)
                     == Ok(Side::On)
             );
             check!(
-                predicate_orient2d((p + offset, q_right + offset), test + offset)
+                Cartesian::<2>::orientation(&[p + offset, q_right + offset], &(test + offset))
                     == Ok(Side::Below)
             );
         }
@@ -1363,8 +1334,11 @@ mod tests {
         // No point is strictly outside any face.
         for &face in faces {
             for q in 0..points.len() {
+                let face_points = [points[face[0]], points[face[1]], points[face[2]]];
+                let side = Cartesian::<3>::orientation(&face_points, &points[q])
+                    .expect("the coordinates are resolvable");
                 check!(
-                    orient3d_at(points, face[0], face[1], face[2], q) <= 0.0,
+                    side != Side::Below,
                     "point {q} lies outside the face {face:?}"
                 );
             }
