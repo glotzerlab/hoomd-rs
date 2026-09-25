@@ -7,10 +7,11 @@ use std::f64::consts::SQRT_2;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{BoundingSphereRadius, Error, SupportMapping};
+use crate::{BoundingSphereRadius, Error, Scale, SupportMapping};
 use arrayvec::ArrayVec;
-use hoomd_utility::valid::PositiveReal;
+use hoomd_utility::{positive_real, valid::PositiveReal};
 use hoomd_vector::{Cartesian, InnerProduct};
+use itertools::Itertools;
 
 /// A faceted solid defined by the convex hull of a set of points.
 ///
@@ -132,10 +133,6 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<2, MAX_VERTICES> {
     /// ```
     #[inline]
     #[must_use]
-    #[expect(
-        clippy::missing_panics_doc,
-        reason = "panic will never occur on a hard-coded constant"
-    )]
     pub fn regular(n: usize) -> ConvexPolytope<2, MAX_VERTICES> {
         ConvexPolytope {
             vertices: (0..n)
@@ -144,9 +141,7 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<2, MAX_VERTICES> {
                     Cartesian::from([0.5 * f64::cos(theta), 0.5 * f64::sin(theta)])
                 })
                 .collect(),
-            bounding_radius: 0.5
-                .try_into()
-                .expect("hard-coded constant should be positive"),
+            bounding_radius: positive_real!(0.5),
         }
     }
 }
@@ -389,12 +384,6 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     #[inline]
     #[must_use]
     pub fn hypercube() -> Self {
-        #[inline]
-        fn signed_combinations_of_one_half<const N: usize>() -> impl Iterator<Item = Cartesian<N>> {
-            (0..(1usize << N)).map(|bits| {
-                std::array::from_fn(|i| if bits & (1 << i) == 0 { 0.5 } else { -0.5 }).into()
-            })
-        }
         assert!(
             N != 0,
             "A hypercube is not well-defined in zero dimensions!"
@@ -404,7 +393,9 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
             .expect("sqrt(positive) is positive.");
 
         Self {
-            vertices: ArrayVec::<_, MAX_VERTICES>::from_iter(signed_combinations_of_one_half::<N>()),
+            vertices: ArrayVec::<_, MAX_VERTICES>::from_iter(
+                sign_variants([0.5; N]).map(Cartesian::from),
+            ),
             bounding_radius,
         }
     }
@@ -427,8 +418,10 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
     #[inline]
     #[must_use]
     pub fn icosahedron() -> ConvexPolytope<3, MAX_VERTICES> {
-        ConvexPolytope::with_vertices(cyclic_permutations(1.0, std::f64::consts::GOLDEN_RATIO))
-            .expect("an icosahedron requires at least 12 vertices")
+        ConvexPolytope::with_vertices(
+            permutations([0.0, 1.0, std::f64::consts::GOLDEN_RATIO], true).map(Cartesian::from),
+        )
+        .expect("an icosahedron requires at least 12 vertices")
     }
 
     /// Create a dodecahedron with edge length `2 / phi`.
@@ -449,27 +442,192 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
     pub fn dodecahedron() -> ConvexPolytope<3, MAX_VERTICES> {
         let phi = std::f64::consts::GOLDEN_RATIO;
         // An edge-2 cube together with the cyclic permutations of `(0, ±1/phi, ±phi)`.
-        let hypercube = Self::hypercube();
+        let hypercube = Self::hypercube().scale_length(positive_real!(2.0));
         let vertices = hypercube
             .vertices()
             .iter()
             .copied()
-            .map(|vertex| 2.0 * vertex)
-            .chain(cyclic_permutations(phi.recip(), phi));
+            .chain(permutations([0.0, phi.recip(), phi], true).map(Cartesian::from));
         ConvexPolytope::with_vertices(vertices)
             .expect("a dodecahedron requires at least 20 vertices")
     }
 }
 
-/// The cyclic coordinate permutations of `(0, ±x, ±y)`
-///
-/// Returns the set `{(0, ±x, ±y), (±x, ±y, 0), (±y, 0, ±x)}`.
+impl<const MAX_VERTICES: usize> ConvexPolytope<4, MAX_VERTICES> {
+    /// Build a 600-cell with unit volume.
+    ///
+    /// The 600-cell, also called the hypericosahedron or hexacosichoron, is the
+    /// four-dimensional analogue of the icosahedron, with 120 vertices and 600
+    /// 600 tetrahedral cells. Its vertices are those of a tesseract and a 16-cell
+    /// together with the even coordinate permutations of `(phi, 1, 1/phi, 0)/2`.
+    /// Equivalently, its vertices form the *icosians*, a 120-element set of points on
+    /// the three-sphere that, when interpreted as [`Versor`]s rather than unit
+    /// [`Cartesian<4>`] points, form a uniform mesh on the three-dimensional group of
+    /// rotations `SO(3)`.
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexPolytope};
+    ///
+    /// let hypericosahedron = ConvexPolytope::<4, 120>::hypericosahedron();
+    ///
+    /// assert_eq!(hypericosahedron.vertices().len(), 120);
+    /// assert_relative_eq!(
+    ///     hypericosahedron.bounding_sphere_radius().get(),
+    ///     (8.0 / (25.0 * (5.0_f64.sqrt() - 1.0))).powf(0.25)
+    /// );
+    /// ```
+    ///
+    /// # Panics
+    /// If `MAX_VERTICES < 120`.
+    #[inline]
+    #[must_use]
+    pub fn hypericosahedron() -> Self {
+        let phi = std::f64::consts::GOLDEN_RATIO;
+        let tesseract = Self::hypercube();
+        let orthoplex = Self::orthoplex();
+        let sixteen_cell = orthoplex.scale_length(orthoplex.bounding_sphere_radius().recip());
+        let vertices = tesseract
+            .vertices()
+            .iter()
+            .copied()
+            .chain(sixteen_cell.vertices().iter().copied())
+            .chain(
+                permutations([phi, 1.0, phi.recip(), 0.0].map(|x| x / 2.0), true)
+                    .map(Cartesian::from),
+            );
+        let volume = 25.0 * (5.0_f64.sqrt() - 1.0) / 8.0;
+        Self::with_vertices(vertices)
+            .expect("a hypericosahedron requires at least 120 vertices")
+            .scale_volume(volume.recip().try_into().expect("volume is positive"))
+    }
+
+    /// Build a 120-cell with unit volume.
+    ///
+    /// The 120-cell, also called the hyperdodecahedron or icosachoron, is the
+    /// four-dimensional analogue of the dodecahedron, with 600 vertices and 120
+    /// dodecahedral cells.
+    ///
+    /// # Example
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexPolytope};
+    ///
+    /// let hyperdodecahedron = ConvexPolytope::<4, 600>::hyperdodecahedron();
+    ///
+    /// assert_eq!(hyperdodecahedron.vertices().len(), 600);
+    /// assert_relative_eq!(
+    ///     hyperdodecahedron.bounding_sphere_radius().get(),
+    ///     8.0_f64.sqrt() / (120.0 * 5.0_f64.sqrt()).powf(0.25)
+    /// );
+    /// ```
+    ///
+    /// # Panics
+    /// If `MAX_VERTICES < 600`.
+    #[inline]
+    #[must_use]
+    pub fn hyperdodecahedron() -> Self {
+        let phi = std::f64::consts::GOLDEN_RATIO;
+        let inv_phi = phi.recip();
+        let vertices = permutations([2.0, 2.0, 0.0, 0.0], false)
+            .chain(permutations([phi, phi, phi, inv_phi.powi(2)], false))
+            .chain(permutations([1.0, 1.0, 1.0, 5f64.sqrt()], false))
+            .chain(permutations(
+                [inv_phi, inv_phi, inv_phi, phi.powi(2)],
+                false,
+            ))
+            .chain(permutations([0.0, inv_phi, phi, 5f64.sqrt()], true))
+            .chain(permutations([0.0, inv_phi.powi(2), 1.0, phi.powi(2)], true))
+            .chain(permutations([inv_phi, 1.0, phi, 2.0], true))
+            .map(Cartesian::from);
+        let volume = 120.0 * 5f64.sqrt();
+        Self::with_vertices(vertices)
+            .expect("a hyperdodecahedron requires at least 600 vertices")
+            .scale_volume(volume.recip().try_into().expect("volume is positive"))
+    }
+}
+
+/// Every way to flip the signs of the nonzero entries of `v`.
 #[inline]
-fn cyclic_permutations(x: f64, y: f64) -> impl Iterator<Item = Cartesian<3>> {
-    itertools::iproduct!([-1.0, 1.0], [-1.0, 1.0]).flat_map(move |(a, b)| {
-        let v = (0.0, a * x, b * y); // v.0, v.1, v.2
-        [v, (v.1, v.2, v.0), (v.2, v.0, v.1)].map(Cartesian::from)
-    })
+fn sign_variants<const N: usize>(v: [f64; N]) -> impl Iterator<Item = [f64; N]> {
+    let zeros = v
+        .iter()
+        .enumerate()
+        .fold(0, |m, (i, &x)| m | usize::from(x == 0.0) << i);
+    (0..1_usize << N)
+        .filter(move |bits| bits & zeros == 0)
+        .map(move |bits| std::array::from_fn(|i| if bits >> i & 1 == 1 { -v[i] } else { v[i] }))
+}
+
+/// Whether a permutation rearranges an even number of entry pairs.
+#[inline]
+fn is_even(permutation: &[usize]) -> bool {
+    permutation
+        .iter()
+        .array_combinations()
+        .filter(|[a, b]| a > b)
+        .count()
+        % 2
+        == 0
+}
+
+/// The distinct coordinate permutations of `±v`, even ones only if `even`.
+///
+/// An *even* permutation is a product of an even number of pairwise swaps. In three
+/// dimensions, even permutations are equivalent to cyclic permutations.
+#[inline]
+fn permutations<const N: usize>(v: [f64; N], even: bool) -> impl Iterator<Item = [f64; N]> {
+    (0..N)
+        .permutations(N)
+        .filter(move |p| !even || is_even(p))
+        // Permutations that only swap equal entries would result in duplicates, so
+        // we filter these out.
+        .filter(move |p| (0..N).all(|i| (i + 1..N).all(|j| !(v[p[i]] == v[p[j]] && p[i] > p[j]))))
+        .flat_map(move |p| sign_variants(std::array::from_fn(|i| v[p[i]])))
+}
+
+impl<const N: usize, const MAX_VERTICES: usize> Scale for ConvexPolytope<N, MAX_VERTICES> {
+    /// Construct a scaled polytope.
+    ///
+    /// The resulting polytope's vertices $` v_\mathrm{new} `$ are the
+    /// original's $` v `$ scaled uniformly:
+    /// ```math
+    /// v_\mathrm{new_i} = v_\mathrm{old_i} \cdot v
+    /// ```
+    ///
+    /// The centroid remains at the origin.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::ConvexPolygon};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let square = ConvexPolygon::hypercube();
+    ///
+    /// let scaled_square = square.scale_length(2.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_square.vertices()[0], [1.0, 1.0].into());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        Self {
+            vertices: self.vertices.iter().map(|vertex| *vertex * v).collect(),
+            bounding_radius: self.bounding_radius * v,
+        }
+    }
+
+    /// Construct a polytope scaled to a new N-volume.
+    ///
+    /// The resulting polytope's N-volume is the original's scaled by $` v `$.
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().powf(1.0 / N as f64);
+        self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
+    }
 }
 
 /// Compute the matrix-vector multiplication of an `ArrayVec` against a `Cartesian<N>`.
@@ -520,7 +678,7 @@ impl<const N: usize, const MAX_VERTICES: usize> BoundingSphereRadius
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Convex, IntersectsAt, shape::sphere::factorial};
+    use crate::{Convex, IntersectsAt};
     use hoomd_vector::{Angle, Cartesian, InnerProduct, Rotate, Rotation, Versor};
 
     use approxim::assert_relative_eq;
@@ -1165,5 +1323,90 @@ mod tests {
             }
         }
         assert_relative_eq!(min_distance, edge, max_relative = 1e-13);
+    }
+
+    /// The two H4 regular 4-polytopes have the vertex counts, circumradii,
+    /// edge lengths, and vertex degrees documented on the Wikipedia
+    /// 600-cell and 120-cell pages (validated in `polytope-h4-solids.wl` in
+    /// the workspace root).
+    #[rstest]
+    #[case::hypericosahedron(
+        ConvexPolytope::<4, 600>::hypericosahedron(),
+        120,
+        (8.0 / (25.0 * (5.0_f64.sqrt() - 1.0))).powf(0.25),
+        std::f64::consts::GOLDEN_RATIO.recip() * (8.0 / (25.0 * (5.0_f64.sqrt() - 1.0))).powf(0.25),
+        12,
+        720
+    )]
+    #[case::hyperdodecahedron(
+        ConvexPolytope::<4, 600>::hyperdodecahedron(),
+        600,
+        8.0_f64.sqrt() / (120.0 * 5.0_f64.sqrt()).powf(0.25),
+        (3.0 - 5.0_f64.sqrt()) / (120.0 * 5.0_f64.sqrt()).powf(0.25),
+        4,
+        1200
+    )]
+    fn h4_solids(
+        #[case] solid: ConvexPolytope<4, 600>,
+        #[case] n: usize,
+        #[case] circumradius: f64,
+        #[case] edge: f64,
+        #[case] degree: usize,
+        #[case] n_edges: usize,
+    ) {
+        assert_eq!(solid.vertices().len(), n);
+
+        for vertex in solid.vertices() {
+            assert_relative_eq!(
+                vertex.norm_squared(),
+                solid.vertices()[0].norm_squared(),
+                max_relative = 5e-16
+            );
+        }
+        assert_relative_eq!(
+            solid.bounding_sphere_radius().get(),
+            circumradius,
+            max_relative = 1e-13
+        );
+
+        // The shortest vertex-to-vertex distance is the edge length, and
+        // exactly `n_edges` pairs sit at it, `degree` per vertex.
+        let mut min_distance = f64::INFINITY;
+        for (i, vertex) in solid.vertices().iter().enumerate() {
+            for other in &solid.vertices()[i + 1..] {
+                min_distance = min_distance.min((*vertex - *other).norm());
+            }
+        }
+        assert_relative_eq!(min_distance, edge, max_relative = 1e-13);
+
+        let mut incident = vec![0_usize; n];
+        let mut edges = 0;
+        for (i, vertex) in solid.vertices().iter().enumerate() {
+            for (j, other) in solid.vertices().iter().enumerate().skip(i + 1) {
+                if ((*vertex - *other).norm() - min_distance).abs() < 1e-9 {
+                    incident[i] += 1;
+                    incident[j] += 1;
+                    edges += 1;
+                }
+            }
+        }
+        assert_eq!(edges, n_edges);
+        assert!(incident.iter().all(|&k| k == degree));
+    }
+
+    /// Scaling length by `s` and volume by `s^N` produce the same shape.
+    #[test]
+    fn scale_length_and_volume() {
+        let dodecahedron = ConvexPolyhedron::dodecahedron();
+        let by_length = dodecahedron.scale_length(positive_real!(2.0));
+        let by_volume = dodecahedron.scale_volume(positive_real!(8.0));
+
+        for (scaled, expected) in by_volume.vertices().iter().zip(by_length.vertices()) {
+            assert_relative_eq!(scaled, expected);
+        }
+        assert_relative_eq!(
+            by_length.vertices()[0].norm(),
+            2.0 * dodecahedron.vertices()[0].norm()
+        );
     }
 }

@@ -79,6 +79,25 @@ impl PositiveReal {
     pub const fn get(&self) -> f64 {
         self.0
     }
+
+    /// Get the reciprocal of the value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_utility::valid::PositiveReal;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let positive = PositiveReal::try_from(2.0)?;
+    ///
+    /// assert_eq!(positive.recip().get(), 1.0 / 2.0);
+    /// # Ok(())
+    /// # }
+    #[must_use]
+    #[inline]
+    pub const fn recip(&self) -> Self {
+        Self(self.0.recip())
+    }
 }
 
 impl Eq for PositiveReal {}
