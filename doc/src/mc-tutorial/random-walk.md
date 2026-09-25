@@ -66,7 +66,7 @@ drawn uniformly inside the sphere with radius `maximum_distance`:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:local_trial}}
 ```
-The `try_into()?` ensures that the given `f64` value is a positive
+The `positive_real!(...)` ensures that the given `f64` value is a positive
 real value.
 
 `translate` describes how **trial moves** should be applied to *individual

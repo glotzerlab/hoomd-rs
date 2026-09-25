@@ -18,6 +18,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
+use hoomd_utility::positive_real;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
@@ -69,18 +70,18 @@ impl HardDiskSelfAssembly {
         let initial_packing_fraction = 0.4;
         let target_packing_fraction = 0.73;
         let n_disks = 64_usize.pow(2);
-        let maximum_distance = 0.07;
-        let sigma = 1.0;
+        const MAXIMUM_DISTANCE: f64 = 0.07;
+        const SIGMA: f64 = 1.0;
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
-        let hamiltonian = PairwiseCutoff(HardSphere { diameter: sigma });
+        let hamiltonian = PairwiseCutoff(HardSphere { diameter: SIGMA });
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
         let circle = Circle {
-            radius: (sigma / 2.0).try_into()?,
+            radius: positive_real!(SIGMA / 2.0),
         };
         let initial_box_volume =
             n_disks as f64 * circle.volume() / initial_packing_fraction;
@@ -128,7 +129,7 @@ impl HardDiskSelfAssembly {
 
         // ANCHOR: trial_moves
         let translate =
-            Translate::with_maximum_distance(maximum_distance.try_into()?);
+            Translate::with_maximum_distance(positive_real!(MAXIMUM_DISTANCE));
         let translate_sweep = Sweep(translate);
         // ANCHOR_END: trial_moves
 
@@ -142,10 +143,10 @@ impl HardDiskSelfAssembly {
         // ANCHOR: compress_hamiltonian
         let overlap_penalty = Isotropic {
             interaction: Expanded {
-                delta: sigma,
+                delta: SIGMA,
                 f: OverlapPenalty::default(),
             },
-            r_cut: sigma,
+            r_cut: SIGMA,
         };
 
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
