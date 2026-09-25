@@ -4,6 +4,7 @@ use hoomd_interaction::Zero;
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{Body, Microstate};
 use hoomd_simulation::macrostate::Isothermal;
+use hoomd_utility::positive_real;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
@@ -17,7 +18,7 @@ fn main() -> anyhow::Result<()> {
     // ANCHOR_END: microstate
 
     // ANCHOR: local_trial
-    let translate = Translate::with_maximum_distance(0.15.try_into()?);
+    let translate = Translate::with_maximum_distance(positive_real!(0.15));
     // ANCHOR_END: local_trial
 
     // ANCHOR: sweep

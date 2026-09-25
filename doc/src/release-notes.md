@@ -11,6 +11,9 @@
 * `[hoomd-geometry]`: New four-dimensional `ConvexHull` implementation that computes tetrahedral cells with the exact `orient4d` predicate (#430).
 * `[hoomd-geometry]`: `Facet::<N>::as_simplex` expands the vertex-index form of a simplicial facet into a full `N`-simplex's vertices.
 * `[hoomd-geometry]`: Four-dimensional exact orientation predicate (#416).
+* `[hoomd-microstate`]: Add the `OpenSpherical` boundary condition for use with the `SphericalVecCell` data structure (#313).
+* `[hoomd-spatial`]: Add `SphericalVecCell` that can perform efficient spatial searches in spherical space (#313).
+* `[hoomd-utility]`: Add the `positive_real` macro that generates compile-time-checked `PositiveReal` values (#421).
 
 *Changed:*
 

@@ -27,6 +27,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
+use hoomd_utility::positive_real;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Metric};
 // ANCHOR_END: use
@@ -187,7 +188,7 @@ impl PolydisperseHardDiskModel {
         let initial_packing_fraction = 0.6;
         let target_packing_fraction = 0.72;
         let n_disks = 64_usize.pow(2);
-        let maximum_distance = 0.07;
+        const MAXIMUM_DISTANCE: f64 = 0.07;
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
@@ -246,7 +247,7 @@ impl PolydisperseHardDiskModel {
         // ANCHOR_END: quick_insert
 
         let translate =
-            Translate::with_maximum_distance(maximum_distance.try_into()?);
+            Translate::with_maximum_distance(positive_real!(MAXIMUM_DISTANCE));
         let translate_sweep = Sweep(translate);
 
         let target_box_volume = total_particle_area / target_packing_fraction;
