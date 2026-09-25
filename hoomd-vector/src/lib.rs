@@ -207,6 +207,9 @@ mod cartesian;
 pub mod distribution;
 mod quaternion;
 
+mod quadquat;
+pub use quadquat::QuadQuaternion;
+
 pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
 pub use quaternion::{Quaternion, Versor};
@@ -230,6 +233,11 @@ pub enum Error {
     /// Attempted to normalize a quaternion with an invalid magnitude.
     #[error("cannot normalize the 0 quaternion")]
     InvalidQuaternionMagnitude,
+
+    /// Attempted to construct a [`QuadQuaternion`] from blocks that do not span `H^2`
+    /// (and therefore cannot unambiguously initialize a rotation).
+    #[error("cannot normalize linearly dependent quad quaternion blocks")]
+    InvalidQuadQuaternionSpan,
 }
 
 /// Operate on elements of a metric vector space.

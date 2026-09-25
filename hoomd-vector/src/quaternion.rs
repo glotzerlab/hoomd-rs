@@ -329,6 +329,42 @@ impl From<[f64; 4]> for Quaternion {
     }
 }
 
+/// Construct a [`Quaternion`] from its scalar and vector components.
+///
+/// The first value is the real part. The second is the vector part, written as
+/// a single `[x, y, z]` vector.
+///
+/// The macro expands to a struct expression over the public fields, so it is usable in
+/// constant contexts, where the [`From<[f64; 4]>`](From) implementation is not.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_vector::Quaternion;
+///
+/// const HALF_HALF: Quaternion =
+///     hoomd_vector::quaternion!(0.5, [0.5, 0.5, 0.5]);
+/// const SUM: Quaternion =
+///     hoomd_vector::quaternion!(0.25 + 0.25, [0.0, 1.0, 0.0]);
+///
+/// assert_eq!(HALF_HALF.scalar, 0.5);
+/// assert_eq!(SUM.vector, [0.0, 1.0, 0.0].into());
+///
+/// let runtime = hoomd_vector::quaternion!(1.0, [2.0, 3.0, 4.0]);
+/// assert_eq!(runtime, [1.0, 2.0, 3.0, 4.0].into());
+/// ```
+#[macro_export]
+macro_rules! quaternion {
+    ($scalar:expr, [$x:expr, $y:expr, $z:expr]) => {
+        $crate::Quaternion {
+            scalar: $scalar,
+            vector: $crate::Cartesian {
+                coordinates: [$x, $y, $z],
+            },
+        }
+    };
+}
+
 impl fmt::Display for Quaternion {
     /// Format a [`Quaternion`] as `[{s}, [{v[0]}, {v[1]}, {v[2]}]]`.
     #[inline]
@@ -854,6 +890,23 @@ mod tests {
             let q = Quaternion::from([2.0, -3.0, 4.0, 7.0]);
             assert_eq!(q.scalar, 2.0);
             assert_eq!(q.vector, [-3.0, 4.0, 7.0].into());
+        }
+
+        #[test]
+        fn quaternion_macro_construction() {
+            const I: Quaternion = quaternion!(0.0, [1.0, 0.0, 0.0]);
+            const SUFFIXED_INT: Quaternion = quaternion!(1f64, [0.0, 0.0, 0.0]);
+            const UNDERSCORES: Quaternion = quaternion!(1_000.5, [0.0, 0.0, 0.0]);
+            const EXPRESSION: Quaternion = quaternion!(0.5 + 0.5, [1.0 - 1.0, 0.0, 0.0]);
+
+            assert_eq!(I.vector, [1.0, 0.0, 0.0].into());
+            assert_eq!(SUFFIXED_INT.scalar, 1.0);
+            assert_eq!(UNDERSCORES.scalar, 1000.5);
+            assert_eq!(EXPRESSION, [1.0, 0.0, 0.0, 0.0].into());
+
+            // The macro is not limited to constant contexts.
+            let runtime = quaternion!(1.0, [2.0, 3.0, 4.0]);
+            assert_eq!(runtime, [1.0, 2.0, 3.0, 4.0].into());
         }
 
         #[test]
