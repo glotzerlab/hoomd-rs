@@ -33,7 +33,7 @@ pub enum Error {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct Dyad {
     /// The integer significand.
     mantissa: i64,
