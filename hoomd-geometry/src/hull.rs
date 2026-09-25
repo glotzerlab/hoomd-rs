@@ -2,6 +2,11 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Compute the convex hull of a set of points.
+//!
+//! A hull is returned as its vertices together with the [`Facet`]s that bound it:
+//! each facet is the set of indices of the hull vertices on one of its bounding
+//! hyperplanes, and [`Facet::orientation`] decides exactly on which [`Side`] of that
+//! hyperplane any point lies.
 
 use std::{borrow::Borrow, cmp::Ordering};
 
@@ -11,6 +16,62 @@ use serde_with::serde_as;
 
 use crate::Error;
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
+
+/// The side of an oriented hyperplane a point lies on.
+///
+/// The vertices of a simplex $`(v_0, \ldots, v_{N-1})`$ in `N`-dimensional space,
+/// along with a query point $`x`$, define a simplex. This simplex spans a hyperplane,
+/// which divides the space into three regions: `Above`, `Below`, and `On` . `Above` is
+/// the half-space in which the following determinant is positive:
+///
+/// ```math
+/// \det(v_1 - v_0, \ldots, v_{N-1} - v_0, x - v_0)
+/// ```
+///
+/// `Below` is the half-space in which the determinant is negative, and `On` are the
+/// points for which the determinant is exactly zero.
+///
+/// In three dimensions, this construction is equivalent to the right-hand rule. In two
+/// dimensions, `Above` lies to the left of a directed edge and `Below` lies to the
+/// right. [`Side::On`] is exact up to floating-point precision, and indicates that the
+/// point lies in the hyperplane itself, collinear with an edge or coplanar with a
+/// a triangle.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[expect(clippy::exhaustive_enums, reason = "Variants describe all of space.")]
+pub enum Side {
+    /// The point lies on the side the normal points to.
+    Above,
+
+    /// The point lies on the side opposite the normal.
+    Below,
+
+    /// The point lies exactly on the hyperplane.
+    On,
+}
+
+/// The side of the hyperplane a finite determinant value indicates, as a [`Side`].
+///
+/// Signed zeros both map to [`Side::On`]. Any non-finite value maps to `None`.
+#[inline]
+fn sign(value: f64) -> Option<Side> {
+    let ordering = value.partial_cmp(&0.0)?;
+    if !value.is_finite() {
+        return None;
+    }
+    Some(match ordering {
+        Ordering::Greater => Side::Above,
+        Ordering::Less => Side::Below,
+        Ordering::Equal => Side::On,
+    })
+}
+
+/// Whether every coordinate of every point in a set is finite.
+#[inline]
+fn finite_points<const N: usize>(points: &[Cartesian<N>]) -> bool {
+    points
+        .iter()
+        .all(|p| p.coordinates.iter().all(|c| c.is_finite()))
+}
 
 /// A facet of a convex hull: the indices of the `N` vertices of the hull that bound it,
 /// in the order given by [`ConvexHull::convex_hull`].
@@ -39,6 +100,141 @@ impl<const N: usize> Facet<N> {
     pub const fn indices(&self) -> [usize; N] {
         self.indices
     }
+
+    /// The simplex the facet spans: its vertices, looked up in `vertices`.
+    ///
+    /// A facet of an `N`-dimensional hull is an `(N - 1)`-simplex bounded by
+    /// `N` vertices of the hull. An edge of a polygon returns its two
+    /// endpoints, and a triangle of a polyhedron its three corners.
+    ///
+    /// # Panics
+    ///
+    /// Panics when a vertex index is out of bounds, like indexing `points`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::hull::Facet;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let points = [
+    ///     Cartesian::from([1.0, 1.0]),
+    ///     Cartesian::from([1.0, -1.0]),
+    ///     Cartesian::from([-1.0, -1.0]),
+    /// ];
+    /// let edge = Facet::new([0, 2]);
+    ///
+    /// let [start, end] = edge.as_simplex(&points);
+    /// assert_eq!(start, points[0]);
+    /// assert_eq!(end, points[2]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn as_simplex(&self, vertices: &[Cartesian<N>]) -> [Cartesian<N>; N] {
+        self.indices.map(|i| vertices[i])
+    }
+}
+
+/// Determine to which [`Side`] of a hyperplane a point lies.
+///
+/// If the [`Side`] cannot be unambiguously determined, this predicate reurns an
+/// `Error` describing the specific failure mode, if know.
+trait PointPlaneOrientation<const N: usize> {
+    /// Determine the [`Side`] of `simplex` that `point` lies on.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotFinite`] when any coordinate is not finite.
+    fn orientation(simplex: &[Cartesian<N>; N], point: &Cartesian<N>) -> Result<Side, Error>;
+}
+
+impl PointPlaneOrientation<2> for Cartesian<2> {
+    #[inline]
+    fn orientation(simplex: &[Cartesian<2>; 2], point: &Cartesian<2>) -> Result<Side, Error> {
+        sign(robust::orient2d(
+            robust::Coord {
+                x: simplex[0][0],
+                y: simplex[0][1],
+            },
+            robust::Coord {
+                x: simplex[1][0],
+                y: simplex[1][1],
+            },
+            robust::Coord {
+                x: point[0],
+                y: point[1],
+            },
+        ))
+        .ok_or(Error::NotFinite)
+    }
+}
+
+impl PointPlaneOrientation<3> for Cartesian<3> {
+    #[inline]
+    fn orientation(simplex: &[Cartesian<3>; 3], point: &Cartesian<3>) -> Result<Side, Error> {
+        // Shewchuk's orient3d is positive *below* the oriented plane, so we negate such
+        // that Above is the side the vertex order's normal points to, as in 2D.
+        sign(-orient3d_of(simplex[0], simplex[1], simplex[2], *point)).ok_or(Error::NotFinite)
+    }
+}
+
+#[expect(
+    private_bounds,
+    reason = "Bound restricts the implementation to valid dimensions."
+)]
+impl<const N: usize> Facet<N>
+where
+    Cartesian<N>: PointPlaneOrientation<N>,
+{
+    /// Check on which side of the facet a point lies.
+    ///
+    /// Returns [`Side::Above`] when `point` lies strictly on the positive side of the
+    /// the facet's vertex order, [`Side::Below`] when it lies strictly on the opposite
+    /// side, and [`Side::On`] when it lies exactly in the hyperplane.
+    ///
+    /// The facets of a hull from [`Cartesian::<2>::convex_hull`] or
+    /// [`Cartesian::<3>::convex_hull`] are oriented so that every point of the hull
+    /// lies [`Side::Above`] or [`Side::On`] each of its facets.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotFinite`] when any coordinate is not finite.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::hull::{Facet, Side};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// // The triangle spanned by the x and y axes, with a normal pointing toward +z.
+    /// let vertices = [
+    ///     Cartesian::from([0.0, 0.0, 0.0]),
+    ///     Cartesian::from([1.0, 0.0, 0.0]),
+    ///     Cartesian::from([0.0, 1.0, 0.0]),
+    /// ];
+    /// let facet = Facet::new([0, 1, 2]);
+    ///
+    /// assert_eq!(
+    ///     facet.orientation(&vertices, &Cartesian::from([0.0, 0.0, 1.0])),
+    ///     Ok(Side::Above)
+    /// );
+    /// assert_eq!(
+    ///     facet.orientation(&vertices, &Cartesian::from([0.0, 0.0, -1.0])),
+    ///     Ok(Side::Below)
+    /// );
+    /// assert_eq!(
+    ///     facet.orientation(&vertices, &Cartesian::from([0.0, 0.0, 0.0])),
+    ///     Ok(Side::On)
+    /// );
+    /// ```
+    #[inline]
+    pub fn orientation(
+        &self,
+        vertices: &[Cartesian<N>],
+        point: &Cartesian<N>,
+    ) -> Result<Side, Error> {
+        Cartesian::orientation(&self.as_simplex(vertices), point)
+    }
 }
 
 /// Compute the convex hull of a set of points.
@@ -55,7 +251,7 @@ impl<const N: usize> Facet<N> {
 ///
 /// Compute the convex hull of a set of points in a plane:
 /// ```
-/// use hoomd_geometry::ConvexHull;
+/// use hoomd_geometry::hull::ConvexHull;
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), hoomd_geometry::Error> {
@@ -71,7 +267,6 @@ impl<const N: usize> Facet<N> {
 ///
 /// assert_eq!(hull_vertices.len(), 4);
 /// assert_eq!(edges.len(), 4); // A square is bounded by four edges.
-/// //
 /// # Ok(())
 /// # }
 /// ```
@@ -88,7 +283,10 @@ pub trait ConvexHull<const N: usize>: Sized {
     ///
     /// # Errors
     ///
-    /// Returns [`Error`] if the input points do not form a convex body with 3 or more points.
+    /// Returns [`Error::NotFinite`] when any coordinate of the input is not finite,
+    /// and [`Error::DegeneratePolytope`] when the points do not span an `N`-dimensional
+    /// convex body: fewer than `N + 1` points, or a set that lies in a hyperplane of
+    /// fewer than `N` dimensions.
     ///
     /// [`Error`]: enum@Error
     ///
@@ -96,7 +294,7 @@ pub trait ConvexHull<const N: usize>: Sized {
     ///
     /// Compute the hull from an iterator of points:
     /// ```
-    /// use hoomd_geometry::ConvexHull;
+    /// use hoomd_geometry::hull::ConvexHull;
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
@@ -125,6 +323,12 @@ impl ConvexHull<2> for Cartesian<2> {
     /// exact sign of the orientation determinant, so the resulting hull does
     /// not depend on where the point set lies relative to the origin (up to
     /// the precision of the coordinates themselves).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotFinite`] when any coordinate of the input is not finite,
+    /// and [`Error::DegeneratePolytope`] when the points do not span the plane
+    /// (fewer than three points, or all collinear).
     #[inline]
     fn convex_hull<I>(points: I) -> Result<(Vec<Self>, Vec<Facet<2>>), Error>
     where
@@ -136,6 +340,9 @@ impl ConvexHull<2> for Cartesian<2> {
         // No need to try and triangulate if the hull is degenerate
         if points.len() < 3 {
             return Err(Error::DegeneratePolytope);
+        }
+        if !finite_points(&points) {
+            return Err(Error::NotFinite);
         }
 
         let anchor_idx = find_lowest_leftmost(&points).ok_or(Error::DegeneratePolytope)?;
@@ -163,12 +370,11 @@ impl ConvexHull<2> for Cartesian<2> {
                 let p = points[n_vertices_on_hull - 2];
                 let n = points[n_vertices_on_hull - 1];
 
-                if predicate_orient2d((p, n), c) <= 0 {
-                    // Point n is inside the hull, remove it by shrinking the hull
-                    n_vertices_on_hull -= 1;
-                } else {
+                if predicate_orient2d((p, n), c)? == Side::Above {
                     break;
                 }
+                // Point n is not to the left of the edge, so it lies inside the hull
+                n_vertices_on_hull -= 1;
             }
             // Swap the vertex c onto the end of the hull, extending it by one
             points.swap(next_candidate, n_vertices_on_hull);
@@ -212,7 +418,7 @@ fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
 /// The sign of the orientation determinant is computed with [`robust::orient2d`],
 /// Shewchuk's adaptive precision predicate: the sign is therefore *exact* for the
 /// coordinates as stored, and the resulting hull is exact up to the precision of the
-/// cooridinates themselves.
+/// coordinates themselves.
 ///
 /// Returns 1 when `test` lies to the left of the directed edge, -1 when it lies to the
 /// right, and 0 when the three points are exactly collinear.
@@ -222,21 +428,19 @@ fn get_graham_key(p: Cartesian<2>, anchor: Cartesian<2>) -> (f64, f64) {
 /// Because the sign is exact, it is antisymmetric in its arguments (swapping two points
 /// points negates the sign) and invariant under cyclic permutation of the three inputs.
 #[inline]
-fn predicate_orient2d((p, q): (Cartesian<2>, Cartesian<2>), test: Cartesian<2>) -> i64 {
-    let orientation = robust::orient2d(
+fn predicate_orient2d(
+    (p, q): (Cartesian<2>, Cartesian<2>),
+    test: Cartesian<2>,
+) -> Result<Side, Error> {
+    sign(robust::orient2d(
         robust::Coord { x: p[0], y: p[1] },
         robust::Coord { x: q[0], y: q[1] },
         robust::Coord {
             x: test[0],
             y: test[1],
         },
-    );
-
-    match orientation.total_cmp(&0.0) {
-        Ordering::Greater => 1,
-        Ordering::Less => -1,
-        Ordering::Equal => 0,
-    }
+    ))
+    .ok_or(Error::NotFinite)
 }
 
 impl ConvexHull<3> for Cartesian<3> {
@@ -253,14 +457,16 @@ impl ConvexHull<3> for Cartesian<3> {
     ///
     /// # Errors
     ///
-    /// Returns [`Error`] if the input points do not form a convex body with 4 or more points.
+    /// Returns [`Error::NotFinite`] when any coordinate of the input is not finite, and
+    /// [`Error::DegeneratePolytope`] when there are fewer than four points, or all
+    /// points are coplanar.
     ///
     /// [`Error`]: enum@Error
     ///
     /// # Example
     ///
     /// ```
-    /// use hoomd_geometry::ConvexHull;
+    /// use hoomd_geometry::hull::ConvexHull;
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
@@ -293,6 +499,9 @@ impl ConvexHull<3> for Cartesian<3> {
         // No convex body without at least 4 points.
         if points.len() < 4 {
             return Err(Error::DegeneratePolytope);
+        }
+        if !finite_points(&points) {
+            return Err(Error::NotFinite);
         }
 
         let (indices, faces) = incremental_hull(&points)?;
@@ -393,16 +602,13 @@ fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 
             on_hull[i] = true;
         }
     }
-    // let on_hull = (0..points.len())
-    //     .map(|i| faces.iter().any(|f| f.contains(&i)))
-    //     .collect::<Vec<bool>>();
 
     Ok(((0..points.len()).filter(|&i| on_hull[i]).collect(), faces))
 }
 
 /// Find an initial tetrahedron for the incremental hull.
 ///
-/// The four points are vertices of the hull: `a` is the lexographically smallest point,
+/// The four points are vertices of the hull: `a` is the lexicographically smallest point,
 /// `b` is the furthest from that, `c` is the furthest noncolinear point from the line
 /// `ab`, and `d` is the furthest noncoplanar point to the triangle `abc`.
 ///
@@ -475,18 +681,19 @@ fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, 
 /// inside, and zero when the four points are coplanar.
 #[inline]
 fn orient3d_at(points: &[Cartesian<3>], a: usize, b: usize, c: usize, d: usize) -> f64 {
-    let coord = |p: &Cartesian<3>| robust::Coord3D {
+    orient3d_of(points[a], points[b], points[c], points[d])
+}
+
+/// The orientation determinant of four points.
+#[inline]
+fn orient3d_of(a: Cartesian<3>, b: Cartesian<3>, c: Cartesian<3>, d: Cartesian<3>) -> f64 {
+    let coord = |p: Cartesian<3>| robust::Coord3D {
         x: p[0],
         y: p[1],
         z: p[2],
     };
 
-    robust::orient3d(
-        coord(&points[a]),
-        coord(&points[b]),
-        coord(&points[c]),
-        coord(&points[d]),
-    )
+    robust::orient3d(coord(a), coord(b), coord(c), coord(d))
 }
 
 /// Whether three points given by index are exactly collinear.
@@ -998,6 +1205,22 @@ mod tests {
     }
 
     #[rstest]
+    #[case::infinity(vec![[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0], [f64::INFINITY, 0.5]])]
+    #[case::nan(vec![[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0], [f64::NAN, 0.5]])]
+    fn test_non_finite_points_rejected_2d(#[case] points: Vec<[f64; 2]>) {
+        let points: Vec<Cartesian<2>> = points.into_iter().map(Cartesian::from).collect();
+        check!(Cartesian::<2>::convex_hull(&points) == Err(Error::NotFinite));
+    }
+
+    #[rstest]
+    #[case::infinity(vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, f64::INFINITY], [0.0, 0.0, 1.0]])]
+    #[case::nan(vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [f64::NAN, 0.0, 0.0], [0.0, 0.0, 1.0]])]
+    fn test_non_finite_points_rejected_3d(#[case] points: Vec<[f64; 3]>) {
+        let points: Vec<Cartesian<3>> = points.into_iter().map(Cartesian::from).collect();
+        check!(Cartesian::<3>::convex_hull(&points) == Err(Error::NotFinite));
+    }
+
+    #[rstest]
     fn test_input_types() {
         let points: Vec<Cartesian<2>> = vec![
             [0.0, 0.0],
@@ -1075,7 +1298,7 @@ mod tests {
 
         for offset in [0.0, 1.0, 1e3, 1e5, 1e8] {
             let offset = Cartesian::from([offset, offset]);
-            check!(predicate_orient2d((p + offset, q + offset), test + offset) == 1);
+            check!(predicate_orient2d((p + offset, q + offset), test + offset) == Ok(Side::Above));
         }
 
         // The same holds for collinear and right-turning triples.
@@ -1083,8 +1306,14 @@ mod tests {
         let q_right = Cartesian::from([1.0, 1.0 + 1e-8]);
         for offset in [0.0, 1e3, 1e8] {
             let offset = Cartesian::from([offset, offset]);
-            check!(predicate_orient2d((p + offset, q_collinear + offset), test + offset) == 0);
-            check!(predicate_orient2d((p + offset, q_right + offset), test + offset) == -1);
+            check!(
+                predicate_orient2d((p + offset, q_collinear + offset), test + offset)
+                    == Ok(Side::On)
+            );
+            check!(
+                predicate_orient2d((p + offset, q_right + offset), test + offset)
+                    == Ok(Side::Below)
+            );
         }
     }
     /// The 8 vertices of a cube with edge length 2.
@@ -1364,5 +1593,84 @@ mod tests {
             .sum();
 
         assert_relative_eq!(volume, 8.0);
+    }
+
+    #[rstest]
+    fn test_sign() {
+        check!(sign(f64::NAN) == None);
+        check!(sign(f64::INFINITY) == None);
+        check!(sign(f64::NEG_INFINITY) == None);
+        check!(sign(0.0) == Some(Side::On));
+        check!(sign(-0.0) == Some(Side::On));
+        check!(sign(1.0) == Some(Side::Above));
+        check!(sign(-1.0) == Some(Side::Below));
+        check!(sign(f64::MIN_POSITIVE) == Some(Side::Above));
+        check!(sign(-f64::MIN_POSITIVE) == Some(Side::Below));
+    }
+
+    #[rstest]
+    fn test_facet_orientation_2d() {
+        let vertices = [Cartesian::from([0.0, 0.0]), Cartesian::from([1.0, 0.0])];
+        let facet = Facet::new([0, 1]);
+
+        check!(facet.orientation(&vertices, &Cartesian::from([0.5, 0.5])) == Ok(Side::Above));
+        check!(facet.orientation(&vertices, &Cartesian::from([0.5, -0.5])) == Ok(Side::Below));
+        check!(facet.orientation(&vertices, &Cartesian::from([2.0, 0.0])) == Ok(Side::On));
+
+        // Non-finite coordinates are rejected.
+        let nan = Cartesian::from([f64::NAN, 0.0]);
+        check!(facet.orientation(&vertices, &nan) == Err(Error::NotFinite));
+
+        let points: Vec<Cartesian<2>> = [
+            [0.0, 0.0],
+            [2.0, 0.0],
+            [2.0, 2.0],
+            [0.0, 2.0],
+            [0.5, 0.5], // interior
+        ]
+        .into_iter()
+        .map(Cartesian::from)
+        .collect();
+        let (hull_vertices, facets) = Cartesian::<2>::convex_hull(&points)
+            .expect("hard-coded points should form a convex body");
+        for facet in &facets {
+            for q in &points {
+                check!(
+                    facet
+                        .orientation(&hull_vertices, q)
+                        .expect("finite coordinates resolve exactly")
+                        != Side::Below
+                );
+            }
+        }
+    }
+
+    #[rstest]
+    fn test_facet_orientation_3d() {
+        let vertices = [
+            Cartesian::from([0.0, 0.0, 0.0]),
+            Cartesian::from([1.0, 0.0, 0.0]),
+            Cartesian::from([0.0, 1.0, 0.0]),
+        ];
+        let facet = Facet::new([0, 1, 2]);
+
+        check!(facet.orientation(&vertices, &Cartesian::from([0.0, 0.0, -1.0])) == Ok(Side::Below));
+        check!(facet.orientation(&vertices, &Cartesian::from([0.0, 0.0, 1.0])) == Ok(Side::Above));
+        check!(facet.orientation(&vertices, &Cartesian::from([1.0, 1.0, 0.0])) == Ok(Side::On));
+
+        let nan = Cartesian::from([f64::NAN, 0.0, 0.0]);
+        check!(facet.orientation(&vertices, &nan) == Err(Error::NotFinite));
+
+        let points = cube();
+        let (hull_vertices, facets) = Cartesian::<3>::convex_hull(&points)
+            .expect("hard-coded points should form a convex body");
+        for facet in &facets {
+            for q in &points {
+                let orientation = facet
+                    .orientation(&hull_vertices, q)
+                    .expect("finite coordinates resolve exactly");
+                check!(orientation != Side::Below);
+            }
+        }
     }
 }

@@ -12,7 +12,7 @@
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
-    ConvexHull,
+    hull::ConvexHull,
     shape::{ConvexPolyhedron, Hypercuboid, Hypersphere, Simplex3},
 };
 use hoomd_vector::{Cartesian, Rotate, Versor};

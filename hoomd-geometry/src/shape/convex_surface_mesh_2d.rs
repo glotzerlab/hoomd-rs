@@ -7,8 +7,8 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoundingSphereRadius, ConvexHull, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside,
-    Scale, SupportMapping, Volume, shape::ConvexPolytope,
+    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale,
+    SupportMapping, Volume, hull::ConvexHull, shape::ConvexPolytope,
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};

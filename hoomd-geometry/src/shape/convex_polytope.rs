@@ -322,7 +322,7 @@ impl<const N: usize, const MAX_VERTICES: usize> BoundingSphereRadius
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Convex, ConvexHull, IntersectsAt};
+    use crate::{Convex, IntersectsAt, hull::ConvexHull};
     use hoomd_vector::{Angle, Cartesian, InnerProduct, Rotate, Rotation, Versor};
 
     use approxim::assert_relative_eq;

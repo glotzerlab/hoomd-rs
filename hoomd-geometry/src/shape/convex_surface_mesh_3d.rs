@@ -3,7 +3,11 @@
 
 //! Convex polygon represented by vertices and edges.
 
-use crate::{ConvexHull, Error, Facet, Volume, shape::ConvexPolytope};
+use crate::{
+    Error, Volume,
+    hull::{ConvexHull, Facet},
+    shape::ConvexPolytope,
+};
 use hoomd_linear_algebra::matrix::Matrix33;
 use serde::{Deserialize, Serialize};
 

@@ -49,7 +49,8 @@
 //!
 //! [`IsPointInside`] checks if a point is inside or outside a shape.
 //!
-//! [`ConvexHull`] computes the convex hull of a set of points.
+//! [`hull::ConvexHull`] computes the convex hull of a set of points, returning its
+//! vertices and the [`hull::Facet`]s that bound it.
 //!
 //! Many shapes implement the `Distribution` trait from **rand** to randomly sample
 //! interior points.
@@ -126,8 +127,7 @@ use thiserror::Error;
 mod convex;
 pub use convex::Convex;
 
-mod hull;
-pub use hull::{ConvexHull, Facet};
+pub mod hull;
 
 pub mod shape;
 pub mod xenocollide;
@@ -450,8 +450,8 @@ pub trait MapPoint<P> {
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
-    /// Polytopes require at least one vertex.
-    #[error("a ConvexPolytope must have at least one vertex")]
+    /// The point set does not span a convex body of the requested dimension.
+    #[error("the point set does not span a convex body")]
     DegeneratePolytope,
 
     /// The point is outside the shape.
@@ -461,4 +461,8 @@ pub enum Error {
     /// Too many vertices were provided.
     #[error("too many vertices")]
     TooManyVertices,
+
+    /// A coordinate of the input is not finite.
+    #[error("a coordinate of the input is not finite")]
+    NotFinite,
 }
