@@ -8,7 +8,9 @@
 * `[hoomd-geometry]`: Four-dimensional exact orientation predicate (#416).
 * `[hoomd-geometry]`: New `ConvexHull` trait, which subsumes `ConvexSurfaceMesh2d::construct_convex_hull` and adds a new implementation for three-dimensional hulls (#426).
 * `[hoomd-geometry]`: New `ConvexSurfaceMesh3d` type for explicit convex faceted bodies in three dimensions (#426).
-
+* `[hoomd-microstate`]: Add the `OpenSpherical` boundary condition for use with the `SphericalVecCell` data structure (#313).
+* `[hoomd-spatial`]: Add `SphericalVecCell` that can perform efficient spatial searches in spherical space (#313).
+* `[hoomd-utility]`: Add the `positive_real` macro that generates compile-time-checked `PositiveReal` values (#421).
 
 *Changed:*
 

@@ -153,7 +153,15 @@ To make a new release:
   * *major* release: Often needed when APIs are changed and removed, though
     [it is very complicated]. Our user base is small enough that conservatively
     making a *major* release is fine when there is any doubt.
+- If this is a major release:
+  - [ ] Check the [dependency dashboard] and approve any breaking changes to
+    public dependencies.
+  - [ ] Note the new versions in `compatibility.md`.
+  - [ ] Wait for the renovate PRs to merge before continuing.
+  - Do **NOT** update these dependencies for minor or patch releases.
 - [ ] Make a new `release-{X.Y.Z}` branch (where `{X.Y.Z}` is the new version).
+
+[dependency dashboard]: https://github.com/glotzerlab/hoomd-rs/issues/75
 
 On that branch, take the following steps (committing after each step when needed):
 

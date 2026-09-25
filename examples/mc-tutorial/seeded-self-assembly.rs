@@ -25,6 +25,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
+use hoomd_utility::positive_real;
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -104,15 +105,15 @@ impl SeededSelfAssembly {
         let initial_packing_fraction = 0.3;
         let target_packing_fraction = 0.3;
         let n_disks = 512;
-        let maximum_distance = 0.07;
-        let maximum_rotation = 0.04;
-        let sigma = 1.0;
+        const MAXIMUM_DISTANCE: f64 = 0.07;
+        const MAXIMUM_ROTATION: f64 = 0.04;
+        const SIGMA: f64 = 1.0;
         let patch_interaction_range = 1.12;
         let patch_half_angle = 37.0_f64.to_radians();
         let patch_energy = -5.8;
         let macrostate = Isothermal { temperature: 1.0 };
 
-        let hard_disk = HardSphere { diameter: sigma };
+        let hard_disk = HardSphere { diameter: SIGMA };
 
         let boxcar = Boxcar {
             epsilon: patch_energy,
@@ -141,16 +142,16 @@ impl SeededSelfAssembly {
 
         let overlap_penalty = Isotropic {
             interaction: Expanded {
-                delta: sigma,
+                delta: SIGMA,
                 f: OverlapPenalty::default(),
             },
-            r_cut: sigma,
+            r_cut: SIGMA,
         };
 
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
 
         let circle = Circle {
-            radius: (sigma / 2.0).try_into()?,
+            radius: positive_real!(SIGMA / 2.0),
         };
         let initial_box_volume =
             n_disks as f64 * circle.volume() / initial_packing_fraction;
@@ -186,11 +187,11 @@ impl SeededSelfAssembly {
 
         // ANCHOR: simulation_new_remainder
         let translate =
-            Translate::with_maximum_distance(maximum_distance.try_into()?);
+            Translate::with_maximum_distance(positive_real!(MAXIMUM_DISTANCE));
         let translate_sweep = Sweep(translate);
 
         let rotate =
-            Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
+            Rotate::with_maximum_rotation(positive_real!(MAXIMUM_ROTATION));
         let rotate_sweep = Sweep(rotate);
 
         let target_box_volume =
