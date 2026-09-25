@@ -319,7 +319,7 @@ fn decode_points(points: &[Cartesian<4>; 5]) -> Result<[[Dyad; 4]; 5], Error> {
     let mut decoded = [[Dyad::ZERO; 4]; 5];
     for (row, point) in decoded.iter_mut().zip(points) {
         for (entry, &value) in row.iter_mut().zip(&point.coordinates) {
-            *entry = Dyad::try_from_f64(value).ok_or(Error::NumericallyAmbiguousPolytope)?;
+            *entry = Dyad::try_from(value).map_err(|_| Error::NumericallyAmbiguousPolytope)?;
         }
     }
     Ok(decoded)
