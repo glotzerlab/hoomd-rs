@@ -16,13 +16,13 @@
 ///
 /// let dyad = Dyad::try_from_f64(16.0).expect("the value is finite");
 /// // 16 = 2^52 * 2^-48
-/// assert_eq!(dyad.mantissa(), 1_i128 << 52);
+/// assert_eq!(dyad.mantissa(), 1_i64 << 52);
 /// assert_eq!(dyad.exponent(), -48);
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Dyad {
     /// The integer significand.
-    mantissa: i128,
+    mantissa: i64,
     /// The power of two.
     exponent: i32,
 }
@@ -52,10 +52,10 @@ impl Dyad {
         // (2^52 + fraction) * 2^(biased - 1075). A subnormal value has no
         // hidden bit and the minimum exponent; zero decodes to a zero mantissa
         let (mantissa, exponent) = if biased == 0 {
-            (i128::from(fraction), -1074)
+            (i64::try_from(fraction).expect("52 bits"), -1074)
         } else {
             (
-                i128::from(fraction | (1_u64 << 52)),
+                i64::try_from(fraction | (1_u64 << 52)).expect("53 bits"),
                 i32::try_from(biased).expect("11 bits") - 1075,
             )
         };
@@ -71,7 +71,7 @@ impl Dyad {
     /// `|mantissa| ≤ 2^53 - 1` for values from [`Dyad::try_from_f64`], and zero for 0.
     #[must_use]
     #[inline]
-    pub fn mantissa(self) -> i128 {
+    pub fn mantissa(self) -> i64 {
         self.mantissa
     }
 
@@ -99,15 +99,15 @@ mod tests {
     #[test]
     fn test_try_from_f64() {
         let cases = [
-            (0.0, 0_i128, -1074_i32),
+            (0.0, 0_i64, -1074_i32),
             (-0.0, 0, -1074),
-            (1.0, 1_i128 << 52, -52),
-            (-1.0, -(1_i128 << 52), -52),
-            (-6.0, -3 * (1_i128 << 51), -50),
+            (1.0, 1_i64 << 52, -52),
+            (-1.0, -(1_i64 << 52), -52),
+            (-6.0, -3 * (1_i64 << 51), -50),
             (f64::from_bits(1), 1, -1074),
-            (f64::MIN_POSITIVE, 1_i128 << 52, -1074),
-            (f64::MAX, (1_i128 << 53) - 1, 971),
-            (f64::MIN, -((1_i128 << 53) - 1), 971),
+            (f64::MIN_POSITIVE, 1_i64 << 52, -1074),
+            (f64::MAX, (1_i64 << 53) - 1, 971),
+            (f64::MIN, -((1_i64 << 53) - 1), 971),
         ];
         for (value, mantissa, exponent) in cases {
             let dyad = Dyad::try_from_f64(value).expect("finite");
@@ -133,7 +133,7 @@ mod tests {
             if biased == 0 {
                 check!(dyad.is_zero());
             } else {
-                check!(dyad.mantissa() == 1_i128 << 52, "biased {biased}");
+                check!(dyad.mantissa() == 1_i64 << 52, "biased {biased}");
                 check!(dyad.exponent() == biased as i32 - 1075, "biased {biased}");
             }
         }
