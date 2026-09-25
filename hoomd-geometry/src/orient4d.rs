@@ -355,7 +355,7 @@ impl ScaleTo for Dyad {
 
         let shift = u32::try_from(self.exponent() - min_exponent)
             .expect("nonzero mantissas are at or above the minimum exponent");
-        I512::from_i128(self.mantissa() << shift)
+        I512::from_i64(self.mantissa()) << shift
     }
 }
 
