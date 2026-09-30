@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Convex polygon represented by vertices and edges.
+//! Convex polyhedron represented by vertices and triangular facets.
 
 use crate::{
     Error, Volume,
@@ -14,20 +14,20 @@ use serde::{Deserialize, Serialize};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
-/// The vertices and edges that make up a convex polygon.
+/// The vertices and triangular facets that make up a convex polyhedron.
 ///
 /// [`ConvexPolytope::<3>`] and [`ConvexSurfaceMesh3d`] can both represent
 /// 3d convex polyhedra. The first is defined *implicitly* as the convex hull
 /// of a set of points. It stores the given point set without any modification,
 /// and can therefore be constructed quickly. The *implicit* convex hull is
-/// formed by [`SupportMapping`] during intersection tests of
-/// `Convex(ConvexPolygon)` with other `Convex(_)` types.
+/// formed by the support mapping of `Convex` during intersection tests of
+/// `Convex(ConvexPolyhedron)` with other `Convex(_)` types.
 ///
 /// In contrast, [`ConvexSurfaceMesh3d`] *explicitly* computes the convex hull
 /// on construction with [`ConvexHull`]. After construction, the [`vertices`] of
 /// the shape include only the points on the convex hull, and the [`facets`] are
 /// the triangular faces of the body. Using this representation, [`ConvexSurfaceMesh3d`]
-/// is able to provide implementations of [`Volume`] and [`IsPointInside`].
+/// is able to provide implementations of [`Volume`].
 ///
 /// [`vertices`]: Self::vertices
 /// [`facets`]: Self::facets
@@ -95,6 +95,20 @@ impl ConvexSurfaceMesh3d {
             vertices,
             faces,
         })
+    }
+
+    /// The vertices of the convex polyhedron, in the order of the input points.
+    #[inline]
+    #[must_use]
+    pub fn vertices(&self) -> &[Cartesian<3>] {
+        &self.vertices
+    }
+
+    /// The triangular facets of the convex polyhedron, as indices into [`Self::vertices`].
+    #[inline]
+    #[must_use]
+    pub fn facets(&self) -> &[Facet<3>] {
+        &self.faces
     }
 }
 
