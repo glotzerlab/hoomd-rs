@@ -278,6 +278,7 @@ where
 ///
 /// assert_eq!(hull_vertices.len(), 4);
 /// assert_eq!(edges.len(), 4); // A square is bounded by four edges.
+/// //
 /// # Ok(())
 /// # }
 /// ```
