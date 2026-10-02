@@ -167,7 +167,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// Panics if the slice is out of bounds.
     #[inline]
-    #[must_use]
     pub fn iter_column_slice(
         &self,
         column_slice: usize,
@@ -202,7 +201,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// Panics if the submatrix is out of bounds.
     #[inline]
-    #[must_use]
     pub fn iter_submatrix(
         &'_ self,
         row_range: std::ops::Range<usize>,
