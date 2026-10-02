@@ -6,8 +6,10 @@
 use forkunion::{ParallelSliceMut, ThreadPool, Topology};
 use rand::{RngExt, seq::IndexedRandom};
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
-use std::sync::{Mutex, PoisonError};
+use std::{
+    fmt::Display,
+    sync::{Mutex, PoisonError},
+};
 
 use super::{Adjust, Count, LocalTrial, Trial, Tune, TuneOptions, tune_local::tune_local_trial};
 use hoomd_interaction::DeltaEnergyOne;
