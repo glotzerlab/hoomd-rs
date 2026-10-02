@@ -2169,9 +2169,9 @@ mod tests {
                 microstate.remove_body(body_index);
             }
 
-            assert!(microstate.bodies().is_empty());
-            assert!(microstate.bodies_sites.is_empty());
-            assert!(microstate.sites().is_empty());
+            assert_eq!(microstate.bodies(), []);
+            assert_eq!(microstate.bodies_sites, [] as [std::vec::Vec<usize>; 0]);
+            assert_eq!(microstate.sites(), []);
         }
     }
 
@@ -2459,7 +2459,7 @@ mod tests {
             // the consistency of the ghosts.
             let mut sites_with_ghosts = HashSet::new();
 
-            assert!(!microstate.ghosts().is_empty());
+            assert_ne!(microstate.ghosts(), []);
             assert_eq!(
                 microstate.spatial_data().len(),
                 microstate.sites.len() + microstate.ghosts.len()
@@ -2543,10 +2543,10 @@ mod tests {
                 microstate.remove_body(body_index);
             }
 
-            assert!(microstate.bodies().is_empty());
-            assert!(microstate.bodies_sites.is_empty());
-            assert!(microstate.sites().is_empty());
-            assert!(microstate.ghosts().is_empty());
+            assert_eq!(microstate.bodies(), []);
+            assert_eq!(microstate.bodies_sites, [] as [std::vec::Vec<usize>; 0]);
+            assert_eq!(microstate.sites(), []);
+            assert_eq!(microstate.ghosts(), []);
         }
     }
 
