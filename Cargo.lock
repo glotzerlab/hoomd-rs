@@ -3940,6 +3940,7 @@ dependencies = [
  "approxim",
  "assert2",
  "divan",
+ "forkunion",
  "hoomd-geometry",
  "hoomd-interaction",
  "hoomd-manifold",

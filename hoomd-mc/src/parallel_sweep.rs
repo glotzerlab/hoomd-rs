@@ -3,10 +3,11 @@
 
 //! Implement `ParallelSweep`
 
+use forkunion::{ParallelSliceMut, ThreadPool, Topology};
 use rand::{RngExt, seq::IndexedRandom};
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use std::sync::{Mutex, PoisonError};
 
 use super::{Adjust, Count, LocalTrial, Trial, Tune, TuneOptions, tune_local::tune_local_trial};
 use hoomd_interaction::DeltaEnergyOne;
@@ -97,6 +98,68 @@ pub struct ParallelSweep<L, K, B, S> {
     /// Cached storage of the body trial moves in each space.
     #[serde(skip)]
     body_trials: Vec<BodyTrial<B, S>>,
+}
+
+/// The worker threads that evaluate trial moves, shared by every `ParallelSweep` in the process.
+///
+/// Unlike `rayon`, `forkunion` does not provide a global pool to draw threads from.
+/// Instead, each parallel dispatch needs `&mut` access to a [`ThreadPool`]. In safe
+/// rust, we need to take ownership of a pool with the target core count and pass it to
+/// one parallel snippet at a time. `forkunion` spins threads by default, so it is
+/// important that duplicate pools are not created even when that would be safe, as
+/// performance will immediately drop due to high utilization.
+static POOL: Mutex<Option<ThreadPool>> = Mutex::new(None);
+
+/// Evaluate one trial move for each space of one [`Checkerboard`] color.
+trait ForEachSpace<T> {
+    /// Evaluate the trial move of every checkerboard space in parallel.
+    ///
+    /// Each trial move is written out in the slot given by its task index. This set
+    /// must be disjoint or a race condition could occur.
+    ///
+    /// # Panics
+    ///
+    /// - If the `function` panics, the process is immediately aborted by the underlying
+    ///   parallel processing library. Set the thread pool size to 1 in order to debug
+    ///   `ParallelSweep`.
+    ///
+    /// - If the thread pool cannot be spawned due to an invalid [`forkunion::Topology`]
+    ///
+    /// - If the mutex around the thread pool is poisoned, e.g. if a thread fails while
+    ///   the pool's lock is held.
+    fn for_each_space<F>(self, space_indices: &[usize], function: F)
+    where
+        F: Fn((&mut T, &usize)) + Sync;
+}
+
+impl<T: Send> ForEachSpace<T> for std::slice::IterMut<'_, T> {
+    fn for_each_space<F>(self, space_indices: &[usize], function: F)
+    where
+        F: Fn((&mut T, &usize)) + Sync,
+    {
+        let threads = rayon::current_num_threads();
+        if threads == 1 {
+            // forkunion 3.0.2 segfaults when a dynamic dispatch runs on an inclusive
+            // pool with one thread, so we explicitly run in serial for that case.
+            self.zip(space_indices).for_each(function);
+            return;
+        }
+
+        let mut shared = POOL.lock().unwrap_or_else(PoisonError::into_inner);
+        let pool = match shared.as_mut() {
+            Some(pool) if pool.threads_count() == threads => pool,
+            _ => {
+                // Join the old pool's workers before spawning the new pool's.
+                *shared = None;
+                let topology = Topology::new().expect("Thread pool could not be spawned");
+                shared.insert(forkunion::spawn(&topology, threads))
+            }
+        };
+
+        ParallelSliceMut::new(self.into_slice()).for_each_dynamic(pool, |trial, prong| {
+            function((trial, &space_indices[prong.task_index]));
+        });
+    }
 }
 
 impl<L, K, B, S> ParallelSweep<L, K, B, S>
@@ -214,7 +277,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
         kt: f64,
         checkerboard: &K,
         spaces: &[Vec<usize>],
-        space_indices: &Vec<usize>,
+        space_indices: &[usize],
     ) where
         P1: Copy,
         P2: Copy,
@@ -229,10 +292,8 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
         body_trials.resize_with(space_indices.len(), Default::default);
 
         body_trials
-            .par_iter_mut()
-            .zip(space_indices)
-            .for_each(|(body_trial, space_index)| {
-                // body_trials.iter_mut().zip(space_indices).for_each(|(body_trial, space_index)| {
+            .iter_mut()
+            .for_each_space(space_indices, |(body_trial, space_index)| {
                 body_trial.status = TrialStatus::Invalid;
                 let space_index = *space_index;
                 let mut rng = microstate.counter().index(space_index as u64).make_rng();
