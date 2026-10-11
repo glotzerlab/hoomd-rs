@@ -27,6 +27,7 @@ hoomd-manifold.workspace = true
 hoomd-vector.workspace = true
 hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
+anyhow.workspace = true
 
 [lints]
 workspace = true
