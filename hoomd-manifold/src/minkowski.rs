@@ -4,7 +4,7 @@
 //! Implement vector types in Minkowski space.
 
 use approxim::{approx_derive::RelativeEq, assert_relative_eq};
-use num::Complex;
+use num_complex::Complex;
 use rand::{
     Rng, RngExt,
     distr::{Distribution, StandardUniform, Uniform},

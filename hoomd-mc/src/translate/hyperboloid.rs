@@ -3,7 +3,7 @@
 
 //! Implement Translation moves on curved surfaces
 
-use num::complex::Complex;
+use num_complex::Complex;
 use rand::{
     Rng, RngExt,
     distr::{Distribution, Uniform},

@@ -19,7 +19,7 @@ workspace = true
 
 [dependencies]
 arrayvec.workspace = true
-num.workspace = true
+num-complex.workspace = true
 rand.workspace = true
 serde.workspace = true
 thiserror.workspace = true

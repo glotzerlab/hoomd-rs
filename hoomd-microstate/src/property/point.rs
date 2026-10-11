@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement Point
-use num::complex::Complex;
+use num_complex::Complex;
 use serde::{Deserialize, Serialize};
 
 use super::Position;
