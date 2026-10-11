@@ -4,7 +4,7 @@
 //! Implement [`Biquaternion`] and a four-dimensional matrix representation
 //! of SO(3,1).
 
-use num::complex::Complex;
+use num_complex::Complex;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
@@ -36,7 +36,7 @@ use hoomd_vector::Quaternion;
 /// (i.e., the scalar component is at the end)
 /// ```
 /// use hoomd_manifold::Biquaternion;
-/// use num::complex::Complex;
+/// use num_complex::Complex;
 ///
 /// let q = Biquaternion::from([
 ///     Complex::new(1.0, 4.0),
@@ -54,7 +54,7 @@ use hoomd_vector::Quaternion;
 /// (addition, multiplication by a scalar, etc.):
 /// ```
 /// use hoomd_manifold::Biquaternion;
-/// use num::complex::Complex;
+/// use num_complex::Complex;
 ///
 /// let mut a = Biquaternion::from([
 ///     Complex::new(1.0, 0.0),
@@ -80,7 +80,7 @@ use hoomd_vector::Quaternion;
 /// vector part of the biquaternion by -1.0.
 /// ```
 /// use hoomd_manifold::Biquaternion;
-/// use num::complex::Complex;
+/// use num_complex::Complex;
 ///
 /// let q = Biquaternion::from([
 ///     Complex::new(-1.0, 0.0),
@@ -103,7 +103,7 @@ use hoomd_vector::Quaternion;
 /// the biquaternion
 /// ```
 /// use hoomd_manifold::Biquaternion;
-/// use num::complex::Complex;
+/// use num_complex::Complex;
 ///
 /// let q = Biquaternion::from([
 ///     Complex::new(1.0, 8.0),
@@ -126,7 +126,7 @@ use hoomd_vector::Quaternion;
 /// biquaternion.
 /// ```
 /// use hoomd_manifold::Biquaternion;
-/// use num::complex::Complex;
+/// use num_complex::Complex;
 ///
 /// let q = Biquaternion::from([
 ///     Complex::new(2.0, 0.0),
@@ -157,7 +157,7 @@ use hoomd_vector::Quaternion;
 /// ```
 /// ```
 /// use hoomd_manifold::Biquaternion;
-/// use num::complex::Complex;
+/// use num_complex::Complex;
 ///
 /// let q = Biquaternion::from([
 ///     Complex::new(2.0, 0.0),
@@ -178,7 +178,7 @@ use hoomd_vector::Quaternion;
 /// The scalar product furnishes a "norm" for the biquaternion.
 /// ```
 /// use hoomd_manifold::Biquaternion;
-/// use num::complex::Complex;
+/// use num_complex::Complex;
 ///
 /// let q = Biquaternion::from([
 ///     Complex::new(3.0, 0.0),
@@ -202,7 +202,7 @@ impl Biquaternion {
     /// # Example
     /// ```
     /// use hoomd_manifold::Biquaternion;
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let q = Biquaternion::from([
@@ -236,7 +236,7 @@ impl Biquaternion {
     /// # Example
     /// ```
     /// use hoomd_manifold::Biquaternion;
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let q = Biquaternion::from([
@@ -270,7 +270,7 @@ impl Biquaternion {
     /// # Example
     /// ```
     /// use hoomd_manifold::Biquaternion;
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let q = Biquaternion::from([
@@ -293,7 +293,7 @@ impl Biquaternion {
     /// # Example
     /// ```
     /// use hoomd_manifold::Biquaternion;
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let q = Biquaternion::from([
@@ -316,7 +316,7 @@ impl Biquaternion {
     /// # Example
     /// ```
     /// use hoomd_manifold::Biquaternion;
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let q = Biquaternion::from([
@@ -368,7 +368,7 @@ impl Biquaternion {
     /// # Example
     /// ```
     /// use hoomd_manifold::Biquaternion;
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let q = Biquaternion::from([
@@ -435,7 +435,7 @@ impl From<[Complex<f64>; 4]> for Biquaternion {
     /// # Example
     /// ```
     /// use hoomd_manifold::Biquaternion;
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let q = Biquaternion::from([
@@ -637,7 +637,7 @@ impl DivAssign<f64> for Biquaternion {
 ///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
 ///     UnitBiquaternion,
 /// };
-/// use num::complex::Complex;
+/// use num_complex::Complex;
 /// use std::f64::consts::PI;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -667,7 +667,7 @@ impl DivAssign<f64> for Biquaternion {
 ///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
 ///     UnitBiquaternion,
 /// };
-/// use num::complex::Complex;
+/// use num_complex::Complex;
 /// use std::f64::consts::PI;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -717,7 +717,7 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
     /// ```
     /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{Biquaternion, UnitBiquaternion};
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -803,7 +803,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
     /// };
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -827,7 +827,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
     /// };
-    /// use num::complex::Complex;
+    /// use num_complex::Complex;
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -871,7 +871,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
 mod tests {
     use super::*;
     use approxim::assert_relative_eq;
-    use num::complex::Complex;
+    use num_complex::Complex;
     use rstest::*;
     use std::f64::consts::PI;
 

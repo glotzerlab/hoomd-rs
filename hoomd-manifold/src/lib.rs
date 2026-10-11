@@ -112,7 +112,7 @@
 //!     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
 //!     UnitBiquaternion,
 //! };
-//! use num::complex::Complex;
+//! use num_complex::Complex;
 //! use std::f64::consts::PI;
 //!
 //! let q = Biquaternion::from([
@@ -135,7 +135,7 @@
 //! use hoomd_manifold::{
 //!     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
 //! };
-//! use num::complex::Complex;
+//! use num_complex::Complex;
 //! use std::f64::consts::PI;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {

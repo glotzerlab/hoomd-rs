@@ -20,6 +20,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
+use hoomd_utility::positive_real;
 use hoomd_vector::{self, Cartesian, Versor};
 // ANCHOR_END: use
 
@@ -39,8 +40,8 @@ impl HardTetrahedronSelfAssembly {
         let initial_packing_fraction = 0.3;
         let target_packing_fraction = 0.50;
         let n_bodies = 256;
-        let maximum_distance = 0.04;
-        let maximum_rotation = 0.04;
+        const MAXIMUM_DISTANCE: f64 = 0.04;
+        const MAXIMUM_ROTATION: f64 = 0.04;
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
@@ -79,11 +80,11 @@ impl HardTetrahedronSelfAssembly {
             .try_build()?;
 
         let translate =
-            Translate::with_maximum_distance(maximum_distance.try_into()?);
+            Translate::with_maximum_distance(positive_real!(MAXIMUM_DISTANCE));
         let translate_sweep = Sweep(translate);
 
         let rotate =
-            Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
+            Rotate::with_maximum_rotation(positive_real!(MAXIMUM_ROTATION));
         let rotate_sweep = Sweep(rotate);
 
         let distribution = UniformIn {
@@ -101,7 +102,7 @@ impl HardTetrahedronSelfAssembly {
             interaction: ApproximateShapeOverlap::new(
                 Convex(tetrahedron),
                 OverlapPenalty::default(),
-                0.01.try_into()?,
+                positive_real!(0.01),
             ),
             r_cut: hamiltonian.maximum_interaction_range(),
         };

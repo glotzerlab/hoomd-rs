@@ -33,7 +33,7 @@ extras = []
 [dev-dependencies]
 assert2.workspace = true
 approxim.workspace = true
-chacha20 = { version = "=0.10.1", default-features = false, features = ["rng"]}
+chacha20 = { version = "=0.10.2", default-features = false, features = ["rng"]}
 divan.workspace = true
 rand_sfc.workspace = true
 rstest.workspace = true

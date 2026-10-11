@@ -1,6 +1,7 @@
 // ANCHOR: all
 // ANCHOR: use
 use anyhow::{Context, anyhow};
+use std::f64::consts::PI;
 
 use hoomd_geometry::{
     Volume,
@@ -17,6 +18,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
+use hoomd_utility::positive_real;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
@@ -68,26 +70,27 @@ impl HardDiskSelfAssembly {
         let initial_packing_fraction = 0.4;
         let target_packing_fraction = 0.73;
         let n_disks = 64_usize.pow(2);
-        let maximum_distance = 0.07;
-        let sigma = 1.0;
+        const MAXIMUM_DISTANCE: f64 = 0.07;
+        const SIGMA: f64 = 1.0;
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
-        let hamiltonian = PairwiseCutoff(HardSphere { diameter: sigma });
+        let hamiltonian = PairwiseCutoff(HardSphere { diameter: SIGMA });
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
         let circle = Circle {
-            radius: (sigma / 2.0).try_into()?,
+            radius: positive_real!(SIGMA / 2.0),
         };
         let initial_box_volume =
             n_disks as f64 * circle.volume() / initial_packing_fraction;
-        let initial_box_edge_length = initial_box_volume.sqrt();
+        let initial_box_edge_length =
+            (initial_box_volume / (PI / 3.0).sin()).sqrt();
         let rhomboid = Rhomboid {
             extents: [
                 initial_box_edge_length.try_into()?,
-                initial_box_edge_length.try_into()?,
+                (initial_box_edge_length * (PI / 3.0).sin()).try_into()?,
             ],
             xy: 1.0 / 3.0f64.sqrt(),
         };
@@ -109,15 +112,16 @@ impl HardDiskSelfAssembly {
 
         // ANCHOR: place_disks
         let n_on_side_f64 = (n_disks as f64).sqrt().ceil();
-        let a = initial_box_edge_length / n_on_side_f64;
+        let a = 1.0 / n_on_side_f64;
         let n_on_side = n_on_side_f64 as usize;
         for j in 0..n_on_side {
-            let y = -initial_box_edge_length / 2.0 + j as f64 * a;
+            let y_fractional = -0.5 + j as f64 * a;
             for i in 0..n_on_side {
-                let x = -initial_box_edge_length / 2.0 + i as f64 * a;
+                let x_fractional = -0.5 / 2.0 + i as f64 * a;
                 if microstate.bodies().len() < n_disks {
-                    microstate
-                        .add_body(Body::point(Cartesian::from([x, y])))?;
+                    let position =
+                        rhomboid.absolute(&[x_fractional, y_fractional].into());
+                    microstate.add_body(Body::point(position))?;
                 }
             }
         }
@@ -125,7 +129,7 @@ impl HardDiskSelfAssembly {
 
         // ANCHOR: trial_moves
         let translate =
-            Translate::with_maximum_distance(maximum_distance.try_into()?);
+            Translate::with_maximum_distance(positive_real!(MAXIMUM_DISTANCE));
         let translate_sweep = Sweep(translate);
         // ANCHOR_END: trial_moves
 
@@ -139,10 +143,10 @@ impl HardDiskSelfAssembly {
         // ANCHOR: compress_hamiltonian
         let overlap_penalty = Isotropic {
             interaction: Expanded {
-                delta: sigma,
+                delta: SIGMA,
                 f: OverlapPenalty::default(),
             },
-            r_cut: sigma,
+            r_cut: SIGMA,
         };
 
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);

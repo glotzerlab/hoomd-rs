@@ -37,12 +37,17 @@
   - [Patchy Body (2D)](md-examples/patchy-body-2d.md)
 - [Monte Carlo Examples](mc-examples/index.md)
   - [Grandcanonical ensemble simulation of ellipses (2D)](mc-examples/ellipse-gcmc-2d.md)
+  - [Melt an ideal hexagonal structure of hexagons](mc-examples/crystal-stability.md)
+  - [Multi-site patchy shapes](mc-examples/multi-site-patchy-shapes.md)
+  - [3D shapes confined to a 2D plane](mc-examples/capsules-on-a-plane.md)
+  - [Binary hard shape systems](mc-examples/binary-hard-shapes.md)
 
 # Reference
 
 - [Release Notes](release-notes.md)
 - [Topics](topics.md)
 - [Notation](notation.md)
+- [Compatibility with other crates](compatibility.md)
 - [Development](development.md)
 - [Logo](logo.md)
 - [Credits](credits.md)

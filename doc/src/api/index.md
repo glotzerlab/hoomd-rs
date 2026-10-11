@@ -17,3 +17,4 @@ Here are links to the documentation for every *hoomd-rs* crate:
 - [hoomd-spatial](../api/hoomd_spatial/index.html): Spatial data structures for efficient site-site interaction computations.
 - [hoomd-utility](../api/hoomd_utility/index.html): Miscellaneous data types used throughout *hoomd-rs*.
 - [hoomd-vector](../api/hoomd_vector/index.html): Vector and rotation data types and operations.
+- [hoomd-workspace](../api/hoomd_workspace/index.html): Operate on *signac* workspaces in Rust.

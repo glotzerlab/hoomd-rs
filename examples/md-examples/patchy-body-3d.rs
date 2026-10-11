@@ -117,7 +117,7 @@ struct PatchyBody3D {
 }
 
 impl PatchyBody3D {
-    /// Construct a new Lennard Jones fluid simulation.
+    /// Construct a new 3D patchy body simulation.
     fn new() -> anyhow::Result<PatchyBody3D> {
         let temperature = 0.5;
         let density: f64 = 0.01;

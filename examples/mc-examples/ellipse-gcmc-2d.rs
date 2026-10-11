@@ -12,6 +12,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::IsothermalIsofugacity};
 use hoomd_spatial::VecCell;
+use hoomd_utility::positive_real;
 use hoomd_vector::{self, Angle, Cartesian};
 
 type PositionVector = Cartesian<2>;
@@ -43,19 +44,21 @@ struct HardEllipseGCMC {
 impl HardEllipseGCMC {
     /// Construct a new hard ellipse gcmc simulation.
     fn new() -> anyhow::Result<HardEllipseGCMC> {
-        let maximum_distance = 0.07;
-        let maximum_rotation = 0.3;
-        let sigma = 1.0;
-        let aspect = 5.0;
+        const MAXIMUM_DISTANCE: f64 = 0.07;
+        const MAXIMUM_ROTATION: f64 = 0.3;
+        const SIGMA: f64 = 1.0;
+        const ASPECT: f64 = 5.0;
         let macrostate = IsothermalIsofugacity {
             temperature: 1.0,
             fugacity: 50.0,
         };
-        assert!(aspect >= 1.0);
+        const {
+            assert!(ASPECT >= 1.0);
+        }
 
         let ellipse = Ellipse::with_semi_axes([
-            (sigma / 2.0).try_into()?,
-            (sigma / aspect / 2.0).try_into()?,
+            positive_real!(SIGMA / 2.0),
+            positive_real!(SIGMA / ASPECT / 2.0),
         ]);
         let hamiltonian = PairwiseCutoff(HardShape(ellipse.clone()));
 
@@ -77,11 +80,11 @@ impl HardEllipseGCMC {
             .try_build()?;
 
         let translate =
-            Translate::with_maximum_distance(maximum_distance.try_into()?);
+            Translate::with_maximum_distance(positive_real!(MAXIMUM_DISTANCE));
         let translate_sweep = Sweep(translate);
 
         let rotate =
-            Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
+            Rotate::with_maximum_rotation(positive_real!(MAXIMUM_ROTATION));
         let rotate_sweep = Sweep(rotate);
 
         let distribution = UniformIn {

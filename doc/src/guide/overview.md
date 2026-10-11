@@ -27,7 +27,7 @@ traits defined in [hoomd-interaction].
 See the [hoomd-interaction] documentation for a more detailed introduction,
 a complete list of all interaction models, and example code.
 
-## Representing Shapes
+## Representing shapes
 
 [hoomd-geometry] defines many common 2D and 3D shapes and implements a number
 of operations on them. You can use these shapes to define your simulation boundary
@@ -37,7 +37,7 @@ implement your own via one or more of the traits defined in [hoomd-geometry].
 See the [hoomd-geometry] documentation for a more detailed introduction,
 a complete list of all shapes, and example code.
 
-## Tracking the System's Microstate
+## Tracking the system's microstate
 
 [hoomd-microstate] defines the `Microstate` type which tracks all the degrees of
 freedom for the *bodies* in your simulation and provides efficient methods to
@@ -48,7 +48,7 @@ a microstate for a given interaction model.
 See the [hoomd-microstate] documentation for a more detailed introduction,
 a complete list of all methods, and example code.
 
-## Monte Carlo (MC) Simulations
+## Monte Carlo (MC) simulations
 
 [hoomd-mc] implements typical Monte Carlo trial moves used in soft matter
 research, such as local translation and rotation moves. Each trial move is
@@ -57,7 +57,7 @@ the given interaction model ([hoomd-interaction]). When you need a different typ
 of trial move for your simulation model, implement your own via one or more of the
 traits defined in [hoomd-mc].
 
-## Molecular Dynamics (MD) Simulations
+## Molecular dynamics (MD) simulations
 
 [hoomd-md] implements methods that integrate the translational and/or rotational
 degrees of freedom in the `Microstate` forward in time. Bodies move in response
@@ -66,11 +66,18 @@ the chosen integration method, and thermostat. The MD and interaction models are
 the same. Provided that the interaction is differentiable, you can freely swap
 between MD integration and MC trial moves in the same simulation.
 
-## Writing GSD Files
+## Writing GSD files
 
 Use [hoomd-gsd] to read and write GSD files that store the position and orientation
 of the sites in your microstate as a function of time. Use GSD files for offline
 analysis and visualization after your simulation job completes.
+
+## Integrate hoomd-rs with your workflow
+
+Use the [hoomd-workspace] crate to read and write jobs in [signac] workspaces.
+Write commands in [Rust] that initialize, equilibrate, sample, and analyze
+models. Submit and track the progress of thousands of individual simulation
+runs using [row].
 
 [Rust]: https://www.rust-lang.org/
 [hoomd-interaction]: ../api/hoomd_interaction/index.html
@@ -79,3 +86,6 @@ analysis and visualization after your simulation job completes.
 [hoomd-mc]: ../api/hoomd_mc/index.html
 [hoomd-md]: ../api/hoomd_md/index.html
 [hoomd-gsd]: ../api/hoomd_gsd/index.html
+[hoomd-workspace]: ../api/hoomd_workspace/index.html
+[signac]: https://signac.readthedocs.io
+[row]: https://row.readthedocs.io

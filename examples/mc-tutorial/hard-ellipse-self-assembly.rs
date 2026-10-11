@@ -20,6 +20,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
+use hoomd_utility::positive_real;
 use hoomd_vector::{self, Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -77,18 +78,20 @@ impl HardEllipseSelfAssembly {
         let initial_packing_fraction = 0.4;
         let target_packing_fraction = 0.7;
         let n_bodies = 512;
-        let maximum_distance = 0.07;
-        let maximum_rotation = 0.3;
-        let sigma = 1.0;
-        let aspect = 5.0;
+        const MAXIMUM_DISTANCE: f64 = 0.07;
+        const MAXIMUM_ROTATION: f64 = 0.3;
+        const SIGMA: f64 = 1.0;
+        const ASPECT: f64 = 5.0;
         let macrostate = Isothermal { temperature: 1.0 };
-        assert!(aspect >= 1.0);
+        const {
+            assert!(ASPECT >= 1.0);
+        }
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
         let ellipse = Ellipse::with_semi_axes([
-            (sigma / 2.0).try_into()?,
-            (sigma / aspect / 2.0).try_into()?,
+            positive_real!(SIGMA / 2.0),
+            positive_real!(SIGMA / ASPECT / 2.0),
         ]);
         let hamiltonian = PairwiseCutoff(HardShape(ellipse.clone()));
         // ANCHOR_END: hamiltonian
@@ -117,11 +120,11 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: trial_moves
         let translate =
-            Translate::with_maximum_distance(maximum_distance.try_into()?);
+            Translate::with_maximum_distance(positive_real!(MAXIMUM_DISTANCE));
         let translate_sweep = Sweep(translate);
 
         let rotate =
-            Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
+            Rotate::with_maximum_rotation(positive_real!(MAXIMUM_ROTATION));
         let rotate_sweep = Sweep(rotate);
         // ANCHOR_END: trial_moves
 
@@ -145,9 +148,9 @@ impl HardEllipseSelfAssembly {
             interaction: ApproximateShapeOverlap::new(
                 ellipse,
                 OverlapPenalty::default(),
-                0.01.try_into()?,
+                positive_real!(0.01),
             ),
-            r_cut: sigma,
+            r_cut: SIGMA,
         };
 
         let overlap_penalty_hamiltonian =
