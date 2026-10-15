@@ -27,7 +27,7 @@ use hoomd_vector::Cartesian;
 /// on construction with [`ConvexHull`]. After construction, the [`vertices`] of
 /// the shape include only the points on the convex hull, and the [`facets`] are
 /// the triangular faces of the body. Using this representation, [`ConvexSurfaceMesh3d`]
-/// is able to provide implementations of [`Volume`].
+/// is able to provide an implementation of [`Volume`].
 ///
 /// [`vertices`]: Self::vertices
 /// [`facets`]: Self::facets
@@ -67,6 +67,7 @@ impl ConvexSurfaceMesh3d {
     ///
     /// # Errors
     ///
+    /// * [`Error::NotFinite`] when any coordinate input is not finite..
     /// * [`Error::DegeneratePolytope`] when there are fewer than 4 non-coplanar points.
     ///
     /// # Example

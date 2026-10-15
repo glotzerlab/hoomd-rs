@@ -109,7 +109,7 @@ impl<const N: usize> Facet<N> {
     ///
     /// # Panics
     ///
-    /// Panics when a vertex index is out of bounds, like indexing `points`.
+    /// Panics when a vertex index is out of bounds.
     ///
     /// # Example
     ///
@@ -199,9 +199,10 @@ where
 {
     /// Check on which side of the facet a point lies.
     ///
-    /// Returns [`Side::Above`] when `point` lies strictly on the positive side of the
-    /// the facet's vertex order, [`Side::Below`] when it lies strictly on the opposite
-    /// side, and [`Side::On`] when it lies exactly in the hyperplane.
+    /// Returns [`Side::Above`] when `point` lies strictly on the positive side
+    /// of the the facet (determined by vertex order), [`Side::Below`] when
+    /// it lies strictly on the opposite side, and [`Side::On`] when it lies
+    /// exactly in the hyperplane.
     ///
     /// The facets of a hull from [`Cartesian::<2>::convex_hull`] or
     /// [`Cartesian::<3>::convex_hull`] are oriented so that every point of the hull
@@ -271,14 +272,13 @@ where
 ///     [1.0, -1.0].into(),
 ///     [-1.0, 1.0].into(),
 ///     [-1.0, -1.0].into(),
-///     [0.0, 0.0].into(), // This point is in the interior of the hull.
+///     [0.0, 0.0].into(),
 /// ];
 ///
 /// let (hull_vertices, edges) = Cartesian::<2>::convex_hull(&points)?;
 ///
 /// assert_eq!(hull_vertices.len(), 4);
-/// assert_eq!(edges.len(), 4); // A square is bounded by four edges.
-/// //
+/// assert_eq!(edges.len(), 4);
 /// # Ok(())
 /// # }
 /// ```
@@ -317,8 +317,7 @@ pub trait ConvexHull<const N: usize>: Sized {
     ///     }))?;
     ///
     /// assert_eq!(hull_vertices.len(), 3);
-    /// assert_eq!(edges.len(), 3); // A triangle is bounded by three edges.
-    /// //
+    /// assert_eq!(edges.len(), 3);
     /// # Ok(())
     /// # }
     /// ```
@@ -434,7 +433,7 @@ impl ConvexHull<3> for Cartesian<3> {
     /// depend on where the point set lies relative to the origin (up to the
     /// precision of the coordinates themselves).
     ///
-    /// This is an O(n*f) algorithm, where f is the number of faces, and is suited for
+    /// This is an $` O(NF) `$ algorithm, where *F* is the number of faces, and is suited for
     /// high-symmetry solids and polyhedra with fewer than ~1000 vertices.
     ///
     /// # Errors
@@ -444,6 +443,7 @@ impl ConvexHull<3> for Cartesian<3> {
     /// points are coplanar.
     ///
     /// [`Error`]: enum@Error
+    /// [`robust::orient3d`]: https://docs.rs/robust/latest/robust/fn.orient3d.html
     ///
     /// # Example
     ///
@@ -466,7 +466,8 @@ impl ConvexHull<3> for Cartesian<3> {
     /// let (hull_vertices, facets) = Cartesian::<3>::convex_hull(&cube)?;
     ///
     /// assert_eq!(hull_vertices.len(), 8);
-    /// assert_eq!(facets.len(), 12); // Each square face is split into two triangles.
+    /// // Each square face is split into two triangles:
+    /// assert_eq!(facets.len(), 12);
     /// # Ok(())
     /// # }
     /// ```

@@ -92,6 +92,7 @@ impl ConvexSurfaceMesh2d {
     ///
     /// # Errors
     ///
+    /// * [`Error::NotFinite`] when any coordinate input is not finite..
     /// * [`Error::DegeneratePolytope`] when there are fewer than 3 non-collinear points.
     ///
     /// # Example
