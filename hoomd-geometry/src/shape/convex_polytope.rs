@@ -222,6 +222,10 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
     /// ```
     #[inline]
     #[must_use]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
     pub fn icosahedron() -> ConvexPolytope<3, MAX_VERTICES> {
         const {
             assert!(
@@ -256,6 +260,10 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
     /// ```
     #[inline]
     #[must_use]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
     pub fn dodecahedron() -> ConvexPolytope<3, MAX_VERTICES> {
         const {
             assert!(
