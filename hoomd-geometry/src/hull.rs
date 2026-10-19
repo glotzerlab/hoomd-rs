@@ -6,7 +6,8 @@
 //! A hull is returned as its vertices together with the [`Facet`]s that bound it:
 //! each facet is the set of indices of the hull vertices on one of its bounding
 //! hyperplanes, and [`Facet::orientation`] decides exactly on which [`Side`] of that
-//! hyperplane any point lies.
+//! hyperplane any point lies. Facets are oriented with outward normals, so the
+//! points of the hull lie [`Side::Below`] or [`Side::On`] each of its facets.
 
 use std::{borrow::Borrow, cmp::Ordering};
 
@@ -205,8 +206,9 @@ where
     /// exactly in the hyperplane.
     ///
     /// The facets of a hull from [`Cartesian::<2>::convex_hull`] or
-    /// [`Cartesian::<3>::convex_hull`] are oriented so that every point of the hull
-    /// lies [`Side::Above`] or [`Side::On`] each of its facets.
+    /// [`Cartesian::<3>::convex_hull`] are oriented with outward normals, so that
+    /// every point of the hull lies [`Side::Below`] or [`Side::On`] each of its
+    /// facets, and a point outside the hull lies [`Side::Above`] at least one facet.
     ///
     /// # Errors
     ///
@@ -291,7 +293,9 @@ pub trait ConvexHull<const N: usize>: Sized {
     /// order: counter-clockwise in two dimensions, and in the order of the
     /// input in three dimensions and higher. Each facet is a set of indices
     /// into the returned vector of vertices: an edge (`Facet<2>`) in two
-    /// dimensions and a triangle (`Facet<3>`) in three.
+    /// dimensions and a triangle (`Facet<3>`) in three. Facets are oriented
+    /// with outward normals: every point of the hull lies [`Side::Below`] or
+    /// [`Side::On`] each of them.
     ///
     /// # Errors
     ///
@@ -334,6 +338,10 @@ impl ConvexHull<2> for Cartesian<2> {
     /// exact sign of the orientation determinant, so the resulting hull does
     /// not depend on where the point set lies relative to the origin (up to
     /// the precision of the coordinates themselves).
+    ///
+    /// The vertices are ordered counter-clockwise. The facet edges are directed
+    /// clockwise along that order, with outward normals, so every point of the
+    /// hull lies [`Side::Below`] or [`Side::On`] each of them.
     ///
     /// # Errors
     ///
@@ -399,10 +407,11 @@ impl ConvexHull<2> for Cartesian<2> {
         }
 
         // The facets of a polygon are its edges, implied by the cyclic
-        // counter-clockwise order of the vertices.
-        let facets = (0..points.len())
-            .map(|i| Facet::new([i, (i + 1) % points.len()]))
-            .collect();
+        // counter-clockwise order of the vertices. Each edge is directed from
+        // vertex i + 1 to vertex i, i.e. clockwise, so that its right-hand-rule
+        // normal points outward and every point of the hull lies Below or On it.
+        let n = points.len();
+        let facets = (0..n).map(|i| Facet::new([(i + 1) % n, i])).collect();
 
         Ok((points, facets))
     }
@@ -435,6 +444,10 @@ impl ConvexHull<3> for Cartesian<3> {
     ///
     /// This is an $` O(NF) `$ algorithm, where *F* is the number of faces, and is suited for
     /// high-symmetry solids and polyhedra with fewer than ~1000 vertices.
+    ///
+    /// The facets are oriented with outward normals: their vertices are ordered
+    /// counter-clockwise when viewed from outside the hull, so every point of the
+    /// hull lies [`Side::Below`] or [`Side::On`] each of them.
     ///
     /// # Errors
     ///
@@ -510,10 +523,10 @@ impl ConvexHull<3> for Cartesian<3> {
 /// Compute the convex hull of points in 3D with an incremental algorithm.
 ///
 /// Returns the indices of the points that are vertices of the hull in increasing order,
-/// and the triangular faces of the hull as oriented index triples. A point lies
-/// strictly outside a face when its orientation against it is [`Side::Below`], and
-/// the faces are oriented so that all points of the hull lie [`Side::Above`] or
-/// [`Side::On`] them.
+/// and the triangular faces of the hull as oriented index triples. The faces are
+/// oriented with outward normals, so that all points of the hull lie [`Side::Below`]
+/// or [`Side::On`] them, and a point lies strictly outside a face when its
+/// orientation against it is [`Side::Above`].
 ///
 /// Starting from an initial tetrahedron, each point is inserted in turn.
 /// Points strictly outside the current hull see a connected set of faces,
@@ -523,15 +536,16 @@ impl ConvexHull<3> for Cartesian<3> {
 fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 3]>), Error> {
     let (t0, t1, t2, t3) = initial_tetrahedron(points)?;
 
-    // The four faces of the initial tetrahedron. Each face is oriented so the vertex
-    // opposite it, and with it the hull, lies Above or On the face
+    // The four faces of the initial tetrahedron. Each face is oriented with an
+    // outward normal, so the vertex opposite it, and with it the hull, lies
+    // Below or On the face
     let mut faces: Vec<[usize; 3]> = vec![[t0, t1, t2], [t0, t2, t3], [t0, t3, t1], [t1, t3, t2]];
     let opposite = [t3, t1, t2, t0];
     for (face, o) in faces.iter_mut().zip(opposite) {
         if Cartesian::<3>::orientation(
             &[points[face[0]], points[face[1]], points[face[2]]],
             &points[o],
-        )? == Side::Below
+        )? == Side::Above
         {
             face.swap(0, 1);
         }
@@ -553,7 +567,7 @@ fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 
         faces.retain(|&face| {
             let outside = [points[face[0]], points[face[1]], points[face[2]]];
             if Cartesian::<3>::orientation(&outside, &points[p])
-                .is_ok_and(|side| side == Side::Below)
+                .is_ok_and(|side| side == Side::Above)
             {
                 edges.push((face[0], face[1]));
                 edges.push((face[1], face[2]));
@@ -1327,7 +1341,7 @@ mod tests {
 
     /// Validate a triangulated 3d hull.
     ///
-    /// * Every face is a supporting plane
+    /// * Every face is a supporting plane, with its normal pointing outward
     /// * The faces form a closed oriented surface: every directed edge is unique and
     ///   matched by its reverse.
     /// * Euler's formula `V - E + F = 2` holds.
@@ -1340,10 +1354,25 @@ mod tests {
                 let side = Cartesian::<3>::orientation(&face_points, &points[q])
                     .expect("the coordinates are resolvable");
                 check!(
-                    side != Side::Below,
+                    side != Side::Above,
                     "point {q} lies outside the face {face:?}"
                 );
             }
+        }
+
+        // Every face normal points away from the hull. The centroid of the hull
+        // vertices is an interior point, so it lies strictly below each face.
+        let centroid = vertices
+            .iter()
+            .fold(Cartesian::from([0.0; 3]), |acc, &i| acc + points[i])
+            / vertices.len() as f64;
+        for &face in faces {
+            let [a, b, c] = [points[face[0]], points[face[1]], points[face[2]]];
+            let normal = (b - a).cross(&(c - a));
+            check!(
+                normal.dot(&(centroid - a)) < 0.0,
+                "the normal of the face {face:?} points into the hull"
+            );
         }
 
         // The surface is closed and consistently oriented.
@@ -1610,14 +1639,26 @@ mod tests {
         let (hull_vertices, facets) = Cartesian::<2>::convex_hull(&points)
             .expect("hard-coded points should form a convex body");
         for facet in &facets {
+            // Every point of the hull lies Below or On an outward-oriented edge.
             for q in &points {
                 check!(
                     facet
                         .orientation(&hull_vertices, q)
                         .expect("finite coordinates resolve exactly")
-                        != Side::Below
+                        != Side::Above
                 );
             }
+
+            // The normal of the edge's vertex order points away from the hull.
+            let centroid = hull_vertices
+                .iter()
+                .fold(Cartesian::from([0.0; 2]), |acc, p| acc + *p)
+                / hull_vertices.len() as f64;
+            let [a, b] = facet.as_simplex(&hull_vertices);
+            let edge = b - a;
+            let normal = Cartesian::from([-edge[1], edge[0]]);
+            let midpoint = (a + b) / 2.0;
+            check!(normal.dot(&(midpoint - centroid)) > 0.0);
         }
     }
 
@@ -1641,12 +1682,53 @@ mod tests {
         let (hull_vertices, facets) = Cartesian::<3>::convex_hull(&points)
             .expect("hard-coded points should form a convex body");
         for facet in &facets {
+            // Every point of the hull lies Below or On an outward-oriented facet.
             for q in &points {
                 let orientation = facet
                     .orientation(&hull_vertices, q)
                     .expect("finite coordinates resolve exactly");
-                check!(orientation != Side::Below);
+                check!(orientation != Side::Above);
+            }
+
+            // The normal of the facet's vertex order points away from the hull,
+            // here centered on the origin: counter-clockwise seen from outside.
+            let [a, b, c] = facet.as_simplex(&hull_vertices);
+            let normal = (b - a).cross(&(c - a));
+            let centroid = (a + b + c) / 3.0;
+            check!(normal.dot(&centroid) > 0.0);
+        }
+    }
+
+    #[rstest]
+    fn test_hull_orientation_convention() {
+        // In both dimensions, every point of the hull lies Below or On each of
+        // its facets, and a point outside lies Above at least one of them.
+        let square = [
+            Cartesian::from([0.0, 0.0]),
+            Cartesian::from([2.0, 0.0]),
+            Cartesian::from([2.0, 2.0]),
+            Cartesian::from([0.0, 2.0]),
+        ];
+        let (vertices, facets) = Cartesian::<2>::convex_hull(square).unwrap();
+        for facet in &facets {
+            for q in &vertices {
+                check!(facet.orientation(&vertices, q).unwrap() != Side::Above);
             }
         }
+        check!(
+            facets
+                .iter()
+                .any(|f| f.orientation(&vertices, &Cartesian::from([1.0, 3.0])) == Ok(Side::Above))
+        );
+
+        let (vertices, facets) = Cartesian::<3>::convex_hull(cube()).unwrap();
+        for facet in &facets {
+            for q in &vertices {
+                check!(facet.orientation(&vertices, q).unwrap() != Side::Above);
+            }
+        }
+        check!(facets.iter().any(
+            |f| f.orientation(&vertices, &Cartesian::from([0.0, 0.0, 2.0])) == Ok(Side::Above)
+        ));
     }
 }

@@ -150,7 +150,6 @@ impl Volume for ConvexSurfaceMesh3d {
                 .determinant()
             })
             .sum::<f64>()
-            .abs()
             / 6.0
     }
 }
