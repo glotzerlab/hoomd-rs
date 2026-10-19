@@ -210,6 +210,8 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
 impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
     /// Create an icosahedron with edge length 2.
     ///
+    /// Requires `MAX_VERTICES >= 12`. Smaller capacities fail to compile.
+    ///
     /// # Example
     /// ```
     /// use hoomd_geometry::shape::ConvexPolyhedron;
@@ -218,12 +220,15 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
     ///
     /// assert_eq!(icosahedron.vertices().len(), 12);
     /// ```
-    /// # Panics
-    ///
-    /// If the shape is initialized with `MAX_VERTICES` < 12.
     #[inline]
     #[must_use]
     pub fn icosahedron() -> ConvexPolytope<3, MAX_VERTICES> {
+        const {
+            assert!(
+                MAX_VERTICES >= 12,
+                "an icosahedron requires MAX_VERTICES >= 12"
+            );
+        };
         let phi = std::f64::consts::GOLDEN_RATIO;
         let mut vertices = Vec::with_capacity(12);
         for a in [-1.0, 1.0] {
@@ -234,10 +239,12 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
             }
         }
         ConvexPolytope::with_vertices(vertices)
-            .expect("an icosahedron requires at least 12 vertices")
+            .expect("the 12 vertices of an icosahedron always fit")
     }
 
     /// Create a dodecahedron with edge length `2 / phi`.
+    ///
+    /// Requires `MAX_VERTICES >= 20`. Smaller capacities fail to compile.
     ///
     /// # Example
     /// ```
@@ -247,12 +254,15 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
     ///
     /// assert_eq!(dodecahedron.vertices().len(), 20);
     /// ```
-    ///
-    /// # Panics
-    ///
-    /// If the shape is initialized with `MAX_VERTICES` < 20.
     #[inline]
+    #[must_use]
     pub fn dodecahedron() -> ConvexPolytope<3, MAX_VERTICES> {
+        const {
+            assert!(
+                MAX_VERTICES >= 20,
+                "a dodecahedron requires MAX_VERTICES >= 20"
+            );
+        };
         let phi = std::f64::consts::GOLDEN_RATIO;
         let mut vertices: Vec<Cartesian<3>> = Vec::with_capacity(20);
         for x in [-1.0, 1.0] {
@@ -270,7 +280,7 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
             }
         }
         ConvexPolytope::with_vertices(vertices)
-            .expect("a dodecahedron requires at least 20 vertices")
+            .expect("the 20 vertices of a dodecahedron always fit")
     }
 }
 
