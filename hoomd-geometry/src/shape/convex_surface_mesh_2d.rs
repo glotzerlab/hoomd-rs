@@ -84,7 +84,7 @@ pub struct ConvexSurfaceMesh2d {
 }
 
 impl ConvexSurfaceMesh2d {
-    /// Create an convex surface mesh from the convex hull of the given set of points.
+    /// Create a convex surface mesh from the convex hull of the given set of points.
     ///
     /// The resulting shape contains a subset of the given points, including
     /// only the non-degenerate points on the convex hull. The result's vertices
@@ -92,7 +92,7 @@ impl ConvexSurfaceMesh2d {
     ///
     /// # Errors
     ///
-    /// * [`Error::NotFinite`] when any coordinate input is not finite..
+    /// * [`Error::NotFinite`] when any coordinate input is not finite.
     /// * [`Error::DegeneratePolytope`] when there are fewer than 3 non-collinear points.
     ///
     /// # Example
@@ -266,7 +266,7 @@ impl Scale for ConvexSurfaceMesh2d {
     /// The resulting surface meshs' vertices $` \vec{p}_\mathrm{new} `$ are
     /// the original's $` \vec{p} `$ scaled by $` v `$:
     /// ```math
-    /// \vec{p}_\mathrm{new} = v \vec}{p}
+    /// \vec{p}_\mathrm{new} = v \vec{p}
     /// ```
     ///
     /// # Example
@@ -309,7 +309,7 @@ impl Scale for ConvexSurfaceMesh2d {
     /// The resulting surface meshs' vertices $` \vec{p}_\mathrm{new} `$ are
     /// the original's $` \vec{p} `$ scaled by $` v^{\frac{1}{2}} `$:
     /// ```math
-    /// \vec{p}_\mathrm{new} = v \vec}{p}
+    /// \vec{p}_\mathrm{new} = v^{\frac{1}{2}} \vec{p}
     /// ```
     ///
     /// # Example
@@ -503,14 +503,7 @@ fn is_separating(a: &ConvexSurfaceMesh2d, p: &Cartesian<2>, n: &Cartesian<2>) ->
     // check if n dot (v[i]-p) < 0 for every vertex in the polygon
     // distribute: (n dot v[i] - n dot p) < 0
     let n_dot_p = n.dot(p);
-
-    for v in &a.vertices {
-        if n.dot(v) - n_dot_p <= 0.0 {
-            return false;
-        }
-    }
-
-    true
+    a.vertices.iter().all(|v| n.dot(v) - n_dot_p > 0.0)
 }
 
 impl<const MAX_VERTICES: usize> TryFrom<ConvexPolytope<2, MAX_VERTICES>> for ConvexSurfaceMesh2d {
