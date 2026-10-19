@@ -146,11 +146,7 @@ impl<'a, const N: usize> Facet<'a, N> {
     /// use hoomd_geometry::hull::Facet;
     /// use hoomd_vector::Cartesian;
     ///
-    /// let triangle = [
-    ///     [1.0, 1.0].into(),
-    ///     [1.0, -1.0].into(),
-    ///     [-1.0, -1.0].into(),
-    /// ];
+    /// let triangle = [[1.0, 1.0].into(), [1.0, -1.0].into(), [-1.0, -1.0].into()];
     /// let edge = Facet::new(&triangle, [0, 2]);
     ///
     /// let [start, end] = edge.as_simplex();
