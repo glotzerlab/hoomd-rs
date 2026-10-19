@@ -4,16 +4,14 @@
 //! Compute the convex hull of a set of points.
 //!
 //! A hull is returned as its vertices together with the [`Facet`]s that bound it:
-//! each facet is the set of indices of the hull vertices on one of its bounding
-//! hyperplanes, and [`Facet::orientation`] decides exactly on which [`Side`] of that
-//! hyperplane any point lies. Facets are oriented with outward normals, so the
-//! points of the hull lie [`Side::Below`] or [`Side::On`] each of its facets.
+//! each facet a set of indices into the given points. [`Facet::orientation`] decides
+//! exactly on which [`Side`] of that hyperplane any point lies on. Facets are oriented
+//! with outward normals, so the points of the hull lie [`Side::Below`] or [`Side::On`]
+//! each of its facets.
 
 use std::cmp::Ordering;
 
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 
 use crate::Error;
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
@@ -74,43 +72,27 @@ fn finite_points<const N: usize>(points: &[Cartesian<N>]) -> bool {
         .all(|p| p.coordinates.iter().all(|c| c.is_finite()))
 }
 
-/// A facet of a convex hull: the indices of the `N` vertices of the hull that bound it,
-/// in the order given by [`ConvexHull::convex_hull`].
+/// A facet of a convex hull, given as `N` indices into a slice of vertices.
 ///
 /// A facet of a two-dimensional hull is an edge (`Facet<2>`) and a facet of a
 /// three-dimensional hull is a triangle (`Facet<3>`).
-#[serde_as]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Facet<const N: usize> {
+///
+/// The facet holds a reference to the points its indices refer to. A facet borrowed
+/// from a hull remains valid as long as the points the hull was computed from.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Facet<'a, const N: usize> {
+    /// The points the facet's indices refer to.
+    vertices: &'a [Cartesian<N>],
     /// The indices of the vertices of the facet.
-    #[serde_as(as = "[_; N]")]
     indices: [usize; N],
 }
 
-impl<const N: usize> Facet<N> {
-    /// Create a facet from the indices of its vertices.
-    #[inline]
-    #[must_use]
-    pub const fn new(indices: [usize; N]) -> Self {
-        Self { indices }
-    }
-
-    /// The indices of the vertices of the facet.
-    #[inline]
-    #[must_use]
-    pub const fn indices(&self) -> [usize; N] {
-        self.indices
-    }
-
-    /// The simplex the facet spans: its vertices, looked up in `vertices`.
-    ///
-    /// A facet of an `N`-dimensional hull is an `(N - 1)`-simplex bounded by
-    /// `N` vertices of the hull. An edge of a polygon returns its two
-    /// endpoints, and a triangle of a polyhedron its three corners.
+impl<'a, const N: usize> Facet<'a, N> {
+    /// Create a facet from a slice of points and the indices of its vertices.
     ///
     /// # Panics
     ///
-    /// Panics when a vertex index is out of bounds.
+    /// Panics when an index is out of bounds for `vertices`.
     ///
     /// # Example
     ///
@@ -123,23 +105,68 @@ impl<const N: usize> Facet<N> {
     ///     Cartesian::from([1.0, -1.0]),
     ///     Cartesian::from([-1.0, -1.0]),
     /// ];
-    /// let edge = Facet::new([0, 2]);
+    /// let edge = Facet::new(&points, [0, 2]);
     ///
-    /// let [start, end] = edge.as_simplex(&points);
-    /// assert_eq!(start, points[0]);
-    /// assert_eq!(end, points[2]);
+    /// assert_eq!(edge.indices(), [0, 2]);
     /// ```
     #[inline]
     #[must_use]
-    pub fn as_simplex(&self, vertices: &[Cartesian<N>]) -> [Cartesian<N>; N] {
-        self.indices.map(|i| vertices[i])
+    pub fn new(vertices: &'a [Cartesian<N>], indices: [usize; N]) -> Self {
+        assert!(
+            indices.iter().all(|&i| i < vertices.len()),
+            "facet indices {indices:?} are out of bounds for {} vertices",
+            vertices.len()
+        );
+        Self { vertices, indices }
+    }
+
+    /// The points the facet's indices refer to.
+    #[inline]
+    #[must_use]
+    pub const fn vertices(&self) -> &'a [Cartesian<N>] {
+        self.vertices
+    }
+
+    /// The indices of the vertices of the facet, into [`Self::vertices`].
+    #[inline]
+    #[must_use]
+    pub const fn indices(&self) -> [usize; N] {
+        self.indices
+    }
+
+    /// The simplex the facet spans, as `Cartesian<N>` coordinates.
+    ///
+    /// A facet of an `N`-dimensional hull is an `(N - 1)`-simplex bounded by `N`
+    /// vertices of the hull. An edge of a polygon returns its two endpoints, and a
+    /// triangle of a polyhedron its three corners.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::hull::Facet;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let triangle = [
+    ///     [1.0, 1.0].into(),
+    ///     [1.0, -1.0].into(),
+    ///     [-1.0, -1.0].into(),
+    /// ];
+    /// let edge = Facet::new(&triangle, [0, 2]);
+    ///
+    /// let [start, end] = edge.as_simplex();
+    /// assert_eq!(start, triangle[0]);
+    /// assert_eq!(end, triangle[2]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn as_simplex(&self) -> [Cartesian<N>; N] {
+        self.indices.map(|i| self.vertices[i])
     }
 }
 
 /// Determine to which [`Side`] of a hyperplane a point lies.
 ///
-/// If the [`Side`] cannot be unambiguously determined, this predicate reurns an
-/// `Error` describing the specific failure mode, if know.
+/// If the [`Side`] cannot be unambiguously determined, this predicate returns an [`Error`].
 trait PointPlaneOrientation<const N: usize> {
     /// Determine the [`Side`] of `simplex` that `point` lies on.
     ///
@@ -194,7 +221,7 @@ impl PointPlaneOrientation<3> for Cartesian<3> {
     private_bounds,
     reason = "Bound restricts the implementation to valid dimensions."
 )]
-impl<const N: usize> Facet<N>
+impl<const N: usize> Facet<'_, N>
 where
     Cartesian<N>: PointPlaneOrientation<N>,
 {
@@ -222,32 +249,28 @@ where
     ///
     /// // The triangle spanned by the x and y axes, with a normal pointing toward +z.
     /// let vertices = [
-    ///     Cartesian::from([0.0, 0.0, 0.0]),
-    ///     Cartesian::from([1.0, 0.0, 0.0]),
-    ///     Cartesian::from([0.0, 1.0, 0.0]),
+    ///     [0.0, 0.0, 0.0].into(),
+    ///     [1.0, 0.0, 0.0].into(),
+    ///     [0.0, 1.0, 0.0].into(),
     /// ];
-    /// let facet = Facet::new([0, 1, 2]);
+    /// let facet = Facet::new(&vertices, [0, 1, 2]);
     ///
     /// assert_eq!(
-    ///     facet.orientation(&vertices, &Cartesian::from([0.0, 0.0, 1.0])),
+    ///     facet.orientation(&Cartesian::from([0.0, 0.0, 1.0])),
     ///     Ok(Side::Above)
     /// );
     /// assert_eq!(
-    ///     facet.orientation(&vertices, &Cartesian::from([0.0, 0.0, -1.0])),
+    ///     facet.orientation(&Cartesian::from([0.0, 0.0, -1.0])),
     ///     Ok(Side::Below)
     /// );
     /// assert_eq!(
-    ///     facet.orientation(&vertices, &Cartesian::from([0.0, 0.0, 0.0])),
+    ///     facet.orientation(&Cartesian::from([0.0, 0.0, 0.0])),
     ///     Ok(Side::On)
     /// );
     /// ```
     #[inline]
-    pub fn orientation(
-        &self,
-        vertices: &[Cartesian<N>],
-        point: &Cartesian<N>,
-    ) -> Result<Side, Error> {
-        Cartesian::orientation(&self.as_simplex(vertices), point)
+    pub fn orientation(&self, point: &Cartesian<N>) -> Result<Side, Error> {
+        Cartesian::orientation(&self.as_simplex(), point)
     }
 }
 
@@ -288,10 +311,11 @@ pub trait ConvexHull<const N: usize> {
     /// non-degenerate points on the convex hull, arranged in a deterministic
     /// order: counter-clockwise in two dimensions, and in the order of the
     /// input in three dimensions and higher. Each facet is a set of indices
-    /// into the returned vector of vertices: an edge (`Facet<2>`) in two
-    /// dimensions and a triangle (`Facet<3>`) in three. Facets are oriented
-    /// with outward normals: every point of the hull lies [`Side::Below`] or
-    /// [`Side::On`] each of them.
+    /// into the given points: an edge (`Facet<2>`) in two dimensions and a
+    /// triangle (`Facet<3>`) in three. The facets are bound to the given
+    /// points; resolve the vertices of a facet with [`Facet::as_simplex`].
+    /// Facets are oriented with outward normals: every point of the hull lies
+    /// [`Side::Below`] or [`Side::On`] each of them.
     ///
     /// # Errors
     ///
@@ -325,7 +349,7 @@ pub trait ConvexHull<const N: usize> {
     /// # Ok(())
     /// # }
     /// ```
-    fn convex_hull(&self) -> Result<(Vec<Cartesian<N>>, Vec<Facet<N>>), Error>;
+    fn convex_hull(&self) -> Result<(Vec<Cartesian<N>>, Vec<Facet<'_, N>>), Error>;
 }
 
 impl ConvexHull<2> for [Cartesian<2>] {
@@ -346,25 +370,33 @@ impl ConvexHull<2> for [Cartesian<2>] {
     /// and [`Error::DegeneratePolytope`] when the points do not span the plane
     /// (fewer than three points, or all collinear).
     #[inline]
-    fn convex_hull(&self) -> Result<(Vec<Cartesian<2>>, Vec<Facet<2>>), Error> {
-        let mut points: Vec<Cartesian<2>> = self.to_vec();
+    fn convex_hull(&self) -> Result<(Vec<Cartesian<2>>, Vec<Facet<'_, 2>>), Error> {
+        // Pair each point with its index, so that the facets can refer to the input pts
+        let mut points: Vec<(Cartesian<2>, usize)> =
+            self.iter().enumerate().map(|(i, &p)| (p, i)).collect();
 
-        // No need to try and triangulate if the hull is degenerate
+        // Fewer than three points cannot span the plane.
         if points.len() < 3 {
             return Err(Error::DegeneratePolytope);
         }
-        if !finite_points(&points) {
+        if !finite_points(self) {
             return Err(Error::NotFinite);
         }
 
-        let anchor_idx = find_lowest_leftmost(&points).ok_or(Error::DegeneratePolytope)?;
-
-        // Move the anchor to the front of the list of vertices, as it is always in the hull
+        // Move the anchor (the lowest, leftmost point) to the front of the list,
+        // as it is always on the hull.
+        let anchor_idx = points
+            .iter()
+            .position_min_by(|(a, _), (b, _)| {
+                // Compare y-coordinates, then x.
+                a[1].total_cmp(&b[1]).then(a[0].total_cmp(&b[0]))
+            })
+            .expect("there are at least three points");
         points.swap(0, anchor_idx);
-        let anchor = points[0];
+        let anchor = points[0].0;
 
         // Sort the remainder of the slice in-place
-        points[1..].sort_unstable_by(|&a, &b| {
+        points[1..].sort_unstable_by(|&(a, _), &(b, _)| {
             let (a0, a1) = get_graham_key(a, anchor);
             let (b0, b1) = get_graham_key(b, anchor);
             a0.total_cmp(&b0).then(a1.total_cmp(&b1))
@@ -377,10 +409,10 @@ impl ConvexHull<2> for [Cartesian<2>] {
 
         // Repeat until all interior points are gone
         while next_candidate < points.len() {
-            let c = points[next_candidate];
+            let c = points[next_candidate].0;
             while n_vertices_on_hull >= 2 {
-                let p = points[n_vertices_on_hull - 2];
-                let n = points[n_vertices_on_hull - 1];
+                let p = points[n_vertices_on_hull - 2].0;
+                let n = points[n_vertices_on_hull - 1].0;
 
                 if Cartesian::<2>::orientation(&[p, n], &c)? == Side::Above {
                     break;
@@ -404,19 +436,13 @@ impl ConvexHull<2> for [Cartesian<2>] {
         // vertex i + 1 to vertex i, i.e. clockwise, so that its right-hand-rule
         // normal points outward and every point of the hull lies Below or On it.
         let n = points.len();
-        let facets = (0..n).map(|i| Facet::new([(i + 1) % n, i])).collect();
+        let facets = (0..n)
+            .map(|i| Facet::new(self, [points[(i + 1) % n].1, points[i].1]))
+            .collect();
+        let vertices = points.into_iter().map(|(p, _)| p).collect();
 
-        Ok((points, facets))
+        Ok((vertices, facets))
     }
-}
-
-/// Find the lowest, leftmost point from a slice of Cartesian vectors.
-#[inline]
-fn find_lowest_leftmost(vertices: &[Cartesian<2>]) -> Option<usize> {
-    vertices.iter().position_min_by(|a, b| {
-        // Compare y-coordinates, then x.
-        a[1].total_cmp(&b[1]).then(a[0].total_cmp(&b[0]))
-    })
 }
 
 /// Get the key for a lexicographic order of points with respect to an anchor.
@@ -478,32 +504,16 @@ impl ConvexHull<3> for [Cartesian<3>] {
     /// # }
     /// ```
     #[inline]
-    fn convex_hull(&self) -> Result<(Vec<Cartesian<3>>, Vec<Facet<3>>), Error> {
-        let points = self;
+    fn convex_hull(&self) -> Result<(Vec<Cartesian<3>>, Vec<Facet<'_, 3>>), Error> {
+        let (indices, faces) = incremental_hull(self)?;
 
-        // No convex body without at least 4 points.
-        if points.len() < 4 {
-            return Err(Error::DegeneratePolytope);
-        }
-        if !finite_points(points) {
-            return Err(Error::NotFinite);
-        }
-
-        let (indices, faces) = incremental_hull(points)?;
-
-        // The faces index the input points, so remap them to the compacted list of hull
-        // vertices this method returns. The vertex indices are sorted, so a binary
-        // search locates the new position of each vertex.
-        let position = |i: usize| {
-            indices
-                .binary_search(&i)
-                .expect("the vertices of a face are vertices of the hull")
-        };
+        // The faces index the given points, which the facets are bound to.
+        // The compacted list of hull vertices is returned separately.
         let facets = faces
             .iter()
-            .map(|&[a, b, c]| Facet::new([position(a), position(b), position(c)]))
+            .map(|&[a, b, c]| Facet::new(self, [a, b, c]))
             .collect();
-        let vertices = indices.into_iter().map(|i| points[i]).collect();
+        let vertices: Vec<Cartesian<3>> = indices.iter().map(|&i| self[i]).collect();
 
         Ok((vertices, facets))
     }
@@ -522,7 +532,22 @@ impl ConvexHull<3> for [Cartesian<3>] {
 /// which are removed and replaced by new faces joining the point to the
 /// boundary (horizon) of that set. Points that see no face lie inside or on
 /// the surface of the current hull and are skipped.
-fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 3]>), Error> {
+///
+/// # Errors
+///
+/// Returns [`Error::DegeneratePolytope`] when there are fewer than four points,
+/// and [`Error::NotFinite`] when any coordinate of the input is not finite.
+pub(crate) fn incremental_hull(
+    points: &[Cartesian<3>],
+) -> Result<(Vec<usize>, Vec<[usize; 3]>), Error> {
+    // No convex body without at least 4 points.
+    if points.len() < 4 {
+        return Err(Error::DegeneratePolytope);
+    }
+    if !finite_points(points) {
+        return Err(Error::NotFinite);
+    }
+
     let (t0, t1, t2, t3) = initial_tetrahedron(points)?;
 
     // The four faces of the initial tetrahedron. Each face is oriented with an
@@ -544,7 +569,6 @@ fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 
 
     // Reused scratch storage for the directed edges of the visible faces.
     let mut edges: Vec<(usize, usize)> = Vec::new();
-    let mut horizon: Vec<(usize, usize)> = Vec::new();
 
     for p in 0..points.len() {
         if in_initial(p) {
@@ -572,18 +596,14 @@ fn incremental_hull(points: &[Cartesian<3>]) -> Result<(Vec<usize>, Vec<[usize; 
         }
 
         // The boundary (horizon) of the visible region is formed by the directed edges
-        // `ab` whose reverse `ba` is not also an edge of a visible face. Each becomes
+        // `uv` whose reverse `vu` is not also an edge of a visible face. Each becomes
         // a new face joined to point `p`, with consistent orientations.
         edges.sort_unstable();
-        horizon.clear();
-        horizon.extend(
-            edges
-                .iter()
-                .copied()
-                .filter(|&(u, v)| edges.binary_search(&(v, u)).is_err()),
-        );
-
-        for &(u, v) in &horizon {
+        for (u, v) in edges
+            .iter()
+            .copied()
+            .filter(|&(u, v)| edges.binary_search(&(v, u)).is_err())
+        {
             faces.push([u, v, p]);
         }
     }
@@ -698,39 +718,6 @@ mod tests {
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
     use rstest_reuse::{self, apply, template};
-
-    #[rstest]
-    #[case::single_point(vec![[1.0, 2.0]], 0)]
-    #[case::two_points_first_lower(vec![[1.0, 1.0], [2.0, 3.0]], 0)]
-    #[case::two_points_second_lower(vec![[1.0, 3.0], [2.0, 1.0]], 1)]
-    #[case::same_y_leftmost_wins(vec![[3.0, 1.0], [1.0, 1.0], [2.0, 1.0]], 1)]
-    #[case::same_y_negative(vec![[0.0, -5.0], [-3.0, -5.0], [2.0, -5.0]], 1)]
-    #[case::multiple_points(vec![[3.0, 5.0], [1.0, 1.0], [4.0, 2.0], [2.0, 3.0]], 1)]
-    #[case::negative_coords(vec![[0.0, 0.0], [-1.0, -1.0], [1.0, -1.0]], 1)]
-    #[case::same_y_all_negative_x(vec![[5.0, 0.0], [-10.0, 0.0], [-5.0, 0.0]], 1)]
-    #[case::lowest_is_only_point(vec![[100.0, -100.0]], 0)]
-    #[case::diagonal_tiebreak(vec![[5.0, 5.0], [4.0, 4.0], [3.0, 3.0], [2.0, 2.0], [1.0, 1.0]], 4)]
-    fn test_find_lowest_leftmost(#[case] vertices: Vec<[f64; 2]>, #[case] expected_idx: usize) {
-        let vertices: Vec<Cartesian<2>> = vertices.into_iter().map(Cartesian::from).collect();
-        let idx = find_lowest_leftmost(&vertices).expect("returned None for non-empty input");
-        assert_eq!(idx, expected_idx);
-    }
-
-    #[rstest]
-    fn test_find_lowest_leftmost_empty() {
-        let vertices: Vec<Cartesian<2>> = vec![];
-        assert_eq!(find_lowest_leftmost(&vertices), None);
-    }
-
-    #[rstest]
-    fn test_single_point_various_coords(
-        #[values([0.0, 0.0], [-1.0, -1.0], [100.0, -50.0], [f64::MIN_POSITIVE, f64::MIN_POSITIVE])]
-        coords: [f64; 2],
-    ) {
-        let vertices = vec![Cartesian::from(coords)];
-        let idx = find_lowest_leftmost(&vertices).expect("returned None for non-empty input");
-        assert_eq!(idx, 0);
-    }
 
     #[rstest]
     fn test_square_corners() {
@@ -1504,14 +1491,12 @@ mod tests {
 
     #[rstest]
     fn test_3d_public_hull_facets() {
-        // The public API remaps the facet indices to the compacted vertex
-        // list, dropping the points interior to the hull.
         let mut points = cube();
         points.extend([
-            Cartesian::from([0.0, 0.0, 0.0]),
-            Cartesian::from([1.0, 0.0, 0.0]),
-            Cartesian::from([1.0, 1.0, 0.0]),
-            Cartesian::from([-1.0, -1.0, -1.0]),
+            Cartesian::from([0.0, 0.0, 0.0]),    // index 8: cube center
+            Cartesian::from([1.0, 0.0, 0.0]),    // index 9: face center
+            Cartesian::from([1.0, 1.0, 0.0]),    // index 10: face center
+            Cartesian::from([-1.0, -1.0, -1.0]), // index 11: duplicate corner
         ]);
 
         let (vertices, facets) = points
@@ -1521,16 +1506,22 @@ mod tests {
         assert_eq!(vertices.len(), 8);
         assert_eq!(facets.len(), 12); // Each square face is split into two triangles.
 
-        let mut referenced = vec![false; vertices.len()];
+        let mut referenced: Vec<Cartesian<3>> = Vec::new();
         for facet in &facets {
-            let indices = facet.indices();
-            for &i in &indices {
-                assert!(i < vertices.len(), "facet index {i} is out of bounds");
-                referenced[i] = true;
+            // The facets are bound to the given points and index them.
+            assert!(std::ptr::eq(facet.vertices().as_ptr(), points.as_ptr()));
+            for &i in &facet.indices() {
+                assert!(
+                    i < 8,
+                    "facet references the interior or duplicate point {i}"
+                );
             }
+            referenced.extend(facet.as_simplex());
         }
-        // Every returned vertex is part of a facet.
-        assert!(referenced.iter().all(|&r| r));
+        // Every returned hull vertex is a corner of some facet.
+        for v in &vertices {
+            assert!(referenced.contains(v));
+        }
     }
 
     #[rstest]
@@ -1650,15 +1641,15 @@ mod tests {
     #[rstest]
     fn test_facet_orientation_2d() {
         let vertices = [Cartesian::from([0.0, 0.0]), Cartesian::from([1.0, 0.0])];
-        let facet = Facet::new([0, 1]);
+        let facet = Facet::new(&vertices, [0, 1]);
 
-        check!(facet.orientation(&vertices, &Cartesian::from([0.5, 0.5])) == Ok(Side::Above));
-        check!(facet.orientation(&vertices, &Cartesian::from([0.5, -0.5])) == Ok(Side::Below));
-        check!(facet.orientation(&vertices, &Cartesian::from([2.0, 0.0])) == Ok(Side::On));
+        check!(facet.orientation(&Cartesian::from([0.5, 0.5])) == Ok(Side::Above));
+        check!(facet.orientation(&Cartesian::from([0.5, -0.5])) == Ok(Side::Below));
+        check!(facet.orientation(&Cartesian::from([2.0, 0.0])) == Ok(Side::On));
 
         // Non-finite coordinates are rejected.
         let nan = Cartesian::from([f64::NAN, 0.0]);
-        check!(facet.orientation(&vertices, &nan) == Err(Error::NotFinite));
+        check!(facet.orientation(&nan) == Err(Error::NotFinite));
 
         let points: Vec<Cartesian<2>> = [
             [0.0, 0.0],
@@ -1678,7 +1669,7 @@ mod tests {
             for q in &points {
                 check!(
                     facet
-                        .orientation(&hull_vertices, q)
+                        .orientation(q)
                         .expect("finite coordinates resolve exactly")
                         != Side::Above
                 );
@@ -1689,7 +1680,7 @@ mod tests {
                 .iter()
                 .fold(Cartesian::from([0.0; 2]), |acc, p| acc + *p)
                 / hull_vertices.len() as f64;
-            let [a, b] = facet.as_simplex(&hull_vertices);
+            let [a, b] = facet.as_simplex();
             let edge = b - a;
             let normal = Cartesian::from([-edge[1], edge[0]]);
             let midpoint = (a + b) / 2.0;
@@ -1704,31 +1695,31 @@ mod tests {
             Cartesian::from([1.0, 0.0, 0.0]),
             Cartesian::from([0.0, 1.0, 0.0]),
         ];
-        let facet = Facet::new([0, 1, 2]);
+        let facet = Facet::new(&vertices, [0, 1, 2]);
 
-        check!(facet.orientation(&vertices, &Cartesian::from([0.0, 0.0, -1.0])) == Ok(Side::Below));
-        check!(facet.orientation(&vertices, &Cartesian::from([0.0, 0.0, 1.0])) == Ok(Side::Above));
-        check!(facet.orientation(&vertices, &Cartesian::from([1.0, 1.0, 0.0])) == Ok(Side::On));
+        check!(facet.orientation(&Cartesian::from([0.0, 0.0, -1.0])) == Ok(Side::Below));
+        check!(facet.orientation(&Cartesian::from([0.0, 0.0, 1.0])) == Ok(Side::Above));
+        check!(facet.orientation(&Cartesian::from([1.0, 1.0, 0.0])) == Ok(Side::On));
 
         let nan = Cartesian::from([f64::NAN, 0.0, 0.0]);
-        check!(facet.orientation(&vertices, &nan) == Err(Error::NotFinite));
+        check!(facet.orientation(&nan) == Err(Error::NotFinite));
 
         let points = cube();
-        let (hull_vertices, facets) = points
+        let (_hull_vertices, facets) = points
             .convex_hull()
             .expect("hard-coded points should form a convex body");
         for facet in &facets {
             // Every point of the hull lies Below or On an outward-oriented facet.
             for q in &points {
                 let orientation = facet
-                    .orientation(&hull_vertices, q)
+                    .orientation(q)
                     .expect("finite coordinates resolve exactly");
                 check!(orientation != Side::Above);
             }
 
             // The normal of the facet's vertex order points away from the hull,
             // here centered on the origin: counter-clockwise seen from outside.
-            let [a, b, c] = facet.as_simplex(&hull_vertices);
+            let [a, b, c] = facet.as_simplex();
             let normal = (b - a).cross(&(c - a));
             let centroid = (a + b + c) / 3.0;
             check!(normal.dot(&centroid) > 0.0);
@@ -1748,23 +1739,26 @@ mod tests {
         let (vertices, facets) = square.convex_hull().unwrap();
         for facet in &facets {
             for q in &vertices {
-                check!(facet.orientation(&vertices, q).unwrap() != Side::Above);
+                check!(facet.orientation(q).unwrap() != Side::Above);
             }
         }
         check!(
             facets
                 .iter()
-                .any(|f| f.orientation(&vertices, &Cartesian::from([1.0, 3.0])) == Ok(Side::Above))
+                .any(|f| f.orientation(&Cartesian::from([1.0, 3.0])) == Ok(Side::Above))
         );
 
-        let (vertices, facets) = cube().convex_hull().unwrap();
+        let points = cube();
+        let (vertices, facets) = points.convex_hull().unwrap();
         for facet in &facets {
             for q in &vertices {
-                check!(facet.orientation(&vertices, q).unwrap() != Side::Above);
+                check!(facet.orientation(q).unwrap() != Side::Above);
             }
         }
-        check!(facets.iter().any(
-            |f| f.orientation(&vertices, &Cartesian::from([0.0, 0.0, 2.0])) == Ok(Side::Above)
-        ));
+        check!(
+            facets
+                .iter()
+                .any(|f| f.orientation(&Cartesian::from([0.0, 0.0, 2.0])) == Ok(Side::Above))
+        );
     }
 }
