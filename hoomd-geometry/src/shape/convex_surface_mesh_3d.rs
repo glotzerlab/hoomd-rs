@@ -134,6 +134,22 @@ impl ConvexSurfaceMesh3d {
             .iter()
             .map(|&indices| Facet::new(&self.vertices, indices))
     }
+
+    /// The edges of the convex polyhedron, as vertex index pairs.
+    ///
+    /// Edges are returned sorted, as tuples `(i, j)` with `i < j`: one per edge of the
+    /// triangulation.
+    #[inline]
+    pub fn edges(&self) -> Vec<(usize, usize)> {
+        let mut edges: Vec<(usize, usize)> = self
+            .faces
+            .iter()
+            .flat_map(|&[i, j, k]| [(i, j), (j, k), (k, i)])
+            .filter(|&(i, j)| i < j)
+            .collect();
+        edges.sort_unstable();
+        edges
+    }
 }
 
 impl Volume for ConvexSurfaceMesh3d {
@@ -174,5 +190,39 @@ impl Volume for ConvexSurfaceMesh3d {
             })
             .sum::<f64>()
             / 6.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+    use rstest::*;
+
+    #[rstest]
+    #[case::icosahedron(ConvexPolytope::<3, 32>::icosahedron(), 30)]
+    #[case::dodecahedron(ConvexPolytope::<3, 32>::dodecahedron(), 54)]
+    fn edges_of_platonic_triangulations(
+        #[case] solid: ConvexPolytope<3, 32>,
+        #[case] expected: usize,
+    ) {
+        let mesh = ConvexSurfaceMesh3d::from_point_set(solid.vertices().iter().copied())
+            .expect("platonic solid vertices form a convex body");
+        let edges = mesh.edges();
+        let mut face_edges: Vec<(usize, usize)> = mesh
+            .facets()
+            .map(|f| f.indices())
+            .flat_map(|[a, b, c]| [(a, b), (b, c), (c, a)])
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .filter(|&(i, j)| i < j)
+            .collect();
+        face_edges.sort_unstable();
+        assert_eq!(
+            edges, face_edges,
+            "edges must be sorted, unique, and match the reference"
+        );
+        assert_eq!(edges.len(), expected, "E must satisfy V - E + F = 2");
     }
 }
