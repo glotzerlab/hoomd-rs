@@ -89,7 +89,8 @@ impl ConvexSurfaceMesh3d {
     where
         I: IntoIterator<Item = Cartesian<3>>,
     {
-        let (vertices, faces) = Cartesian::<3>::convex_hull(points)?;
+        let points: Vec<Cartesian<3>> = points.into_iter().collect();
+        let (vertices, faces) = points.convex_hull()?;
 
         Ok(Self {
             bounding_radius: ConvexPolytope::<3>::bounding_radius(&vertices),

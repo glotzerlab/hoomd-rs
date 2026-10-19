@@ -97,7 +97,7 @@ fn bench_fixed_points(points: &[Cartesian<3>], bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(points.len() as u32))
         .with_inputs(|| points.clone())
-        .bench_local_values(|pts| black_box(Cartesian::<3>::convex_hull(&pts)));
+        .bench_local_values(|pts| black_box(pts.convex_hull()));
 }
 
 #[divan::bench_group]
@@ -111,7 +111,7 @@ mod random {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_random_points::<2>(N, &mut rng))
-            .bench_local_values(|pts| black_box(Cartesian::<2>::convex_hull(&pts)));
+            .bench_local_values(|pts| black_box(pts.convex_hull()));
     }
 
     #[divan::bench(consts = NUM_POINTS)]
@@ -121,7 +121,7 @@ mod random {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_random_points::<3>(N, &mut rng))
-            .bench_local_values(|pts| black_box(Cartesian::<3>::convex_hull(&pts)));
+            .bench_local_values(|pts| black_box(pts.convex_hull()));
     }
 
     #[divan::bench(consts = NUM_POINTS)]
@@ -131,7 +131,7 @@ mod random {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_ball_points::<2>(N, &mut rng))
-            .bench_local_values(|pts| black_box(Cartesian::<2>::convex_hull(&pts)));
+            .bench_local_values(|pts| black_box(pts.convex_hull()));
     }
 
     #[divan::bench(consts = NUM_POINTS)]
@@ -141,7 +141,7 @@ mod random {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_ball_points::<3>(N, &mut rng))
-            .bench_local_values(|pts| black_box(Cartesian::<3>::convex_hull(&pts)));
+            .bench_local_values(|pts| black_box(pts.convex_hull()));
     }
 }
 
@@ -154,7 +154,7 @@ mod boundaries {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_circle_points(N))
-            .bench_local_values(|pts| black_box(Cartesian::<2>::convex_hull(&pts)));
+            .bench_local_values(|pts| black_box(pts.convex_hull()));
     }
 
     #[divan::bench(consts = NUM_POINTS)]
@@ -162,7 +162,7 @@ mod boundaries {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_square_boundary(N / 4 + 1))
-            .bench_local_values(|pts| black_box(Cartesian::<2>::convex_hull(&pts)));
+            .bench_local_values(|pts| black_box(pts.convex_hull()));
     }
 
     #[divan::bench(consts = NUM_POINTS)]
@@ -170,7 +170,7 @@ mod boundaries {
         bencher
             .counter(ItemsCount::from(N as u32))
             .with_inputs(|| create_sphere_surface_points(N))
-            .bench_local_values(|pts| black_box(Cartesian::<3>::convex_hull(&pts)));
+            .bench_local_values(|pts| black_box(pts.convex_hull()));
     }
 
     #[divan::bench(consts = NUM_POINTS)]
@@ -184,7 +184,7 @@ mod boundaries {
         bencher
             .counter(ItemsCount::from((6 * n_per_edge * n_per_edge) as u32))
             .with_inputs(|| create_cube_surface_points(n_per_edge))
-            .bench_local_values(|pts| black_box(Cartesian::<3>::convex_hull(&pts)));
+            .bench_local_values(|pts| black_box(pts.convex_hull()));
     }
 }
 
