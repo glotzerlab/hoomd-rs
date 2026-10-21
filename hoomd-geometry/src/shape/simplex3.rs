@@ -66,7 +66,7 @@ use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMappi
 /// );
 ///
 /// assert_eq!(planar_tetrahedron.volume(), 0.0);
-/// assert_eq!(planar_tetrahedron.centroid(), [1.0, 1.0, 0.0].into());
+/// assert_eq!(planar_tetrahedron.centroid(), [0.25, 0.25, 0.0].into());
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Simplex3 {
@@ -166,7 +166,8 @@ impl Simplex3 {
     #[inline]
     #[must_use]
     pub fn centroid(&self) -> Cartesian<3> {
-        array::from_fn::<_, 3, _>(|i| self.vertices.iter().fold(0.0, |acc, v| acc + v[i])).into()
+        array::from_fn::<_, 3, _>(|i| 0.25 * self.vertices.iter().fold(0.0, |acc, v| acc + v[i]))
+            .into()
     }
 
     /// Get the edges of the tetrahedron as edge endpoint coordinates. In vertex index
@@ -454,7 +455,7 @@ where
 
         // f* 4 3
         let n = edge_vectors_q[4].cross(&edge_vectors_q[3]);
-        let aff = self.vertices.map(|v| (v - other.vertices[1]).dot(&n));
+        let aff = self.vertices.map(|v| (v - q.vertices[1]).dot(&n));
         if check_face_on_q_is_separating(&aff) {
             return false;
         }
@@ -659,7 +660,9 @@ mod tests {
         ),
         case::tip_tip_intersection_exact(
             [2.0, 2.0, 2.0].into(),
-            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
+            // Hard-coded quaternion required to prevent error accumulation
+            Quaternion::from([2.0_f64.sqrt() / 2.0, 2.0_f64.sqrt() / 2.0, 0.0, 0.0])
+                .to_versor_unchecked(),
             true,
         ),
         case::tip_tip_intersection_imprecise(
@@ -804,6 +807,30 @@ mod tests {
             [1.275, -1.275, 1.275].into(),
             Versor::from_axis_angle([1.0, 1.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
             true,
+        ),
+        // Two identical tetrahedra separated along a face normal by a gap of 2/sqrt(3)
+        case::identical_tets_face_normal_gap(
+            [2.0, -2.0, -2.0].into(),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::PI),
+            false,
+        ),
+        // Rotated about and displaced along the body diagonal through vertex 0
+        case::body_diagonal_rotated_displaced(
+            [2.0, 2.0, 2.0].into(),
+            Versor::from_axis_angle([1.0, 1.0, 1.0].try_into().unwrap(), std::f64::consts::PI),
+            false,
+        ),
+        // Displaced along the body diagonal through vertex 0, under rotations that
+        // leave its supporting face as the only candidate separating element
+        case::rotated_displaced_from_vertex_x(
+            [2.0, 2.0, 2.0].into(),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::PI / 3.0),
+            false,
+        ),
+        case::rotated_displaced_from_vertex_z(
+            [2.0, 2.0, 2.0].into(),
+            Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.0),
+            false,
         ),
     )]
     fn test_tetrahedron_overlap_param(
