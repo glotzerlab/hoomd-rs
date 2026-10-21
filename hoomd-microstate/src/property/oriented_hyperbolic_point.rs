@@ -229,18 +229,15 @@ impl Transform<Point<Hyperbolic<3>>> for OrientedHyperbolicPoint<3, Angle> {
         let body_pos = self.position.coordinates();
         let body_pos_theta = (body_pos[1].atan2(body_pos[0])).rem_euclid(2.0 * PI);
         let body_pos_boost = body_pos[2].acosh();
-        let body_angle_system = self.orientation.theta;
-        let body_angle_body =
-            Self::deck_transform(-body_pos_boost, body_pos_theta, self.position())
-                + body_angle_system;
+        let body_angle = self.orientation.theta;
         let site_pos = site_properties.position.coordinates();
         let (body_pos_boost_cosh, body_pos_boost_sinh) =
             (body_pos_boost.cosh(), body_pos_boost.sinh());
         let (bpb_cos, bpb_sin, diff_cos, diff_sin) = (
             body_pos_theta.cos(),
             body_pos_theta.sin(),
-            (body_angle_body - body_pos_theta).cos(),
-            (body_angle_body - body_pos_theta).sin(),
+            (body_angle - body_pos_theta).cos(),
+            (body_angle - body_pos_theta).sin(),
         );
         let transformed_point = Minkowski::from([
             site_pos[0]
@@ -268,17 +265,14 @@ impl Transform<OrientedHyperbolicPoint<3, Angle>> for OrientedHyperbolicPoint<3,
         let body_pos = self.position.coordinates();
         let body_pos_theta = body_pos[1].atan2(body_pos[0]);
         let body_pos_boost = body_pos[2].acosh();
-        let body_angle_system = self.orientation.theta;
-        let body_angle_body =
-            Self::deck_transform(-body_pos_boost, body_pos_theta, self.position())
-                + body_angle_system;
+        let body_angle = self.orientation.theta;
         let (body_pos_boost_cosh, body_pos_boost_sinh) =
             (body_pos_boost.cosh(), body_pos_boost.sinh());
         let (bpb_cos, bpb_sin, diff_cos, diff_sin) = (
             body_pos_theta.cos(),
             body_pos_theta.sin(),
-            (body_angle_body - body_pos_theta).cos(),
-            (body_angle_body - body_pos_theta).sin(),
+            (body_angle - body_pos_theta).cos(),
+            (body_angle - body_pos_theta).sin(),
         );
         let site_pos = site_properties.position.coordinates();
         let transformed_point = Minkowski::from([
@@ -296,7 +290,7 @@ impl Transform<OrientedHyperbolicPoint<3, Angle>> for OrientedHyperbolicPoint<3,
         let site_angle_system =
             Self::deck_transform(body_pos_boost, body_pos_theta, &site_properties.position)
                 + site_properties.orientation.theta
-                + body_angle_system;
+                + body_angle;
         OrientedHyperbolicPoint {
             position: new_hyperbolic,
             orientation: Angle::from(site_angle_system),
