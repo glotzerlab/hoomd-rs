@@ -8,6 +8,8 @@
 * `[hoomd-microstate`]: Add the `OpenSpherical` boundary condition for use with the `SphericalVecCell` data structure (#313).
 * `[hoomd-spatial`]: Add `SphericalVecCell` that can perform efficient spatial searches in spherical space (#313).
 * `[hoomd-utility]`: Add the `positive_real` macro that generates compile-time-checked `PositiveReal` values (#421).
+* `[hoomd-vector]`: Add the `DoubleVersor` type for rotations of `Cartesian<4>` (#346)
+* `[hoomd-mc]`: Add `DoubleVersor` sampling distribution for MC moves in 4D (#346)
 
 *Changed:*
 
@@ -25,6 +27,7 @@
 *Fixed:*
 
 `[hoomd-linear-algebra]`: `Matrix::add_assign` no longer uses excess memory (#416).
+`[hoomd-geometry]`: `Simplex3::IntersectsAt` now matches Xenocollide in all cases (#458).
 
 ## 1.3.0 (2026-08-26)
 
