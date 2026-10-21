@@ -337,8 +337,8 @@ where
         let (c3, c2, c1, c0) = (q1, det_b_inv_m_a_inv - q1 + q0, d1 - q0, det_a_inv);
 
         // Early exit with an IVT check
-        let p0 = c0; // P(0) = c0
-        let p1 = c3 + c2 + c1 + c0; // P(1) = c3 + c2 + c1 + c0
+        let p0 = c0; // P(0) = det(A^-1)
+        let p1 = (a * b).powi(2); // P(1) = det(B^-1)
 
         // If endpoints have different signs we definitely have a root
         if p0 * p1 <= 0.0 {
