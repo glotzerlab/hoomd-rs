@@ -336,78 +336,29 @@ where
 
         let (c3, c2, c1, c0) = (q1, det_b_inv_m_a_inv - q1 + q0, d1 - q0, det_a_inv);
 
-        // Early exit with an IVT check
-        let p0 = c0; // P(0) = det(A^-1)
-        let p1 = (a * b).powi(2); // P(1) = det(B^-1)
-
-        // If endpoints have different signs we definitely have a root
-        if p0 * p1 <= 0.0 {
-            return false;
-        }
-
-        // Both endpoints are negative -- no overlap is possible
-        if (p0 < 0.0) && (p1 < 0.0) {
-            return false;
-        }
-
-        // Bézier Clipping check
-        // Control points b0 = p0, b3 = p1, so all we need are b1 and b2
+        // Bézier clipping check
+        // Control points b0 = P(0) and b3 = P(1) are > 0 , so all we need are b1 and b2
         let b1 = c0 + c1 / 3.0;
         let b2 = c0 + f64::mul_add(2.0, c1, c2) / 3.0;
-
-        // Check if the hull is strictly separated from 0.
-        // Since we know p0 and p1 have the same sign (from step 1),
-        // we just need to check if b1 and b2 share that sign.
-        if p0 > 0.0 {
-            // Entire hull is positive -> No root possible.
-            if b1 > 0.0 && b2 > 0.0 {
-                return true;
-            }
-        } else {
-            // Entire hull is negative -> No root possible.
-            if b1 < 0.0 && b2 < 0.0 {
-                return true;
-            }
+        if b1 > 0.0 && b2 > 0.0 {
+            return true;
         }
 
         // Find local extrema of P(λ) = c3*λ^3 + c2*λ^2 + c1*λ + c0
         // P'(lambda) = 3*c3*λ^2 + 2*c2*λ + c1
-        let eps = 1e-14
-            * [c0, c1, c2, c3]
-                .into_iter()
-                .map(f64::abs)
-                .fold(0.0, f64::max); // Scale tolerance based on ellipse size
-        // Polynomial is effectively quadratic
-        if c3.abs() <= eps {
-            // Polynomial is *not* effectively linear
-            if c2.abs() > eps {
-                let l_star = -c1 / (2.0 * c2);
-                if (0.0..1.0).contains(&l_star) {
-                    let p_star = (c2 * l_star + c1) * l_star + c0;
-                    if p0 > 0.0 && p_star <= 0.0 {
+        //
+        // The cancellation-free quadratic formula gives the roots q / (3*c3)
+        // and c1 / q, where q = -(c2 + copysign(sqrt(delta), c2)). Degenerate cubics
+        // need no special casing: when c3 = 0 the first root is infinite and the second
+        // is exactly -c1 / (2*c2), while non-finite roots fail the interval test.
+        let delta = f64::mul_add(c2, c2, (-3.0 * c3) * c1);
+        if delta >= 0.0 {
+            let q = -(c2 + delta.sqrt().copysign(c2));
+            for critical in [q / (3.0 * c3), c1 / q] {
+                if (0.0..1.0).contains(&critical) {
+                    let p = ((c3 * critical + c2) * critical + c1) * critical + c0;
+                    if p <= 0.0 {
                         return false;
-                    }
-                    if p0 < 0.0 && p_star >= 0.0 {
-                        return false;
-                    }
-                }
-            }
-        } else {
-            let delta = f64::mul_add(c2, c2, (-3.0 * c3) * c1);
-            if delta >= 0.0 {
-                let sqrt_delta = delta.sqrt();
-                let l1 = (-c2 - sqrt_delta) / (3.0 * c3);
-                let l2 = (-c2 + sqrt_delta) / (3.0 * c3);
-
-                for l in [l1, l2] {
-                    if (0.0..1.0).contains(&l) {
-                        let p = ((c3 * l + c2) * l + c1) * l + c0;
-                        if p0 > 0.0 && p <= 0.0 {
-                            return false;
-                        }
-                        if p0 < 0.0 && p >= 0.0 {
-                            return false;
-                        }
                     }
                 }
             }
