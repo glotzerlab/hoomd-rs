@@ -191,6 +191,9 @@ pub use dynamic_oriented_point::DynamicOrientedPoint;
 mod oriented_hyperbolic_point;
 pub use oriented_hyperbolic_point::OrientedHyperbolicPoint;
 
+mod oriented_spherical_point;
+pub use oriented_spherical_point::OrientedSphericalPoint;
+
 pub use hoomd_derive::{Orientation, Position};
 
 /// Locate a site or body in space: $` \vec{r} `$

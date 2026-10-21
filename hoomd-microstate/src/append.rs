@@ -414,7 +414,7 @@ impl<B, X, C> AppendMicrostate<B, Point<Spherical<4>>, X, C> for HoomdGsdFile {
             .configuration_box([2.0, 2.0, 2.0, 0.0, 0.0, 0.0])?
             .configuration_dimensions(Dimensions::Three)?
             .particles_position(microstate.iter_sites_tag_order().map(|s| {
-                let proj: Vec<f64> = s.properties.position.stereographic_projection();
+                let proj: Vec<f64> = s.properties.position.stereographic_projection_from_south_pole();
                 [proj[0], proj[1], proj[2]].into()
             }))
     }
