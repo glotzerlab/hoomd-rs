@@ -98,10 +98,38 @@ impl<const N: usize, R> Orientation for OrientedSphericalPoint<N, R> {
     }
 }
 
+impl Transform<Point<Spherical<3>>> for OrientedSphericalPoint<3, Angle> {
+    #[inline]
+    fn transform(&self, site_properties: &Point<Spherical<3>>) -> Point<Spherical<3>> {
+        // TODO
+        *site_properties
+    }
+}
+
 impl Transform<OrientedSphericalPoint<3, Angle>> for OrientedSphericalPoint<3, Angle> {
     #[inline]
     fn transform(&self, site_properties: &OrientedSphericalPoint<3, Angle>) -> OrientedSphericalPoint<3, Angle> {
         // TODO
-        *self
+        *site_properties
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approxim::assert_relative_eq;
+    use std::f64::consts::PI;
+
+    #[test]
+    fn deck_transforms() {
+        let p1 = Spherical::<3>::from_polar_coordinates(PI/2.0, 0.0);
+        let val1 = OrientedSphericalPoint::<3,Angle>::deck_transform(-PI/4.0, 0.0, &p1);
+        //translation along a meridian should not change angle
+        assert_relative_eq!(val1, 0.0);
+
+        let p2 = Spherical::<3>::from_polar_coordinates(PI/2.0, 0.0);
+        let val2 = OrientedSphericalPoint::<3,Angle>::deck_transform(PI/3.0, 1.0, &p2);
+        //translation along a parallel should change angle
+        assert_relative_eq!(val2,-1.2295910599142);
     }
 }
