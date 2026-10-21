@@ -372,10 +372,15 @@ where
 
         // Find local extrema of P(λ) = c3*λ^3 + c2*λ^2 + c1*λ + c0
         // P'(lambda) = 3*c3*λ^2 + 2*c2*λ + c1
+        let eps = 1e-14
+            * [c0, c1, c2, c3]
+                .into_iter()
+                .map(f64::abs)
+                .fold(0.0, f64::max); // Scale tolerance based on ellipse size
         // Polynomial is effectively quadratic
-        if c3.abs() < 1e-15 {
+        if c3.abs() <= eps {
             // Polynomial is *not* effectively linear
-            if c2.abs() > 1e-15 {
+            if c2.abs() > eps {
                 let l_star = -c1 / (2.0 * c2);
                 if (0.0..1.0).contains(&l_star) {
                     let p_star = (c2 * l_star + c1) * l_star + c0;
@@ -449,6 +454,7 @@ mod tests {
         shape::{Circle, Hypersphere},
     };
     use approxim::assert_relative_eq;
+    use hoomd_utility::positive_real;
     use hoomd_vector::Angle;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
@@ -611,6 +617,37 @@ mod tests {
         assert_eq!(
             Convex(el0).intersects_at(&Convex(el1), &v_ij.into(), &Angle::from(o_ij)),
             does_overlap
+        );
+    }
+
+    #[rstest]
+    fn test_ellipse_overlap_scale_invariance(
+        #[values(
+            positive_real!(1e-9),
+            positive_real!(1e-6),
+            positive_real!(1e-3),
+            positive_real!(1.0),
+            positive_real!(1e3),
+            positive_real!(1e6)
+        )]
+        scale: PositiveReal,
+    ) {
+        let el0 =
+            Ellipse::with_semi_axes([positive_real!(0.8) * scale, positive_real!(2.0) * scale]);
+        let el1 =
+            Ellipse::with_semi_axes([positive_real!(1.3) * scale, positive_real!(0.5) * scale]);
+        let angle = Angle::from(0.6);
+        let scale = scale.get();
+
+        // Separated by a gap of more than 4 (in units of the semi-axes)
+        assert!(
+            !el0.intersects_at(&el1, &[6.0 * scale, 1.4 * scale].into(), &angle),
+            "failed at scale {scale:e}"
+        );
+        // Overlapping by more than 0.7 (in units of the semi-axes)
+        assert!(
+            el0.intersects_at(&el1, &[1.2 * scale, 0.3 * scale].into(), &angle),
+            "failed at scale {scale:e}"
         );
     }
 
