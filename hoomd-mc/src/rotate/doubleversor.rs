@@ -6,7 +6,7 @@
 use std::f64::consts::PI;
 
 use hoomd_microstate::property::Orientation;
-use hoomd_utility::valid::PositiveReal;
+use hoomd_utility::{positive_real, valid::PositiveReal};
 use hoomd_vector::{DoubleVersor, Rotation};
 use rand::Rng;
 use rand_distr::Distribution;
@@ -16,17 +16,11 @@ use crate::{Adjust, LocalTrial, Rotate, rotate::versor::VersorDisplacement};
 /// A normal distribution of random [`DoubleVersor`] displacements, centered on
 /// the identity with some standard deviation.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct DoubleVersorDisplacement {
+struct DoubleVersorDisplacement {
     /// The standard deviation of the normal distribution of quaternions around the identity.
     std_dev: f64,
 }
 
-impl From<f64> for DoubleVersorDisplacement {
-    #[inline]
-    fn from(value: f64) -> Self {
-        Self { std_dev: value }
-    }
-}
 impl Distribution<DoubleVersor> for DoubleVersorDisplacement {
     /// Sample a random [`DoubleVersor`] displacement centered on the identity.
     ///
@@ -47,8 +41,7 @@ impl Distribution<DoubleVersor> for DoubleVersorDisplacement {
         let q_l = single_displacement.sample(rng);
         let q_r = single_displacement.sample(rng);
 
-        // Combine them into a DoubleVersor
-        (q_l, q_r).into()
+        DoubleVersor { q_l, q_r }
     }
 }
 
@@ -78,9 +71,7 @@ impl Adjust for Rotate<DoubleVersor> {
         self.maximum_rotation *= factor;
 
         if self.maximum_rotation.get() > PI / 2.0 {
-            self.maximum_rotation = (PI / 2.0)
-                .try_into()
-                .expect("PI/2.0 should be a positive real");
+            self.maximum_rotation = positive_real!(PI / 2.0);
         }
     }
 }
@@ -97,7 +88,8 @@ mod tests {
     /// Number of trial moves to test.
     const N: usize = 262_144;
 
-    /// Expected geodesic distance for small a:E[χ₆] = sqrt2*Γ(7/2)/Γ(3) = 15sqrt(2π)/16
+    /// Expected geodesic distance for small angles:
+    /// $`E[\chi_6] = \sqrt{2}\,\Gamma(7/2)/\Gamma(3) = 15\sqrt{2\pi}/16`$
     #[inline]
     fn expected_chi6_mean() -> f64 {
         15.0 * (2.0 * PI).sqrt() / 16.0
@@ -187,10 +179,10 @@ mod tests {
 
         for _ in 0..100_000 {
             let d = displacement.sample(&mut rng);
-            check!(d.left_isoclinic().get().scalar >= 0.0);
-            check!(d.right_isoclinic().get().scalar >= 0.0);
-            check!((d.left_isoclinic().get().norm_squared() - 1.0).abs() < 1e-15);
-            check!((d.right_isoclinic().get().norm_squared() - 1.0).abs() < 1e-15);
+            check!(d.q_l.get().scalar >= 0.0);
+            check!(d.q_r.get().scalar >= 0.0);
+            check!((d.q_l.get().norm_squared() - 1.0).abs() < 1e-15);
+            check!((d.q_r.get().norm_squared() - 1.0).abs() < 1e-15);
         }
     }
 }

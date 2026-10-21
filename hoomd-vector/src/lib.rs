@@ -148,6 +148,10 @@
 //! # }
 //! ```
 //!
+//! Convert to a [`RotationMatrix`] when you need to rotate many vectors by the same
+//! rotation. [`RotationMatrix::rotate`] is typically several times faster than
+//! [`Versor::rotate`].
+//!
 //! [`DoubleVersor`] implements rotations on [`Cartesian<4>`] vectors:
 //! ```
 //! use approxim::assert_relative_eq;
@@ -156,18 +160,14 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let a = Cartesian::from([1.0, 2.0, 0.0, 0.0]);
-//! let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
-//!     [1.0, 0.0, 0.0].try_into()?,
-//!     PI,
-//! ));
+//! let v = DoubleVersor {
+//!     q_l: Versor::from_axis_angle([1.0, 0.0, 0.0].try_into()?, PI),
+//!     q_r: Versor::default(),
+//! };
 //! assert_relative_eq!(v.rotate(&a), [-2.0, 1.0, 0.0, 0.0].into());
 //! # Ok(())
 //! # }
 //! ```
-//!
-//! Convert to a [`RotationMatrix`] when you need to rotate many vectors by the same
-//! rotation. [`RotationMatrix::rotate`] is typically several times faster than
-//! [`Versor::rotate`].
 //!
 //! # Random distributions
 //!

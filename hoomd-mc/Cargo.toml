@@ -18,7 +18,7 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 workspace = true
 
 [dependencies]
-forkunion = { version = "3.0.2", features = ["topology"] }
+forkunion.workspace = true
 itertools.workspace = true
 log.workspace = true
 rand.workspace = true

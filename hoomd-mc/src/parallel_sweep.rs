@@ -158,9 +158,9 @@ impl<T: Send> ForEachSpace<T> for std::slice::IterMut<'_, T> {
             }
         };
 
-        ParallelSliceMut::new(self.into_slice()).for_each_dynamic(pool, |trial, prong| {
-            function((trial, &space_indices[prong.task_index]));
-        });
+        ParallelSliceMut::new(self.into_slice()).for_each_dynamic(pool, |trial, task_index, _| {
+            function((trial, &space_indices[task_index]));
+        }).expect("for_each should succeed");
     }
 }
 

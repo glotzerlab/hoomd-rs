@@ -304,14 +304,6 @@ impl Quaternion {
     pub fn to_versor_unchecked(self) -> Versor {
         Versor(self / self.norm())
     }
-
-    /// Embed this quaternion as a point in R^4.
-    #[inline]
-    #[must_use]
-    pub fn embed_in_cartesian_4(&self) -> Cartesian<4> {
-        let [x, y, z] = self.vector.coordinates;
-        [self.scalar, x, y, z].into()
-    }
 }
 
 impl From<[f64; 4]> for Quaternion {
@@ -612,9 +604,9 @@ impl Versor {
     ///
     /// where $`(s, \vec{v}) = \mathbf{q}_0^{*} \mathbf{q}_1`$.
     ///
-    /// For unit versors, $`s = \mathbf{q}_0 \cdot \mathbf{q}_1 = \cos\phi`$ and
-    /// $`\lVert \vec{v} \rVert = \sin\phi`$, so this equals the standard equation
-    /// $`\arccos(\mathbf{q}_0 \cdot \mathbf{q}_1)`$ exactly.
+    /// This value always lies in the range $`[0, \pi]`$, and is symmetric: while there
+    /// are multiple arcs separating a pair of quaternions, this metric always chooses
+    /// the shortest.
     #[inline]
     #[must_use]
     pub fn arc_distance(&self, other: &Self) -> f64 {

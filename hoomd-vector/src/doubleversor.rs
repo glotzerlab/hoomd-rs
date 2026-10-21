@@ -19,85 +19,75 @@ use crate::{Cartesian, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Ver
 /// A pair of [`Versor`]s that represent a 4D rotation.
 ///
 /// Every rotation in SO(4) factors into a *left-isoclinic* and a *right-isoclinic*
-/// rotation via the Van Elfrinkhof decomposition, each of which can be described as an
-/// ordinary 3D [`Versor`] with fully independent degrees of freedom. [`DoubleVersor`]
-/// stores one unit quaternion for each factor, $`\mathbf{q_l}`$ and $`\mathbf{q_r}`$.
-/// The two rotate a [`Cartesian<4>`] vector $`\vec{a}`$ (viewed as a quaternion) with a
-/// double-sided product that mirrors the three-dimensional [`Versor::rotate`]:
+/// rotation via a [Cayley factorization](doi.org/10.1007/s00006-016-0683-9), each of
+/// which can be described as an ordinary 3D [`Versor`] with fully independent degrees
+/// of freedom. [`DoubleVersor`] stores one unit quaternion for each factor,
+/// $`\mathbf{q_l}`$ and $`\mathbf{q_r}`$. The two rotate a [`Cartesian<4>`] vector
+/// $`\vec{a}`$ (viewed as a quaternion) with a double-sided product that mirrors the
+/// three-dimensional [`Versor::rotate`]:
 ///
 /// ```math
 /// \vec{a}' = \mathbf{q}_l \, \vec{a} \, \mathbf{q}_r
 /// ```
 /// As normal [`Versor`]s do with SO(3), the pair $`(\mathbf{q}_l, \mathbf{q}_r)`$ forms
 /// a double cover of SO(4).
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
+///
+/// # Example
+///
+/// ```
+/// use std::f64::consts::FRAC_PI_4;
+/// use hoomd_vector::{Cartesian, DoubleVersor, Rotation, Versor, Rotate};
+/// use approxim::assert_relative_eq;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let identity = DoubleVersor::default();
+///
+/// // Equal isoclinic components compose to a simple rotation
+/// let q = Versor::from_axis_angle([1.0, 0.0, 0.0].try_into()?, FRAC_PI_4);
+/// let simple = DoubleVersor {
+///     q_l: q,
+///     q_r: q,
+/// };
+///
+/// // Simple rotations rotate in the plane spanned by the x and y components of a vector
+/// let vector = Cartesian::from([2.0, 3.0, 4.0, 5.0]);
+/// let [x, y, z, w] = vector.coordinates;
+/// let new_x = x * FRAC_PI_4.cos() - y * FRAC_PI_4.sin();
+/// let new_y = x * FRAC_PI_4.cos() + y * FRAC_PI_4.sin();
+/// assert_relative_eq!(simple.rotate(&vector), [new_x, new_y, z, w].into());
+///
+/// // A purely left-isoclinic rotation has the identity as its right component.
+/// let left_only = DoubleVersor {
+///     q_l: q,
+///     q_r: Versor::default(),
+/// };
+/// // Purely isoclinic rotations rotate both planes by half the nonzero component's angle
+/// let pi_eigths = FRAC_PI_4 / 2.0;
+/// let (cos, sin) = (pi_eigths.cos(), pi_eigths.sin());
+/// assert_relative_eq!(
+///     left_only.rotate(&vector),
+///     [
+///         x * cos - y * sin,
+///         x * sin + y * cos,
+///         z * cos - w * sin,
+///         z * sin + w * cos,
+///     ]
+///     .into()
+/// );
+///
+///
+/// # Ok(())
+/// # }
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct DoubleVersor {
     /// The left-isoclinic part of the rotation.
-    l: Versor,
+    pub q_l: Versor,
     /// The right-isoclinic part of the rotation.
-    r: Versor,
-}
-
-impl Default for DoubleVersor {
-    /// Create an identity rotation.
-    ///
-    /// # Example
-    /// ```
-    /// use hoomd_vector::DoubleVersor;
-    ///
-    /// let v = DoubleVersor::default();
-    /// ```
-    #[inline]
-    fn default() -> Self {
-        Self {
-            l: Versor::default(),
-            r: Versor::default(),
-        }
-    }
-}
-
-impl From<(Versor, Versor)> for DoubleVersor {
-    #[inline]
-    fn from(value: (Versor, Versor)) -> Self {
-        Self {
-            l: value.0,
-            r: value.1,
-        }
-    }
+    pub q_r: Versor,
 }
 
 impl DoubleVersor {
-    #[inline]
-    #[must_use]
-    /// Get the left-isoclinic part of the rotation.
-    pub fn left_isoclinic(&self) -> Versor {
-        self.l
-    }
-    #[inline]
-    #[must_use]
-    /// Get the right-isoclinic part of the rotation.
-    pub fn right_isoclinic(&self) -> Versor {
-        self.r
-    }
-    #[inline]
-    #[must_use]
-    /// Create a purely left-isoclinic double versor.
-    pub fn from_left_isoclinic(l: Versor) -> Self {
-        Self {
-            l,
-            r: Versor::default(),
-        }
-    }
-    #[inline]
-    #[must_use]
-    /// Create a purely right-isoclinic double versor.
-    pub fn from_right_isoclinic(r: Versor) -> Self {
-        Self {
-            l: Versor::default(),
-            r,
-        }
-    }
-
     #[inline]
     #[must_use]
     /// Normalize the double versor.
@@ -105,12 +95,24 @@ impl DoubleVersor {
     /// Nominally, all [`DoubleVersor`] instances have unit components. Due to limited
     /// floating point precision, this assumption may not hold after repeated
     /// operations. Normalize double versors when needed to correct this issue.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{DoubleVersor, Versor};
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let q = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI / 2.0);
+    /// let a = DoubleVersor { q_l: q, q_r: q };
+    /// let b = a.normalized();
+    /// # Ok(()) }
+    /// ```
     pub fn normalized(self) -> Self {
         // Normalization is a projection onto the manifold as normal, and projection
         // onto a product manifold can be separated into the components in the product.
         Self {
-            l: self.l.normalized(),
-            r: self.r.normalized(),
+            q_l: self.q_l.normalized(),
+            q_r: self.q_r.normalized(),
         }
     }
 
@@ -126,8 +128,9 @@ impl DoubleVersor {
     /// d_{SO(4)}(\vec{u}, \vec{v}) = \sqrt{8 \left(1 - (\vec{u}_l \cdot \vec{v}_l)\,(\vec{u}_r \cdot \vec{v}_r)\right)}
     /// ```
     ///
-    /// This is equivalent to the matrix form $`\lVert R_u - R_v \rVert_F`$, but does not require
-    /// forming the matrix representation of each rotation.
+    /// This is equivalent to the matrix form $`\lVert R_u - R_v \rVert_F`$, where
+    /// $` R_u `$ and $` R_v `$ are the rotations $`\vec{u}`$ and $`\vec{v}`$ converted
+    /// to their rotation matrix representation.
     ///
     /// # Example
     ///
@@ -138,14 +141,12 @@ impl DoubleVersor {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let identity = DoubleVersor::default();
-    /// // A rotation by PI/2 in both invariant planes.
-    /// let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
-    ///     [1.0, 0.0, 0.0].try_into()?,
-    ///     PI,
-    /// ));
+    /// let v = DoubleVersor {
+    ///     q_l: Versor::from_axis_angle([1.0, 0.0, 0.0].try_into()?, PI),
+    ///     q_r: Versor::default(),
+    /// };
     ///
     /// assert_relative_eq!(v.chordal_distance(&identity), 8.0_f64.sqrt());
-    /// // The intrinsic distance along the manifold is longer than the chord.
     /// assert!(v.distance(&identity) > 8.0_f64.sqrt());
     /// # Ok(())
     /// # }
@@ -182,8 +183,8 @@ impl DoubleVersor {
         // Print["Norm[A-B, \"Frobenius\"]^2 == 8 - 8*(qL1.qL2)*(qR1.qR2)"];
         // isEquivalent = FullSimplify[explicitFrobeniusSquared == algebraicForm, constraints];
         // Print["Result: ", isEquivalent];
-        let left_dot = self.l.dot_as_cartesian(&other.l);
-        let right_dot = self.r.dot_as_cartesian(&other.r);
+        let left_dot = self.q_l.dot_as_cartesian(&other.q_l);
+        let right_dot = self.q_r.dot_as_cartesian(&other.q_r);
         (8.0 * (1.0 - left_dot * right_dot)).max(0.0).sqrt()
     }
 }
@@ -204,10 +205,10 @@ impl From<DoubleVersor> for RotationMatrix<4> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([1.0, 2.0, 0.0, 0.0]);
-    /// let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
-    ///     [1.0, 0.0, 0.0].try_into()?,
-    ///     PI,
-    /// ));
+    /// let v = DoubleVersor {
+    ///     q_l: Versor::from_axis_angle([1.0, 0.0, 0.0].try_into()?, PI),
+    ///     q_r: Versor::default(),
+    /// };
     ///
     /// let matrix = RotationMatrix::from(v);
     /// assert_relative_eq!(matrix.rotate(&a), v.rotate(&a));
@@ -218,23 +219,18 @@ impl From<DoubleVersor> for RotationMatrix<4> {
     #[inline]
     #[expect(clippy::many_single_char_names, reason = "Clarity.")]
     fn from(versor: DoubleVersor) -> RotationMatrix<4> {
-        let (&q_l, &q_r) = (
-            versor.left_isoclinic().get(),
-            versor.right_isoclinic().get(),
-        );
+        let (&q_l, &q_r) = (versor.q_l.get(), versor.q_r.get());
         let (a, [b, c, d]) = (q_l.scalar, q_l.vector.coordinates);
         let (p, [q, r, s]) = (q_r.scalar, q_r.vector.coordinates);
 
-        // Construct the left-isoclinic matrix L(Q_L)
         let l_mat = [[a, -b, -c, -d], [b, a, -d, c], [c, d, a, -b], [d, -c, b, a]];
-
-        // Construct the right-isoclinic matrix R(Q_R)
         let r_mat = [[p, -q, -r, -s], [q, p, s, -r], [r, -s, p, q], [s, r, -q, p]];
 
-        // Combine the left and right isoclinic parts as L@R
-        Matrix44 { rows: l_mat }
+        let rows = Matrix44 { rows: l_mat }
             .matmul(&Matrix44 { rows: r_mat })
-            .into()
+            .rows
+            .map(Cartesian::from);
+        RotationMatrix { rows }
     }
 }
 
@@ -257,15 +253,12 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([1.0, 2.0, 0.0, 0.0]);
     ///
-    /// // A left-isoclinic rotation that rotates by PI/2 radians in both the
-    /// // `xy` and `zw` planes. Note that each plane rotates by half the given angle
-    /// let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
-    ///     [1.0, 0.0, 0.0].try_into()?,
-    ///     PI,
-    /// ));
-    ///
-    /// // Initializing from left isoclinic implies the right isoclinic is [1 0 0 0]
-    /// assert_eq!(v.right_isoclinic(), Versor::default());
+    /// // A purely left-isoclinic rotation by PI about the x axis. A left-isoclinic
+    /// // rotation by PI rotates by PI/2 radians in both the `xy` and `zw` planes.
+    /// let v = DoubleVersor {
+    ///     q_l: Versor::from_axis_angle([1.0, 0.0, 0.0].try_into()?, PI),
+    ///     q_r: Versor::default(),
+    /// };
     ///
     /// let b = v.rotate(&a);
     /// assert_relative_eq!(b, [-2.0, 1.0, 0.0, 0.0].into());
@@ -274,8 +267,9 @@ impl Rotate<Cartesian<4>> for DoubleVersor {
     /// ```
     #[inline]
     fn rotate(&self, vector: &Cartesian<4>) -> Cartesian<4> {
-        let q = *self.l.get() * Quaternion::from(vector.coordinates) * *self.r.get();
-        q.embed_in_cartesian_4()
+        let q = *self.q_l.get() * Quaternion::from(vector.coordinates) * *self.q_r.get();
+        let [x, y, z] = q.vector.coordinates;
+        [q.scalar, x, y, z].into()
     }
 }
 
@@ -299,7 +293,10 @@ impl Distribution<DoubleVersor> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> DoubleVersor {
-        (rng.random(), rng.random()).into()
+        DoubleVersor {
+            q_l: rng.random(),
+            q_r: rng.random(),
+        }
     }
 }
 
@@ -307,7 +304,7 @@ impl Rotation for DoubleVersor {
     /// Combine two rotations.
     ///
     /// The resulting versor is obtained by left and right quaternion
-    /// multiplications. As with [`Versor`], `self.combine(other)` first applies
+    /// multiplications. `self.combine(other)` first applies
     /// `other`, then `self`. Note that the right components multiply in the
     /// reverse order!
     /// ```math
@@ -324,16 +321,15 @@ impl Rotation for DoubleVersor {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([1.0, 2.0, -3.0, 0.5]);
-    /// let left = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
-    ///     [1.0, 0.0, 0.0].try_into()?,
-    ///     PI / 2.0,
-    /// ));
-    /// let right = DoubleVersor::from_right_isoclinic(Versor::from_axis_angle(
-    ///     [0.0, 1.0, 0.0].try_into()?,
-    ///     PI / 3.0,
-    /// ));
+    /// let left = DoubleVersor {
+    ///     q_l: Versor::from_axis_angle([1.0, 0.0, 0.0].try_into()?, PI / 2.0),
+    ///     q_r: Versor::default(),
+    /// };
+    /// let right = DoubleVersor {
+    ///     q_l: Versor::default(),
+    ///     q_r: Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI / 3.0),
+    /// };
     ///
-    /// // Combining applies `right` first, then `left`.
     /// let combined = left.combine(&right);
     /// assert_relative_eq!(
     ///     combined.rotate(&a),
@@ -346,8 +342,8 @@ impl Rotation for DoubleVersor {
     #[inline]
     fn combine(&self, other: &Self) -> Self {
         Self {
-            l: self.l.combine(&other.l),
-            r: other.r.combine(&self.r),
+            q_l: self.q_l.combine(&other.q_l),
+            q_r: other.q_r.combine(&self.q_r),
         }
     }
 
@@ -378,10 +374,10 @@ impl Rotation for DoubleVersor {
     /// use hoomd_vector::{DoubleVersor, Rotation, Versor};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let v = DoubleVersor::from_left_isoclinic(Versor::from_axis_angle(
-    ///     [0.0, 1.0, 0.0].try_into()?,
-    ///     1.5,
-    /// ));
+    /// let v = DoubleVersor {
+    ///     q_l: Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, 1.5),
+    ///     q_r: Versor::default(),
+    /// };
     /// let v_star = v.inverted();
     /// # Ok(())
     /// # }
@@ -389,8 +385,8 @@ impl Rotation for DoubleVersor {
     #[inline]
     fn inverted(self) -> Self {
         Self {
-            l: self.l.inverted(),
-            r: self.r.inverted(),
+            q_l: self.q_l.inverted(),
+            q_r: self.q_r.inverted(),
         }
     }
 }
@@ -398,8 +394,8 @@ impl Rotation for DoubleVersor {
 impl Metric for DoubleVersor {
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
-        let left_angle = self.l.arc_distance(&other.l);
-        let right_angle = self.r.arc_distance(&other.r);
+        let left_angle = self.q_l.arc_distance(&other.q_l);
+        let right_angle = self.q_r.arc_distance(&other.q_r);
 
         // The principal angles of the relative rotation are theta_1 = left_angle
         // + right_angle and theta_2 = |left_angle - right_angle|. Fold theta_1
@@ -416,7 +412,7 @@ impl Metric for DoubleVersor {
     fn n_dimensions() -> usize {
         6
     }
-    #[inline]
+
     /// The intrinsic distance between two [`DoubleVersor`]s.
     ///
     /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on the
@@ -437,6 +433,7 @@ impl Metric for DoubleVersor {
     ///
     /// This is equivalent to the scaled matrix logarithm form $`||\log(R_u^T R_v)||_F`$,
     /// measuring the shortest path along the curved manifold.
+    #[inline]
     fn distance(&self, other: &Self) -> f64 {
         self.distance_squared(other).sqrt()
     }
@@ -447,7 +444,10 @@ mod tests {
     use approxim::assert_relative_eq;
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
-    use std::f64::consts::{PI, TAU};
+    use std::{
+        collections::HashSet,
+        f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_6, PI, TAU},
+    };
 
     use crate::{
         Cartesian, DoubleVersor, InnerProduct, Metric, Rotate, Rotation, RotationMatrix, Unit,
@@ -472,6 +472,87 @@ mod tests {
     }
 
     #[test]
+    fn sixteen_cell_vertices_are_invariant_under_point_group() {
+        let vertices: Vec<[f64; 4]> = (0..4)
+            .flat_map(|i| {
+                let mut positive = [0.0_f64; 4];
+                positive[i] = 1.0;
+                [positive, positive.map(|x| -x)]
+            })
+            .collect();
+        // Round to 1e-9, as integers so we can then hash the values.
+        #[expect(clippy::cast_possible_truncation, reason = "values are exact integers")]
+        let key = |v: [f64; 4]| v.map(|c| (c * 1e9).round() as i64);
+
+        let expected: HashSet<_> = vertices.iter().map(|&v| key(v)).collect();
+
+        let axes: [Unit<Cartesian<3>>; 3] = [
+            [1.0, 0.0, 0.0].try_into().expect("non-zero axis"),
+            [0.0, 1.0, 0.0].try_into().expect("non-zero axis"),
+            [0.0, 0.0, 1.0].try_into().expect("non-zero axis"),
+        ];
+        let mut rotations: Vec<_> = axes
+            .map(|axis| {
+                let quarter_turn = Versor::from_axis_angle(axis, FRAC_PI_2);
+                DoubleVersor {
+                    q_l: quarter_turn,
+                    q_r: quarter_turn,
+                }
+            })
+            .into_iter()
+            .collect();
+
+        let half_turn = Versor::from_axis_angle(axes[0], PI);
+        rotations.push(DoubleVersor {
+            q_l: half_turn,
+            q_r: Versor::default(),
+        });
+        rotations.push(DoubleVersor {
+            q_l: Versor::default(),
+            q_r: half_turn,
+        });
+
+        for rotation in rotations {
+            let images: HashSet<_> = vertices
+                .iter()
+                .map(|&v| rotation.rotate(&Cartesian::from(v)))
+                .map(|image| key(image.coordinates))
+                .collect();
+
+            assert_eq!(images, expected, "rotation {rotation:?}");
+        }
+    }
+
+    #[rstest]
+    #[case::double_rotation(0.7, 1.1, [1.0, 2.0, 3.0, 4.0])]
+    #[case::mixed_pi_fractions(FRAC_PI_3, -FRAC_PI_6, [0.5, -1.0, 2.0, 3.0])]
+    #[case::large_angles(2.0, 0.4, [-3.0, 0.7, 1.2, -2.5])]
+    fn general_double_rotations_match_reference(
+        #[case] left: f64,
+        #[case] right: f64,
+        #[case] v: [f64; 4],
+    ) {
+        let x: Unit<Cartesian<3>> = [1.0, 0.0, 0.0].try_into().expect("non-zero axis");
+        let double_versor = DoubleVersor {
+            q_l: Versor::from_axis_angle(x, left),
+            q_r: Versor::from_axis_angle(x, right),
+        };
+        let t1 = left.midpoint(right);
+        let t2 = t1 - right;
+        let expected = [
+            v[0] * t1.cos() - v[1] * t1.sin(),
+            v[0] * t1.sin() + v[1] * t1.cos(),
+            v[2] * t2.cos() - v[3] * t2.sin(),
+            v[2] * t2.sin() + v[3] * t2.cos(),
+        ];
+        assert_relative_eq!(
+            double_versor.rotate(&Cartesian::from(v)),
+            Cartesian::from(expected),
+            epsilon = 1e-14
+        );
+    }
+
+    #[test]
     fn normalized_restores_unit_components() {
         let mut rng = StdRng::seed_from_u64(99);
         let mut q: DoubleVersor = rng.random();
@@ -479,12 +560,12 @@ mod tests {
             q = q.combine(&rng.random());
         }
 
-        let norm_l = q.left_isoclinic().get().norm();
-        let norm_r = q.right_isoclinic().get().norm();
+        let norm_l = q.q_l.get().norm();
+        let norm_r = q.q_r.get().norm();
 
         let n = q.normalized();
-        assert_relative_eq!(n.left_isoclinic().get().norm(), 1.0, epsilon = 1e-15);
-        assert_relative_eq!(n.right_isoclinic().get().norm(), 1.0, epsilon = 1e-15);
+        assert_relative_eq!(n.q_l.get().norm(), 1.0, epsilon = 1e-15);
+        assert_relative_eq!(n.q_r.get().norm(), 1.0, epsilon = 1e-15);
 
         // The drifted rotation is the normalized one scaled by norm_l * norm_r.
         let a = Cartesian::from([1.0, 2.0, -3.0, 0.5]);
@@ -589,14 +670,14 @@ mod tests {
         for (theta_l, theta_r) in [(0.3, 1.7), (2.0, 0.9), (2.9, 3.0), (0.0, PI)] {
             // Negate via angle + TAU, which negates the versor up to
             // rounding: (cos, sin) evaluated at half of (angle + TAU).
-            let u = DoubleVersor::from((
-                Versor::from_axis_angle(x, theta_l),
-                Versor::from_axis_angle(y, theta_r),
-            ));
-            let negated_u = DoubleVersor::from((
-                Versor::from_axis_angle(x, theta_l + TAU),
-                Versor::from_axis_angle(y, theta_r + TAU),
-            ));
+            let u = DoubleVersor {
+                q_l: Versor::from_axis_angle(x, theta_l),
+                q_r: Versor::from_axis_angle(y, theta_r),
+            };
+            let negated_u = DoubleVersor {
+                q_l: Versor::from_axis_angle(x, theta_l + TAU),
+                q_r: Versor::from_axis_angle(y, theta_r + TAU),
+            };
 
             assert_relative_eq!(u.distance(&negated_u), 0.0, epsilon = 1e-15);
         }
