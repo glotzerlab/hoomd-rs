@@ -332,7 +332,7 @@ mod tests {
     use super::*;
     use approxim::assert_relative_eq;
     use hoomd_manifold::Spherical;
-    use hoomd_vector::{Angle, Cartesian};
+    use hoomd_vector::Angle;
     use std::f64::consts::PI;
 
     #[test]
@@ -479,5 +479,29 @@ mod tests {
             v3_ans.coordinates()[2],
             epsilon = 1e-12
         );
+    }
+
+    #[test]
+    fn non_overlapping_squares() {
+        let r_0 = 0.5;
+        let edge_dist = f64::atan(f64::tan(r_0)/f64::sqrt(2.0));
+        let square = SphericalConvexPolygon::regular(4, r_0);
+        let position_1 = Spherical::<3>::from_cartesian_coordinates([0.0,0.0,1.0].into());
+        let orientation_1 = Angle::from(PI/4.0);
+        let position_2 = Spherical::<3>::from_polar_coordinates(2.0 * edge_dist -0.01, 0.0);
+        let orientation_2 = Angle::from(3.0*PI/4.0);
+        assert!(!square.intersects_at_global(&square, &position_1, &orientation_1, &position_2, &orientation_2));
+    }
+
+    #[test]
+    fn overlapping_squares() {
+        let r_0 = 0.5;
+        let edge_dist = f64::atan(f64::tan(r_0)/f64::sqrt(2.0));
+        let square = SphericalConvexPolygon::regular(4, r_0);
+        let position_1 = Spherical::<3>::from_cartesian_coordinates([0.0,0.0,1.0].into());
+        let orientation_1 = Angle::from(PI/4.0);
+        let position_2 = Spherical::<3>::from_polar_coordinates(0.2, 0.0);
+        let orientation_2 = Angle::from(3.0*PI/4.0);
+        assert!(square.intersects_at_global(&square, &position_1, &orientation_1, &position_2, &orientation_2));
     }
 }
