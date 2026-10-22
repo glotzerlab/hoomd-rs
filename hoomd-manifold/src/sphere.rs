@@ -68,8 +68,8 @@ impl<const N: usize> Spherical<N> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Cartesian::from([0.5_f64.sqrt(), 0.0, -(0.5_f64.sqrt())]);
-    /// let projection =
-    ///     Spherical::from_cartesian_coordinates(x).stereographic_projection_from_south_pole();
+    /// let projection = Spherical::from_cartesian_coordinates(x)
+    ///     .stereographic_projection_from_south_pole();
     /// assert_eq!(
     ///     [1.0 / (2.0_f64.sqrt() + 1.0), 0.0],
     ///     [projection[0], projection[1]]
@@ -97,8 +97,8 @@ impl<const N: usize> Spherical<N> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Cartesian::from([0.5_f64.sqrt(), 0.0, (0.5_f64.sqrt())]);
-    /// let projection =
-    ///     Spherical::from_cartesian_coordinates(x).stereographic_projection_from_north_pole();
+    /// let projection = Spherical::from_cartesian_coordinates(x)
+    ///     .stereographic_projection_from_north_pole();
     /// assert_eq!(
     ///     [1.0 / (2.0_f64.sqrt() + 1.0), 0.0],
     ///     [projection[0], projection[1]]

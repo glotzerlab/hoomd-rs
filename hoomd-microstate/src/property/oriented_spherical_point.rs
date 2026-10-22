@@ -58,7 +58,7 @@ impl OrientedSphericalPoint<3, Angle> {
     #[inline]
     #[must_use]
     pub fn deck_transform(zenith: f64, azimuth: f64, position: &Spherical<3>) -> f64 {
-        let theta_over_two = zenith/2.0;
+        let theta_over_two = zenith / 2.0;
         let stereo = position.stereographic_projection_from_south_pole();
         -2.0 * (((theta_over_two.sin())
             * ((azimuth.sin()) * stereo[0] - (azimuth.cos()) * stereo[1]))
@@ -117,14 +117,14 @@ impl Transform<Point<Spherical<3>>> for OrientedSphericalPoint<3, Angle> {
         );
         let transformed_point = Cartesian::from([
             site_pos[0] * (theta_cos * phi_cos * diff_cos - phi_sin * diff_sin)
-            - site_pos[1] * (theta_cos * phi_cos * diff_sin + phi_sin * diff_cos)
-            + site_pos[2] * theta_sin * phi_cos,
+                - site_pos[1] * (theta_cos * phi_cos * diff_sin + phi_sin * diff_cos)
+                + site_pos[2] * theta_sin * phi_cos,
             site_pos[0] * (theta_cos * phi_sin * diff_cos + phi_cos * diff_sin)
-            + site_pos[1] * (phi_cos * diff_cos - theta_cos * phi_sin * diff_sin)
-            + site_pos[2] * theta_sin * phi_sin,
+                + site_pos[1] * (phi_cos * diff_cos - theta_cos * phi_sin * diff_sin)
+                + site_pos[2] * theta_sin * phi_sin,
             -site_pos[0] * theta_sin * diff_cos
-            +site_pos[1] * theta_sin * diff_sin
-            +site_pos[2] * theta_cos,
+                + site_pos[1] * theta_sin * diff_sin
+                + site_pos[2] * theta_cos,
         ]);
         let new_spherical = Spherical::from_cartesian_coordinates(transformed_point);
         Point::new(new_spherical)
@@ -133,7 +133,10 @@ impl Transform<Point<Spherical<3>>> for OrientedSphericalPoint<3, Angle> {
 
 impl Transform<OrientedSphericalPoint<3, Angle>> for OrientedSphericalPoint<3, Angle> {
     #[inline]
-    fn transform(&self, site_properties: &OrientedSphericalPoint<3, Angle>) -> OrientedSphericalPoint<3, Angle> {
+    fn transform(
+        &self,
+        site_properties: &OrientedSphericalPoint<3, Angle>,
+    ) -> OrientedSphericalPoint<3, Angle> {
         let body_pos = self.position.coordinates();
         let body_pos_phi = body_pos[1].atan2(body_pos[0]);
         let body_pos_theta = (body_pos[2]).acos();
@@ -148,21 +151,23 @@ impl Transform<OrientedSphericalPoint<3, Angle>> for OrientedSphericalPoint<3, A
         );
         let transformed_point = Cartesian::from([
             site_pos[0] * (theta_cos * phi_cos * diff_cos - phi_sin * diff_sin)
-            - site_pos[1] * (theta_cos * phi_cos * diff_sin + phi_sin * diff_cos)
-            + site_pos[2] * theta_sin * phi_cos,
+                - site_pos[1] * (theta_cos * phi_cos * diff_sin + phi_sin * diff_cos)
+                + site_pos[2] * theta_sin * phi_cos,
             site_pos[0] * (theta_cos * phi_sin * diff_cos + phi_cos * diff_sin)
-            + site_pos[1] * (phi_cos * diff_cos - theta_cos * phi_sin * diff_sin)
-            + site_pos[2] * theta_sin * phi_sin,
+                + site_pos[1] * (phi_cos * diff_cos - theta_cos * phi_sin * diff_sin)
+                + site_pos[2] * theta_sin * phi_sin,
             -site_pos[0] * theta_sin * diff_cos
-            +site_pos[1] * theta_sin * diff_sin
-            +site_pos[2] * theta_cos,
+                + site_pos[1] * theta_sin * diff_sin
+                + site_pos[2] * theta_cos,
         ]);
         let new_spherical = Spherical::from_cartesian_coordinates(transformed_point);
-        let site_angle_system = Self::deck_transform(body_pos_theta, body_pos_phi, &site_properties.position) + site_properties.orientation.theta + body_angle;
+        let site_angle_system =
+            Self::deck_transform(body_pos_theta, body_pos_phi, &site_properties.position)
+                + site_properties.orientation.theta
+                + body_angle;
         OrientedSphericalPoint {
             position: new_spherical,
-            orientation: Angle::from(site_angle_system)
-
+            orientation: Angle::from(site_angle_system),
         }
     }
 }
@@ -175,20 +180,21 @@ mod tests {
 
     #[test]
     fn deck_transforms() {
-        let p1 = Spherical::<3>::from_polar_coordinates(PI/2.0, 0.0);
-        let val1 = OrientedSphericalPoint::<3,Angle>::deck_transform(-PI/4.0, 0.0, &p1);
-        //translation along a meridian should not change angle
+        let p1 = Spherical::<3>::from_polar_coordinates(PI / 2.0, 0.0);
+        let val1 = OrientedSphericalPoint::<3, Angle>::deck_transform(-PI / 4.0, 0.0, &p1);
+        // translation along a meridian should not change angle
         assert_relative_eq!(val1, 0.0);
 
-        let val2 = OrientedSphericalPoint::<3,Angle>::deck_transform(PI/3.0, 1.0, &p1);
-        //translation along a parallel should change angle
-        assert_relative_eq!(val2,-1.2295910599142, epsilon=1e-12);
+        let val2 = OrientedSphericalPoint::<3, Angle>::deck_transform(PI / 3.0, 1.0, &p1);
+        // translation along a parallel should change angle
+        assert_relative_eq!(val2, -1.2295910599142, epsilon = 1e-12);
 
-        let p2 = Spherical::<3>::from_polar_coordinates(PI/4.0, 0.5);
+        let p2 = Spherical::<3>::from_polar_coordinates(PI / 4.0, 0.5);
         let body_pos = p2.coordinates();
         let body_pos_phi = body_pos[1].atan2(body_pos[0]);
         let body_pos_theta = (body_pos[2]).acos();
-        let body_angle_body = OrientedSphericalPoint::deck_transform(-body_pos_theta, body_pos_phi, &p2);
+        let body_angle_body =
+            OrientedSphericalPoint::deck_transform(-body_pos_theta, body_pos_phi, &p2);
         // transformation along geodesic "line of sight" induces no change
         assert_relative_eq!(body_angle_body, 0.0);
     }
@@ -198,14 +204,14 @@ mod tests {
         let theta = PI / 5.0;
         let blip = PI / 10.0;
         let body_position = Spherical::<3>::from_polar_coordinates(theta, 0.0);
-        let site_position = Spherical::<3>::from_polar_coordinates(blip, PI/4.0);
-        let body = OrientedSphericalPoint{
+        let site_position = Spherical::<3>::from_polar_coordinates(blip, PI / 4.0);
+        let body = OrientedSphericalPoint {
             position: body_position,
-            orientation: Angle::from(PI/4.0),
+            orientation: Angle::from(PI / 4.0),
         };
         let site = OrientedSphericalPoint {
             position: site_position,
-            orientation: Angle::from(0.0)
+            orientation: Angle::from(0.0),
         };
         let transformed_site = body.transform(&site);
         assert_relative_eq!(
@@ -218,6 +224,6 @@ mod tests {
             .into()
         );
         let del_psi = OrientedSphericalPoint::deck_transform(theta, 0.0, &site_position);
-        assert_relative_eq!(transformed_site.orientation().theta, del_psi + PI/4.0);
+        assert_relative_eq!(transformed_site.orientation().theta, del_psi + PI / 4.0);
     }
 }
