@@ -107,14 +107,13 @@ impl Transform<Point<Spherical<3>>> for OrientedSphericalPoint<3, Angle> {
         let body_pos_phi = body_pos[1].atan2(body_pos[0]);
         let body_pos_theta = (body_pos[2]).acos();
         let body_angle = self.orientation.theta;
-        let body_angle_body = Self::deck_transform(-body_pos_theta, body_pos_phi, self.position()) + body_angle;
         let site_pos = site_properties.position.coordinates();
         let (theta_cos, theta_sin) = (body_pos_theta.cos(), body_pos_theta.sin());
         let (phi_cos, phi_sin, diff_cos, diff_sin) = (
             body_pos_phi.cos(),
             body_pos_phi.sin(),
-            (body_angle_body - body_pos_phi).cos(),
-            (body_angle_body - body_pos_phi).sin(),
+            (body_angle - body_pos_phi).cos(),
+            (body_angle - body_pos_phi).sin(),
         );
         let transformed_point = Cartesian::from([
             site_pos[0] * (theta_cos * phi_cos * diff_cos - phi_sin * diff_sin)

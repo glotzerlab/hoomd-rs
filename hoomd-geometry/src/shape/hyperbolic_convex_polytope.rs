@@ -210,18 +210,7 @@ impl HyperbolicConvexPolytope<3> {
     ) -> Hyperbolic<3> {
         let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
         let nu = (body_position.coordinates()[2]).acosh();
-        let tau_over_two = -nu / 2.0;
-        let poincare = body_position.to_poincare();
-        let body_angle_body = (-2.0
-            * (((tau_over_two.sinh())
-                * ((theta.cos()) * poincare[1] - (theta.sin()) * poincare[0]))
-                .atan2(
-                    (tau_over_two.cosh())
-                        + (tau_over_two.sinh())
-                            * ((theta.cos()) * poincare[0] + (theta.sin()) * poincare[1]),
-                ))
-            + body_orientation.theta)
-            .rem_euclid(2.0 * PI);
+        let body_angle_body = body_orientation.theta;
         let phi = body_angle_body - theta;
         let pt = vertex.point().coordinates;
         let (nu_sinh, nu_cosh) = (nu.sinh(), nu.cosh());
@@ -254,7 +243,7 @@ impl IntersectsAtGlobal<HyperbolicConvexPolytope<3>, Hyperbolic<3>, Angle>
         o_other: &Angle,
     ) -> bool {
         let d = r_self.distance(r_other);
-        if d > 2.0 * self.bounding_radius {
+        if d > self.bounding_radius + other.bounding_radius {
             return false;
         }
         let mut result = true;

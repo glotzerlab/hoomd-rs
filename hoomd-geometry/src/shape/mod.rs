@@ -47,6 +47,9 @@ pub use simplex3::Simplex3;
 mod sphere;
 pub use sphere::{Circle, Hypersphere, Sphere};
 
+mod spherical_convex_polytope;
+pub use spherical_convex_polytope::{SphericalConvexPolygon, SphericalConvexPolytope};
+
 mod sphero;
 pub use sphero::Sphero;
 
