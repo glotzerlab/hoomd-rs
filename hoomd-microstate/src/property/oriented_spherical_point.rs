@@ -14,8 +14,8 @@ use rand::{
 use robust::{Coord, orient2d};
 use std::f64::consts::PI;
 
-/// The position and orientation of an extended body in spherical space. The 
-/// orientation is defined as the angle of the body in the stereographic 
+/// The position and orientation of an extended body in spherical space. The
+/// orientation is defined as the angle of the body in the stereographic
 /// projection through the "north pole" of the sphere.
 ///
 /// Use [`OrientedSphericalPoint`] as a [`Body`](crate::Body) or
@@ -43,9 +43,9 @@ pub struct OrientedSphericalPoint<const N: usize, R> {
 
 impl OrientedSphericalPoint<3, Angle> {
     /// Compute the change in orientation associated with a transformation from a given
-    /// position. Isometries of the 2-sphere can be expressed as a zenith rotation 
-    /// conjugated by an azimuthal rotation. These $`SO(3)`$ operations can be mapped 
-    /// to $`SU(2)`$ operations, where they act on the stereographic projected points 
+    /// position. Isometries of the 2-sphere can be expressed as a zenith rotation
+    /// conjugated by an azimuthal rotation. These $`SO(3)`$ operations can be mapped
+    /// to $`SU(2)`$ operations, where they act on the stereographic projected points
     /// as the Möbius transformation
     /// ```math
     /// g(z) = \begin{bmatrix} \cos(\theta/2) & e^{i\phi} \sin(\theta/2) \\ -e^{-i\theta}\sin(\theta/2) & \cos(\theta/2) \end{bmatrix}
@@ -163,7 +163,7 @@ impl Transform<OrientedSphericalPoint<3, Angle>> for OrientedSphericalPoint<3, A
         OrientedSphericalPoint {
             position: new_spherical,
             orientation: Angle::from(site_angle_system)
-        
+
         }
     }
 }
@@ -199,10 +199,10 @@ mod tests {
         let theta = PI / 5.0;
         let blip = PI / 10.0;
         let body_position = Spherical::<3>::from_polar_coordinates(theta, 0.0);
-        let site_position = Spherical::<3>::from_polar_coordinates(blip, PI / 2.0);
+        let site_position = Spherical::<3>::from_polar_coordinates(blip, PI/4.0);
         let body = OrientedSphericalPoint{
             position: body_position,
-            orientation: Angle::from(PI/2.0),
+            orientation: Angle::from(PI/4.0),
         };
         let site = OrientedSphericalPoint {
             position: site_position,
@@ -219,6 +219,6 @@ mod tests {
             .into()
         );
         let del_psi = OrientedSphericalPoint::deck_transform(theta, 0.0, &site_position);
-        assert_relative_eq!(transformed_site.orientation().theta, del_psi + PI/2.0);
+        assert_relative_eq!(transformed_site.orientation().theta, del_psi + PI/4.0);
     }
 }
