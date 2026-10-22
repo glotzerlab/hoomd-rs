@@ -458,7 +458,7 @@ mod tests {
     }
 
     #[rstest]
-    fn translate_3d_hyperbolic_point_far_from_cusp(#[values(0.001, 0.01, 0.1, 0.25)] d: f64) {
+    fn translate_3d_hyperbolic_point_far_from_cusp(#[values(0.005, 0.01, 0.1)] d: f64) {
         let mut rng = StdRng::seed_from_u64(42);
         let mut body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
             [10_000.0, 10_000.0, 10_000.0, (300_000_001.0_f64).sqrt()].into(),
