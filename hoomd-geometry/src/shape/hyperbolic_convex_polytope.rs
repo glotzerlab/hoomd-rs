@@ -156,18 +156,7 @@ impl HyperbolicConvexPolytope<3> {
     ) -> Vec<Hyperbolic<3>> {
         let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
         let eta = (body_position.coordinates()[2]).acosh();
-        let tau_over_two = -eta / 2.0;
-        let poincare = body_position.to_poincare();
-        let body_angle_body = -2.0
-            * (((tau_over_two.sinh())
-                * ((theta.cos()) * poincare[1] - (theta.sin()) * poincare[0]))
-                .atan2(
-                    (tau_over_two.cosh())
-                        + (tau_over_two.sinh())
-                            * ((theta.cos()) * poincare[0] + (theta.sin()) * poincare[1]),
-                ))
-            + body_orientation.theta;
-
+        let body_angle_body = body_orientation.theta;
         let alpha =
             body_angle_body - theta + 2.0 * (vertex_num as f64) * PI / (num_of_sides as f64);
         let r = bounding_radius;
@@ -282,7 +271,7 @@ impl IntersectsAtGlobal<HyperbolicConvexPolytope<3>, Hyperbolic<3>, Angle>
                     &other_vertices,
                     n_self,
                 );
-                // convert to poincare coordinates to perform orientation checks.
+                // convert to poincare coordinates to perform overlap checks.
                 let self_coord = self_translated
                     .iter()
                     .map(|pt: &Hyperbolic<3>| {

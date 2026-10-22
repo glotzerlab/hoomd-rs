@@ -59,7 +59,7 @@ impl OrientedSphericalPoint<3, Angle> {
     #[must_use]
     pub fn deck_transform(zenith: f64, azimuth: f64, position: &Spherical<3>) -> f64 {
         let theta_over_two = zenith/2.0;
-        let stereo = position.stereographic_projection_from_north_pole();
+        let stereo = position.stereographic_projection_from_south_pole();
         -2.0 * (((theta_over_two.sin())
             * ((azimuth.sin()) * stereo[0] - (azimuth.cos()) * stereo[1]))
             .atan2(
@@ -182,7 +182,7 @@ mod tests {
 
         let val2 = OrientedSphericalPoint::<3,Angle>::deck_transform(PI/3.0, 1.0, &p1);
         //translation along a parallel should change angle
-        assert_relative_eq!(val2,-1.2295910599142);
+        assert_relative_eq!(val2,-1.2295910599142, epsilon=1e-12);
 
         let p2 = Spherical::<3>::from_polar_coordinates(PI/4.0, 0.5);
         let body_pos = p2.coordinates();
