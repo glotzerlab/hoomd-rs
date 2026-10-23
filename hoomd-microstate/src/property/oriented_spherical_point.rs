@@ -7,12 +7,6 @@ use super::{Orientation, Point, Position};
 use crate::Transform;
 use hoomd_manifold::Spherical;
 use hoomd_vector::{Angle, Cartesian};
-use rand::{
-    Rng,
-    distr::{Distribution, Uniform},
-};
-use robust::{Coord, orient2d};
-use std::f64::consts::PI;
 
 /// The position and orientation of an extended body in spherical space. The
 /// orientation is defined as the angle of the body in the stereographic
@@ -187,7 +181,7 @@ mod tests {
 
         let val2 = OrientedSphericalPoint::<3, Angle>::deck_transform(PI / 3.0, 1.0, &p1);
         // translation along a parallel should change angle
-        assert_relative_eq!(val2, -1.2295910599142, epsilon = 1e-12);
+        assert_relative_eq!(val2, -1.229_591_059_914_2, epsilon = 1e-12);
 
         let p2 = Spherical::<3>::from_polar_coordinates(PI / 4.0, 0.5);
         let body_pos = p2.coordinates();

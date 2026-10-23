@@ -67,7 +67,7 @@ impl<const N: usize> Spherical<N> {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let x = Cartesian::from([0.5_f64.sqrt(), 0.0, -(0.5_f64.sqrt())]);
+    /// let x = Cartesian::from([0.5_f64.sqrt(), 0.0, (0.5_f64.sqrt())]);
     /// let projection = Spherical::from_cartesian_coordinates(x)
     ///     .stereographic_projection_from_south_pole();
     /// assert_eq!(
@@ -83,7 +83,7 @@ impl<const N: usize> Spherical<N> {
         (0..N - 1)
             .collect::<Vec<usize>>()
             .iter()
-            .map(|i| self.point.coordinates[*i] / (1.0 - self.point.coordinates[N - 1]))
+            .map(|i| self.point.coordinates[*i] / (1.0 + self.point.coordinates[N - 1]))
             .collect::<Vec<f64>>()
     }
     /// Implements a stereographic projection from the $`N`$-sphere to an
@@ -96,7 +96,7 @@ impl<const N: usize> Spherical<N> {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let x = Cartesian::from([0.5_f64.sqrt(), 0.0, (0.5_f64.sqrt())]);
+    /// let x = Cartesian::from([0.5_f64.sqrt(), 0.0, -(0.5_f64.sqrt())]);
     /// let projection = Spherical::from_cartesian_coordinates(x)
     ///     .stereographic_projection_from_north_pole();
     /// assert_eq!(
@@ -112,7 +112,7 @@ impl<const N: usize> Spherical<N> {
         (0..N - 1)
             .collect::<Vec<usize>>()
             .iter()
-            .map(|i| self.point.coordinates[*i] / (1.0 + self.point.coordinates[N - 1]))
+            .map(|i| self.point.coordinates[*i] / (1.0 - self.point.coordinates[N - 1]))
             .collect::<Vec<f64>>()
     }
 }
@@ -463,13 +463,13 @@ mod tests {
     #[test]
     fn stereographic() {
         let a = Spherical::<3>::from_polar_coordinates(2.1, 1.5);
-        let a_projection = a.stereographic_projection_from_south_pole();
+        let a_projection = a.stereographic_projection_from_north_pole();
         let a_projection_numeric = [0.040_576_252_191_799_88, 0.572_182_772_038_917_1];
         assert_relative_eq![a_projection[0], a_projection_numeric[0], epsilon = 1e-12];
         assert_relative_eq![a_projection[1], a_projection_numeric[1], epsilon = 1e-12];
 
         let b = Spherical::<4>::from_polar_coordinates(2.1, 1.5, 0.5);
-        let b_projection = b.stereographic_projection_from_south_pole();
+        let b_projection = b.stereographic_projection_from_north_pole();
         let b_projection_numeric = [
             0.040_576_252_191_799_88,
             0.502_137_622_955_448_1,

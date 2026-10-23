@@ -151,6 +151,7 @@ impl IntersectsAtGlobal<SphericalConvexPolytope<3>, Spherical<3>, Angle>
     for SphericalConvexPolytope<3>
 {
     #[inline]
+    #[allow(clippy::too_many_lines, reason = "complicated function")]
     fn intersects_at_global(
         &self,
         other: &SphericalConvexPolytope<3>,
@@ -176,7 +177,7 @@ impl IntersectsAtGlobal<SphericalConvexPolytope<3>, Spherical<3>, Angle>
                 let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], *o_self, r_self);
                 let v_3 =
                     Self::vertex_to_system_frame(&self.vertices[v_next_next], *o_self, r_self);
-                let other_vertices = self
+                let other_vertices = other
                     .vertices
                     .iter()
                     .map(|vertex| Self::vertex_to_system_frame(vertex, *o_other, r_other))
@@ -230,7 +231,7 @@ impl IntersectsAtGlobal<SphericalConvexPolytope<3>, Spherical<3>, Angle>
                     counter += 1;
                 }
                 counter = 0_usize;
-                // if overlap is false, then no need to check next edge FIX THIS!
+                // if overlap is false, then no need to check next edge
                 if overlap {
                     overlap = false;
                     while !overlap && (counter < other_vertices.len()) {
@@ -484,24 +485,73 @@ mod tests {
     #[test]
     fn non_overlapping_squares() {
         let r_0 = 0.5;
-        let edge_dist = f64::atan(f64::tan(r_0)/f64::sqrt(2.0));
+        let edge_dist = f64::atan(f64::tan(r_0) / f64::sqrt(2.0));
         let square = SphericalConvexPolygon::regular(4, r_0);
-        let position_1 = Spherical::<3>::from_cartesian_coordinates([0.0,0.0,1.0].into());
-        let orientation_1 = Angle::from(PI/4.0);
-        let position_2 = Spherical::<3>::from_polar_coordinates(2.0 * edge_dist -0.01, 0.0);
-        let orientation_2 = Angle::from(3.0*PI/4.0);
-        assert!(!square.intersects_at_global(&square, &position_1, &orientation_1, &position_2, &orientation_2));
+        let position_1 = Spherical::<3>::from_cartesian_coordinates([0.0, 0.0, 1.0].into());
+        let orientation_1 = Angle::from(PI / 4.0);
+        let position_2 = Spherical::<3>::from_polar_coordinates(2.0 * edge_dist + 0.01, 0.0);
+        let orientation_2 = Angle::from(3.0 * PI / 4.0);
+        assert!(!square.intersects_at_global(
+            &square,
+            &position_1,
+            &orientation_1,
+            &position_2,
+            &orientation_2
+        ));
     }
 
     #[test]
     fn overlapping_squares() {
         let r_0 = 0.5;
-        let edge_dist = f64::atan(f64::tan(r_0)/f64::sqrt(2.0));
         let square = SphericalConvexPolygon::regular(4, r_0);
-        let position_1 = Spherical::<3>::from_cartesian_coordinates([0.0,0.0,1.0].into());
-        let orientation_1 = Angle::from(PI/4.0);
-        let position_2 = Spherical::<3>::from_polar_coordinates(0.2, 0.0);
-        let orientation_2 = Angle::from(3.0*PI/4.0);
-        assert!(square.intersects_at_global(&square, &position_1, &orientation_1, &position_2, &orientation_2));
+        let position_1 = Spherical::<3>::from_cartesian_coordinates([0.0, 0.0, 1.0].into());
+        let orientation_1 = Angle::from(PI / 4.0);
+        let position_2 = Spherical::<3>::from_polar_coordinates(0.1, 0.01);
+        let orientation_2 = Angle::from(1.23);
+        assert!(square.intersects_at_global(
+            &square,
+            &position_1,
+            &orientation_1,
+            &position_2,
+            &orientation_2
+        ));
+    }
+
+    #[test]
+    fn overlap_translation_check() {
+        let r_0 = 0.5;
+        let edge_dist = f64::atan(f64::tan(r_0) / f64::sqrt(2.0));
+        let square = SphericalConvexPolygon::regular(4, r_0);
+        let position_1 = Spherical::<3>::from_cartesian_coordinates([0.0, 0.0, 1.0].into());
+        let orientation = Angle::from(PI / 4.0);
+
+        let num_trials: usize = 15;
+        let num_spaces: usize = (num_trials - 1) / 2;
+        let spacing = 2.0 * edge_dist / (num_spaces as f64);
+        let trials = (0..num_trials)
+            .map(|n| (n as f64) * spacing)
+            .collect::<Vec<f64>>();
+        let nudged_centers = trials
+            .iter()
+            .map(|theta| Spherical::<3>::from_polar_coordinates(*theta, 0.0))
+            .collect::<Vec<Spherical<3>>>();
+        for translated in nudged_centers.iter().take(num_spaces + 1) {
+            assert!(square.intersects_at_global(
+                &square,
+                &position_1,
+                &orientation,
+                translated,
+                &orientation
+            ));
+        }
+        for translated in nudged_centers.iter().take(num_trials).skip(num_spaces + 1) {
+            assert!(!square.intersects_at_global(
+                &square,
+                &position_1,
+                &orientation,
+                translated,
+                &orientation
+            ));
+        }
     }
 }

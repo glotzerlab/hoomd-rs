@@ -250,7 +250,7 @@ impl IntersectsAtGlobal<HyperbolicConvexPolytope<3>, Hyperbolic<3>, Angle>
                 let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], *o_self, r_self);
                 let v_3 =
                     Self::vertex_to_system_frame(&self.vertices[v_next_next], *o_self, r_self);
-                let other_vertices = self
+                let other_vertices = other
                     .vertices
                     .iter()
                     .map(|vertex| Self::vertex_to_system_frame(vertex, *o_other, r_other))

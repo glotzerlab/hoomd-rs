@@ -417,7 +417,7 @@ impl<B, X, C> AppendMicrostate<B, Point<Spherical<4>>, X, C> for HoomdGsdFile {
                 let proj: Vec<f64> = s
                     .properties
                     .position
-                    .stereographic_projection_from_south_pole();
+                    .stereographic_projection_from_north_pole();
                 [proj[0], proj[1], proj[2]].into()
             }))
     }
