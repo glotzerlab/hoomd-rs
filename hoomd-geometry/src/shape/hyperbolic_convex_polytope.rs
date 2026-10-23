@@ -192,7 +192,7 @@ impl HyperbolicConvexPolytope<3> {
     }
     /// Transform a vertex of a hyperbolic polygon into the system frame.
     #[inline]
-    fn vertex_to_system_frame(
+    pub fn vertex_to_system_frame(
         vertex: &Hyperbolic<3>,
         body_orientation: Angle,
         body_position: &Hyperbolic<3>,
@@ -239,160 +239,96 @@ impl IntersectsAtGlobal<HyperbolicConvexPolytope<3>, Hyperbolic<3>, Angle>
         let mut v_count = 0_usize;
         let n_self = self.vertices.len();
         let n_other = other.vertices.len();
+
+        // for stability: first generate and translate all vertices
+        let self_vertices = self
+            .vertices
+            .iter()
+            .map(|v| Self::vertex_to_system_frame(v, *o_self, r_self))
+            .collect::<Vec<Hyperbolic<3>>>();
+        let other_vertices = other
+            .vertices
+            .iter()
+            .map(|v| Self::vertex_to_system_frame(v, *o_other, r_other))
+            .collect::<Vec<Hyperbolic<3>>>();
+        let self_translated = Self::to_vertex_frame_oriented(
+            r_self,
+            *o_self,
+            0_usize,
+            self.bounding_radius,
+            &self_vertices,
+            n_self,
+        );
+        let other_translated = Self::to_vertex_frame_oriented(
+            r_self,
+            *o_self,
+            0_usize,
+            self.bounding_radius,
+            &other_vertices,
+            n_self,
+        );
+        // project to Klein disk
+        let self_coord = self_translated
+            .iter()
+            .map(|pt| {
+                let coords = pt.point().coordinates;
+                Coord {
+                    x: coords[0] / coords[2],
+                    y: coords[1] / coords[2],
+                }
+            })
+            .collect::<Vec<Coord<f64>>>();
+        let other_coord = other_translated
+            .iter()
+            .map(|pt| {
+                let coords = pt.point().coordinates;
+                Coord {
+                    x: coords[0] / coords[2],
+                    y: coords[1] / coords[2],
+                }
+            })
+            .collect::<Vec<Coord<f64>>>();
         while result && (v_count < n_self + n_other) {
             if v_count < n_self {
-                let v_num = (v_count) % n_self;
-                let v_next = (v_num + 1) % n_self;
-                let v_next_next = (v_num + 2) % n_self;
-                // translate all vertices
-                // need to do this for every other vertex
-                let v_1 = Self::vertex_to_system_frame(&self.vertices[v_num], *o_self, r_self);
-                let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], *o_self, r_self);
-                let v_3 =
-                    Self::vertex_to_system_frame(&self.vertices[v_next_next], *o_self, r_self);
-                let other_vertices = other
-                    .vertices
-                    .iter()
-                    .map(|vertex| Self::vertex_to_system_frame(vertex, *o_other, r_other))
-                    .collect::<Vec<Hyperbolic<3>>>();
-                let self_translated = Self::to_vertex_frame_oriented(
-                    r_self,
-                    *o_self,
-                    v_next,
-                    self.bounding_radius,
-                    &[v_1, v_2, v_3],
-                    n_self,
-                );
-                let other_translated = Self::to_vertex_frame_oriented(
-                    r_self,
-                    *o_self,
-                    v_next,
-                    self.bounding_radius,
-                    &other_vertices,
-                    n_self,
-                );
-                // convert to poincare coordinates to perform overlap checks.
-                let self_coord = self_translated
-                    .iter()
-                    .map(|pt: &Hyperbolic<3>| {
-                        let poincare = pt.to_poincare();
-                        Coord {
-                            x: poincare[0],
-                            y: poincare[1],
-                        }
-                    })
-                    .collect::<Vec<Coord<f64>>>();
-                let other_coord = other_translated
-                    .iter()
-                    .map(|pt: &Hyperbolic<3>| {
-                        let poincare = pt.to_poincare();
-                        Coord {
-                            x: poincare[0],
-                            y: poincare[1],
-                        }
-                    })
-                    .collect::<Vec<Coord<f64>>>();
-                // then do edge check
+                let v_next = (v_count + 1) % n_self;
+                // check edges on self shape
                 let mut overlap = false;
                 let mut counter = 0_usize;
                 while !overlap && (counter < other_vertices.len()) {
-                    if orient2d(self_coord[0], self_coord[1], other_coord[counter]) >= 0.0 {
+                    if orient2d(
+                        self_coord[v_count],
+                        self_coord[v_next],
+                        other_coord[counter],
+                    ) >= 0.0
+                    {
                         // break out of loop once one of the vertices is on the wrong side of the line
                         overlap = true;
                         break;
                     }
                     counter += 1;
                 }
-                counter = 0_usize;
-                // if overlap is false, then no need to check next edge FIX THIS!
-                if overlap {
-                    overlap = false;
-                    while !overlap && (counter < other_vertices.len()) {
-                        if orient2d(self_coord[1], self_coord[2], other_coord[counter]) >= 0.0 {
-                            // break out of loop once one of the vertices is on the wrong side of the line
-                            overlap = true;
-                            break;
-                        }
-                        counter += 1;
-                    }
-                }
                 result = overlap;
-                v_count += 2;
+                v_count += 1;
             } else {
-                let v_num = (v_count) % n_other;
-                let v_next = (v_num + 1) % n_other;
-                let v_next_next = (v_num + 2) % n_other;
-                // translate all vertices
-                let v_1 = Self::vertex_to_system_frame(&other.vertices[v_num], *o_other, r_other);
-                let v_2 = Self::vertex_to_system_frame(&other.vertices[v_next], *o_other, r_other);
-                let v_3 =
-                    Self::vertex_to_system_frame(&other.vertices[v_next_next], *o_other, r_other);
-                let other_vertices = self
-                    .vertices
-                    .iter()
-                    .map(|vertex| Self::vertex_to_system_frame(vertex, *o_self, r_self))
-                    .collect::<Vec<Hyperbolic<3>>>();
-                let self_translated = Self::to_vertex_frame_oriented(
-                    r_other,
-                    *o_other,
-                    v_next,
-                    other.bounding_radius,
-                    &[v_1, v_2, v_3],
-                    n_other,
-                );
-                let other_translated = Self::to_vertex_frame_oriented(
-                    r_other,
-                    *o_other,
-                    v_next,
-                    other.bounding_radius,
-                    &other_vertices,
-                    n_other,
-                );
-                // convert to poincare coordinates to perform orientation checks.
-                let self_coord = self_translated
-                    .iter()
-                    .map(|pt: &Hyperbolic<3>| {
-                        let poincare = pt.to_poincare();
-                        Coord {
-                            x: poincare[0],
-                            y: poincare[1],
-                        }
-                    })
-                    .collect::<Vec<Coord<f64>>>();
-                let other_coord = other_translated
-                    .iter()
-                    .map(|pt: &Hyperbolic<3>| {
-                        let poincare = pt.to_poincare();
-                        Coord {
-                            x: poincare[0],
-                            y: poincare[1],
-                        }
-                    })
-                    .collect::<Vec<Coord<f64>>>();
-                // then do edge check
+                let v_next = (v_count - n_self + 1) % n_other;
+                // check edges on other shape
                 let mut overlap = false;
                 let mut counter = 0_usize;
                 while !overlap && (counter < other_vertices.len()) {
-                    if orient2d(self_coord[0], self_coord[1], other_coord[counter]) >= 0.0 {
+                    if orient2d(
+                        other_coord[v_count - n_self],
+                        other_coord[v_next],
+                        self_coord[counter],
+                    ) >= 0.0
+                    {
                         // break out of loop once one of the vertices is on the wrong side of the line
                         overlap = true;
                         break;
                     }
                     counter += 1;
                 }
-                counter = 0_usize;
-                if overlap {
-                    overlap = false;
-                    while !overlap && (counter < other_vertices.len()) {
-                        if orient2d(self_coord[1], self_coord[2], other_coord[counter]) >= 0.0 {
-                            // break out of loop once one of the vertices is on the wrong side of the line
-                            overlap = true;
-                        }
-                        counter += 1;
-                    }
-                }
                 result = overlap;
-                v_count += 2;
+                v_count += 1;
             }
         }
         result
@@ -484,6 +420,7 @@ mod tests {
             &Angle::from(orientation)
         ));
     }
+
     #[test]
     fn square_overlap() {
         let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5);
@@ -499,6 +436,7 @@ mod tests {
             &Angle::from(orientation)
         ));
     }
+
     #[test]
     fn overlap_translation_check() {
         let r_0 = 0.5;
@@ -548,6 +486,7 @@ mod tests {
             ));
         }
     }
+
     #[test]
     fn overlap_rotation_check() {
         let r_0 = 0.5;

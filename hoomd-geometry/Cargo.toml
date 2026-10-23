@@ -46,3 +46,7 @@ harness = false
 [[bench]]
 name = "hull"
 harness = false
+
+[[bench]]
+name = "hyperbolic_overlaps"
+harness = false
