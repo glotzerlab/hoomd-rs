@@ -50,3 +50,7 @@ harness = false
 [[bench]]
 name = "hyperbolic_overlaps"
 harness = false
+
+[[bench]]
+name = "spherical_overlaps"
+harness = false

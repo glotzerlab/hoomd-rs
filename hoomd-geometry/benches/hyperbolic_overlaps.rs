@@ -141,7 +141,7 @@ fn deck_transform_then_generate_vertices<const N: usize>(bencher: Bencher) {
 }
 
 #[divan::bench(consts = NUM_VERTICES, sample_count = 1000)]
-fn generate_vertices_then_transoform<const N: usize>(bencher: Bencher) {
+fn generate_vertices_then_transform<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
     let shape = HyperbolicConvexPolygon::regular(N, 0.5);
 
