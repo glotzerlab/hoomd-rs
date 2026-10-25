@@ -180,7 +180,10 @@
 //! // A rotation by PI in the (z, w) plane.
 //! let rotation = QuadQuaternion::try_from([[k, zero], [zero, k]])?;
 //! let a = Cartesian::from([1.0, 2.0, 3.0, 4.0, 5.0]);
-//! assert_relative_eq!(rotation.rotate(&a), [1.0, 2.0, -3.0, -4.0, 5.0].into());
+//! assert_relative_eq!(
+//!     rotation.rotate(&a),
+//!     [1.0, 2.0, -3.0, -4.0, 5.0].into()
+//! );
 //! # Ok(())
 //! # }
 //! ```
