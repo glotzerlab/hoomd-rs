@@ -175,6 +175,34 @@ impl QuadQuaternion {
         })
     }
 
+    /// Normalize the quad quaternion.
+    ///
+    /// Nominally, all [`QuadQuaternion`] instances are unitary. Due to limited
+    /// floating point precision, this assumption may not hold after repeated
+    /// operations. Normalize quad quaternions when needed to correct this issue.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{QuadQuaternion, Quaternion};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let one = Quaternion::from([1.0, 0.0, 0.0, 0.0]);
+    /// let zero = Quaternion::ZERO;
+    /// let a = QuadQuaternion::try_from([[one, zero], [zero, one]])?;
+    /// let b = a.normalized();
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// When the blocks are linearly dependent and no longer span `H^2`.
+    #[inline]
+    #[must_use]
+    pub fn normalized(self) -> Self {
+        Self::project(self.rows).expect("the blocks of a quad quaternion rotation span H^2")
+    }
+
     /// Get the element of the matrix in position `self.rows[0][0]`.
     #[inline]
     pub(crate) fn a(&self) -> Quaternion {
@@ -630,6 +658,33 @@ mod tests {
                 converted_rows
             );
         }
+    }
+    #[test]
+    fn repeated_rotation_matches_closed_form() {
+        use std::f64::consts::TAU;
+
+        const N: usize = 10_000;
+
+        // A rotation by TAU / 6 in the (w, a) plane.
+        let half_angle = TAU / 12.0;
+        let q = Quaternion::from([half_angle.cos(), half_angle.sin(), 0.0, 0.0]);
+        let step =
+            QuadQuaternion::try_from([[q, Quaternion::ZERO], [Quaternion::ZERO, q]]).unwrap();
+
+        // Repeated application accumulates rounding errors that drift the
+        // blocks away from the unitary constraints.
+        let mut rotation = QuadQuaternion::identity();
+        for _ in 0..N {
+            rotation = rotation.combine(&step);
+        }
+        let normalized = rotation.normalized();
+
+        let power_half_angle = (N as f64) * half_angle;
+        let q_n = Quaternion::from([power_half_angle.cos(), power_half_angle.sin(), 0.0, 0.0]);
+        let expected =
+            QuadQuaternion::try_from([[q_n, Quaternion::ZERO], [Quaternion::ZERO, q_n]]).unwrap();
+
+        assert_relative_eq!(normalized, expected, epsilon = 1e-9);
     }
 
     #[test]
