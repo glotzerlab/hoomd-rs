@@ -131,11 +131,13 @@ impl<const N: usize, const M: usize> Add<Self> for Matrix<N, M> {
     }
 }
 impl<const N: usize, const M: usize> AddAssign for Matrix<N, M> {
-    #[inline]
+    #[inline(always)]
     fn add_assign(&mut self, rhs: Self) {
-        self.iter_elements_mut()
-            .zip(rhs.iter_elements())
-            .for_each(|(x, r)| *x += r);
+        for i in 0..N {
+            for j in 0..M {
+                self.rows[i][j] += rhs.rows[i][j];
+            }
+        }
     }
 }
 impl<const N: usize, const M: usize> Sub<Self> for Matrix<N, M> {
@@ -165,7 +167,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// Panics if the slice is out of bounds.
     #[inline]
-    #[must_use]
     pub fn iter_column_slice(
         &self,
         column_slice: usize,
@@ -200,7 +201,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// Panics if the submatrix is out of bounds.
     #[inline]
-    #[must_use]
     pub fn iter_submatrix(
         &'_ self,
         row_range: std::ops::Range<usize>,
