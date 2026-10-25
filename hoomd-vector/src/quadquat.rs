@@ -319,7 +319,9 @@ impl From<QuadQuaternion> for RotationMatrix<5> {
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_vector::{Cartesian, QuadQuaternion, Quaternion, Rotate, RotationMatrix};
+    /// use hoomd_vector::{
+    ///     Cartesian, QuadQuaternion, Quaternion, Rotate, RotationMatrix,
+    /// };
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let i_quat = Quaternion::from([0.0, 1.0, 0.0, 0.0]);
