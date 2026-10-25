@@ -16,6 +16,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
+use hoomd_utility::positive_real;
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -96,7 +97,7 @@ impl Tetronimoes {
     fn new() -> anyhow::Result<Tetronimoes> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let box_height = 30.0;
+        const BOX_HEIGHT: f64 = 30.0;
         let macrostate = Isothermal { temperature: 1.0 };
         let alpha = 1.0;
         let epsilon = 1000.0;
@@ -132,7 +133,7 @@ impl Tetronimoes {
                 hamiltonian.maximum_interaction_range().try_into()?,
             )
             .build();
-        let square = Rectangle::with_equal_edges(box_height.try_into()?);
+        let square = Rectangle::with_equal_edges(positive_real!(BOX_HEIGHT));
         let microstate = Microstate::builder()
             .spatial_data(vec_cell)
             .boundary(Closed(square))

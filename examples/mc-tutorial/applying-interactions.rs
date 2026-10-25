@@ -11,6 +11,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
+use hoomd_utility::positive_real;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
@@ -40,8 +41,8 @@ impl Fill {
     fn new() -> anyhow::Result<Fill> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let box_length = 30.0;
-        let maximum_distance = 0.15;
+        const BOX_LENGTH: f64 = 30.0;
+        const MAXIMUM_DISTANCE: f64 = 0.15;
         let alpha = 10.0;
         let epsilon = 1000.0;
         let sigma = 1.0;
@@ -77,12 +78,12 @@ impl Fill {
 
         // ANCHOR: sweep
         let translate =
-            Translate::with_maximum_distance(maximum_distance.try_into()?);
+            Translate::with_maximum_distance(positive_real!(MAXIMUM_DISTANCE));
         let translate_sweep = Sweep(translate);
         // ANCHOR_END: sweep
 
         // ANCHOR: boundary
-        let square = Rectangle::with_equal_edges(box_length.try_into()?);
+        let square = Rectangle::with_equal_edges(positive_real!(BOX_LENGTH));
         // ANCHOR_END: boundary
         // ANCHOR: spatial_data
         let vec_cell = VecCell::builder()

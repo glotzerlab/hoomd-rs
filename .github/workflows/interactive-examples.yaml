@@ -39,14 +39,14 @@ jobs:
     - name: Configure Rust
       uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
       with:
-        toolchain: 1.98.1
+        toolchain: 1.99.1
         targets: wasm32-unknown-unknown
     - name: Check rust installation
       run: rustc -vV
     - name: Install cargo-binstall
       run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "$HOME/.cargo/bin"
     - name: Install wasm-bindgen
-      run: cargo binstall wasm-bindgen-cli@0.2.126 --no-confirm --disable-strategies=compile --disable-telemetry
+      run: cargo binstall wasm-bindgen-cli@0.2.129 --no-confirm --disable-strategies=compile --disable-telemetry
     - name: Install binaryen
       run: curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "$HOME/.cargo/bin"
 
@@ -56,7 +56,7 @@ jobs:
     # dramatically. Add the Cargo.lock hash again in the key portion to
     # prevent this restoration.
     - name: Cache
-      uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
         key: wasm32-unknown-unknown-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
@@ -102,7 +102,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     if: github.ref == 'refs/heads/trunk'
     steps:
       - name: Deploy
@@ -113,7 +113,7 @@ jobs:
     name: All WASM example builds
     if: always()
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:

@@ -25,10 +25,12 @@ use thiserror::Error;
 
 mod closed;
 mod open;
+mod open_spherical;
 mod periodic;
 
 pub use closed::Closed;
 pub use open::Open;
+pub use open_spherical::OpenSpherical;
 pub use periodic::Periodic;
 
 /// Enumerate possible sources of error in fallible boundary methods.
