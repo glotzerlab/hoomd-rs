@@ -95,7 +95,7 @@ impl Default for QuadQuaternion {
     #[inline]
     fn default() -> Self {
         let one = *Versor::default().get();
-        let zero = Quaternion::from([0.0; 4]);
+        let zero = Quaternion::ZERO;
         Self {
             rows: [[one, zero], [zero, one]],
         }
@@ -122,7 +122,7 @@ impl TryFrom<[[Quaternion; 2]; 2]> for QuadQuaternion {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// // The identity blocks are projected to the identity rotation.
     /// let one = Quaternion::from([1.0, 0.0, 0.0, 0.0]);
-    /// let zero = Quaternion::from([0.0; 4]);
+    /// let zero = Quaternion::ZERO;
     /// let q = QuadQuaternion::try_from([[one, zero], [zero, one]])?;
     ///
     /// // Linearly dependent blocks do not span H^2 and cannot be projected.
@@ -325,11 +325,11 @@ impl From<QuadQuaternion> for RotationMatrix<5> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let i_quat = Quaternion::from([0.0, 1.0, 0.0, 0.0]);
-    /// let zero = Quaternion::from([0.0; 4]);
+    /// let zero = Quaternion::ZERO;
     /// let rotation = QuadQuaternion::try_from([[i_quat, zero], [zero, i_quat]])?;
     ///
-    /// // The rotation by PI in the (j, k) plane fixes the first three
-    /// // components and negates the last two.
+    /// // The rotation by PI in the (w, a) plane fixes the x, y, and z
+    /// // components and negates the w and a components.
     /// let matrix = RotationMatrix::from(rotation);
     /// assert_relative_eq!(
     ///     matrix.rotate(&Cartesian::from([0.0, 0.0, 0.0, 1.0, 0.0])),
@@ -401,7 +401,7 @@ impl Mul for QuadQuaternion {
     /// use hoomd_vector::{QuadQuaternion, Quaternion};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let zero = Quaternion::from([0.0; 4]);
+    /// let zero = Quaternion::ZERO;
     /// let i = Quaternion::from([0.0, 1.0, 0.0, 0.0]);
     /// let rotation = QuadQuaternion::try_from([[i, zero], [zero, i]])?;
     ///

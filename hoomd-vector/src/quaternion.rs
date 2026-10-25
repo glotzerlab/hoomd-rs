@@ -165,6 +165,17 @@ pub struct Quaternion {
 }
 
 impl Quaternion {
+    /// The 0 quaternion.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::Quaternion;
+    ///
+    /// assert_eq!(Quaternion::ZERO, [0.0, 0.0, 0.0, 0.0].into());
+    /// ```
+    pub const ZERO: Self = crate::quaternion!(0.0, [0.0, 0.0, 0.0]);
+
     /// Construct a pure quaternion: $` (0, \vec{v}) `$
     ///
     /// # Example
