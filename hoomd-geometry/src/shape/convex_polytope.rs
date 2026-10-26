@@ -224,13 +224,16 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
     /// let diamond = ConvexPolytope::<2>::orthoplex();
-    /// assert_relative_eq!(diamond.bounding_sphere_radius().get(), f64::sqrt(2.0));
+    /// assert_relative_eq!(
+    ///     diamond.bounding_sphere_radius().get(),
+    ///     f64::sqrt(2.0) / 2.0
+    /// );
     /// assert_eq!(diamond.vertices().len(), 2 * 2);
     ///
     /// let octahedron = ConvexPolyhedron::orthoplex();
     /// assert_relative_eq!(
     ///     octahedron.bounding_sphere_radius().get(),
-    ///     f64::sqrt(2.0)
+    ///     f64::sqrt(2.0) / 2.0
     /// );
     /// assert_eq!(octahedron.vertices().len(), 2 * 3);
     ///
@@ -251,7 +254,6 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
             "An orthoplex is not well-defined in zero dimensions!"
         );
         let sqrt_2_halves = SQRT_2 / 2.0;
-        let bounding_radius = SQRT_2.try_into().expect("Hard-coded value");
         let mut vertices = ArrayVec::<_, MAX_VERTICES>::new();
 
         for nonzero_index in 0..N {
@@ -262,8 +264,8 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
             vertices.push(-coord);
         }
         Self {
+            bounding_radius: Self::bounding_radius(&vertices),
             vertices,
-            bounding_radius,
         }
     }
 
@@ -281,7 +283,7 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     /// let triangle = ConvexPolygon::simplex();
     /// assert_relative_eq!(
     ///     triangle.bounding_sphere_radius().get(),
-    ///     f64::sqrt(2.0 / 6.0) // sqrt(N / (N**2 + N))
+    ///     f64::sqrt(2.0 / 6.0) // sqrt(N / (2 * (N + 1)))
     /// );
     ///
     /// let tetrahedron = ConvexPolyhedron::simplex();
@@ -342,10 +344,16 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     ///
     /// # fn main() -> Result<(), hoomd_geometry::Error> {
     /// let square = ConvexPolygon::hypercube();
-    /// assert_relative_eq!(square.bounding_sphere_radius().get(), f64::sqrt(2.0));
+    /// assert_relative_eq!(
+    ///     square.bounding_sphere_radius().get(),
+    ///     f64::sqrt(2.0) / 2.0
+    /// );
     ///
     /// let cube = ConvexPolyhedron::hypercube();
-    /// assert_relative_eq!(cube.bounding_sphere_radius().get(), f64::sqrt(3.0));
+    /// assert_relative_eq!(
+    ///     cube.bounding_sphere_radius().get(),
+    ///     f64::sqrt(3.0) / 2.0
+    /// );
     ///
     /// // Hypercubes have 2^N vertices
     /// let hypercube = ConvexPolytope::<4, 16>::hypercube();
@@ -367,17 +375,13 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
                 })
                 .collect()
         }
-        assert!(
-            N != 0,
-            "Cross polytope is not well-defined in zero dimensions!"
-        );
-        let bounding_radius = f64::sqrt(N as f64)
-            .try_into()
-            .expect("sqrt(positive) is positive.");
+        assert!(N != 0, "Hypercube is not well-defined in zero dimensions!");
+        let vertices =
+            ArrayVec::<_, MAX_VERTICES>::from_iter(signed_combinations_of_one_half::<N>());
 
         Self {
-            vertices: ArrayVec::<_, MAX_VERTICES>::from_iter(signed_combinations_of_one_half::<N>()),
-            bounding_radius,
+            bounding_radius: Self::bounding_radius(&vertices),
+            vertices,
         }
     }
 }
@@ -495,6 +499,10 @@ impl<const N: usize, const MAX_VERTICES: usize> BoundingSphereRadius
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::used_underscore_binding,
+    reason = "Used for const parameterization."
+)]
 mod tests {
     use super::*;
     use crate::{Convex, ConvexHull, IntersectsAt};
@@ -502,7 +510,10 @@ mod tests {
 
     use approxim::assert_relative_eq;
     use rstest::*;
-    use std::f64::consts::{FRAC_1_SQRT_2, PI};
+    use std::{
+        f64::consts::{FRAC_1_SQRT_2, PI},
+        marker::PhantomData,
+    };
 
     #[fixture]
     fn simplex3() -> ConvexPolyhedron {
@@ -541,6 +552,62 @@ mod tests {
             ConvexPolytope::<2, 32>::regular(n).bounding_radius.get(),
             0.5
         );
+    }
+
+    fn assert_radius_matches_vertices<const N: usize, const MAX_VERTICES: usize>(
+        shape: &ConvexPolytope<N, MAX_VERTICES>,
+    ) {
+        let max_vertex_norm = shape
+            .vertices()
+            .iter()
+            .map(InnerProduct::norm)
+            .fold(0.0, f64::max);
+        assert_relative_eq!(shape.bounding_radius.get(), max_vertex_norm);
+    }
+
+    #[rstest]
+    #[case::n1(PhantomData::<ConvexPolytope<1>>)]
+    #[case::n2(PhantomData::<ConvexPolytope<2>>)]
+    #[case::n3(PhantomData::<ConvexPolytope<3>>)]
+    #[case::n4(PhantomData::<ConvexPolytope<4>>)]
+    fn test_bounding_radius_orthoplex<const N: usize>(
+        #[case] _shape: PhantomData<ConvexPolytope<N>>,
+    ) {
+        let shape = ConvexPolytope::<N>::orthoplex();
+
+        assert_relative_eq!(shape.bounding_radius.get(), f64::sqrt(2.0) / 2.0);
+        assert_radius_matches_vertices(&shape);
+    }
+
+    #[rstest]
+    #[case::n1(PhantomData::<ConvexPolytope<1>>)]
+    #[case::n2(PhantomData::<ConvexPolytope<2>>)]
+    #[case::n3(PhantomData::<ConvexPolytope<3>>)]
+    #[case::n4(PhantomData::<ConvexPolytope<4>>)]
+    fn test_bounding_radius_hypercube<const N: usize>(
+        #[case] _shape: PhantomData<ConvexPolytope<N>>,
+    ) {
+        let shape = ConvexPolytope::<N>::hypercube();
+
+        assert_relative_eq!(shape.bounding_radius.get(), f64::sqrt(N as f64) / 2.0);
+        assert_radius_matches_vertices(&shape);
+    }
+
+    #[rstest]
+    #[case::n1(PhantomData::<ConvexPolytope<1>>)]
+    #[case::n2(PhantomData::<ConvexPolytope<2>>)]
+    #[case::n3(PhantomData::<ConvexPolytope<3>>)]
+    #[case::n4(PhantomData::<ConvexPolytope<4>>)]
+    fn test_bounding_radius_simplex<const N: usize>(
+        #[case] _shape: PhantomData<ConvexPolytope<N>>,
+    ) {
+        let shape = ConvexPolytope::<N>::simplex();
+
+        assert_relative_eq!(
+            shape.bounding_radius.get(),
+            f64::sqrt(N as f64 / (2.0 * (N as f64 + 1.0)))
+        );
+        assert_radius_matches_vertices(&shape);
     }
 
     #[test]
