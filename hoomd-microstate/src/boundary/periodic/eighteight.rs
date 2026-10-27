@@ -86,7 +86,7 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<EightEight> {
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     fn wrap(&self, properties: Point<Hyperbolic<3>>) -> Result<Point<Hyperbolic<3>>, Error> {
         let mut properties = properties;
@@ -422,7 +422,7 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<EightEight> {
         self.maximum_interaction_range
     }
     /// Place periodic images of sites near the edge of the periodic boundary
-    #[inline]
+    #[inline(always)]
     fn generate_ghosts(
         &self,
         site_properties: &Point<Hyperbolic<3>>,
@@ -495,7 +495,7 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> 
         self.maximum_interaction_range
     }
     /// Place periodic images of sites near the edge of the periodic boundary
-    #[inline]
+    #[inline(always)]
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     fn generate_ghosts(
         &self,
@@ -1167,7 +1167,8 @@ mod tests {
         let point = Point::new(point);
         let periodic = Periodic::new(0.5, EightEight {}).expect("hard-coded positive number");
 
-        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 12> = periodic.generate_ghosts(&point);
+        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, MAX_GHOSTS> =
+            periodic.generate_ghosts(&point);
         let ghost_6 = ghost_array[6];
 
         let ans_6 = Hyperbolic::<3>::from_polar_coordinates(v + offset_boost, PI);
@@ -1197,7 +1198,8 @@ mod tests {
         let point = Point::new(point);
         let periodic = Periodic::new(0.5, EightEight {}).expect("hard-coded positive number");
 
-        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 12> = periodic.generate_ghosts(&point);
+        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, MAX_GHOSTS> =
+            periodic.generate_ghosts(&point);
 
         // check double transformations
         let ghost_2_poincare = ghost_array[2].position.to_poincare();

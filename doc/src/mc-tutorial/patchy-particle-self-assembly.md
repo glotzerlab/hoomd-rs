@@ -192,6 +192,15 @@ struct to a column with the same name.
 
 [parquet]: https://parquet.apache.org/
 
+> [!TIP]
+> Make sure that you choose a compatible version of [parquet] in your project's
+> `Cargo.toml`. [parquet] often makes breaking releases, so `cargo add parquet`
+> is very likely to choose an incompatible version.
+>
+> See [Compatibility with other crates] for details.
+
+[Compatibility with other crates]: ../compatibility.md
+
 ### `main()`
 
 The `main()` function executes when your binary in batch mode:

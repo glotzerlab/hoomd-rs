@@ -10,3 +10,5 @@ exclude_path = [
     "\\.txt$", # skip .txt extensions
     ".*api/static.files/", # skip static files packaged by rustdoc
 ]
+max_redirects = 20
+accept = ["200", "202", "429", "302"]

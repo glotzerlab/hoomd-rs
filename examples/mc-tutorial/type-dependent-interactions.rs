@@ -29,6 +29,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
+use hoomd_utility::positive_real;
 use hoomd_vector::{Cartesian, Metric};
 // ANCHOR_END: use
 
@@ -109,8 +110,8 @@ impl TypeDependentInteractions {
         let initial_packing_fraction = 0.3;
         let target_packing_fraction = 0.5;
         let n_disks = 512;
-        let maximum_distance = 0.07;
-        let sigma = 1.0;
+        const MAXIMUM_DISTANCE: f64 = 0.07;
+        const SIGMA: f64 = 1.0;
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
@@ -133,10 +134,10 @@ impl TypeDependentInteractions {
         // ANCHOR: compress_hamiltonian
         let overlap_penalty = Isotropic {
             interaction: Expanded {
-                delta: sigma,
+                delta: SIGMA,
                 f: OverlapPenalty::default(),
             },
-            r_cut: sigma,
+            r_cut: SIGMA,
         };
 
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
@@ -144,7 +145,7 @@ impl TypeDependentInteractions {
 
         // ANCHOR: boundary
         let circle = Circle {
-            radius: (sigma / 2.0).try_into()?,
+            radius: positive_real!(SIGMA / 2.0),
         };
         let initial_box_volume =
             n_disks as f64 * circle.volume() / initial_packing_fraction;
@@ -187,7 +188,7 @@ impl TypeDependentInteractions {
             .try_build()?;
 
         let translate =
-            Translate::with_maximum_distance(maximum_distance.try_into()?);
+            Translate::with_maximum_distance(positive_real!(MAXIMUM_DISTANCE));
         let translate_sweep = Sweep(translate);
 
         let target_box_volume =

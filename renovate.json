@@ -7,17 +7,37 @@
     {
       "matchManagers": ["cargo"],
       "matchPackageNames": ["bevy*"],
-      "groupName": "bevy"
+      "groupName": "bevy",
+      "major": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      },
+      "minor": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      }
     },
     {
       "matchManagers": ["cargo"],
       "matchPackageNames": ["parquet*"],
-      "groupName": "parquet"
+      "groupName": "parquet",
+      "major": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      }
     },
     {
       "matchManagers": ["cargo"],
       "matchPackageNames": ["rand", "rand_distr", "chacha20"],
-      "groupName": "rand"
+      "groupName": "rand",
+      "major": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      },
+      "minor": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      }
     },
     {
       "matchManagers": ["cargo"],
@@ -28,6 +48,70 @@
       "matchPackageNames": ["rust"],
       "matchCurrentVersion": "/nightly/",
       "enabled": false
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["anyhow"],
+      "major": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      }
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["approxim"],
+      "major": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      },
+      "minor": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      }
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["arrayvec"],
+      "major": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      },
+      "minor": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      }
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["log"],
+      "major": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      },
+      "minor": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      }
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["num-complex"],
+      "major": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      },
+      "minor": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      }
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["serde"],
+      "major": {
+        "dependencyDashboardApproval": true,
+        "automerge": false
+      }
     }
   ]
 }
