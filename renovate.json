@@ -9,10 +9,12 @@
       "matchPackageNames": ["bevy*"],
       "groupName": "bevy",
       "major": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       },
       "minor": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       }
     },
     {
@@ -20,7 +22,8 @@
       "matchPackageNames": ["parquet*"],
       "groupName": "parquet",
       "major": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       }
     },
     {
@@ -28,10 +31,12 @@
       "matchPackageNames": ["rand", "rand_distr", "chacha20"],
       "groupName": "rand",
       "major": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       },
       "minor": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       }
     },
     {
@@ -48,54 +53,64 @@
       "matchManagers": ["cargo"],
       "matchPackageNames": ["anyhow"],
       "major": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       }
     },
     {
       "matchManagers": ["cargo"],
       "matchPackageNames": ["approxim"],
       "major": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       },
       "minor": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       }
     },
     {
       "matchManagers": ["cargo"],
       "matchPackageNames": ["arrayvec"],
       "major": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       },
       "minor": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       }
     },
     {
       "matchManagers": ["cargo"],
       "matchPackageNames": ["log"],
       "major": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       },
       "minor": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       }
     },
     {
       "matchManagers": ["cargo"],
       "matchPackageNames": ["num-complex"],
       "major": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       },
       "minor": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       }
     },
     {
       "matchManagers": ["cargo"],
       "matchPackageNames": ["serde"],
       "major": {
-        "dependencyDashboardApproval": true
+        "dependencyDashboardApproval": true,
+        "automerge": false
       }
     }
   ]

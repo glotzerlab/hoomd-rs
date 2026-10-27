@@ -39,8 +39,8 @@ bevy = "0.19"
 bevy_egui = "0.42.0"
 log = "0.4.28"
 num-complex = { version = "0.4.6", features = ["std", "serde"] }
-parquet = { version = "60.0.0", default-features=false }
-parquet_derive = { version = "60.0.0", default-features=false }
+parquet = { version = "59.0.0", default-features=false }
+parquet_derive = { version = "59.0.0", default-features=false }
 rand = { version = "0.10.0", default-features=false, features = ["std", "std_rng"] }
 rand_distr = "0.6.0"
 serde = { version = "1.0.228", features = ["derive"]}

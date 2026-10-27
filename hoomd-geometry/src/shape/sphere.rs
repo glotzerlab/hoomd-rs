@@ -210,7 +210,7 @@ impl<const N: usize> Hypersphere<N> {
     where
         V: InnerProduct,
     {
-        (v_ij).norm_squared() <= (other.radius.get() + self.radius.get()).powi(2)
+        (v_ij).norm_squared() <= (other.radius + self.radius).get().powi(2)
     }
 }
 
@@ -260,7 +260,7 @@ where
 {
     #[inline]
     fn intersects_at(&self, other: &Hypersphere<N>, v_ij: &V, _o_ij: &R) -> bool {
-        (v_ij).norm_squared() <= (other.radius.get() + self.radius.get()).powi(2)
+        (v_ij).norm_squared() <= (other.radius + self.radius).get().powi(2)
     }
 }
 

@@ -19,7 +19,7 @@ use crate::{Cartesian, Metric, Quaternion, Rotate, Rotation, RotationMatrix, Ver
 /// A pair of [`Versor`]s that represent a 4D rotation.
 ///
 /// Every rotation in SO(4) factors into a *left-isoclinic* and a *right-isoclinic*
-/// rotation via a [Cayley factorization](doi.org/10.1007/s00006-016-0683-9), each of
+/// rotation via a [Cayley factorization](https://doi.org/10.1007/s00006-016-0683-9), each of
 /// which can be described as an ordinary 3D [`Versor`] with fully independent degrees
 /// of freedom. [`DoubleVersor`] stores one unit quaternion for each factor,
 /// $`\mathbf{q_l}`$ and $`\mathbf{q_r}`$. The two rotate a [`Cartesian<4>`] vector
