@@ -188,7 +188,7 @@ impl Rhomboid {
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn fractional(&self, absolute: &Cartesian<2>) -> Cartesian<2> {
         let lx = self.lx().get();
         let ly = self.ly().get();
@@ -225,7 +225,7 @@ impl Rhomboid {
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn absolute(&self, fractional: &Cartesian<2>) -> Cartesian<2> {
         let lx = self.lx().get();
         let ly = self.ly().get();
@@ -290,7 +290,7 @@ impl Rhomboid {
     /// # Ok(())
     /// # }
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn edge_vectors(&self) -> [Cartesian<2>; 2] {
         let mut edge_vectors = [Cartesian::<2>::default(); 2];
         edge_vectors[0] = [self.lx().get(), 0.].into();
@@ -354,7 +354,7 @@ impl Rhomboid {
     /// # Panics
     ///
     /// Panics if the computed nearest-plane width cannot be converted to a positive real.
-    #[inline]
+    #[inline(always)]
     pub fn nearest_plane_distance(&self) -> [PositiveReal; 2] {
         // Since V = A_ih_i, h_i = V/A_i. V = det(a_1, a_2), A = |a_j x a_k|.
         let mut dist = [PositiveReal::default(); 2];
