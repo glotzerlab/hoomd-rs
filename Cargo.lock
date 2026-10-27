@@ -4063,6 +4063,7 @@ dependencies = [
  "hoomd-rand",
  "hoomd-utility",
  "paste",
+ "postcard",
  "rand 0.10.3",
  "rand_distr",
  "rstest",
