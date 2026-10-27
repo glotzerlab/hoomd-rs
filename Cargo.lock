@@ -4002,13 +4002,19 @@ dependencies = [
 name = "hoomd-order"
 version = "1.4.0"
 dependencies = [
+ "anyhow",
  "approxim",
  "divan",
+ "hoomd-geometry",
+ "hoomd-microstate",
+ "hoomd-spatial",
  "hoomd-vector",
+ "itertools 0.15.0",
  "num-complex",
  "rand 0.10.3",
  "rstest",
  "sphrs",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
