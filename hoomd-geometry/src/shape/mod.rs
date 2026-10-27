@@ -55,3 +55,6 @@ pub use twelvetwelve::TwelveTwelve;
 
 mod convex_surface_mesh_2d;
 pub use convex_surface_mesh_2d::ConvexSurfaceMesh2d;
+
+mod convex_surface_mesh_3d;
+pub use convex_surface_mesh_3d::ConvexSurfaceMesh3d;

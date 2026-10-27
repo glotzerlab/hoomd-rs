@@ -207,6 +207,91 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
     }
 }
 
+impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
+    /// Create an icosahedron with edge length 2.
+    ///
+    /// Requires `MAX_VERTICES >= 12`. Smaller capacities fail to compile.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_geometry::shape::ConvexPolyhedron;
+    ///
+    /// let icosahedron = ConvexPolyhedron::icosahedron();
+    ///
+    /// assert_eq!(icosahedron.vertices().len(), 12);
+    /// ```
+    #[inline]
+    #[must_use]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
+    pub fn icosahedron() -> ConvexPolytope<3, MAX_VERTICES> {
+        const {
+            assert!(
+                MAX_VERTICES >= 12,
+                "an icosahedron requires MAX_VERTICES >= 12"
+            );
+        };
+        let phi = std::f64::consts::GOLDEN_RATIO;
+        let mut vertices = Vec::with_capacity(12);
+        for a in [-1.0, 1.0] {
+            for b in [-1.0, 1.0] {
+                vertices.push(Cartesian::from([0.0, a, b * phi]));
+                vertices.push(Cartesian::from([a, b * phi, 0.0]));
+                vertices.push(Cartesian::from([a * phi, 0.0, b]));
+            }
+        }
+        ConvexPolytope::with_vertices(vertices)
+            .expect("the 12 vertices of an icosahedron always fit")
+    }
+
+    /// Create a dodecahedron with edge length `2 / phi`.
+    ///
+    /// Requires `MAX_VERTICES >= 20`. Smaller capacities fail to compile.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_geometry::shape::ConvexPolyhedron;
+    ///
+    /// let dodecahedron = ConvexPolyhedron::dodecahedron();
+    ///
+    /// assert_eq!(dodecahedron.vertices().len(), 20);
+    /// ```
+    #[inline]
+    #[must_use]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
+    pub fn dodecahedron() -> ConvexPolytope<3, MAX_VERTICES> {
+        const {
+            assert!(
+                MAX_VERTICES >= 20,
+                "a dodecahedron requires MAX_VERTICES >= 20"
+            );
+        };
+        let phi = std::f64::consts::GOLDEN_RATIO;
+        let mut vertices: Vec<Cartesian<3>> = Vec::with_capacity(20);
+        for x in [-1.0, 1.0] {
+            for y in [-1.0, 1.0] {
+                for z in [-1.0, 1.0] {
+                    vertices.push(Cartesian::from([x, y, z]));
+                }
+            }
+        }
+        for a in [-1.0, 1.0] {
+            for b in [-1.0, 1.0] {
+                vertices.push(Cartesian::from([0.0, a / phi, b * phi]));
+                vertices.push(Cartesian::from([a / phi, b * phi, 0.0]));
+                vertices.push(Cartesian::from([a * phi, 0.0, b / phi]));
+            }
+        }
+        ConvexPolytope::with_vertices(vertices)
+            .expect("the 20 vertices of a dodecahedron always fit")
+    }
+}
+
 /// Compute the matrix-vector multiplication of an `ArrayVec` against a `Cartesian<N>`.
 ///
 /// This returns an `ExactSizeIterator` of f64 values with `lhs.len()` elements.
@@ -255,8 +340,8 @@ impl<const N: usize, const MAX_VERTICES: usize> BoundingSphereRadius
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Convex, IntersectsAt};
-    use hoomd_vector::{Angle, Cartesian, Rotate, Rotation, Versor};
+    use crate::{Convex, IntersectsAt, hull::ConvexHull};
+    use hoomd_vector::{Angle, Cartesian, InnerProduct, Rotate, Rotation, Versor};
 
     use approxim::assert_relative_eq;
     use rstest::*;
@@ -800,5 +885,24 @@ mod tests {
         assert_symmetric_overlap([-0.9, 0.899, 0.001].into(), &cube, &cube, q_a, q_b, true);
         assert_symmetric_overlap([0.9, -0.9, 0.0].into(), &cube, &cube, q_a, q_b, true);
         assert_symmetric_overlap([-0.9, 0.9, 0.1].into(), &cube, &cube, q_a, q_b, true);
+    }
+    /// Each platonic solid has the expected number of vertices, all at a
+    /// common distance from the center, and every vertex is a vertex of the
+    /// convex hull of the vertices.
+    #[rstest]
+    #[case::icosahedron(ConvexPolyhedron::icosahedron(), 12)]
+    #[case::dodecahedron(ConvexPolyhedron::dodecahedron(), 20)]
+    fn platonic_solids(#[case] solid: ConvexPolyhedron, #[case] n: usize) {
+        assert_eq!(solid.vertices().len(), n);
+
+        for vertex in solid.vertices() {
+            assert_relative_eq!(vertex.norm_squared(), solid.vertices()[0].norm_squared());
+        }
+
+        let (hull_vertices, _facets) = solid
+            .vertices()
+            .convex_hull()
+            .expect("platonic solid vertices form a convex body");
+        assert_eq!(hull_vertices.len(), n);
     }
 }
