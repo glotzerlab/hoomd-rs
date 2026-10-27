@@ -76,8 +76,9 @@ impl OrientedHyperbolicPoint<3, Angle> {
             (destination.coordinates()[1]).atan2(destination.coordinates()[0]),
         );
         // rotate into non-pathological frame
-        let phi_1 = -(theta_2 - theta_1) / 2.0;
-        let phi_2 = (theta_2 - theta_1) / 2.0;
+        let dtheta = (theta_2 - theta_1 + PI).rem_euclid(2.0 * PI) - PI;
+        let phi_1 = -dtheta / 2.0;
+        let phi_2 = dtheta / 2.0;
 
         let p = [
             (b1.sinh()) * (phi_1.cos()) / (1.0 + (b1.cosh())),
