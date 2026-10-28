@@ -106,7 +106,7 @@ impl Cylinder {
         }
 
         // A collision occurs if the shortest distance between the axes is <= r1+r2
-        distance_sq <= (self.radius.get() + other.radius.get()).powi(2)
+        distance_sq <= (self.radius + other.radius).get().powi(2)
     }
 }
 

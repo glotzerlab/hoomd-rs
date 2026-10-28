@@ -510,7 +510,7 @@ pub trait SiteEnergy<S> {
 ///     ) -> f64 {
 ///         let r = a.position().distance(b.position());
 ///
-///         if r < a.radius.get() + b.radius.get() {
+///         if r < (a.radius + b.radius).get() {
 ///             f64::INFINITY
 ///         } else {
 ///             0.0
