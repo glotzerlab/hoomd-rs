@@ -36,11 +36,12 @@ pub struct OrientedSphericalPoint<const N: usize, R> {
 }
 
 impl OrientedSphericalPoint<3, Angle> {
-    /// Compute the change in orientation associated with a transformation from a given
-    /// position. Isometries of the 2-sphere can be expressed as a zenith rotation
-    /// conjugated by an azimuthal rotation. These $`SO(3)`$ operations can be mapped
-    /// to $`SU(2)`$ operations, where they act on the stereographic projected points
-    /// as the Möbius transformation
+    /// Compute the change in orientation experienced when `position` is rotated along
+    /// the transformation which maps the north pole to the point on the sphere with the
+    /// specified polar coordinates.  Isometries of the 2-sphere can be expressed as a
+    /// zenith rotation conjugated by an azimuthal rotation. These $`SO(3)`$ operations
+    /// can be mapped to $`SU(2)`$ operations, where they act on the stereographic
+    /// projected points as the Möbius transformation
     /// ```math
     /// g(z) = \begin{bmatrix} \cos(\theta/2) & e^{i\phi} \sin(\theta/2) \\ -e^{-i\theta}\sin(\theta/2) & \cos(\theta/2) \end{bmatrix}
     /// ```
@@ -61,6 +62,18 @@ impl OrientedSphericalPoint<3, Angle> {
                     - (theta_over_two.sin())
                         * ((azimuth.cos()) * stereo[0] + (azimuth.sin()) * stereo[1]),
             ))
+    }
+    /// Calculate the change in orientation associated with transporting an oriented
+    /// point from `start` to `destination` on a 2-sphere.
+    #[inline]
+    pub fn parallel_transport_angle(start: &Spherical<3>, destination: &Spherical<3>) -> f64 {
+        let p = start.coordinates();
+        let q = destination.coordinates();
+        // this calculation is the (signed) area of a spherical triangle in the stereographic
+        // projection, a la Gauss Bonnet.
+        let cross_z = p[0] * q[1] - p[1] * q[0];
+        let dot = p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+        2.0 * cross_z.atan2(1.0 + dot + p[2] + q[2])
     }
 }
 

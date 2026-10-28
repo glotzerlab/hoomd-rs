@@ -81,8 +81,7 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
 
 impl LocalTrial<OrientedSphericalPoint<3, Angle>> for Translate<OrientedSphericalPoint<3, Angle>> {
     /// Propose local trial moves for an oriented body on the surface of a sphere.
-    ///
-    /// TODO: example
+    /// Note that the orientation of the body is transported along the translation.
     #[inline]
     fn propose<R: Rng>(
         &self,
@@ -90,24 +89,32 @@ impl LocalTrial<OrientedSphericalPoint<3, Angle>> for Translate<OrientedSpherica
         body_properties: OrientedSphericalPoint<3, Angle>,
     ) -> OrientedSphericalPoint<3, Angle> {
         let mut trial = body_properties;
-        let dist = Uniform::new(0.0, 1.0)
-            .expect("max distance must be positive real");
+        let dist = Uniform::new(0.0, 1.0).expect("max distance must be positive real");
         let displacement = dist.sample(rng) * self.maximum_distance().get();
-        let beta = dist.sample(rng) * 2.0 * PI; 
+        let beta = dist.sample(rng) * 2.0 * PI;
         let (cs, sn) = (beta.cos(), beta.sin());
 
         let stereo = trial.position.stereographic_projection_from_south_pole();
         //  calculate orientation change
-        let tau = (displacement/2.0).tan();
-        let (al, be, ga, de) = (stereo[0] + tau*cs, stereo[1]+tau*sn, 1.0-tau*(stereo[0]*cs + stereo[1]*sn), tau*(stereo[1]*cs - stereo[0]*sn));
+        let tau = (displacement / 2.0).tan();
+        let (al, be, ga, de) = (
+            stereo[0] + tau * cs,
+            stereo[1] + tau * sn,
+            1.0 - tau * (stereo[0] * cs + stereo[1] * sn),
+            tau * (stereo[1] * cs - stereo[0] * sn),
+        );
         let del_psi = -2.0 * de.atan2(ga);
         *trial.orientation_mut() = Angle::from(body_properties.orientation.theta + del_psi);
 
         // transform the position using the same Möbius transform
-        let pref = 1.0/(ga*ga + de*de);
-        let transformed_stereo = [pref*(al*ga + be*de), pref*(be*ga - al*de)];
+        let pref = 1.0 / (ga * ga + de * de);
+        let transformed_stereo = [pref * (al * ga + be * de), pref * (be * ga - al * de)];
         let phi = (transformed_stereo[1]).atan2(transformed_stereo[0]);
-        let theta = 2.0 * ((transformed_stereo[0]*transformed_stereo[0] + transformed_stereo[1]*transformed_stereo[1]).sqrt()).atan();
+        let theta = 2.0
+            * ((transformed_stereo[0] * transformed_stereo[0]
+                + transformed_stereo[1] * transformed_stereo[1])
+                .sqrt())
+            .atan();
         *trial.position_mut() = Spherical::<3>::from_polar_coordinates(theta, phi);
         trial
     }
@@ -246,6 +253,38 @@ mod tests {
                 d > new_body_properties
                     .position()
                     .distance(initial_point.position())
+            );
+        }
+    }
+
+    #[rstest]
+    fn translate_oriented_2spherical_point(#[values(0.01, 0.1, 1.0)] d: f64) {
+        let mut rng = StdRng::seed_from_u64(1027);
+        let body_properties = OrientedSphericalPoint {
+            position: Spherical::<3>::from_polar_coordinates(PI / 4.0, 0.0),
+            orientation: Angle::from(0.0),
+        };
+        let translate =
+            Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
+
+        for _ in 0..N {
+            let new_body_properties = translate.propose(&mut rng, body_properties);
+
+            // check that position does not exceed max amount
+            let displacement = new_body_properties
+                .position
+                .distance(&body_properties.position);
+            assert!(displacement < d);
+
+            // check that orientation is consistent with transport
+            let del_psi = OrientedSphericalPoint::parallel_transport_angle(
+                &body_properties.position,
+                &new_body_properties.position,
+            );
+            assert_relative_eq!(
+                new_body_properties.orientation.theta,
+                del_psi,
+                epsilon = 1e-12
             );
         }
     }
