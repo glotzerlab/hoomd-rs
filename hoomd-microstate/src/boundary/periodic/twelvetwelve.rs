@@ -921,8 +921,6 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<TwelveTwelve
     }
 }
 
-// TODO!!! Write test code for oriented bodies
-// TwelveTwelve requires up to 12 ghost slots
 #[cfg(all(test, feature = "max_ghosts_12"))]
 mod tests {
     use super::*;

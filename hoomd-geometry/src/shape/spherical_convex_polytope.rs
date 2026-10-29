@@ -12,7 +12,49 @@ use std::f64::consts::PI;
 
 /// A faceted spherical solid defined by the convex hull of its vertices.
 ///
-/// TODO: examples
+/// # Examples
+///
+/// Construction and basic methods:
+/// ```
+/// use hoomd_geometry::{
+///     BoundingSphereRadius, shape::SphericalConvexPolytope,
+/// };
+///
+/// # fn main() -> Result<(), hoomd_geometry::Error> {
+/// let spherical_pentagon = SphericalConvexPolytope::<3>::regular(5, 0.5);
+///
+/// let bounding_radius = spherical_pentagon.bounding_sphere_radius();
+///
+/// assert_eq!(bounding_radius.get(), 0.5);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Overlap check:
+/// ```
+/// use hoomd_geometry::{IntersectsAtGlobal, shape::SphericalConvexPolytope};
+/// use hoomd_manifold::Spherical;
+/// use hoomd_vector::Angle;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let square = SphericalConvexPolytope::<3>::regular(4, 0.5);
+/// assert!(square.intersects_at_global(
+///     &square,
+///     &Spherical::<3>::default(),
+///     &Angle::default(),
+///     &Spherical::<3>::from_polar_coordinates(0.49, 2.3),
+///     &Angle::from(0.4)
+/// ));
+///
+/// assert!(!square.intersects_at_global(
+///     &square,
+///     &Spherical::<3>::default(),
+///     &Angle::default(),
+///     &Spherical::<3>::from_polar_coordinates(1.1, 0.0),
+///     &Angle::from(0.2)
+/// ));
+/// # Ok(())
+/// # }
 #[derive(Clone, Debug, PartialEq)]
 pub struct SphericalConvexPolytope<const N: usize> {
     /// The vertices of the shape

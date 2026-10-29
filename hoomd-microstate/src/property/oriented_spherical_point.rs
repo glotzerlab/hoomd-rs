@@ -10,7 +10,7 @@ use hoomd_vector::{Angle, Cartesian};
 
 /// The position and orientation of an extended body in spherical space. The
 /// orientation is defined as the angle of the body in the stereographic
-/// projection through the "north pole" of the sphere.
+/// projection through the "south pole" of the sphere.
 ///
 /// Use [`OrientedSphericalPoint`] as a [`Body`](crate::Body) or
 /// [`Site`](crate::Site) property type.
@@ -107,7 +107,6 @@ impl<const N: usize, R> Orientation for OrientedSphericalPoint<N, R> {
 
 impl Transform<Point<Spherical<3>>> for OrientedSphericalPoint<3, Angle> {
     /// Move `Point<Spherical<3>>` from the local  body from to the system frame.
-    /// TODO: example
     #[inline]
     fn transform(&self, site_properties: &Point<Spherical<3>>) -> Point<Spherical<3>> {
         let body_pos = self.position.coordinates();
