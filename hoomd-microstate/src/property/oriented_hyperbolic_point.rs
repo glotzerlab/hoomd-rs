@@ -67,51 +67,11 @@ impl OrientedHyperbolicPoint<3, Angle> {
     #[must_use]
     #[inline]
     pub fn parallel_transport_angle(start: &Hyperbolic<3>, destination: &Hyperbolic<3>) -> f64 {
-        let (b1, theta_1) = (
-            (start.coordinates()[2]).acosh(),
-            (start.coordinates()[1]).atan2(start.coordinates()[0]),
-        );
-        let (b2, theta_2) = (
-            (destination.coordinates()[2]).acosh(),
-            (destination.coordinates()[1]).atan2(destination.coordinates()[0]),
-        );
-        // rotate into non-pathological frame
-        let dtheta = (theta_2 - theta_1 + PI).rem_euclid(2.0 * PI) - PI;
-        let phi_1 = -dtheta / 2.0;
-        let phi_2 = dtheta / 2.0;
-
-        let p = [
-            (b1.sinh()) * (phi_1.cos()) / (1.0 + (b1.cosh())),
-            (b1.sinh()) * (phi_1.sin()) / (1.0 + (b1.cosh())),
-        ];
-        let q = [
-            (b2.sinh()) * (phi_2.cos()) / (1.0 + (b2.cosh())),
-            (b2.sinh()) * (phi_2.sin()) / (1.0 + (b2.cosh())),
-        ];
-        let center = [
-            ((p[0].powi(2) + p[1].powi(2) + 1.0) * q[1]
-                - (q[0].powi(2) + q[1].powi(2) + 1.0) * p[1])
-                / (2.0 * (p[0] * q[1] - q[0] * p[1])),
-            (-(p[0].powi(2) + p[1].powi(2) + 1.0) * q[0]
-                + (q[0].powi(2) + q[1].powi(2) + 1.0) * p[0])
-                / (2.0 * (p[0] * q[1] - q[0] * p[1])),
-        ];
-        let theta_1 = ((p[1] - center[1]).atan2(p[0] - center[0])).rem_euclid(2.0 * PI);
-        let theta_2 = ((q[1] - center[1]).atan2(q[0] - center[0])).rem_euclid(2.0 * PI);
-        let abs_delta_theta = ((theta_2 - theta_1).abs()).rem_euclid(2.0 * PI);
-        // get the sign of the angle change
-        let p_a = Coord { x: p[0], y: p[1] };
-        let p_b = Coord { x: q[0], y: q[1] };
-        let p_c = Coord {
-            x: center[0],
-            y: center[1],
-        };
-        let sign = orient2d(p_a, p_b, p_c).signum();
-        if sign.is_nan() {
-            0.0
-        } else {
-            sign * abs_delta_theta
-        }
+        let p = start.to_poincare();
+        let q = destination.to_poincare();
+        let re = 1.0 - (p[0] * q[0] + p[1] * q[1]);
+        let im = p[1]*q[0] - p[0]*q[1];
+        2.0 * im.atan2(re)
     }
     /// Compute the change in orientation associated with a transformation from a given
     /// position. Isometries of hyperbolic space can be expressed as a boost conjugated
