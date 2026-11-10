@@ -47,7 +47,7 @@ use hoomd_vector::Metric;
 ///
 /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
 ///
-/// let psi_0 = hoomd_order::k_atic_psi(
+/// let psi_0 = hoomd_order::psi_k(
 ///     4.0,
 ///     near_site_0.point(),
 ///     near_site_0.iter_site_positions().copied(),
@@ -135,7 +135,7 @@ use hoomd_vector::Metric;
 ///
 /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
 ///
-/// let psi_0_a = hoomd_order::k_atic_psi(
+/// let psi_0_a = hoomd_order::psi_k(
 ///     4.0,
 ///     near_site_0.point(),
 ///     near_site_0
@@ -360,7 +360,7 @@ where
     ///
     /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
     ///
-    /// let psi_0_a = hoomd_order::k_atic_psi(
+    /// let psi_0_a = hoomd_order::psi_k(
     ///     4.0,
     ///     near_site_0.point(),
     ///     near_site_0
@@ -400,7 +400,7 @@ where
     ///
     /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
     ///
-    /// let psi_0 = hoomd_order::k_atic_psi(
+    /// let psi_0 = hoomd_order::psi_k(
     ///     4.0,
     ///     near_site_0.point(),
     ///     near_site_0.iter_site_positions().copied(),

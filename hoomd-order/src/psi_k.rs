@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement `k_atic_psi`
+//! Implement `psi_k`
 
 use num_complex::Complex;
 
@@ -30,7 +30,7 @@ use hoomd_vector::Cartesian;
 ///     [-1.0, 0.0].into(),
 ///     [0.0, -1.0].into(),
 /// ];
-/// let psi = hoomd_order::k_atic_psi(4.0, &r, neighbors);
+/// let psi = hoomd_order::psi_k(4.0, &r, neighbors);
 ///
 /// assert_relative_eq!(psi, Complex::new(1.0, 0.0), epsilon = 1e-12);
 /// ```
@@ -76,7 +76,7 @@ use hoomd_vector::Cartesian;
 ///     );
 ///     psi_4.insert(
 ///         site.site_tag,
-///         hoomd_order::k_atic_psi(
+///         hoomd_order::psi_k(
 ///             4.0,
 ///             &site.properties.position,
 ///             neighbors.iter_site_positions().copied(),
@@ -87,7 +87,7 @@ use hoomd_vector::Cartesian;
 /// # }
 /// ```
 #[inline]
-pub fn k_atic_psi<I: IntoIterator<Item = Cartesian<2>>>(
+pub fn psi_k<I: IntoIterator<Item = Cartesian<2>>>(
     k: f64,
     r: &Cartesian<2>,
     neighbors: I,
@@ -117,32 +117,32 @@ mod tests {
         let neighbors = [[1.0, 0.0].into()];
 
         assert_relative_eq!(
-            k_atic_psi(1.0, &r, neighbors),
+            psi_k(1.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, neighbors),
+            psi_k(2.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(3.0, &r, neighbors),
+            psi_k(3.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(4.0, &r, neighbors),
+            psi_k(4.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(5.0, &r, neighbors),
+            psi_k(5.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(6.0, &r, neighbors),
+            psi_k(6.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
@@ -154,32 +154,32 @@ mod tests {
         let neighbors = [[-4.0, 4.0].into()];
 
         assert_relative_eq!(
-            k_atic_psi(1.0, &r, neighbors),
+            psi_k(1.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, neighbors),
+            psi_k(2.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(3.0, &r, neighbors),
+            psi_k(3.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(4.0, &r, neighbors),
+            psi_k(4.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(5.0, &r, neighbors),
+            psi_k(5.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(6.0, &r, neighbors),
+            psi_k(6.0, &r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
@@ -190,83 +190,83 @@ mod tests {
         let r = [0.0, 0.0].into();
 
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[1.0, 0.0].into()]),
+            psi_k(2.0, &r, [[1.0, 0.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[-1.0, 0.0].into()]),
+            psi_k(2.0, &r, [[-1.0, 0.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[0.0, 1.0].into()]),
+            psi_k(2.0, &r, [[0.0, 1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[0.0, -1.0].into()]),
+            psi_k(2.0, &r, [[0.0, -1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[1.0, 1.0].into()]),
+            psi_k(2.0, &r, [[1.0, 1.0].into()]),
             Complex::new(0.0, 1.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[1.0, -1.0].into()]),
+            psi_k(2.0, &r, [[1.0, -1.0].into()]),
             Complex::new(0.0, -1.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[-1.0, 1.0].into()]),
+            psi_k(2.0, &r, [[-1.0, 1.0].into()]),
             Complex::new(0.0, -1.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[-1.0, -1.0].into()]),
+            psi_k(2.0, &r, [[-1.0, -1.0].into()]),
             Complex::new(0.0, 1.0),
             epsilon = 1e-12
         );
 
         assert_relative_eq!(
-            k_atic_psi(4.0, &r, [[1.0, 0.0].into()]),
+            psi_k(4.0, &r, [[1.0, 0.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(4.0, &r, [[0.0, 1.0].into()]),
+            psi_k(4.0, &r, [[0.0, 1.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(4.0, &r, [[-1.0, 0.0].into()]),
+            psi_k(4.0, &r, [[-1.0, 0.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(4.0, &r, [[0.0, -1.0].into()]),
+            psi_k(4.0, &r, [[0.0, -1.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(4.0, &r, [[1.0, 1.0].into()]),
+            psi_k(4.0, &r, [[1.0, 1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(4.0, &r, [[1.0, -1.0].into()]),
+            psi_k(4.0, &r, [[1.0, -1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(4.0, &r, [[-1.0, 1.0].into()]),
+            psi_k(4.0, &r, [[-1.0, 1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(4.0, &r, [[-1.0, -1.0].into()]),
+            psi_k(4.0, &r, [[-1.0, -1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
@@ -277,23 +277,23 @@ mod tests {
         let r = [0.0, 0.0].into();
 
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[1.0, 0.0].into(), [-1.0, 0.0].into()]),
+            psi_k(2.0, &r, [[1.0, 0.0].into(), [-1.0, 0.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[0.0, 1.0].into(), [0.0, -1.0].into()]),
+            psi_k(2.0, &r, [[0.0, 1.0].into(), [0.0, -1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(2.0, &r, [[-1.0, 1.0].into(), [-1.0, -1.0].into()]),
+            psi_k(2.0, &r, [[-1.0, 1.0].into(), [-1.0, -1.0].into()]),
             Complex::new(0.0, 0.0),
             epsilon = 1e-12
         );
 
         assert_relative_eq!(
-            k_atic_psi(
+            psi_k(
                 4.0,
                 &r,
                 [
@@ -307,7 +307,7 @@ mod tests {
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            k_atic_psi(
+            psi_k(
                 4.0,
                 &r,
                 [

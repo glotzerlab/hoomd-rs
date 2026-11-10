@@ -31,8 +31,8 @@ pub enum Error {
 
 pub mod math;
 
-mod k_atic_psi;
-pub use k_atic_psi::k_atic_psi;
+mod psi_k;
+pub use psi_k::psi_k;
 
 mod steinhardt;
 pub use steinhardt::Steinhardt;

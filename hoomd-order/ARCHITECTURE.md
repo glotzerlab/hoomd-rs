@@ -33,7 +33,7 @@ clarity to the caller so that there is no ambiguity over what input maps to what
 For example, the k-atic order parameter can be expressed as a function with
 the signature:
 ```rust
-fn k_atic_psi<I: IntoIterator<Item=Cartesian<2>>>(k: f64, r_i: &Cartesian<2>, neighbors: I) -> Complex<f64>;
+fn psi_k<I: IntoIterator<Item=Cartesian<2>>>(k: f64, r_i: &Cartesian<2>, neighbors: I) -> Complex<f64>;
 ```
 
 Analysis methods should be exposed as functions where possible and structs only when
@@ -48,7 +48,7 @@ for a complicated filter/selection system.
 
 ## Neighbor queries
 
-As shown in the `k_atic_psi` signature above, neighbor queries in `hoomd-order`
+As shown in the `psi_k` signature above, neighbor queries in `hoomd-order`
 are iterators. The iterator item depends on context, sometimes it may
 be only position while other methods might need position and orientation, or
 position, orientation, and weight. This grants the caller infinite flexibility.
@@ -61,7 +61,7 @@ Some users will appreciate that flexibility while others will find it onerous.
 query and the nearest *k* neighbors (within a ball). To keep some amount of generality,
 the provided methods should emit `Site` items so that callers can further filter.
 At the same time, there should be provided implementations that produce positions
-(and positions/orientations) directly so calls to `k_atic_psi` can be a
+(and positions/orientations) directly so calls to `psi_k` can be a
 one-liner in simple situations. Optional exclusion of the *i* site should be
 handled by the neighbor query, not each analysis method.
 
@@ -101,7 +101,7 @@ Note that the neighbor query customization path is different for this type of
 signature. When `neighbors` is an iterator, callers can customize it by chaining.
 When it is a callable, they need to implement a new callable (which can contain
 the same chain as above). It might be advantageous to have only one API for this,
-but forcing the concept of tags into methods like `k_atic_psi` breaks the
+but forcing the concept of tags into methods like `psi_k` breaks the
 simplicity design goal.
 
 In this scheme, callers will still need to build the `HashMap` directly as
