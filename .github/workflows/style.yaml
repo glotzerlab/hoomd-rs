@@ -144,7 +144,7 @@ jobs:
     - name: prek
       uses: j178/prek-action@44924fe9ef4a6f88253c4b6b1bf11c689d3ce53d # v3.1.0
       with:
-        prek-version: 'v0.5.7'
+        prek-version: 'v0.5.10'
 
   zizmor:
     runs-on: ubuntu-26.04
@@ -157,7 +157,7 @@ jobs:
         persist-credentials: false
 
     - name: Run zizmor
-      uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
+      uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
       with:
         advanced-security: false
 

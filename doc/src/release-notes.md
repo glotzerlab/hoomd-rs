@@ -4,6 +4,8 @@
 
 *Added:*
 
+* `[hoomd-utility]`: impl `Add` and `AddAssign` for `PositiveReal` (#466).
+
 *Changed:*
 
 *Deprecated:*
