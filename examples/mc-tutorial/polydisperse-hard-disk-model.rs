@@ -70,7 +70,7 @@ impl SitePairEnergy<SiteProperties> for SitePairInteraction {
     fn site_pair_energy(&self, a: &SiteProperties, b: &SiteProperties) -> f64 {
         let r = a.position().distance(b.position());
 
-        if r < a.radius.get() + b.radius.get() {
+        if r < (a.radius + b.radius).get() {
             f64::INFINITY
         } else {
             0.0
@@ -105,7 +105,7 @@ impl SitePairEnergy<SiteProperties> for SitePairOverlapPenalty {
     fn site_pair_energy(&self, a: &SiteProperties, b: &SiteProperties) -> f64 {
         let r = a.position().distance(b.position());
         let pair_interaction = Expanded {
-            delta: a.radius.get() + b.radius.get(),
+            delta: (a.radius + b.radius).get(),
             f: OverlapPenalty::default(),
         };
         pair_interaction.energy(r)
