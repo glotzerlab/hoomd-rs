@@ -192,7 +192,8 @@ impl<const L: usize> Steinhardt<L> {
     ///
     /// # Errors
     ///
-    /// [`Error::InvalidDeltaR3`] when any $` |\vec{r}_j - \vec{r}| = 0 `$.
+    /// [`Error::InvalidDeltaR`] when any $` \vec{r}_j - \vec{r} `$ cannot be converted to a unit
+    /// vector.
     ///
     /// # Example
     ///
@@ -228,14 +229,14 @@ impl<const L: usize> Steinhardt<L> {
         &self,
         r: &Cartesian<3>,
         neighbors: I,
-    ) -> Result<SphericalHarmonicOutputs<L>, Error> {
+    ) -> Result<SphericalHarmonicOutputs<L>, Error<Cartesian<3>>> {
         let mut total = SphericalHarmonicOutputs::default();
         let mut count: usize = 0;
 
         for r_j in neighbors {
             let (delta_r_unit, _) = (r_j - *r)
                 .to_unit()
-                .map_err(|e| Error::InvalidDeltaR3(r_j, *r, e))?;
+                .map_err(|e| Error::InvalidDeltaR(r_j, *r, e))?;
             total += self.spherical_harmonic.evaluate(&delta_r_unit);
             count += 1;
         }
@@ -305,7 +306,7 @@ mod tests {
 
         assert!(matches!(
             steinhardt.q_lm(&[1.0, 1.0, 1.0].into(), neighbors),
-            Err(Error::InvalidDeltaR3(_, _, _))
+            Err(Error::InvalidDeltaR(_, _, _))
         ));
     }
 }

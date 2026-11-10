@@ -18,10 +18,10 @@ use thiserror::Error;
 /// Enumerate possible sources of error in fallible hoomd-order methods.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
-pub enum Error {
-    /// Failed to convert `r_j` - `r` to a unit vector.
-    #[error("{0} - {1} could not be converted to a unit vector")]
-    InvalidDeltaR3(Cartesian<3>, Cartesian<3>, #[source] hoomd_vector::Error),
+pub enum Error<V = Cartesian<3>> {
+    /// `r_j` - `r` is invalid.
+    #[error("{0} - {1} is an invalid delta r")]
+    InvalidDeltaR(V, V, #[source] hoomd_vector::Error),
     /// Neighbor site tag missing in value map.
     #[error(
         "the site with tag {0} (a neighbor of the site tag {1}) is not present in the value map"
