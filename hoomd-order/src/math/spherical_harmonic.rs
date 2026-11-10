@@ -25,7 +25,7 @@ use std::{
 ///
 /// Construct a [`SphericalHarmonic`] with a given `L`, then call [`evaluate`] to compute
 /// $` Y_L^m(\vec{r}) `$ for $` m \in [0,L] `$. Use the same [`SphericalHarmonic`] for many
-/// calls to [`evaluate`] as [`new`] is computationally expensive.
+/// calls to [`evaluate`], as [`new`] is computationally expensive.
 ///
 /// [Spherical harmonics]: https://mathworld.wolfram.com/SphericalHarmonic.html
 /// [`evaluate`]: Self::evaluate
