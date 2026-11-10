@@ -27,9 +27,10 @@ use crate::{
 /// \end{align*}
 /// ```
 ///
-/// Construct a [`Steinhardt`] with a given `L`, then call [`q_l`] or [`q_lm`] to evaluate
-/// $` q_L `$ or $` q_{Lm} `$ respectively. Use the same [`Steinhardt`] for may calls to
-/// [`q_l`] and/or [`q_lm`] as [`new`] is computationally expensive.
+/// Construct a [`Steinhardt`] with a given `L`, then call [`q_lm`] to evaluate
+/// $` q_{Lm} `$ and [`q_l`] to make it rotationally invariant. Use the same
+/// [`Steinhardt`] for may calls to [`q_lm`] as [`new`] is computationally
+/// expensive.
 ///
 /// [`q_l`]: Self::q_l
 /// [`q_lm`]: Self::q_lm
@@ -79,10 +80,10 @@ use crate::{
 ///     );
 ///     q_4.insert(
 ///         site.site_tag,
-///         steinhardt.q_l(
+///         Steinhardt::q_l(steinhardt.q_lm(
 ///             &site.properties.position,
 ///             neighbors.iter_site_positions().copied(),
-///         )?,
+///         )?),
 ///     );
 /// }
 /// # Ok(())
@@ -91,8 +92,8 @@ use crate::{
 ///
 /// Compute the averaged $` q_4 `$ for all sites in a microstate using
 /// [`average_over_neighbors`]. First, compute the  $` q_{Lm} `$ values for each
-/// site. Then average them over the site *and* all its neighbors (by using a
-/// `near_point` query). Finally, compute $` q_4 `$ by applying the rotational
+/// site. Average them over the site *and* all its neighbors by using a
+/// `near_point` query. Finally, compute $` q_4 `$ by applying the rotational
 /// invariance operation to the averaged $` q_{Lm} `$:
 /// ```
 /// use std::collections::HashMap;
@@ -153,7 +154,7 @@ use crate::{
 /// })?;
 ///
 /// let q_average_4: HashMap<usize, f64> = q_average_lm.iter().map(|(&site_tag, q_lm_j)|
-///    (site_tag, Steinhardt::make_rotationally_invariant(q_lm_j))).collect();
+///    (site_tag, Steinhardt::q_l(*q_lm_j))).collect();
 /// # Ok(())
 /// # }
 /// ```
@@ -244,32 +245,11 @@ impl<const L: usize> Steinhardt<L> {
 
     /// Compute $` q_L `$ given $` q_{Lm} `$.
     ///
-    /// ```math
-    /// q_L = \sqrt{\frac{4 \pi}{2L + 1} \sum_{m=-L}^L \lvert q_{Lm} \rvert^2}
-    /// ```
-    #[inline]
-    pub fn make_rotationally_invariant(q_lm: &SphericalHarmonicOutputs<L>) -> f64 {
-        let mut sum_squared = q_lm[0].norm_sqr();
-        for i in 1..=L {
-            sum_squared += 2.0 * q_lm[i].norm_sqr();
-        }
-        (4.0 * PI / (2 * L + 1) as f64 * sum_squared).sqrt()
-    }
-
-    /// Compute $` q_L `$ given $` \vec{r} `$ and a set of neighbors $` \vec{r}_j `$.
+    /// $` q_L `$ is the rotationally invariant counterpart to $` q_{Lm} `$.
     ///
     /// ```math
     /// q_L = \sqrt{\frac{4 \pi}{2L + 1} \sum_{m=-L}^L \lvert q_{Lm} \rvert^2}
     /// ```
-    /// where
-    /// ```math
-    /// q_{Lm} = \frac{1}{n} \sum_j Y_L^m \left( \frac{\vec{r}_j - \vec{r}}{\lvert \vec{r}_j - \vec{r} \rvert} \right)
-    /// ```
-    /// and the `neighbors` iterator produces `n` points $` \vec{r}_j `$.
-    ///
-    /// # Errors
-    ///
-    /// [`Error::InvalidDeltaR3`] when any $` |\vec{r}_j - \vec{r}| = 0 `$.
     ///
     /// # Example
     ///
@@ -298,19 +278,18 @@ impl<const L: usize> Steinhardt<L> {
     /// .map(Cartesian::<3>::from)
     /// .to_vec();
     ///
-    /// let q_l = steinhardt.q_l(&Cartesian::default(), fcc_bonds)?;
+    /// let q_l = Steinhardt::q_l(steinhardt.q_lm(&Cartesian::default(), fcc_bonds)?);
     /// assert_relative_eq!(q_l, 0.57452416, epsilon = 1e-6);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    pub fn q_l<I: IntoIterator<Item = Cartesian<3>>>(
-        &self,
-        r: &Cartesian<3>,
-        neighbors: I,
-    ) -> Result<f64, Error> {
-        let q_lm = self.q_lm(r, neighbors)?;
-        Ok(Self::make_rotationally_invariant(&q_lm))
+    pub fn q_l(q_lm: SphericalHarmonicOutputs<L>) -> f64 {
+        let mut sum_squared = q_lm[0].norm_sqr();
+        for i in 1..=L {
+            sum_squared += 2.0 * q_lm[i].norm_sqr();
+        }
+        (4.0 * PI / (2 * L + 1) as f64 * sum_squared).sqrt()
     }
 }
 
