@@ -31,8 +31,8 @@ pub enum Error<V = Cartesian<3>> {
 
 pub mod math;
 
-mod psi_k;
-pub use psi_k::psi_k;
+mod k_atic;
+pub use k_atic::KAtic;
 
 mod steinhardt;
 pub use steinhardt::Steinhardt;

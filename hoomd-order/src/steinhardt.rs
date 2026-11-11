@@ -12,7 +12,7 @@ use crate::{
     math::{SphericalHarmonic, SphericalHarmonicOutputs},
 };
 
-/// Compute the 3D Steinhardt order parameters $` q_{Lm} `$ and $` q_L `$.
+/// Compute the 3D *Steinhardt* order parameters $` q_{Lm} `$ and $` q_L `$.
 ///
 /// [Steinhardt, Nelson, and Ronchetti 1983](https://doi.org/10.1103/PhysRevB.28.784)
 /// introduces the order parameter $` q_{Lm} `$ and its rotationally invariant counterpart,

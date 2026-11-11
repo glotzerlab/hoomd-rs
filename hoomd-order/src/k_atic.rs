@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement `psi_k`
+//! Implement `KAtic`
 
 use num_complex::Complex;
 
@@ -16,12 +16,14 @@ use hoomd_vector::Cartesian;
 /// \psi_k = \frac{1}{n} \sum_j e^{i k \theta_j}
 /// ```
 ///
-/// # Example
+/// # Examples
 ///
 /// Compute $` \psi_4 `$ for a single arrangement of points:
 /// ```
 /// use approxim::assert_relative_eq;
 /// use num_complex::Complex;
+///
+/// use hoomd_order::KAtic;
 ///
 /// let r = [0.0, 0.0].into();
 /// let neighbors = [
@@ -30,7 +32,8 @@ use hoomd_vector::Cartesian;
 ///     [-1.0, 0.0].into(),
 ///     [0.0, -1.0].into(),
 /// ];
-/// let psi = hoomd_order::psi_k(4.0, &r, neighbors);
+/// let k_atic = hoomd_order::KAtic { k: 4.0 };
+/// let psi = k_atic.psi_k(&r, neighbors);
 ///
 /// assert_relative_eq!(psi, Complex::new(1.0, 0.0), epsilon = 1e-12);
 /// ```
@@ -41,7 +44,7 @@ use hoomd_vector::Cartesian;
 ///
 /// use hoomd_geometry::shape::Rectangle;
 /// use hoomd_microstate::{Body, Microstate, Replicate, boundary::Periodic};
-/// use hoomd_order::SitesInBall;
+/// use hoomd_order::{KAtic, SitesInBall};
 /// use hoomd_spatial::VecCell;
 /// use hoomd_vector::Cartesian;
 ///
@@ -67,6 +70,8 @@ use hoomd_vector::Cartesian;
 ///         maximum_interaction_range,
 ///     )?;
 ///
+/// let k_atic = hoomd_order::KAtic { k: 4.0 };
+///
 /// let mut psi_4 = HashMap::new();
 /// for (site_index, site) in microstate.sites().iter().enumerate() {
 ///     let neighbors = SitesInBall::near_site(
@@ -76,8 +81,7 @@ use hoomd_vector::Cartesian;
 ///     );
 ///     psi_4.insert(
 ///         site.site_tag,
-///         hoomd_order::psi_k(
-///             4.0,
+///         k_atic.psi_k(
 ///             &site.properties.position,
 ///             neighbors.iter_site_positions().copied(),
 ///         ),
@@ -86,24 +90,60 @@ use hoomd_vector::Cartesian;
 /// # Ok(())
 /// # }
 /// ```
-#[inline]
-pub fn psi_k<I: IntoIterator<Item = Cartesian<2>>>(
-    k: f64,
-    r: &Cartesian<2>,
-    neighbors: I,
-) -> Complex<f64> {
-    let mut total: Complex<f64> = Complex::default();
-    let mut count: usize = 0;
+#[derive(Copy, Clone, Debug, Default)]
+pub struct KAtic {
+    /// The symmetry parameter.
+    pub k: f64,
+}
 
-    for r_j in neighbors {
-        let delta_r = r_j - *r;
-        let theta = delta_r[1].atan2(delta_r[0]);
-        let (sin, cos) = (k * theta).sin_cos();
-        total += Complex::new(cos, sin);
-        count += 1;
+impl KAtic {
+    /// Compute $` \psi_k `$.
+    ///
+    /// ```math
+    /// \psi_k = \frac{1}{n} \sum_j e^{i k \theta_j}
+    /// ```
+    /// where the `neighbors` iterator produces `n` points $` \vec{r}_j `$.
+    ///
+    /// # Example
+    ///
+    /// Compute $` \psi_4 `$ for a single arrangement of points:
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use num_complex::Complex;
+    ///
+    /// use hoomd_order::KAtic;
+    ///
+    /// let r = [0.0, 0.0].into();
+    /// let neighbors = [
+    ///     [1.0, 0.0].into(),
+    ///     [0.0, 1.0].into(),
+    ///     [-1.0, 0.0].into(),
+    ///     [0.0, -1.0].into(),
+    /// ];
+    /// let k_atic = hoomd_order::KAtic { k: 4.0 };
+    /// let psi = k_atic.psi_k(&r, neighbors);
+    ///
+    /// assert_relative_eq!(psi, Complex::new(1.0, 0.0), epsilon = 1e-12);
+    /// ```
+    #[inline]
+    pub fn psi_k<I: IntoIterator<Item = Cartesian<2>>>(
+        &self,
+        r: &Cartesian<2>,
+        neighbors: I,
+    ) -> Complex<f64> {
+        let mut total: Complex<f64> = Complex::default();
+        let mut count: usize = 0;
+
+        for r_j in neighbors {
+            let delta_r = r_j - *r;
+            let theta = delta_r[1].atan2(delta_r[0]);
+            let (sin, cos) = (self.k * theta).sin_cos();
+            total += Complex::new(cos, sin);
+            count += 1;
+        }
+
+        total / Complex::new(count as f64, 0.0)
     }
-
-    total / Complex::new(count as f64, 0.0)
 }
 
 #[cfg(test)]
@@ -117,32 +157,32 @@ mod tests {
         let neighbors = [[1.0, 0.0].into()];
 
         assert_relative_eq!(
-            psi_k(1.0, &r, neighbors),
+            KAtic {k: 1.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, neighbors),
+            KAtic {k: 2.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(3.0, &r, neighbors),
+            KAtic {k: 3.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(4.0, &r, neighbors),
+            KAtic {k: 4.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(5.0, &r, neighbors),
+            KAtic {k: 5.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(6.0, &r, neighbors),
+            KAtic {k: 6.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
@@ -154,32 +194,32 @@ mod tests {
         let neighbors = [[-4.0, 4.0].into()];
 
         assert_relative_eq!(
-            psi_k(1.0, &r, neighbors),
+            KAtic {k: 1.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, neighbors),
+            KAtic {k: 2.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(3.0, &r, neighbors),
+            KAtic {k: 3.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(4.0, &r, neighbors),
+            KAtic {k: 4.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(5.0, &r, neighbors),
+            KAtic {k: 5.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(6.0, &r, neighbors),
+            KAtic {k: 6.0}.psi_k(&r, neighbors),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
@@ -190,83 +230,83 @@ mod tests {
         let r = [0.0, 0.0].into();
 
         assert_relative_eq!(
-            psi_k(2.0, &r, [[1.0, 0.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[1.0, 0.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, [[-1.0, 0.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[-1.0, 0.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, [[0.0, 1.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[0.0, 1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, [[0.0, -1.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[0.0, -1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, [[1.0, 1.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[1.0, 1.0].into()]),
             Complex::new(0.0, 1.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, [[1.0, -1.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[1.0, -1.0].into()]),
             Complex::new(0.0, -1.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, [[-1.0, 1.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[-1.0, 1.0].into()]),
             Complex::new(0.0, -1.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, [[-1.0, -1.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[-1.0, -1.0].into()]),
             Complex::new(0.0, 1.0),
             epsilon = 1e-12
         );
 
         assert_relative_eq!(
-            psi_k(4.0, &r, [[1.0, 0.0].into()]),
+            KAtic {k: 4.0}.psi_k(&r, [[1.0, 0.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(4.0, &r, [[0.0, 1.0].into()]),
+            KAtic {k: 4.0}.psi_k(&r, [[0.0, 1.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(4.0, &r, [[-1.0, 0.0].into()]),
+            KAtic {k: 4.0}.psi_k(&r, [[-1.0, 0.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(4.0, &r, [[0.0, -1.0].into()]),
+            KAtic {k: 4.0}.psi_k(&r, [[0.0, -1.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(4.0, &r, [[1.0, 1.0].into()]),
+            KAtic {k: 4.0}.psi_k(&r, [[1.0, 1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(4.0, &r, [[1.0, -1.0].into()]),
+            KAtic {k: 4.0}.psi_k(&r, [[1.0, -1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(4.0, &r, [[-1.0, 1.0].into()]),
+            KAtic {k: 4.0}.psi_k(&r, [[-1.0, 1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(4.0, &r, [[-1.0, -1.0].into()]),
+            KAtic {k: 4.0}.psi_k(&r, [[-1.0, -1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
@@ -277,24 +317,23 @@ mod tests {
         let r = [0.0, 0.0].into();
 
         assert_relative_eq!(
-            psi_k(2.0, &r, [[1.0, 0.0].into(), [-1.0, 0.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[1.0, 0.0].into(), [-1.0, 0.0].into()]),
             Complex::new(1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, [[0.0, 1.0].into(), [0.0, -1.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[0.0, 1.0].into(), [0.0, -1.0].into()]),
             Complex::new(-1.0, 0.0),
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(2.0, &r, [[-1.0, 1.0].into(), [-1.0, -1.0].into()]),
+            KAtic {k: 2.0}.psi_k(&r, [[-1.0, 1.0].into(), [-1.0, -1.0].into()]),
             Complex::new(0.0, 0.0),
             epsilon = 1e-12
         );
 
         assert_relative_eq!(
-            psi_k(
-                4.0,
+            KAtic {k: 4.0}.psi_k(
                 &r,
                 [
                     [1.0, 0.0].into(),
@@ -307,8 +346,7 @@ mod tests {
             epsilon = 1e-12
         );
         assert_relative_eq!(
-            psi_k(
-                4.0,
+            KAtic {k: 4.0}.psi_k(
                 &r,
                 [
                     [1.0, 1.0].into(),

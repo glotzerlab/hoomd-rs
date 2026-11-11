@@ -20,8 +20,8 @@ use hoomd_vector::Metric;
 /// check this and panic....
 ///
 /// Construct [`SitesInBall`] with [`near_site`] to find the neighbors of a site
-/// (excluding the site itself). Construct [`SitesInBall`] with [`near_point`] to find
-/// all sites (no exclusions) within a distance of the given point.
+/// (*excluding* the site itself). Construct [`SitesInBall`] with [`near_point`] to find
+/// *all* sites (no exclusions) within a distance of the given point.
 ///
 /// After construction, call one or more `iter_` methods to iterate over the
 /// matching sites. When the [`Microstate`] has periodic boundary conditions,
@@ -34,7 +34,7 @@ use hoomd_vector::Metric;
 /// of all sites near another site:
 /// ```
 /// use hoomd_microstate::{Body, Microstate};
-/// use hoomd_order::SitesInBall;
+/// use hoomd_order::{KAtic, SitesInBall};
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -47,8 +47,8 @@ use hoomd_vector::Metric;
 ///
 /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
 ///
-/// let psi_0 = hoomd_order::psi_k(
-///     4.0,
+/// let k_atic = KAtic { k: 4.0 };
+/// let psi_0 = k_atic.psi_k(
 ///     near_site_0.point(),
 ///     near_site_0.iter_site_positions().copied(),
 /// );
@@ -63,7 +63,7 @@ use hoomd_vector::Metric;
 ///     Body, Microstate, Transform,
 ///     property::{Point, Position},
 /// };
-/// use hoomd_order::SitesInBall;
+/// use hoomd_order::{KAtic, SitesInBall};
 /// use hoomd_vector::Cartesian;
 ///
 /// type PositionVector = Cartesian<2>;
@@ -135,8 +135,8 @@ use hoomd_vector::Metric;
 ///
 /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
 ///
-/// let psi_0_a = hoomd_order::psi_k(
-///     4.0,
+/// let k_atic = KAtic {k: 4.0};
+/// let psi_0_a = k_atic.psi_k(
 ///     near_site_0.point(),
 ///     near_site_0
 ///         .iter_sites()
@@ -288,7 +288,7 @@ where
     ///     Body, Microstate, Transform,
     ///     property::{Point, Position},
     /// };
-    /// use hoomd_order::SitesInBall;
+    /// use hoomd_order::{KAtic, SitesInBall};
     /// use hoomd_vector::Cartesian;
     ///
     /// type PositionVector = Cartesian<2>;
@@ -360,8 +360,8 @@ where
     ///
     /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
     ///
-    /// let psi_0_a = hoomd_order::psi_k(
-    ///     4.0,
+    /// let k_atic = KAtic { k: 4.0, };
+    /// let psi_0_a = k_atic.psi_k(
     ///     near_site_0.point(),
     ///     near_site_0
     ///         .iter_sites()
@@ -387,7 +387,7 @@ where
     /// # Example
     /// ```
     /// use hoomd_microstate::{Body, Microstate};
-    /// use hoomd_order::SitesInBall;
+    /// use hoomd_order::{KAtic, SitesInBall};
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -400,8 +400,8 @@ where
     ///
     /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
     ///
-    /// let psi_0 = hoomd_order::psi_k(
-    ///     4.0,
+    /// let k_atic = KAtic { k: 4.0, };
+    /// let psi_0 = k_atic.psi_k(
     ///     near_site_0.point(),
     ///     near_site_0.iter_site_positions().copied(),
     /// );
