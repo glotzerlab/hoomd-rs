@@ -1433,8 +1433,11 @@ where
     /// Panics when `r` is greater than the boundary's maximum interaction range.
     #[inline]
     pub fn iter_sites_near(&self, point: &P, r: f64) -> impl Iterator<Item = &Site<S>> {
-        assert!(r <= self.boundary.maximum_interaction_range(), "query r must be less than or equal to the boundary's maximum interaction range");
-    
+        assert!(
+            r <= self.boundary.maximum_interaction_range(),
+            "query r must be less than or equal to the boundary's maximum interaction range"
+        );
+
         let potential_sites = self.spatial_data.points_near_ball(point, r);
         potential_sites.map(|k| match k {
             SiteKey::Primary(tag) => {

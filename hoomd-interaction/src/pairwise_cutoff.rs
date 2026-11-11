@@ -13,7 +13,9 @@ use crate::{
     SitePairForceVirialAndTorque, TotalEnergy,
 };
 use hoomd_microstate::{
-    Body, Microstate, Site, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::Position,
+    Body, Microstate, Site, SiteKey, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::Position,
 };
 use hoomd_spatial::PointsNearBall;
 use hoomd_vector::{InnerProduct, Metric, Outer, Vector, Wedge};

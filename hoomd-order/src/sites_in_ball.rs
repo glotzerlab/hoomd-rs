@@ -135,7 +135,7 @@ use crate::Error;
 ///
 /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
 ///
-/// let k_atic = KAtic {k: 4.0};
+/// let k_atic = KAtic { k: 4.0 };
 /// let psi_0_a = k_atic.psi_k(
 ///     near_site_0.point(),
 ///     near_site_0
@@ -247,7 +247,7 @@ where
 
 impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C>
 where
-    C: IsPointInside<P>
+    C: IsPointInside<P>,
 {
     /// Match sites in the given microstate with positions that are within a distance
     /// *r* of the given point in space, including sites at a distance of zero. The
@@ -276,7 +276,11 @@ where
     /// # }
     /// ```
     #[inline]
-    pub fn near_point(microstate: &'a Microstate<B, S, X, C>, point: P, r: f64) -> Result<Self, Error<P>> {
+    pub fn near_point(
+        microstate: &'a Microstate<B, S, X, C>,
+        point: P,
+        r: f64,
+    ) -> Result<Self, Error<P>> {
         if microstate.boundary().is_point_inside(&point) {
             Ok(Self {
                 point,
@@ -284,8 +288,7 @@ where
                 ignore_site_tag: None,
                 microstate,
             })
-        }
-        else {
+        } else {
             Err(Error::PointOutsideBoundary(point))
         }
     }
@@ -378,7 +381,7 @@ where
     ///
     /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
     ///
-    /// let k_atic = KAtic { k: 4.0, };
+    /// let k_atic = KAtic { k: 4.0 };
     /// let psi_0_a = k_atic.psi_k(
     ///     near_site_0.point(),
     ///     near_site_0
@@ -418,7 +421,7 @@ where
     ///
     /// let near_site_0 = SitesInBall::near_site(&microstate, 0, 1.5);
     ///
-    /// let k_atic = KAtic { k: 4.0, };
+    /// let k_atic = KAtic { k: 4.0 };
     /// let psi_0 = k_atic.psi_k(
     ///     near_site_0.point(),
     ///     near_site_0.iter_site_positions().copied(),

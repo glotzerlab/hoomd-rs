@@ -144,17 +144,22 @@ use crate::{
 /// }
 ///
 /// let q_average_lm = q_lm.average_over_neighbors(|site_tag| {
-///    let site_index = microstate.site_indices()[site_tag].expect("site tag should be present");
-///    SitesInBall::near_point(&microstate,
-///    microstate.sites()[site_index].properties.position,
-///    order_maximum_neighbor_distance,
-///    ).expect("site position should be inside microstate boundary")
-///    .iter_site_tags()
-///    .collect::<Vec<_>>()
+///     let site_index = microstate.site_indices()[site_tag]
+///         .expect("site tag should be present");
+///     SitesInBall::near_point(
+///         &microstate,
+///         microstate.sites()[site_index].properties.position,
+///         order_maximum_neighbor_distance,
+///     )
+///     .expect("site position should be inside microstate boundary")
+///     .iter_site_tags()
+///     .collect::<Vec<_>>()
 /// })?;
 ///
-/// let q_average_4: HashMap<usize, f64> = q_average_lm.iter().map(|(&site_tag, q_lm_j)|
-///    (site_tag, Steinhardt::q_l(*q_lm_j))).collect();
+/// let q_average_4: HashMap<usize, f64> = q_average_lm
+///     .iter()
+///     .map(|(&site_tag, q_lm_j)| (site_tag, Steinhardt::q_l(*q_lm_j)))
+///     .collect();
 /// # Ok(())
 /// # }
 /// ```
@@ -279,7 +284,8 @@ impl<const L: usize> Steinhardt<L> {
     /// .map(Cartesian::<3>::from)
     /// .to_vec();
     ///
-    /// let q_l = Steinhardt::q_l(steinhardt.q_lm(&Cartesian::default(), fcc_bonds)?);
+    /// let q_l =
+    ///     Steinhardt::q_l(steinhardt.q_lm(&Cartesian::default(), fcc_bonds)?);
     /// assert_relative_eq!(q_l, 0.57452416, epsilon = 1e-6);
     /// # Ok(())
     /// # }

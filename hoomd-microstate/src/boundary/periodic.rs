@@ -369,8 +369,9 @@ where
     }
 }
 
-impl<P, T> IsPointInside<P> for Periodic<T> where
-T: IsPointInside<P>
+impl<P, T> IsPointInside<P> for Periodic<T>
+where
+    T: IsPointInside<P>,
 {
     /// `IsPointInside` check forwarded to the wrapped shape.
     ///

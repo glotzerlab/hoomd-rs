@@ -14,7 +14,7 @@ use crate::Error;
 pub trait AverageOverNeighbors {
     /// Type of the generated container.
     type Output;
-    
+
     /// Average a quantity over the neighbors around a site.
     ///
     /// The average quantity is:
@@ -104,7 +104,8 @@ where
     /// let r_average = r.average_over_neighbors(|site_tag| {
     ///     SitesInBall::near_site(
     ///         &microstate,
-    ///         microstate.site_indices()[site_tag].expect("site tag should be present"),
+    ///         microstate.site_indices()[site_tag]
+    ///             .expect("site tag should be present"),
     ///         order_maximum_neighbor_distance,
     ///     )
     ///     .iter_site_tags()
@@ -117,8 +118,7 @@ where
     fn average_over_neighbors<F: Fn(usize) -> I, I: IntoIterator<Item = usize>>(
         &self,
         neighbor_tags: F,
-    ) -> Result<HashMap<usize, T, S>, Error>
-    {
+    ) -> Result<HashMap<usize, T, S>, Error> {
         let mut result = HashMap::with_capacity_and_hasher(self.len(), S::default());
 
         for site_tag_i in self.keys() {
@@ -191,7 +191,8 @@ where
     /// let r_average = r.as_slice().average_over_neighbors(|site_tag| {
     ///     SitesInBall::near_site(
     ///         &microstate,
-    ///         microstate.site_indices()[site_tag].expect("site tag should be present"),
+    ///         microstate.site_indices()[site_tag]
+    ///             .expect("site tag should be present"),
     ///         order_maximum_neighbor_distance,
     ///     )
     ///     .iter_site_tags()
@@ -204,8 +205,7 @@ where
     fn average_over_neighbors<F: Fn(usize) -> I, I: IntoIterator<Item = usize>>(
         &self,
         neighbor_tags: F,
-    ) -> Vec<T>
-    {
+    ) -> Vec<T> {
         let mut result = Vec::with_capacity(self.len());
 
         for site_tag_i in 0..self.len() {
@@ -251,7 +251,9 @@ mod tests {
         let neighbors: [Vec<usize>; 4] = [vec![1, 2, 3], vec![0], vec![0, 3], vec![0, 2]];
         let x: Vec<f64> = vec![1.0, 3.0, 2.0, 4.0];
 
-        let x_average = x.as_slice().average_over_neighbors(|tag| neighbors[tag].iter().copied());
+        let x_average = x
+            .as_slice()
+            .average_over_neighbors(|tag| neighbors[tag].iter().copied());
         assert_eq!(x_average.len(), 4);
         assert_relative_eq!(x_average[0], 3.0);
         assert_relative_eq!(x_average[1], 1.0);
