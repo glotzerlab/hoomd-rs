@@ -13,7 +13,7 @@ use crate::{
     SitePairForceVirialAndTorque, TotalEnergy,
 };
 use hoomd_microstate::{
-    Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
+    Body, Microstate, Site, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::Position,
 };
 use hoomd_spatial::PointsNearBall;
 use hoomd_vector::{InnerProduct, Metric, Outer, Vector, Wedge};
@@ -361,6 +361,7 @@ impl<E> PairwiseCutoff<E> {
         E: SitePairEnergy<S> + MaximumInteractionRange,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
+        C: GenerateGhosts<S>,
         F: Fn(&Site<S>) -> bool,
         F2: Fn(&E, &S, &S) -> f64,
     {
@@ -396,6 +397,7 @@ impl<E> PairwiseCutoff<E> {
         E: SitePairEnergy<S> + MaximumInteractionRange,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
+        C: GenerateGhosts<S>,
         F: Fn(&Site<S>) -> bool,
         F2: Fn(&E, &S, &S) -> f64,
     {
@@ -424,7 +426,7 @@ impl<E> PairwiseCutoff<E> {
         B: Transform<S>,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
-        C: Wrap<B> + Wrap<S>,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
         F: Fn(&Site<S>) -> bool,
     {
         let mut energy_final = 0.0;
@@ -461,6 +463,7 @@ impl<E> PairwiseCutoff<E> {
         E: SitePairEnergy<S> + MaximumInteractionRange,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
+        C: GenerateGhosts<S>,
         F: Fn(&Site<S>) -> bool,
     {
         let mut energy_initial = 0.0;
@@ -490,6 +493,7 @@ where
     S: Position<Position = V>,
     E: MaximumInteractionRange + SitePairForceAndVirial<S, Force = V>,
     X: PointsNearBall<V, SiteKey>,
+    C: GenerateGhosts<S>,
     V::Tensor: Default + AddAssign,
 {
     type Force = V;
@@ -583,6 +587,7 @@ where
     E: MaximumInteractionRange + SitePairForceVirialAndTorque<S, Force = V>,
     V::Bivector: AddAssign + Default,
     X: PointsNearBall<V, SiteKey>,
+    C: GenerateGhosts<S>,
     V::Tensor: Default + AddAssign,
 {
     type Force = V;
@@ -640,6 +645,7 @@ where
     E: SitePairEnergy<S> + MaximumInteractionRange,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
+    C: GenerateGhosts<S>,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
     ///
@@ -830,7 +836,7 @@ where
     B: Transform<S>,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
-    C: Wrap<B> + Wrap<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Evaluate the change in energy contributed by `PairwiseCutoff` when one body is updated.
     ///
@@ -939,7 +945,7 @@ where
     B: Transform<S>,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
-    C: Wrap<B> + Wrap<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Evaluate the change in energy contributed by `PairwiseCutoff` when one body is inserted.
     ///
@@ -1022,6 +1028,7 @@ where
     E: SitePairEnergy<S> + MaximumInteractionRange,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
+    C: GenerateGhosts<S>,
 {
     /// Evaluate the change in energy contributed by `PairwiseCutoff` when one body is removed.
     ///

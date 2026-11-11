@@ -4,7 +4,7 @@
 //! Implement `SitesInBall`
 
 use hoomd_geometry::IsPointInside;
-use hoomd_microstate::{Microstate, Site, SiteKey, property::Position};
+use hoomd_microstate::{Microstate, Site, SiteKey, boundary::GenerateGhosts, property::Position};
 use hoomd_spatial::PointsNearBall;
 use hoomd_vector::Metric;
 
@@ -15,12 +15,9 @@ use crate::Error;
 /// In other words, find all neighboring sites within a specific distance of a given
 /// point.
 ///
-/// When the given [`Microstate`] has periodic boundary conditions, *r* must
-/// be less than or equal to the boundary's maximum interaction range. Exercise caution,
-/// as this condition is not validated. Set *r* too large and [`SitesInBall`] will
-/// find the correct sites near the center of the boundary, but will miss some neighbors
-/// near the edge. TODO: revisit *why* this is not an error - it seems that Microstate could
-/// check this and panic....
+/// When the given [`Microstate`] has periodic boundary conditions, *r* must be
+/// less than or equal to the boundary's maximum interaction range. Violating
+/// this condition will lead to a panic in `Microstate::iter_sites_near`.
 ///
 /// Construct [`SitesInBall`] with [`near_site`] to find the neighbors of a site
 /// (*excluding* the site itself). Construct [`SitesInBall`] with [`near_point`] to find
@@ -299,6 +296,7 @@ where
     P: Metric,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
+    C: GenerateGhosts<S>,
 {
     /// Iterate over all matching sites.
     ///

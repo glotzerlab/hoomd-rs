@@ -1414,6 +1414,7 @@ impl<P, B, S, X, C> Microstate<B, S, X, C>
 where
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
+    C: GenerateGhosts<S>,
 {
     /// Find sites near a point in space.
     ///
@@ -1427,19 +1428,13 @@ where
     /// The iterator does not filter on distance to avoid duplicating effort
     /// as many callers already perform circumsphere checks.
     ///
-    /// The caller *may* provide a value for `r` that is larger than the maximum
-    /// interaction range. In the current implementation, this is not an error.
-    /// However, in such cases `iter_sites_near` will only iterate over the placed
-    /// ghosts which are within the boundary's `maximum_interaction_range`.
+    /// # Panics
     ///
-    /// In other words, `iter_sites_near` is meant for use with pairwise functions
-    /// that follow the minimum image convention.
+    /// Panics when `r` is greater than the boundary's maximum interaction range.
     #[inline]
-    #[expect(
-        clippy::missing_panics_doc,
-        reason = "Will panic only due to a bug in hoomd-rs."
-    )]
     pub fn iter_sites_near(&self, point: &P, r: f64) -> impl Iterator<Item = &Site<S>> {
+        assert!(r <= self.boundary.maximum_interaction_range(), "query r must be less than or equal to the boundary's maximum interaction range");
+    
         let potential_sites = self.spatial_data.points_near_ball(point, r);
         potential_sites.map(|k| match k {
             SiteKey::Primary(tag) => {
