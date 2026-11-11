@@ -12,6 +12,7 @@ Here are links to the documentation for every *hoomd-rs* crate:
 - [hoomd-mc](../api/hoomd_mc/index.html): Perform Monte Carlo simulations.
 - [hoomd-md](../api/hoomd_md/index.html): Perform molecular dynamics simulations.
 - [hoomd-microstate](../api/hoomd_microstate/index.html): Represent the degrees of freedom in your simulation model.
+- [hoomd-order](../api/hoomd_order/index.html): Compute order parameters on the microstate.
 - [hoomd-rand](../api/hoomd_rand/index.html): Pseudorandom number generation methods used by other *hoomd-rs* crates.
 - [hoomd-simulation](../api/hoomd_simulation/index.html): Traits that define the macrostate and the simulation model as a whole.
 - [hoomd-spatial](../api/hoomd_spatial/index.html): Spatial data structures for efficient site-site interaction computations.
