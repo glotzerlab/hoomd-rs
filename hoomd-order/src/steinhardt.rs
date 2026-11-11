@@ -91,7 +91,7 @@ use crate::{
 /// ```
 ///
 /// Compute the averaged $` q_4 `$ for all sites in a microstate using
-/// [`average_over_neighbors`]. First, compute the  $` q_{Lm} `$ values for each
+/// [`AverageOverNeighbors`]. First, compute the  $` q_{Lm} `$ values for each
 /// site. Average them over the site *and* all its neighbors by using a
 /// `near_point` query. Finally, compute $` q_4 `$ by applying the rotational
 /// invariance operation to the averaged $` q_{Lm} `$:
@@ -100,7 +100,7 @@ use crate::{
 ///
 /// use hoomd_geometry::shape::Cuboid;
 /// use hoomd_microstate::{Body, Microstate, Replicate, boundary::Periodic};
-/// use hoomd_order::{SitesInBall, Steinhardt};
+/// use hoomd_order::{AverageOverNeighbors, SitesInBall, Steinhardt};
 /// use hoomd_spatial::VecCell;
 /// use hoomd_vector::Cartesian;
 ///
@@ -143,7 +143,7 @@ use crate::{
 ///     );
 /// }
 ///
-/// let q_average_lm = hoomd_order::average_over_neighbors(&q_lm, |site_tag| {
+/// let q_average_lm = q_lm.average_over_neighbors(|site_tag| {
 ///    let site_index = microstate.site_indices()[site_tag].expect("site tag should be present");
 ///    SitesInBall::near_point(&microstate,
 ///    microstate.sites()[site_index].properties.position,
@@ -159,7 +159,7 @@ use crate::{
 /// # }
 /// ```
 ///
-/// [`average_over_neighbors`]: crate::average_over_neighbors
+/// [`AverageOverNeighbors`]: crate::AverageOverNeighbors
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Steinhardt<const L: usize> {
     /// Compute the spherical harmonics.

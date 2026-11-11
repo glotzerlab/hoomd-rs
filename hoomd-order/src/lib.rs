@@ -41,4 +41,4 @@ mod sites_in_ball;
 pub use sites_in_ball::SitesInBall;
 
 mod average_over_neighbors;
-pub use average_over_neighbors::average_over_neighbors;
+pub use average_over_neighbors::AverageOverNeighbors;
