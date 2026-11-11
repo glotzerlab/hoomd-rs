@@ -36,8 +36,10 @@ the signature:
 fn psi_k<I: IntoIterator<Item=Cartesian<2>>>(k: f64, r_i: &Cartesian<2>, neighbors: I) -> Complex<f64>;
 ```
 
-Analysis methods should be exposed as functions where possible and structs only when
-they need to store some internal state (such as the g(r) histogram).
+Analysis methods *could* be exposed as functions where possible and structs only when
+they need to store some internal state (such as the g(r) histogram). However, most
+methods have internal state. Therefore, even methods that could be exposed as functions
+should use structs for consistency.
 
 Note that unlike in [`freud`], the k-atic function computes an order parameter for
 a single point rather than for an entire system of points. This grants the caller
@@ -83,15 +85,14 @@ and use its `iter_sites_near` method.
 The concept of site tags has already come up in the neighbor query design. This is
 a feature that [`freud`] lacks (almost) entirely. `hoomd-order` will employ site tags
 whenever they are needed, such as avoiding the *i* site in a neighbor query.
-When tags are not necessary (such as in the base `k_atic_phi` method), `hoomd-order`
+When tags are not necessary (such as in the base `psi_k` method), `hoomd-order`
 will not require them following the simplicity rule.
 
 Other analysis methods will need the concept of a tag implicitly. For example,
 the average Steinhardt order parameter needs to know a) the non-averaged order
 parameter for each site tag and b) the tags of neighbors of site with a given
 tag. The `average_over_neighbors` method will be general so that it can be
-applied to any quantity, not just Steinhardt. Its design remains TBD as of this
-writing, but will likely involve a `HashMap` that maps tags to `q` values.
+applied to any quantity, not just Steinhardt.
 
 It's neighbor query is not an iterator, but a callable that produces
 the neighboring tags given a tag. The neighbor queries built around `Mircostate`
@@ -111,3 +112,10 @@ example in the documentation for users to copy and paste.
 
 Clustering is another example where tags will be inherent even in the general
 implementation.
+
+While using a `HashMap` that maps from tag to value is the most general solution,
+users might prefer the simplicity of a `Vec` based approach. So long as users never
+remove sites from the system, a `Vec` of values implicitly uses the index as the tag
+associated with each value. To facilitate this use-case `AverageOverNeighbors` will
+be a trait that is implemented on `HashMap`, `Vec`, and possibly other container types.
+Each implementation will separately document how the tags are derived.
