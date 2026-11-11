@@ -15,6 +15,7 @@ categories.workspace = true
 num-complex.workspace = true
 thiserror.workspace = true
 
+hoomd-geometry.workspace = true
 hoomd-microstate.workspace = true
 hoomd-spatial.workspace = true
 hoomd-vector.workspace = true

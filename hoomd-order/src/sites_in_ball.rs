@@ -3,9 +3,12 @@
 
 //! Implement `SitesInBall`
 
+use hoomd_geometry::IsPointInside;
 use hoomd_microstate::{Microstate, Site, SiteKey, property::Position};
 use hoomd_spatial::PointsNearBall;
 use hoomd_vector::Metric;
+
+use crate::Error;
 
 /// Find all sites in a [`Microstate`] with positions inside a ball of radius *r*.
 ///
@@ -210,9 +213,8 @@ impl<P, B, S, X, C> SitesInBall<'_, P, B, S, X, C> {
 
 impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C>
 where
-    P: Copy + Metric,
+    P: Copy,
     S: Position<Position = P>,
-    X: PointsNearBall<P, SiteKey>,
 {
     /// Match sites in the given microstate with positions that are within a distance
     /// *r* of the given site. The given site is *excluded* from the iterator despite the
@@ -244,9 +246,19 @@ where
             microstate,
         }
     }
+}
 
+impl<'a, P, B, S, X, C> SitesInBall<'a, P, B, S, X, C>
+where
+    C: IsPointInside<P>
+{
     /// Match sites in the given microstate with positions that are within a distance
-    /// *r* of the given point in space, including sites at a distance of zero.
+    /// *r* of the given point in space, including sites at a distance of zero. The
+    /// point must be inside the microstate's boundary.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::PointOutsideBoundary`] when `point` is outside the microstate's boundary.
     ///
     /// # Example
     /// ```
@@ -261,25 +273,33 @@ where
     /// microstate.add_body(Body::point(Cartesian::from([2.0, 0.0])))?;
     ///
     /// let near_position_1_0 =
-    ///     SitesInBall::near_point(&microstate, [1.0, 0.0].into(), 1.5);
+    ///     SitesInBall::near_point(&microstate, [1.0, 0.0].into(), 1.5)?;
     /// assert_eq!(near_position_1_0.iter_sites().count(), 3);
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// TODO: What should happen when `point` is outside boundary? Should we construct
-    /// a temporary point site and wrap it? That would make `near_point` fallible, but perhaps
-    /// that is a good thing.
     #[inline]
-    pub fn near_point(microstate: &'a Microstate<B, S, X, C>, point: P, r: f64) -> Self {
-        Self {
-            point,
-            r,
-            ignore_site_tag: None,
-            microstate,
+    pub fn near_point(microstate: &'a Microstate<B, S, X, C>, point: P, r: f64) -> Result<Self, Error<P>> {
+        if microstate.boundary().is_point_inside(&point) {
+            Ok(Self {
+                point,
+                r,
+                ignore_site_tag: None,
+                microstate,
+            })
+        }
+        else {
+            Err(Error::PointOutsideBoundary(point))
         }
     }
+}
 
+impl<P, B, S, X, C> SitesInBall<'_, P, B, S, X, C>
+where
+    P: Metric,
+    S: Position<Position = P>,
+    X: PointsNearBall<P, SiteKey>,
+{
     /// Iterate over all matching sites.
     ///
     /// # Examples
@@ -463,7 +483,7 @@ mod tests {
         microstate.add_body(Body::point(Cartesian::from([1.0, -2.0])))?;
         microstate.add_body(Body::point(Cartesian::from([1.0, 0.0])))?;
 
-        let near_point = SitesInBall::near_point(&microstate, [1.0, 0.0].into(), 1.5);
+        let near_point = SitesInBall::near_point(&microstate, [1.0, 0.0].into(), 1.5)?;
         let sites = near_point.iter_sites().collect::<Vec<_>>();
         let mut sorted_sites = sites.clone();
         sorted_sites.sort_by_key(|a| a.site_tag);

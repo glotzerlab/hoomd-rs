@@ -148,7 +148,7 @@ use crate::{
 ///    SitesInBall::near_point(&microstate,
 ///    microstate.sites()[site_index].properties.position,
 ///    order_maximum_neighbor_distance,
-///    )
+///    ).expect("site position should be inside microstate boundary")
 ///    .iter_site_tags()
 ///    .collect::<Vec<_>>()
 /// })?;

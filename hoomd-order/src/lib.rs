@@ -19,9 +19,14 @@ use thiserror::Error;
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error<V = Cartesian<3>> {
+    /// The point is outside the microstate's boundary.
+    #[error("The point {0} is outside the microstate's boundary")]
+    PointOutsideBoundary(V),
+        
     /// `r_j` - `r` is invalid.
     #[error("{0} - {1} is an invalid delta r")]
     InvalidDeltaR(V, V, #[source] hoomd_vector::Error),
+    
     /// Neighbor site tag missing in value map.
     #[error(
         "the site with tag {0} (a neighbor of the site tag {1}) is not present in the value map"
