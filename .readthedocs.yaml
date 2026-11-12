@@ -18,7 +18,7 @@ build:
     - echo "site-url = \"/$READTHEDOCS_LANGUAGE/$READTHEDOCS_VERSION/\"" >> doc/book.toml
     - mdbook build doc --dest-dir=$READTHEDOCS_OUTPUT/html
     # Build the API docs
-    - CARGO_BUILD_JOBS=1 ./build_api_documentation.sh
+    - ./build_api_documentation.sh
     - mkdir -p $READTHEDOCS_OUTPUT/html/api
     - mv target/doc/* $READTHEDOCS_OUTPUT/html/api
     # List the output files
