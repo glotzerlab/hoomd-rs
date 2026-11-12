@@ -108,6 +108,7 @@ pub enum Dimensions {
 /// * [`particles_orientation`](Self::particles_orientation)
 /// * [`particles_type_id`](Self::particles_type_id)
 /// * [`particles_types`](Self::particles_types)
+/// * [`particles_type_shapes`](Self::particles_type_shapes)
 ///
 /// The first call to any `particles_*` method (except `particles_types`) implicitly
 /// writes the chunk `particles/N`. Any subsequent calls to other `particles_*`
@@ -732,6 +733,50 @@ impl Frame<'_> {
         Ok(self)
     }
 
+    /// Write [`particles/type_shapes`] to the current frame in the GSD file.
+    ///
+    /// Each string must be a JSON encoded shape definition, such as
+    /// `{"type": "Sphere", "diameter": 1.0}`. See [Shape Visualization] for the
+    /// full set of shape definitions.
+    ///
+    /// [`particles/type_shapes`]: https://gsd.readthedocs.io/en/v4.2.0/schema-hoomd.html#chunk-particles-type_shapes
+    /// [Shape Visualization]: https://gsd.readthedocs.io/en/v4.2.0/shapes.html
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::hoomd::HoomdGsdFile;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// // let path = "file.gsd";
+    /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
+    /// hoomd_gsd_file
+    ///     .append_frame(1_000)?
+    ///     .particles_type_shapes([r#"{"type": "Sphere", "diameter": 1.0}"#])?
+    ///     .end()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`AppendError`] when any of the following occur:
+    /// * The file is not opened in a write mode.
+    /// * An I/O error writing to the file.
+    pub fn particles_type_shapes<'a, I>(self, type_shapes: I) -> Result<Self, AppendError>
+    where
+        I: IntoIterator<Item = &'a str>,
+    {
+        let chunk_name = "particles/type_shapes";
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_string_arrays(chunk_name, type_shapes)?;
+
+        Ok(self)
+    }
+
     /// Write [`particles/diameter`] to the current frame in the GSD file.
     ///
     /// [`particles/diameter`]: https://gsd.readthedocs.io/en/v4.2.0/schema-hoomd.html#chunk-particles-diameter
@@ -1236,6 +1281,46 @@ mod test {
 
         check!(data[2][0..6] == *"linker".as_bytes());
         check!(data[0][6] == 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn particles_type_shapes() -> anyhow::Result<()> {
+        const SHAPES: [&str; 2] = [
+            r#"{"type": "Sphere", "diameter": 1.0}"#,
+            r#"{"type": "Ellipsoid", "a": 1.0, "b": 0.5, "c": 0.25}"#,
+        ];
+        // Rows are padded to the longest shape definition plus the null terminator.
+        const WIDTH: usize = SHAPES[1].len() + 1;
+
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
+        hoomd_gsd_file.append_frame(0)?;
+        hoomd_gsd_file
+            .append_frame(1)?
+            .particles_type_shapes(SHAPES)?;
+        drop(hoomd_gsd_file);
+
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
+        check!(gsd_file.find_chunk(0, "particles/type_shapes") == None);
+
+        let data: Vec<_> = gsd_file
+            .iter_arrays::<i8, WIDTH>(1, "particles/type_shapes")?
+            .collect();
+        check!(data.len() == 2);
+
+        for (row, shape) in data.iter().zip(SHAPES) {
+            check!(
+                row[..shape.len()]
+                    .iter()
+                    .zip(shape.as_bytes())
+                    .all(|(byte, expected)| byte.to_ne_bytes()[0] == *expected)
+            );
+            check!(row[shape.len()] == 0);
+            check!(row[shape.len() + 1..].iter().all(|&byte| byte == 0));
+        }
 
         Ok(())
     }

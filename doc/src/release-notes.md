@@ -4,6 +4,7 @@
 
 *Added:*
 
+* `[hoomd-gsd]`: Add `Frame::particles_type_shapes` to write `particles/type_shapes` (#477).
 * `[hoomd-utility]`: impl `Add` and `AddAssign` for `PositiveReal` (#466).
 
 *Changed:*
