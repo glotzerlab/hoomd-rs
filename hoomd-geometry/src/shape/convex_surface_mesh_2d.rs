@@ -588,11 +588,7 @@ where
 
         let o_j_inverted = o_j.inverted();
         let v_ji = o_j_inverted.rotate(&-*v_ij);
-        if b_edge_separates(other, self, &v_ji, &o_j_inverted) {
-            return false;
-        }
-
-        true
+        !b_edge_separates(other, self, &v_ji, &o_j_inverted)
     }
 }
 
