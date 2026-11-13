@@ -176,7 +176,7 @@ where
 {
     /// Volume of the wrapped shape.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
     /// use hoomd_geometry::{Volume, shape::Rectangle};
@@ -194,5 +194,32 @@ where
     #[inline]
     fn volume(&self) -> f64 {
         self.0.volume()
+    }
+}
+
+impl<P, T> IsPointInside<P> for Closed<T>
+where
+    T: IsPointInside<P>,
+{
+    /// `IsPointInside` check forwarded to the wrapped shape.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, Volume, shape::Rectangle};
+    /// use hoomd_microstate::boundary::Closed;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let closed = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
+    ///
+    /// let is_point_inside = closed.is_point_inside(&[-20.0, 1.0].into());
+    ///
+    /// assert!(!is_point_inside);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn is_point_inside(&self, point: &P) -> bool {
+        self.0.is_point_inside(point)
     }
 }

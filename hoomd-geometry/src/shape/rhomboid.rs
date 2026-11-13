@@ -526,10 +526,7 @@ impl IsPointInside<Cartesian<2>> for Rhomboid {
         }
         let lx_half = self.lx().get() / 2.0;
         let x_skew = x - self.xy() * y;
-        if x_skew < -lx_half || x_skew >= lx_half {
-            return false;
-        }
-        true
+        !(x_skew < -lx_half || x_skew >= lx_half)
     }
 }
 
@@ -679,11 +676,7 @@ where
         let cross_term = tx * c + ty * s;
         let dist_n22 = xy2 * dist_n21 - cross_term;
         let r1_on_n22 = (c + s * xy2).abs() * lx1 + det_part.abs() * ly1;
-        if 2.0 * dist_n22.abs() > r1_on_n22 + lx2 {
-            return false;
-        }
-
-        true
+        2.0 * dist_n22.abs() <= r1_on_n22 + lx2
     }
 }
 
