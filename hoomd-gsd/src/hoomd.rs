@@ -17,9 +17,6 @@ use hoomd_vector::{Cartesian, Versor};
 
 use crate::file_layer::{EncodeError, GsdFile, Mode, OpenError, SyncError, Type, WriteError};
 
-/// Longest type name size (including the null terminator).
-const MAX_NAME_LENGTH: usize = 64;
-
 /// Default delay between automatic calls to `sync_all`.
 const DEFAULT_AUTO_SYNC_DELAY: Duration = Duration::new(10, 0);
 
@@ -707,28 +704,14 @@ impl Frame<'_> {
     /// Returns an [`AppendError`] when any of the following occur:
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
-    ///
-    /// # Panics
-    ///
-    /// Panics when any type name string is longer than 63 characters. This is a limitation
-    /// in the *hoomd-rs* implementation, not the GSD file format. The limitation may be
-    /// removed in a future release.
     pub fn particles_types<'a, I>(self, types: I) -> Result<Self, AppendError>
     where
         I: IntoIterator<Item = &'a str>,
     {
         let chunk_name = "particles/types";
-        let types: Vec<_> = types.into_iter().map(str::to_string).collect();
-        let max_len = types.iter().map(String::len).fold(0, Ord::max);
-
-        assert!(max_len < MAX_NAME_LENGTH, "type name length too long");
-
-        self.hoomd_gsd_file.gsd_file.write_arrays(
-            chunk_name,
-            types.into_iter().map(|s| -> [u8; MAX_NAME_LENGTH] {
-                array::from_fn(|i| if i < s.len() { s.as_bytes()[i] } else { 0 })
-            }),
-        )?;
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_strings_array(chunk_name, types)?;
 
         Ok(self)
     }
@@ -772,7 +755,7 @@ impl Frame<'_> {
         let chunk_name = "particles/type_shapes";
         self.hoomd_gsd_file
             .gsd_file
-            .write_string_arrays(chunk_name, type_shapes)?;
+            .write_strings_array(chunk_name, type_shapes)?;
 
         Ok(self)
     }
@@ -1257,6 +1240,9 @@ mod test {
 
     #[test]
     fn particles_types() -> anyhow::Result<()> {
+        // Rows are padded to the longest type name plus the null terminator.
+        const WIDTH: usize = "linker".len() + 1;
+
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
@@ -1270,17 +1256,53 @@ mod test {
         check!(gsd_file.find_chunk(0, "particles/types") == None);
 
         let data: Vec<_> = gsd_file
-            .iter_arrays::<u8, 64>(1, "particles/types")?
+            .iter_arrays::<i8, WIDTH>(1, "particles/types")?
             .collect();
         assert!(data.len() == 3);
-        check!(data[0][0] == "A".as_bytes()[0]);
+        check!(data[0][0].to_ne_bytes()[0] == "A".as_bytes()[0]);
         check!(data[0][1] == 0);
 
-        check!(data[1][0] == "B".as_bytes()[0]);
+        check!(data[1][0].to_ne_bytes()[0] == "B".as_bytes()[0]);
         check!(data[1][1] == 0);
 
-        check!(data[2][0..6] == *"linker".as_bytes());
+        check!(
+            data[2][0..6]
+                .iter()
+                .zip("linker".as_bytes())
+                .all(|(byte, expected)| byte.to_ne_bytes()[0] == *expected)
+        );
         check!(data[0][6] == 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn particles_types_long_name() -> anyhow::Result<()> {
+        const WIDTH: usize = 101;
+
+        let long_name = "t".repeat(100);
+
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
+        hoomd_gsd_file.append_frame(0)?;
+        hoomd_gsd_file
+            .append_frame(1)?
+            .particles_types([long_name.as_str()])?;
+        drop(hoomd_gsd_file);
+
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
+        let data: Vec<_> = gsd_file
+            .iter_arrays::<i8, WIDTH>(1, "particles/types")?
+            .collect();
+        check!(data.len() == 1);
+        check!(
+            data[0][..100]
+                .iter()
+                .zip(long_name.as_bytes())
+                .all(|(byte, expected)| byte.to_ne_bytes()[0] == *expected)
+        );
+        check!(data[0][100] == 0);
 
         Ok(())
     }

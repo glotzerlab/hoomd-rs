@@ -9,6 +9,8 @@
 
 *Changed:*
 
+* `[hoomd-gsd]`: Remove the 63 character type name limit. `particles/types` now uses the same dynamic row width as `particles/type_shapes`.
+
 *Deprecated:*
 
 *Removed:*

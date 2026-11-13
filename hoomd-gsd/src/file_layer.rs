@@ -1831,7 +1831,7 @@ impl GsdFile {
 
     /// Append an array of strings to the current frame.
     ///
-    /// `write_string_arrays` writes an array of UTF-8 strings to a named chunk in
+    /// `write_strings_array` writes an array of UTF-8 strings to a named chunk in
     /// the current frame of the GSD file. Each string is stored as a null
     /// terminated row of `int8` values. Rows are padded with null bytes to the
     /// length of the longest string, which determines the number of columns *M* in
@@ -1844,21 +1844,6 @@ impl GsdFile {
     ///
     /// </div>
     ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_gsd::file_layer::GsdFile;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # use tempfile::tempdir;
-    /// # let tmp_dir = tempdir().expect("temp dir should be created");
-    /// # let path = tmp_dir.path().join("test.gsd");
-    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    /// gsd_file.write_string_arrays("particles/types", ["A", "linker"])?;
-    /// gsd_file.end_frame()?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
     /// # Errors
     ///
     /// Returns a [`WriteError`] when any of the following occur:
@@ -1866,7 +1851,11 @@ impl GsdFile {
     /// * There are no available chunk identifiers.
     /// * A chunk with the same name has already been written in this frame.
     /// * There is an I/O error while writing to the file.
-    pub fn write_string_arrays<I, S>(&mut self, name: &str, data: I) -> Result<(), WriteError>
+    pub(crate) fn write_strings_array<I, S>(
+        &mut self,
+        name: &str,
+        data: I,
+    ) -> Result<(), WriteError>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
@@ -1892,7 +1881,7 @@ impl GsdFile {
                     let bytes = value.as_ref().as_bytes();
                     buffer.extend(bytes);
                     buffer.push(0);
-                    buffer.resize(buffer.len() + columns as usize - bytes.len() - 1, 0);
+                    buffer.extend(std::iter::repeat_n(0, columns as usize - bytes.len() - 1));
                 }
                 rows
             },
