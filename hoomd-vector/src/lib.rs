@@ -169,6 +169,25 @@
 //! # }
 //! ```
 //!
+//! [`QuadQuaternion`] implements rotations on [`Cartesian<5>`] vectors:
+//! ```
+//! use approxim::assert_relative_eq;
+//! use hoomd_vector::{Cartesian, QuadQuaternion, Quaternion, Rotate};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let zero = Quaternion::ZERO;
+//! let k = Quaternion::from([0.0, 0.0, 0.0, 1.0]);
+//! // A rotation by PI in the (z, w) plane.
+//! let rotation = QuadQuaternion::try_from([[k, zero], [zero, k]])?;
+//! let a = Cartesian::from([1.0, 2.0, 3.0, 4.0, 5.0]);
+//! assert_relative_eq!(
+//!     rotation.rotate(&a),
+//!     [1.0, 2.0, -3.0, -4.0, 5.0].into()
+//! );
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! # Random distributions
 //!
 //! `hoomd_vector` interoperates with [`rand`] to generate random vectors and rotations.
@@ -182,6 +201,8 @@
 //!   covers `SO(3)`, the manifold of rotations in three dimensions.
 //! - Double versors are sampled as independent pairs of versors, which uniformly
 //!   covers `SO(4)`, the manifold of rotations in four dimensions.
+//! - Quad quaternions are uniformly sampled from `Sp(2)`, which doubly covers
+//!   `SO(5)`, the manifold of rotations in five dimensions.
 //!
 //! ```
 //! use hoomd_vector::{Angle, Cartesian, Versor};
@@ -227,6 +248,9 @@ pub mod distribution;
 mod doubleversor;
 mod quaternion;
 
+mod quadquat;
+pub use quadquat::QuadQuaternion;
+
 pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
 pub use doubleversor::DoubleVersor;
@@ -251,6 +275,11 @@ pub enum Error {
     /// Attempted to normalize a quaternion with an invalid magnitude.
     #[error("cannot normalize the 0 quaternion")]
     InvalidQuaternionMagnitude,
+
+    /// Attempted to construct a [`QuadQuaternion`] from blocks that do not span `H^2`
+    /// (and therefore cannot unambiguously initialize a rotation).
+    #[error("cannot normalize linearly dependent quad quaternion blocks")]
+    InvalidQuadQuaternionSpan,
 }
 
 /// Operate on elements of a metric vector space.
