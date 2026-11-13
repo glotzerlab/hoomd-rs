@@ -10,6 +10,8 @@
 
 *Changed:*
 
+* `[hoomd-microstate]`: Panic in `iter_sites_near` when the search radius is larger than the boundary's maximum interaction range. Adds a `C: GenerateGhosts<S>` bound to some implementations, but all boundaries must already implement `GenerateGhosts<S>` (#420).
+
 *Deprecated:*
 
 *Removed:*
