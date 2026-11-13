@@ -25,6 +25,11 @@ doc-example = ["bevy", "hoomd-bevy/doc-example"]
 
 [dependencies]
 hoomd-bevy = { workspace =  true, optional = true }
+
+bevy = { workspace = true, optional = true }
+bevy_egui = { workspace = true, optional = true }
+
+[dev-dependencies]
 hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
 hoomd-gsd.workspace = true
@@ -41,8 +46,6 @@ hoomd-vector.workspace = true
 
 arrayvec.workspace = true
 anyhow.workspace = true
-bevy = { workspace = true, optional = true }
-bevy_egui = { workspace = true, optional = true }
 thiserror.workspace = true
 parquet.workspace = true
 parquet_derive.workspace = true
