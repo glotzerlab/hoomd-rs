@@ -1880,8 +1880,7 @@ impl GsdFile {
                     rows += 1;
                     let bytes = value.as_ref().as_bytes();
                     buffer.extend(bytes);
-                    buffer.push(0);
-                    buffer.extend(std::iter::repeat_n(0, columns as usize - bytes.len() - 1));
+                    buffer.extend(std::iter::repeat_n(0, columns as usize - bytes.len()));
                 }
                 rows
             },
