@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
     fmt,
-    ops::{Div, DivAssign, Mul, MulAssign},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign},
 };
 
 use super::Error;
@@ -78,6 +78,52 @@ impl PositiveReal {
     #[inline]
     pub const fn get(&self) -> f64 {
         self.0
+    }
+
+    /// Compute the square root.
+    ///
+    /// The square root of a positive finite value is always a positive finite value,
+    /// so the result is guaranteed to be valid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_utility::valid::PositiveReal;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let positive = PositiveReal::try_from(4.0)?;
+    ///
+    /// assert_eq!(positive.sqrt().get(), 2.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn sqrt(&self) -> Self {
+        Self(self.0.sqrt())
+    }
+
+    /// Compute the cube root.
+    ///
+    /// The cube root of a positive finite value is always a positive finite value,
+    /// so the result is guaranteed to be valid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_utility::valid::PositiveReal;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let positive = PositiveReal::try_from(27.0)?;
+    ///
+    /// assert_eq!(positive.cbrt().get(), 3.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn cbrt(&self) -> Self {
+        Self(self.0.cbrt())
     }
 }
 
@@ -189,6 +235,22 @@ impl fmt::Display for PositiveReal {
     }
 }
 
+impl Add for PositiveReal {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self {
+        Self(self.0 + rhs.0)
+    }
+}
+
+impl AddAssign<PositiveReal> for PositiveReal {
+    #[inline]
+    fn add_assign(&mut self, rhs: PositiveReal) {
+        self.0 += rhs.0;
+    }
+}
+
 impl Mul for PositiveReal {
     type Output = Self;
 
@@ -242,6 +304,32 @@ mod tests {
 
         let result = PositiveReal::try_from(-1.0);
         check!(result == Err(Error::NotPositive(-1.0)));
+    }
+
+    #[test]
+    fn positive_real_addition() {
+        let sum = positive_real!(0.25) + positive_real!(0.75);
+        check!(sum.get() == 1.0);
+
+        let mut sum = positive_real!(1.0);
+        sum += positive_real!(0.5);
+        check!(sum.get() == 1.5);
+    }
+
+    #[test]
+    fn positive_real_roots() {
+        check!(positive_real!(4.0).sqrt().get() == 2.0);
+        check!(positive_real!(27.0).cbrt().get() == 3.0);
+
+        // The result is valid even at the extremes of the representable range.
+        let largest = PositiveReal::try_from(f64::MAX).expect("f64::MAX is positive");
+        check!(largest.sqrt().get().is_finite());
+        check!(largest.cbrt().get().is_finite());
+
+        let smallest =
+            PositiveReal::try_from(f64::from_bits(1)).expect("smallest subnormal is positive");
+        check!(smallest.sqrt().get() > 0.0);
+        check!(smallest.cbrt().get() > 0.0);
     }
 
     #[test]

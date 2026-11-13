@@ -1,4 +1,5 @@
 words = [
+    "Steinhardt",
     "abelian",
     "binaryen",
     "bindgen",
@@ -52,6 +53,7 @@ words = [
     "polytope",
     "polytopes",
     "quasicrystal",
+    "rotationally",
     "rustdoc",
     "rustup",
     "shader",

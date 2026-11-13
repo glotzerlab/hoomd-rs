@@ -203,8 +203,8 @@ where
         let (c1, c2) = (p1 + d1 * s, p2 + d2 * t);
         let dist_sq = (c1 - c2).norm_squared();
 
-        let total_radius = self.radius.get() + other.radius.get();
-        dist_sq <= total_radius.powi(2)
+        let total_radius = self.radius + other.radius;
+        dist_sq <= total_radius.get().powi(2)
     }
 }
 #[cfg(test)]
