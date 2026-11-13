@@ -533,8 +533,8 @@ impl Mul<Complex<f64>> for Biquaternion {
 impl MulAssign<f64> for Biquaternion {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
-        for n in 0..4 {
-            self.components[n] *= Complex::new(rhs, 0.0);
+        for component in &mut self.components {
+            *component *= Complex::new(rhs, 0.0);
         }
     }
 }
@@ -563,8 +563,8 @@ impl Div<Complex<f64>> for Biquaternion {
 impl DivAssign<f64> for Biquaternion {
     #[inline]
     fn div_assign(&mut self, rhs: f64) {
-        for n in 0..4 {
-            self.components[n] /= Complex::new(rhs, 0.0);
+        for component in &mut self.components {
+            *component /= Complex::new(rhs, 0.0);
         }
     }
 }
