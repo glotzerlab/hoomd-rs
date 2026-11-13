@@ -180,7 +180,10 @@ impl<const L: usize> RotationalAutocorrelation<L> {
     /// let rot_autocorr = RotationalAutocorrelation::<6>::new();
     /// let f_l: Vec<_> = trajectory
     ///     .iter()
-    ///     .map(|frame| rot_autocorr.f_l(reference.iter().copied().zip(frame.iter().copied())))
+    ///     .map(|frame| {
+    ///         rot_autocorr
+    ///             .f_l(reference.iter().copied().zip(frame.iter().copied()))
+    ///     })
     ///     .collect();
     ///
     /// assert_relative_eq!(f_l[0], 1.0, epsilon = 1e-12);
