@@ -4,8 +4,9 @@
 //! Implement vector types in Minkowski space.
 
 use approxim::{approx_derive::RelativeEq, assert_relative_eq};
+use num_complex::Complex;
 use rand::{
-    Rng,
+    Rng, RngExt,
     distr::{Distribution, StandardUniform, Uniform},
 };
 use serde::{Deserialize, Serialize};
@@ -18,9 +19,9 @@ use std::{
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
-use crate::{Error, HyperbolicRotate};
+use crate::{Biquaternion, Error, HyperbolicRotate};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Metric, Vector};
+use hoomd_vector::{Cartesian, Metric, Rotate, Vector, Versor};
 
 /// A vector in N-dimensional Minkowski space.
 ///
@@ -550,8 +551,16 @@ impl<const N: usize> Hyperbolic<N> {
     #[must_use]
     #[inline]
     #[allow(
+        clippy::cast_sign_loss,
+        reason = "last coordinate on hyperboloid is always positive"
+    )]
+    #[allow(
         clippy::cast_possible_truncation,
-        reason = "truncation to relax precision"
+        reason = "truncation to get a fast approximate value"
+    )]
+    #[allow(
+        clippy::cast_possible_wrap,
+        reason = "possible wrap well beyond values for reasonable simulations"
     )]
     pub fn from_minkowski_coordinates(point: Minkowski<N>) -> Hyperbolic<N> {
         let pt = point.coordinates;
@@ -569,7 +578,10 @@ impl<const N: usize> Hyperbolic<N> {
             .fold(pt[N - 1] * pt[N - 1], |sum, (_, x)| {
                 f64::mul_add(-x, *x, sum)
             });
-        let tolerance = 9_i32 - 2_i32 * (point.coordinates[N - 1].log10().trunc() as i32);
+
+        let zed = std::cmp::max(point.coordinates[N - 1] as u64, 1);
+        let decade = (zed).ilog10() as i32;
+        let tolerance = 9 - 2 * decade;
         assert_relative_eq!(lhs, rhs, epsilon = 10.0_f64.powi(-tolerance));
         Hyperbolic { point }
     }
@@ -592,12 +604,14 @@ impl Hyperbolic<3> {
 }
 
 impl Hyperbolic<4> {
-    /// Create a point on the surface of a four-dimensional hyperboloid from the spherical representation.
+    /// Create a point on the surface of a four-dimensional hyperboloid from
+    /// the spherical representation. `theta` ranges from $`[0, \pi)`$ and
+    /// `phi` ranges from $`[0, 2\pi)`$.
     #[must_use]
     #[inline]
     pub fn from_polar_coordinates(v: f64, theta: f64, phi: f64) -> Hyperbolic<4> {
-        let theta_mod = theta.rem_euclid(2.0 * PI);
-        let phi_mod = phi.rem_euclid(PI);
+        let theta_mod = theta.rem_euclid(PI);
+        let phi_mod = phi.rem_euclid(2.0 * PI);
         let v_sinh = v.sinh();
         let point = Minkowski::from([
             v_sinh * (theta_mod.cos()),
@@ -926,7 +940,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 /// Randomly distribute points locally on a hyperboloid.
 ///
 /// [`HyperbolicDisk`] is a uniform distribution of points within distance `r`
-/// of a point on the 2-dimensional hyperboloid.
+/// of a point on the $`(N-1)`$-dimensional hyperboloid.
 ///
 /// # Example
 ///
@@ -962,14 +976,14 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 /// # }
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct HyperbolicDisk {
+pub struct HyperbolicDisk<const N: usize> {
     /// Max distance away from point.
     pub disk_radius: PositiveReal,
     /// The center of the disk.
-    pub point: Hyperbolic<3>,
+    pub point: Hyperbolic<N>,
 }
 
-impl Distribution<Hyperbolic<3>> for HyperbolicDisk {
+impl Distribution<Hyperbolic<3>> for HyperbolicDisk<3> {
     /// Sample a random point in the hyperbolic disk.
     ///
     /// The implementation translates Minkowski 3-vector `point` along
@@ -1004,6 +1018,51 @@ impl Distribution<Hyperbolic<3>> for HyperbolicDisk {
                 + trial_coords[2] * eta_cosh,
         ]);
         Hyperbolic::from_minkowski_coordinates(transformed_point)
+    }
+}
+
+impl Distribution<Hyperbolic<4>> for HyperbolicDisk<4> {
+    /// Sample a random point in the hyperbolic disk.
+    ///
+    /// The implementation translates Minkowski 3-vector `point` along
+    /// the Hyperbolic by maximum distance of `disk_radius`. Note that because SO(2,1) is
+    /// non-Abelian, the point must be transformed to the cusp before a trial
+    /// move is applied (and then the point is transformed back). This ensures
+    /// that the max distance translated by the trial move does not exceed `disk_radius`.
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Hyperbolic<4> {
+        let max_boost = self.disk_radius.get();
+        let point_array = self.point.coordinates();
+        let eta = point_array[3].acosh();
+        let (sh, ch) = (
+            (eta / 2.0).sinh() / (eta.sinh()),
+            (eta / 2.0).cosh() / (eta.cosh()),
+        );
+        let body_quat_operator = Biquaternion::from([
+            Complex::new(0.0, point_array[0] * sh),
+            Complex::new(0.0, point_array[1] * sh),
+            Complex::new(0.0, point_array[2] * sh),
+            Complex::new(point_array[3] * ch, 0.0),
+        ])
+        .to_unit_unchecked();
+
+        let trial_boost = Uniform::new(0.0, 1.0).expect("r is positive and real");
+        let v1: f64 = trial_boost.sample(rng);
+        let v = v1.sqrt() * max_boost;
+        let v_sinh = v.sinh();
+        let trial_versor: Versor = rng.random();
+        let north_pole = Cartesian::from([0.0, 0.0, 1.0]);
+        let trial_direction = trial_versor.rotate(&north_pole);
+        // trial displacement, in Minkowski coordinates centered at cusp
+        let trial_coords: Minkowski<4> = Minkowski::from([
+            v_sinh * trial_direction[0],
+            v_sinh * trial_direction[1],
+            v_sinh * trial_direction[2],
+            v.cosh(),
+        ]);
+
+        let transformed_point = body_quat_operator.hyperbolic_rotate(&trial_coords);
+        Hyperbolic::<4>::from_minkowski_coordinates(transformed_point)
     }
 }
 
@@ -1305,8 +1364,8 @@ mod tests {
     }
 
     #[test]
-    fn random_hyperbolic() {
-        // Generate ten random points on the Hyperbolic
+    fn random_hyperbolic_2d() {
+        // Generate ten random points on 2D hyperbolic space
         let mut rng = StdRng::seed_from_u64(42);
         let d = 0.1;
         let origin = Minkowski::from([0.0, 0.0, 1.0]);
@@ -1317,10 +1376,35 @@ mod tests {
             };
             let random_point: Hyperbolic<3> = disk.sample(&mut rng);
 
-            // check that points remain on Hyperbolic
+            // check that points remain on the hyperboloid
             let rho = -random_point
                 .point
                 .distance_squared(&Minkowski::<3>::default());
+            assert_relative_eq!(rho, 1.0, epsilon = 1e-12);
+
+            // check that points are within distance d of cusp
+            let distance = random_point.distance_from_cusp();
+            assert!(d > distance);
+        }
+    }
+
+    #[test]
+    fn random_hyperbolic_3d() {
+        // Generate ten random points on 3D hyperbolic space
+        let mut rng = StdRng::seed_from_u64(57);
+        let d = 0.1;
+        let origin = Minkowski::from([0.01, 0.01, 0.01, 1.0003_f64.sqrt()]);
+        for _n in 0..10 {
+            let disk = HyperbolicDisk {
+                disk_radius: d.try_into().expect("hard-coded positive number"),
+                point: Hyperbolic::<4>::from_minkowski_coordinates(origin),
+            };
+            let random_point: Hyperbolic<4> = disk.sample(&mut rng);
+
+            // check that points remain on the hyperboloid
+            let rho = -random_point
+                .point
+                .distance_squared(&Minkowski::<4>::default());
             assert_relative_eq!(rho, 1.0, epsilon = 1e-12);
 
             // check that points are within distance d of cusp
