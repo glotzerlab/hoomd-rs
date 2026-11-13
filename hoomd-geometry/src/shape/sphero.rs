@@ -84,8 +84,6 @@ where
 {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        (self.shape.bounding_sphere_radius().get() + self.rounding_radius.get())
-            .try_into()
-            .expect("expression should evaluate to a positive real")
+        self.shape.bounding_sphere_radius() + self.rounding_radius
     }
 }

@@ -4,6 +4,29 @@
 
 *Added:*
 
+* `[hoomd-microstate`]: Implement `IsPointInside` for `Open`, `Closed`, and `Periodic` (#420).
+* `[hoomd-order]`: Add the `hoomd-order` crate. It implements Spherical Harmonics, Steinhardt and *k-atic* order parameters, neighbor queries, and an algorithm that averages values over neighbors (#293, #420).
+* `[hoomd-utility]`: Implement `Add`, `AddAssign`, `cbrt`, and `sqrt` for `PositiveReal` (#466).
+* `[hoomd-vector]`:  Implement `from_spherical_coordinates` for `Unit<Cartesian<3>>` (#293).
+
+*Changed:*
+
+* `[hoomd-microstate]`: Panic in `iter_sites_near` when the search radius is larger than the boundary's maximum interaction range. Adds a `C: GenerateGhosts<S>` bound to some implementations, but all boundaries must already implement `GenerateGhosts<S>` (#420).
+
+*Deprecated:*
+
+*Removed:*
+
+*Fixed:*
+
+## 1.4.0 (2026-10-26)
+
+*Highlight:*
+
+**hoomd-rs 1.4** brings a number of performance improvements, bug fixes, and new features. It fixes a critical bug where *hoomd-rs* processes would sometimes freeze when writing GSD files. It also includes new functionality to enable the cell list data structure in spherical space and to support rotations in 4D.
+
+*Added:*
+
 * `[hoomd-microstate]`: Add the `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and `max_ghosts_64` cargo features that set the maximum number of ghosts per site. The largest enabled feature is used when multiple are set simultaneously.
 * `[hoomd-geometry]`: Implement `MinkowskiPortalRefinement` for `Cartesian<4>` (#306).
 * `[hoomd-geometry]`: New `ConvexHull` trait, which subsumes `ConvexSurfaceMesh2d::construct_convex_hull` and adds a new implementation for three-dimensional hulls (#426).
@@ -26,14 +49,11 @@
 * `[tutorials]`: The workflow tutorial now uses `hoomd-workspace` (#403).
 * `[hoomd-microstate]`: `Periodic<Hypercuboid<N>>::GenerateGhosts` now works for arbitrary dimension (#338)
 
-*Deprecated:*
-
-*Removed:*
-
 *Fixed:*
 
-`[hoomd-linear-algebra]`: `Matrix::add_assign` no longer uses excess memory (#416).
-`[hoomd-geometry]`: `Simplex3::IntersectsAt` now matches Xenocollide in all cases (#458).
+* `[hoomd-linear-algebra]`: `Matrix::add_assign` no longer uses excess memory (#416).
+* `[hoomd-geometry]`: `Simplex3::IntersectsAt` now matches Xenocollide in all cases (#458).
+* `[hoomd-gsd]`: Fix random hang when writing GSD files (#467).
 
 ## 1.3.0 (2026-08-26)
 

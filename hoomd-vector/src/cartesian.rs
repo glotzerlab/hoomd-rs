@@ -248,6 +248,44 @@ impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     }
 }
 
+impl Unit<Cartesian<3>> {
+    /// Construct a unit vector from spherical coordinates
+    ///
+    /// This method follows the physics convention: $` \theta `$ is the polar
+    /// angle and $` \phi `$ is the azimuthal angle.
+    ///
+    /// ```math
+    /// \vec{r} = \sin(\theta) \cos(\phi) \hat{i} +
+    ///           \sin(\theta) \sin(\phi) \hat{j} +
+    ///           \cos(\theta) \hat{k}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, Unit};
+    /// use std::f64::consts::PI;
+    ///
+    /// let z = Unit::<Cartesian<3>>::from_spherical_coordinates(0.0, 0.0);
+    /// assert_relative_eq!(z.get(), &[0.0, 0.0, 1.0].into());
+    ///
+    /// let x = Unit::<Cartesian<3>>::from_spherical_coordinates(PI / 2.0, 0.0);
+    /// assert_relative_eq!(x.get(), &[1.0, 0.0, 0.0].into());
+    ///
+    /// let y =
+    ///     Unit::<Cartesian<3>>::from_spherical_coordinates(PI / 2.0, PI / 2.0);
+    /// assert_relative_eq!(y.get(), &[0.0, 1.0, 0.0].into());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn from_spherical_coordinates(theta: f64, phi: f64) -> Self {
+        let (sin_theta, cos_theta) = theta.sin_cos();
+        let (sin_phi, cos_phi) = phi.sin_cos();
+        Unit([sin_theta * cos_phi, sin_theta * sin_phi, cos_theta].into())
+    }
+}
+
 impl<const N: usize> Vector for Cartesian<N> {}
 
 impl<const N: usize> InnerProduct for Cartesian<N> {

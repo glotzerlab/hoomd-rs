@@ -12,7 +12,7 @@ use hoomd_manifold::Spherical;
 
 /// [`OpenSpherical<N>`] implements a hypercubic box enclosing a unit-radius
 /// $`(N-1)`$-sphere. Use `OpenSpherical` alongside [`SphericalVecCell`] to
-/// implement [`ParallelSweep`] for [`Spherical`] bodies. `OpenSpherical` is
+/// implement `ParallelSweep` for [`Spherical`] bodies. `OpenSpherical` is
 /// otherwise functionally identical to using [`Open`] for [`Spherical`]
 /// simulations.
 ///
@@ -29,9 +29,9 @@ use hoomd_manifold::Spherical;
 /// Similar to [`Open`], `OpenSpherical` does not wrap bodies and sites,
 /// nor does it generate ghost sites.
 ///
-/// [`SphericalVecCell`]: hoomd_spatial::SphericalVecCell;
-/// [`ParallelSweep`]: hoomd_mc::ParallelSweep;
-/// [`Spherical`]: hoomd_manifold::Spherical;
+/// [`SphericalVecCell`]: hoomd_spatial::SphericalVecCell
+/// [`Spherical`]: hoomd_manifold::Spherical
+/// [`Open`]: crate::boundary::Open
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct OpenSpherical<const N: usize> {}
 

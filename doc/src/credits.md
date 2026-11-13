@@ -7,6 +7,7 @@ The following people have contributed to *hoomd-rs*:
 * Joseph Burkhart, University of Michigan
 * Domagoj Fijan, University of Michigan
 * Alex Lee, University of Michigan
+* Tim Moore, University of Michigan
 * Trevor Teague, University of Michigan
 * Michelle Thran, University of Michigan
 * Suraj Kannur, University of Michigan
