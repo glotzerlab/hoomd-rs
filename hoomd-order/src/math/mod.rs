@@ -12,3 +12,6 @@
 
 mod spherical_harmonic;
 pub use spherical_harmonic::{SphericalHarmonic, SphericalHarmonicOutputs};
+
+mod gegenbauer;
+pub use gegenbauer::Gegenbauer;

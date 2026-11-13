@@ -3981,6 +3981,7 @@ dependencies = [
  "itertools 0.15.0",
  "num-complex",
  "rand 0.10.3",
+ "rand_distr",
  "rstest",
  "sphrs",
  "thiserror 2.0.21",
