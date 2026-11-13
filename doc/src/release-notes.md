@@ -4,11 +4,14 @@
 
 *Added:*
 
+* `[hoomd-microstate`]: Implement `IsPointInside` for `Open`, `Closed`, and `Periodic` (#420).
 * `[hoomd-order]`: Add the `hoomd-order` crate. It implements Spherical Harmonics, Steinhardt and *k-atic* order parameters, neighbor queries, and an algorithm that averages values over neighbors (#293, #420).
 * `[hoomd-utility]`: Implement `Add`, `AddAssign`, `cbrt`, and `sqrt` for `PositiveReal` (#466).
 * `[hoomd-vector]`:  Implement `from_spherical_coordinates` for `Unit<Cartesian<3>>` (#293).
 
 *Changed:*
+
+* `[hoomd-microstate]`: Panic in `iter_sites_near` when the search radius is larger than the boundary's maximum interaction range. Adds a `C: GenerateGhosts<S>` bound to some implementations, but all boundaries must already implement `GenerateGhosts<S>` (#420).
 
 *Deprecated:*
 
