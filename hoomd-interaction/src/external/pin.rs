@@ -1,7 +1,12 @@
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+//! Implement [`PinOrientations`]
+
 use hoomd_microstate::{Body, Microstate, property::Orientation};
 use hoomd_vector::{Angle, Quaternion};
 
-use crate::DeltaEnergyOne;
+use crate::{DeltaEnergyOne, TotalEnergy};
 
 pub struct PinOrientations<R> {
     pub k: f64,
@@ -59,5 +64,20 @@ where
         let energy_final = self.body_energy(body_tag, final_body);
 
         energy_final - energy_initial
+    }
+}
+
+impl<B, S, X, C, R> TotalEnergy<Microstate<B, S, X, C>> for PinOrientations<R>
+where
+    R: RotationDelta,
+    B: Orientation<Rotation = R>,
+{
+    /// Total energy over all bodies.
+    #[inline]
+    fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
+        microstate.bodies()
+            .iter()
+            .map(|tagged_body| self.body_energy(tagged_body.tag, &tagged_body.item))
+            .sum()
     }
 }
