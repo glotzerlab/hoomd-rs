@@ -9,20 +9,20 @@ pub struct PinOrientations<R> {
 }
 
 pub trait RotationDelta {
-    fn delta(reference_orientation: &Self) -> f64;
+    fn delta(&self, reference_orientation: &Self) -> f64;
 }
 
 impl RotationDelta for Quaternion {
     #[inline]
-    fn delta(reference_orientation: &Quaternion) -> f64 {
-        // TODO
+    fn delta(&self, reference_orientation: &Quaternion) -> f64 {
+        todo!()
     }
 }
 
 impl RotationDelta for Angle {
     #[inline]
-    fn delta(reference_orientation: &Angle) -> f64 {
-        // TODO
+    fn delta(&self, reference_orientation: &Angle) -> f64 {
+        todo!()
     }
 }
 
@@ -34,8 +34,8 @@ impl<R> PinOrientations<R>
         B: Orientation<Rotation = R>,
     {
         self.reference[body_tag].iter()
-            .map(|reference_orientation| 0.5 * self.k * body.orientation().delta(reference_orientation).powi(2))
-            .reduce(|acc, x| acc.min(x))
+            .map(|reference_orientation| 0.5 * self.k * body.properties.orientation().delta(reference_orientation).powi(2))
+            .reduce(f64::min)
             .unwrap_or(0.0)
     }
 }
@@ -52,10 +52,10 @@ where
         body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64 {
-        let tagged_body = initial_microstate.bodies()[body_index];
+        let tagged_body = &initial_microstate.bodies()[body_index];
         let body_tag = tagged_body.tag;
         
-        let energy_initial = self.body_energy(body_tag, tagged_body.item);
+        let energy_initial = self.body_energy(body_tag, &tagged_body.item);
         let energy_final = self.body_energy(body_tag, final_body);
 
         energy_final - energy_initial
