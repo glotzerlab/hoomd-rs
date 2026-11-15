@@ -3,8 +3,12 @@
 
 //! Implement [`PinOrientations`]
 
-use hoomd_microstate::{Body, Microstate, property::Orientation};
-use hoomd_vector::{Angle, Quaternion};
+use hoomd_microstate::{
+    Body, Microstate,
+    boundary::GenerateGhosts,
+    property::{Orientation, Position},
+};
+use hoomd_vector::{Angle, InnerProduct, Quaternion};
 
 use crate::{DeltaEnergyOne, TotalEnergy};
 
@@ -78,6 +82,75 @@ where
         microstate.bodies()
             .iter()
             .map(|tagged_body| self.body_energy(tagged_body.tag, &tagged_body.item))
+            .sum()
+    }
+}
+
+pub struct PinPositions<V> {
+    pub k: f64,
+    pub reference: Vec<V>,
+}
+
+impl<V> PinPositions<V>
+where
+    V: InnerProduct,
+{
+    pub fn body_energy<B, S, C>(
+        &self,
+        body_tag: usize,
+        body: &Body<B, S>,
+        boundary: &C,
+    ) -> f64
+    where
+        B: Position<Position = V>,
+        C: GenerateGhosts<B>,
+    {
+        let reference = &self.reference[body_tag];
+        let ghosts = boundary.generate_ghosts(&body.properties);
+        std::iter::once(body.properties.position())
+            .chain(ghosts.iter().map(|ghost| ghost.position()))
+            .map(|position| 0.5 * self.k * (*position - *reference).norm_squared())
+            .reduce(f64::min)
+            .unwrap_or(0.0)
+    }
+}
+
+impl<B, S, X, C, V> DeltaEnergyOne<B, S, X, C> for PinPositions<V>
+where
+    B: Position<Position = V>,
+    C: GenerateGhosts<B>,
+    V: InnerProduct,
+{
+    #[inline]
+    fn delta_energy_one(
+        &self,
+        initial_microstate: &Microstate<B, S, X, C>,
+        body_index: usize,
+        final_body: &Body<B, S>,
+    ) -> f64 {
+        let tagged_body = &initial_microstate.bodies()[body_index];
+        let body_tag = tagged_body.tag;
+        let boundary = initial_microstate.boundary();
+
+        let energy_initial = self.body_energy(body_tag, &tagged_body.item, boundary);
+        let energy_final = self.body_energy(body_tag, final_body, boundary);
+
+        energy_final - energy_initial
+    }
+}
+
+impl<B, S, X, C, V> TotalEnergy<Microstate<B, S, X, C>> for PinPositions<V>
+where
+    B: Position<Position = V>,
+    C: GenerateGhosts<B>,
+    V: InnerProduct,
+{
+    #[inline]
+    fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
+        let boundary = microstate.boundary();
+        microstate.bodies()
+            .iter()
+            .map(|tagged_body| self.body_energy(tagged_body.tag, &tagged_body.item, boundary))
             .sum()
     }
 }
