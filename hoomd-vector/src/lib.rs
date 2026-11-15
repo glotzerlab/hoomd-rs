@@ -822,6 +822,20 @@ pub trait Rotation: Copy {
     fn combine(&self, other: &Self) -> Self;
 }
 
+/// The distance between two rotations.
+///
+/// The `RotationalDistance` trait describes rotations where one can calculate
+/// the smallest rotation angle $` \Delta \theta `$ that rotations one to the
+/// other.
+///
+/// * [`Angle`]: $` \Delta \theta = (\theta_2 - \theta_1) \bmod 2\pi `$ wrapped to
+///   the range $` [0, \pi] `$.
+/// * [`Versor`]: See [`Versor::arc_distance`].
+pub trait RotationalDistance {
+    /// Compute the rotational distance between `self` and `reference_orientation`.
+    fn rotational_distance(&self, reference_orientation: &Self) -> f64;
+}
+
 /// Get the relative position and orientation given pairs of positions and orientations.
 ///
 /// # Example

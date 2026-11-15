@@ -8,7 +8,7 @@ use hoomd_microstate::{
     boundary::GenerateGhosts,
     property::{Orientation, Position},
 };
-use hoomd_vector::{Angle, InnerProduct, Quaternion};
+use hoomd_vector::{InnerProduct, RotationalDistance};
 
 use crate::{DeltaEnergyOne, TotalEnergy};
 
@@ -17,33 +17,17 @@ pub struct PinOrientations<R> {
     pub reference: Vec<Vec<R>>,
 }
 
-pub trait RotationDelta {
-    fn delta(&self, reference_orientation: &Self) -> f64;
-}
-
-impl RotationDelta for Quaternion {
-    #[inline]
-    fn delta(&self, reference_orientation: &Quaternion) -> f64 {
-        todo!()
-    }
-}
-
-impl RotationDelta for Angle {
-    #[inline]
-    fn delta(&self, reference_orientation: &Angle) -> f64 {
-        todo!()
-    }
-}
 
 impl<R> PinOrientations<R>
 {
+    #[inline]
     pub fn body_energy<B, S>(&self, body_tag: usize, body: &Body<B, S>) -> f64
     where
-        R: RotationDelta,
+        R: RotationalDistance,
         B: Orientation<Rotation = R>,
     {
         self.reference[body_tag].iter()
-            .map(|reference_orientation| 0.5 * self.k * body.properties.orientation().delta(reference_orientation).powi(2))
+            .map(|reference_orientation| 0.5 * self.k * body.properties.orientation().rotational_distance(reference_orientation).powi(2))
             .reduce(f64::min)
             .unwrap_or(0.0)
     }
@@ -51,10 +35,10 @@ impl<R> PinOrientations<R>
 
 impl<B, S, X, C, R> DeltaEnergyOne<B, S, X, C> for PinOrientations<R>
 where
-    R: RotationDelta,
+    R: RotationalDistance,
     B: Orientation<Rotation = R>,
 {
-        #[inline]
+    #[inline]
     fn delta_energy_one(
         &self,
         initial_microstate: &Microstate<B, S, X, C>,
@@ -73,7 +57,7 @@ where
 
 impl<B, S, X, C, R> TotalEnergy<Microstate<B, S, X, C>> for PinOrientations<R>
 where
-    R: RotationDelta,
+    R: RotationalDistance,
     B: Orientation<Rotation = R>,
 {
     /// Total energy over all bodies.
@@ -95,6 +79,7 @@ impl<V> PinPositions<V>
 where
     V: InnerProduct,
 {
+    #[inline]
     pub fn body_energy<B, S, C>(
         &self,
         body_tag: usize,
@@ -108,7 +93,7 @@ where
         let reference = &self.reference[body_tag];
         let ghosts = boundary.generate_ghosts(&body.properties);
         std::iter::once(body.properties.position())
-            .chain(ghosts.iter().map(|ghost| ghost.position()))
+            .chain(ghosts.iter().map(hoomd_microstate::property::Position::position))
             .map(|position| 0.5 * self.k * (*position - *reference).norm_squared())
             .reduce(f64::min)
             .unwrap_or(0.0)
