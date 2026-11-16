@@ -20,4 +20,4 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
-toml = "1.0.0"
+toml = "1.2.1"
