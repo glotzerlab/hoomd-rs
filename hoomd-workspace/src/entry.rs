@@ -41,6 +41,14 @@ pub(crate) fn formatted<T: ?Sized + Serialize>(state_point: &T) -> Result<String
 ///
 /// [`Entry`] is implemented for all types that implement [`Serialize`].
 ///
+/// # None/null handling
+///
+/// - Use `Option<T>` for fields that are *always* set as `null` or a value
+///   in the JSON.
+/// - Add `#[serde(skip_serializing_if = "Option::is_none")]` to the line before
+///   the field when `None` values should be *omitted* from the JSON. Use this form
+///   when you write some state points to your workspace and later add a field.
+///
 /// # Example
 ///
 /// ```
