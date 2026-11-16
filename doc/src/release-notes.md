@@ -9,6 +9,8 @@
 * `[hoomd-order]`: Add the `hoomd-order` crate. It implements Spherical Harmonics, Steinhardt and *k-atic* order parameters, neighbor queries, and an algorithm that averages values over neighbors (#293, #420).
 * `[hoomd-utility]`: Implement `Add`, `AddAssign`, `cbrt`, and `sqrt` for `PositiveReal` (#466).
 * `[hoomd-vector]`:  Implement `from_spherical_coordinates` for `Unit<Cartesian<3>>` (#293).
+* `[hoomd-workspace]`: Explain how to add new optional fields to state points (#482).
+
 
 *Changed:*
 
