@@ -830,7 +830,10 @@ pub trait Rotation: Copy {
 ///
 /// * [`Angle`]: $` \Delta \theta = (\theta_2 - \theta_1) \bmod 2\pi `$ wrapped to
 ///   the range $` [0, \pi] `$.
-/// * [`Versor`]: See [`Versor::arc_distance`].
+/// * [`Versor`]: $` \Delta theta = 2 d(\mathbf{q}_0, \mathbf{q}_1) `$ wrapped to
+///   the range $` [0, \pi] `$ where *d* is given by [`arc_distance`].
+///
+/// [`arc_distance`]: Versor::arc_distance
 pub trait RotationalDistance {
     /// Compute the rotational distance between `self` and `reference_orientation`.
     fn rotational_distance(&self, reference_orientation: &Self) -> f64;

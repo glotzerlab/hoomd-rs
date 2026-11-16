@@ -607,6 +607,12 @@ impl Versor {
     /// This value always lies in the range $`[0, \pi]`$, and is symmetric: while there
     /// are multiple arcs separating a pair of quaternions, this metric always chooses
     /// the shortest.
+    ///
+    /// Note: The `arc_distance` is the distance between two versors in SO(3). This is
+    /// not the same as the rotational distance between the two 3D rotations that the
+    /// versors represent. Use [`rotational_distance`] to compute that value.
+    ///
+    /// [`rotational_distance`]: Self::rotational_distance
     #[inline]
     #[must_use]
     pub fn arc_distance(&self, other: &Self) -> f64 {
