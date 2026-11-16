@@ -19,11 +19,11 @@ workspace = true
 
 [dependencies]
 parquet.workspace = true
-parquet_derive.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
 assert2.workspace = true
+parquet_derive.workspace = true
 tempfile.workspace = true
