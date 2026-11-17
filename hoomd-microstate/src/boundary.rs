@@ -182,9 +182,9 @@ pub trait MaximumAllowableInteractionRange {
 pub trait GenerateMinimumImageCandidates<S> {
     /// Place periodic images of sites at all candidate minimum image locations.
     ///
-    /// Given `site_properties` inside the boundary, `generate_minimum_image_candidates`
-    /// places all periodic images of that site that would be candidates for the
-    /// minimum image.
+    /// Given `site_properties` inside the boundary,
+    /// `generate_minimum_image_candidates` places periodic images of that site
+    /// that would be candidates for the minimum image.
     ///
     /// The provided site is **not included** in the candidates, only its images.
     ///
