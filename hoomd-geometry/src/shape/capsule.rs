@@ -6,7 +6,9 @@
 use serde::{Deserialize, Serialize};
 
 use super::sphere::sphere_volume_prefactor;
-use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
+use crate::{
+    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, Scale, SupportMapping, Volume,
+};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation};
 
@@ -124,6 +126,80 @@ impl<const N: usize> Volume for Capsule<N> {
         );
         let cylinder_volume = sphere_volume_prefactor(N - 1) * r_n_minus_one * self.height.get();
         cylinder_volume + sphere_volume_prefactor(N) * (r_n_minus_one * self.radius.get())
+    }
+}
+
+impl<const N: usize> Scale for Capsule<N> {
+    /// Construct a scaled [`Capsule`].
+    ///
+    /// The resulting capsule's radius and height are the original's
+    /// scaled by *v*:
+    /// ```math
+    /// \begin{align*}
+    /// r_\mathrm{new} &= v r \\
+    /// h_\mathrm{new} &= v h \\
+    /// \end{align*}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Capsule};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let capsule = Capsule::<3> {
+    ///     radius: 2.0.try_into()?,
+    ///     height: 3.0.try_into()?,
+    /// };
+    ///
+    /// let scaled_capsule = capsule.scale_length(2.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_capsule.radius.get(), 4.0);
+    /// assert_eq!(scaled_capsule.height.get(), 6.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        Self {
+            radius: self.radius * v,
+            height: self.height * v,
+        }
+    }
+
+    /// Construct a scaled [`Capsule`].
+    ///
+    /// The resulting capsule's radius and height are the original's
+    /// scaled by $`v^\frac{1}{N}`$:
+    /// ```math
+    /// \begin{align*}
+    /// r_\mathrm{new} &= v^\frac{1}{N} r \\
+    /// h_\mathrm{new} &= v^\frac{1}{N} h \\
+    /// \end{align*}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Capsule};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let capsule = Capsule::<3> {
+    ///     radius: 2.0.try_into()?,
+    ///     height: 3.0.try_into()?,
+    /// };
+    ///
+    /// let scaled_capsule = capsule.scale_volume(8.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_capsule.radius.get(), 4.0);
+    /// assert_eq!(scaled_capsule.height.get(), 6.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().powf(1.0 / N as f64);
+        self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
     }
 }
 
@@ -500,6 +576,46 @@ mod tests {
                 "Failed with r1={r1}, h1={h1}, r2={r2}, h2={h2}, v_ij={v_ij:?}, o_ij={o_ij:?}"
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_length() -> Result<(), Box<dyn std::error::Error>> {
+        let capsule = Capsule::<3> {
+            radius: 4.0.try_into()?,
+            height: 6.0.try_into()?,
+        };
+
+        let scaled_capsule = capsule.scale_length(2.0.try_into()?);
+        assert_relative_eq!(scaled_capsule.radius.get(), 8.0);
+        assert_relative_eq!(scaled_capsule.height.get(), 12.0);
+        assert_relative_eq!(scaled_capsule.bounding_sphere_radius().get(), 14.0);
+
+        let scaled_capsule = capsule.scale_length(0.5.try_into()?);
+        assert_relative_eq!(scaled_capsule.radius.get(), 2.0);
+        assert_relative_eq!(scaled_capsule.height.get(), 3.0);
+        assert_relative_eq!(scaled_capsule.bounding_sphere_radius().get(), 3.5);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_volume() -> Result<(), Box<dyn std::error::Error>> {
+        let capsule = Capsule::<3> {
+            radius: 4.0.try_into()?,
+            height: 6.0.try_into()?,
+        };
+
+        let scaled_capsule = capsule.scale_volume(8.0.try_into()?);
+        assert_relative_eq!(scaled_capsule.radius.get(), 8.0);
+        assert_relative_eq!(scaled_capsule.height.get(), 12.0);
+        assert_relative_eq!(scaled_capsule.bounding_sphere_radius().get(), 14.0);
+
+        let scaled_capsule = capsule.scale_volume(0.125.try_into()?);
+        assert_relative_eq!(scaled_capsule.radius.get(), 2.0);
+        assert_relative_eq!(scaled_capsule.height.get(), 3.0);
+        assert_relative_eq!(scaled_capsule.bounding_sphere_radius().get(), 3.5);
+
         Ok(())
     }
 }
