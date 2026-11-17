@@ -7,7 +7,8 @@ use std::array;
 
 use crate::{
     boundary::{
-        Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
+        Error, GenerateGhosts, GenerateMinimumImageCandidates, MAX_GHOSTS,
+        MaximumAllowableInteractionRange, Periodic, Wrap,
     },
     property::Position,
 };
@@ -87,18 +88,17 @@ where
     }
 }
 
-impl<S, const N: usize> GenerateGhosts<S> for Periodic<Hyperparallelepiped<N>>
-where
-    S: Position<Position = Cartesian<N>> + Copy + Default,
-{
-    #[inline]
-    fn maximum_interaction_range(&self) -> f64 {
-        self.maximum_interaction_range
-    }
-
-    /// Place periodic images of sites near the edge of the periodic boundary.
+impl<const N: usize> Periodic<Hyperparallelepiped<N>> {
+    /// Generate ghosts within a given range.
     #[inline(always)]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+    fn generate_ghosts_in_range<S>(
+        &self,
+        site_properties: &S,
+        range: f64,
+    ) -> ArrayVec<S, MAX_GHOSTS>
+    where
+        S: Position<Position = Cartesian<N>> + Copy + Default,
+    {
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();
@@ -109,8 +109,7 @@ where
 
         // Determine fractional coordinates of "twilight zones," where ghosts must be generated
         let plane_distances = self.shape.nearest_plane_distances();
-        let fractional_cutoffs: [f64; N] =
-            array::from_fn(|i| self.maximum_interaction_range() / plane_distances[i].get());
+        let fractional_cutoffs: [f64; N] = array::from_fn(|i| range / plane_distances[i].get());
         let fractional_coordinate = self.shape.fractional(*r);
 
         // For each axis, determine if the particle is near the negative or positive face.
@@ -141,6 +140,36 @@ where
         }
 
         result
+    }
+}
+
+impl<S, const N: usize> GenerateGhosts<S> for Periodic<Hyperparallelepiped<N>>
+where
+    S: Position<Position = Cartesian<N>> + Copy + Default,
+{
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        self.maximum_interaction_range
+    }
+
+    /// Place periodic images of sites near the edge of the periodic boundary.
+    #[inline(always)]
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        self.generate_ghosts_in_range(site_properties, self.maximum_interaction_range)
+    }
+}
+
+impl<S, const N: usize> GenerateMinimumImageCandidates<S> for Periodic<Hyperparallelepiped<N>>
+where
+    S: Position<Position = Cartesian<N>> + Copy + Default,
+{
+    /// Place periodic images of sites near the edge of the periodic boundary.
+    #[inline(always)]
+    fn generate_minimum_image_candidates(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        self.generate_ghosts_in_range(
+            site_properties,
+            self.shape.maximum_allowable_interaction_range(),
+        )
     }
 }
 
@@ -208,6 +237,9 @@ mod tests {
             ghosts.is_empty(),
             "Interior point should not generate ghosts"
         );
+
+        let candidates = periodic.generate_minimum_image_candidates(&Point::new(abs_pos));
+        assert!(!candidates.is_empty());
     }
 
     #[rstest]

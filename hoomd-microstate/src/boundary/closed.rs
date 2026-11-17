@@ -8,7 +8,7 @@ use rand::{Rng, distr::Distribution};
 use serde::{Deserialize, Serialize};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
-use crate::property::Position;
+use crate::{boundary::GenerateMinimumImageCandidates, property::Position};
 use hoomd_geometry::{IsPointInside, MapPoint, Scale, Volume};
 use hoomd_utility::valid::PositiveReal;
 
@@ -46,6 +46,16 @@ where
 
     #[inline(always)]
     fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        ArrayVec::new()
+    }
+}
+
+impl<S, T> GenerateMinimumImageCandidates<S> for Closed<T>
+where
+    S: Default,
+{
+    #[inline(always)]
+    fn generate_minimum_image_candidates(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         ArrayVec::new()
     }
 }

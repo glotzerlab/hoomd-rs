@@ -11,7 +11,8 @@ use hoomd_spatial::PointUpdate;
 use crate::{
     Body, Microstate, Replicate, SiteKey, Transform,
     boundary::{
-        Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
+        Error, GenerateGhosts, GenerateMinimumImageCandidates, MAX_GHOSTS,
+        MaximumAllowableInteractionRange, Periodic, Wrap,
     },
     property::Position,
 };
@@ -97,50 +98,20 @@ where
     }
 }
 
-impl<const N: usize, S> GenerateGhosts<S> for Periodic<Hypercuboid<N>>
-where
-    S: Position<Position = Cartesian<N>> + Copy + Default,
-{
-    #[inline]
-    fn maximum_interaction_range(&self) -> f64 {
-        self.maximum_interaction_range
-    }
-
-    /// Place periodic images of sites near the periodic boundary.
-    ///
-    /// `generate_ghosts` emits one periodic image of `site_properties` for each
-    /// non-empty combination of the boundary directions that `site_properties` lies
-    /// within `maximum_interaction_range` of. A site in the bulk produces no ghosts; a
-    /// site near the middle of an $`(N - 1)`$-face produces one; a
-    /// site near an edge (where two boundaries meet) produces three; and so on, up to
-    /// $`2^N - 1`$ ghosts for a site near all $`2N`$ boundaries at once.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_geometry::shape::Rectangle;
-    /// use hoomd_microstate::{
-    ///     boundary::{GenerateGhosts, Periodic},
-    ///     property::Point,
-    /// };
-    /// use hoomd_vector::Cartesian;
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let periodic =
-    ///     Periodic::new(1.0, Rectangle::with_equal_edges(10.0.try_into()?))?;
-    /// // A site near the right edge produces an image shifted across it.
-    /// let ghosts =
-    ///     periodic.generate_ghosts(&Point::new(Cartesian::from([4.6, 0.0])));
-    /// assert_eq!(ghosts.len(), 1);
-    /// # Ok(())
-    /// # }
-    /// ```
+impl<const N: usize> Periodic<Hypercuboid<N>> {
+    /// Generate ghosts within a given range.
     #[inline(always)]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+    fn generate_ghosts_in_range<S>(
+        &self,
+        site_properties: &S,
+        range: f64,
+    ) -> ArrayVec<S, MAX_GHOSTS>
+    where
+        S: Position<Position = Cartesian<N>> + Copy + Default,
+    {
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();
-        let range = self.maximum_interaction_range;
 
         // Record what facets a site is within the maximum_interaction_range of, or
         // none if outside the box (as checked by `x < -half || x >= half`).
@@ -182,6 +153,85 @@ where
         }
 
         result
+    }
+}
+
+impl<const N: usize, S> GenerateGhosts<S> for Periodic<Hypercuboid<N>>
+where
+    S: Position<Position = Cartesian<N>> + Copy + Default,
+{
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        self.maximum_interaction_range
+    }
+
+    /// Place periodic images of sites near the periodic boundary.
+    ///
+    /// `generate_ghosts` emits one periodic image of `site_properties` for each
+    /// non-empty combination of the boundary directions that `site_properties` lies
+    /// within `maximum_interaction_range` of. A site in the bulk produces no ghosts; a
+    /// site near the middle of an $`(N - 1)`$-face produces one; a
+    /// site near an edge (where two boundaries meet) produces three; and so on, up to
+    /// $`2^N - 1`$ ghosts for a site near all $`2N`$ boundaries at once.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_microstate::{
+    ///     boundary::{GenerateGhosts, Periodic},
+    ///     property::Point,
+    /// };
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic =
+    ///     Periodic::new(1.0, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    /// // A site near the right edge produces an image shifted across it.
+    /// let ghosts =
+    ///     periodic.generate_ghosts(&Point::new(Cartesian::from([4.6, 0.0])));
+    /// assert_eq!(ghosts.len(), 1);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline(always)]
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        self.generate_ghosts_in_range(site_properties, self.maximum_interaction_range)
+    }
+}
+
+impl<const N: usize, S> GenerateMinimumImageCandidates<S> for Periodic<Hypercuboid<N>>
+where
+    S: Position<Position = Cartesian<N>> + Copy + Default,
+{
+    /// Place periodic images of sites at all candidate minimum image locations.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_microstate::{
+    ///     boundary::{GenerateMinimumImageCandidates, Periodic},
+    ///     property::Point,
+    /// };
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic =
+    ///     Periodic::new(0.0, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    /// let candidates = periodic.generate_minimum_image_candidates(&Point::new(
+    ///     Cartesian::from([4.6, 4.6]),
+    /// ));
+    /// assert_eq!(candidates.len(), 3);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline(always)]
+    fn generate_minimum_image_candidates(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        self.generate_ghosts_in_range(
+            site_properties,
+            self.shape.maximum_allowable_interaction_range(),
+        )
     }
 }
 
@@ -366,6 +416,9 @@ mod tests {
                     .generate_ghosts(&Point::new([10.5].into()))
                     .is_empty()
             );
+            // but does generate candidate minimum images
+            let candidates = periodic.generate_minimum_image_candidates(&Point::new([-9.5].into()));
+            assert_ghost_positions(&candidates, &[[10.5]]);
         }
 
         #[test]

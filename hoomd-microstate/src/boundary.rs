@@ -173,3 +173,25 @@ pub trait MaximumAllowableInteractionRange {
     /// The largest value that the maximum interaction range can take.
     fn maximum_allowable_interaction_range(&self) -> f64;
 }
+
+/// Place periodic images of sites at all candidate minimum image locations.
+///
+/// Like [`GenerateGhosts`], but it generates all images. Useful for
+/// calculations of bonds or other pairwise interactions that are not between
+/// sites and ghosts.
+pub trait GenerateMinimumImageCandidates<S> {
+    /// Place periodic images of sites at all candidate minimum image locations.
+    ///
+    /// Given `site_properties` inside the boundary, `generate_minimum_image_candidates`
+    /// places all periodic images of that site that would be candidates for the
+    /// minimum image.
+    ///
+    /// The provided site is **not included** in the candidates, only its images.
+    ///
+    /// # Panics
+    ///
+    /// `generate_minimum_image_candidates` panics when the boundary condition places
+    /// more images than [`MAX_GHOSTS`]. Choose a larger value with the
+    /// `max_ghosts_*` cargo features of `hoomd-microstate` if needed.
+    fn generate_minimum_image_candidates(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS>;
+}

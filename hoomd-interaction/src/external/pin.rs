@@ -5,10 +5,10 @@
 
 use hoomd_microstate::{
     Body, Microstate,
-    boundary::GenerateGhosts,
+    boundary::GenerateMinimumImageCandidates,
     property::{Orientation, Position},
 };
-use hoomd_vector::{InnerProduct, RotationalDistance};
+use hoomd_vector::{Metric, RotationalDistance};
 
 use crate::{DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 
@@ -38,14 +38,6 @@ use crate::{DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 /// suitable for simulations that remove bodies from the microstate. If you
 /// need to pin orientations *and* remove bodies, write a custom external
 /// potential that uses a custom `reference` stored in the body properties.
-///
-/// TODO: Reconsider making reference a body property. The API would be much
-/// cleaner, DeltaEnergyInsert/Remove could be implemented, and there would
-/// no longer be a limitation on removing bodies. The main drawback:
-/// it costs a lot of code to provide `ReferencePosition` and `ReferenceOrientation`.
-/// Either way, it is the same code whether it is in `hoomd-microstate` or in
-/// an example. Perhaps we could use macros to make maintaining
-/// `AppendMicrostate` implementations easier.
 pub struct PinOrientations<R> {
     /// The spring constant $`[\mathrm{energy}]`$.
     pub k: f64,
@@ -161,42 +153,47 @@ pub struct PinPositions<V> {
     pub reference: Vec<V>,
 }
 
-impl<V> PinPositions<V>
+impl<P> PinPositions<P>
 where
-    V: InnerProduct,
+    P: Metric,
 {
+    /// Compute the energy for a given body.
+    ///
+    /// ```math
+    /// U_\mathrm{body} = \begin{cases}
+    /// \min_j \frac{1}{2} k (\Delta \vec{r}_j)^2 & n_\mathrm{references} > 0 \\
+    /// 0 & n_\mathrm{references} = 0 \\
+    /// \end{cases}
+    /// ```
+    ///
+    /// The body must exist in the microstate with the given `body_tag`.
+    /// The `body_properties` may match those in the microstate or may be
+    /// modified (i.e. a trial move).
     #[inline]
     pub fn body_energy<B, S, C>(&self, body_tag: usize, body: &Body<B, S>, boundary: &C) -> f64
     where
-        B: Position<Position = V>,
-        C: GenerateGhosts<B>,
+        B: Position<Position = P>,
+        C: GenerateMinimumImageCandidates<B>,
     {
         let reference = &self.reference[body_tag];
-        // TODO: clone boundary and boost interaction range to maximum?
-        // This would require yet another trait for boundary types.
-        // The alternative is to introduce an effective r_cut into the harmonic potential
-        // which could likely lead to incorrect results....
-        //
-        // One way to do this without a new trait is to add a `generate_all_ghosts`
-        // method to GenerateGhosts.
-        let ghosts = boundary.generate_ghosts(&body.properties);
+        let ghosts = boundary.generate_minimum_image_candidates(&body.properties);
         std::iter::once(body.properties.position())
             .chain(
                 ghosts
                     .iter()
                     .map(hoomd_microstate::property::Position::position),
             )
-            .map(|position| 0.5 * self.k * (*position - *reference).norm_squared())
+            .map(|position| 0.5 * self.k * position.distance_squared(reference))
             .reduce(f64::min)
             .unwrap_or(0.0)
     }
 }
 
-impl<B, S, X, C, V> DeltaEnergyOne<B, S, X, C> for PinPositions<V>
+impl<B, S, X, C, P> DeltaEnergyOne<B, S, X, C> for PinPositions<P>
 where
-    B: Position<Position = V>,
-    C: GenerateGhosts<B>,
-    V: InnerProduct,
+    B: Position<Position = P>,
+    C: GenerateMinimumImageCandidates<B>,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_one(
@@ -216,11 +213,11 @@ where
     }
 }
 
-impl<B, S, X, C, V> TotalEnergy<Microstate<B, S, X, C>> for PinPositions<V>
+impl<B, S, X, C, P> TotalEnergy<Microstate<B, S, X, C>> for PinPositions<P>
 where
-    B: Position<Position = V>,
-    C: GenerateGhosts<B>,
-    V: InnerProduct,
+    B: Position<Position = P>,
+    C: GenerateMinimumImageCandidates<B>,
+    P: Metric,
 {
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
@@ -230,5 +227,13 @@ where
             .iter()
             .map(|tagged_body| self.body_energy(tagged_body.tag, &tagged_body.item, boundary))
             .sum()
+    }
+}
+
+impl<V> MaximumInteractionRange for PinPositions<V> {
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        // External interactions are not applied between pairs of particles.
+        0.0
     }
 }

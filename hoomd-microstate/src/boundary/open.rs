@@ -6,6 +6,8 @@
 use arrayvec::ArrayVec;
 use serde::{Deserialize, Serialize};
 
+use crate::boundary::GenerateMinimumImageCandidates;
+
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 
 /// Allow bodies and sites to exist anywhere in space.
@@ -33,6 +35,16 @@ where
 
     #[inline(always)]
     fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        ArrayVec::new()
+    }
+}
+
+impl<S> GenerateMinimumImageCandidates<S> for Open
+where
+    S: Default,
+{
+    #[inline(always)]
+    fn generate_minimum_image_candidates(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         ArrayVec::new()
     }
 }
