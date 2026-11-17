@@ -8,7 +8,9 @@ use serde_with::serde_as;
 use std::ops::Mul;
 
 use super::sphere::sphere_volume_prefactor;
-use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
+use crate::{
+    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, Scale, SupportMapping, Volume,
+};
 use hoomd_linear_algebra::{
     QuadraticForm,
     matrix::{DiagonalMatrix, Matrix22},
@@ -223,6 +225,65 @@ impl<const N: usize> Volume for Hyperellipsoid<N> {
             .iter()
             .map(PositiveReal::get)
             .fold(sphere_volume_prefactor(N), f64::mul)
+    }
+}
+
+impl<const N: usize> Scale for Hyperellipsoid<N> {
+    /// Construct a scaled [`Hyperellipsoid`].
+    ///
+    /// The resulting hyperellipsoid's semi-axes are the original's scaled by
+    /// *v*:
+    /// ```math
+    /// a_{i,\mathrm{new}} = v a_i
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Ellipse};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let ellipse = Ellipse::with_semi_axes([2.0.try_into()?, 4.0.try_into()?]);
+    ///
+    /// let scaled_ellipse = ellipse.scale_length(2.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_ellipse.semi_axes()[0].get(), 4.0);
+    /// assert_eq!(scaled_ellipse.semi_axes()[1].get(), 8.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        Self::with_semi_axes(self.semi_axes.map(|a| a * v))
+    }
+
+    /// Construct a scaled [`Hyperellipsoid`].
+    ///
+    /// The resulting hyperellipsoid's semi-axes are the original's scaled by
+    /// $`v^\frac{1}{N}`$:
+    /// ```math
+    /// a_{i,\mathrm{new}} = v^\frac{1}{N} a_i
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Ellipse};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let ellipse = Ellipse::with_semi_axes([2.0.try_into()?, 4.0.try_into()?]);
+    ///
+    /// let scaled_ellipse = ellipse.scale_volume(4.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_ellipse.semi_axes()[0].get(), 4.0);
+    /// assert_eq!(scaled_ellipse.semi_axes()[1].get(), 8.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().powf(1.0 / N as f64);
+        self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
     }
 }
 
@@ -663,5 +724,39 @@ mod tests {
                 d.get()
             );
         }
+    }
+
+    #[test]
+    fn test_scale_length() -> Result<(), Box<dyn std::error::Error>> {
+        let ellipse = Ellipse::with_semi_axes([2.0.try_into()?, 4.0.try_into()?]);
+
+        let scaled_ellipse = ellipse.scale_length(2.0.try_into()?);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[0].get(), 4.0);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[1].get(), 8.0);
+        assert_relative_eq!(scaled_ellipse.bounding_sphere_radius.get(), 8.0);
+
+        let scaled_ellipse = ellipse.scale_length(0.5.try_into()?);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[0].get(), 1.0);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[1].get(), 2.0);
+        assert_relative_eq!(scaled_ellipse.bounding_sphere_radius.get(), 2.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_volume() -> Result<(), Box<dyn std::error::Error>> {
+        let ellipse = Ellipse::with_semi_axes([2.0.try_into()?, 4.0.try_into()?]);
+
+        let scaled_ellipse = ellipse.scale_volume(4.0.try_into()?);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[0].get(), 4.0);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[1].get(), 8.0);
+        assert_relative_eq!(scaled_ellipse.bounding_sphere_radius.get(), 8.0);
+
+        let scaled_ellipse = ellipse.scale_volume(0.25.try_into()?);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[0].get(), 1.0);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[1].get(), 2.0);
+        assert_relative_eq!(scaled_ellipse.bounding_sphere_radius.get(), 2.0);
+
+        Ok(())
     }
 }
