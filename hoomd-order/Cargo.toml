@@ -26,7 +26,6 @@ approxim.workspace = true
 divan.workspace = true
 itertools.workspace = true
 rand.workspace = true
-rand_distr.workspace = true
 rstest.workspace = true
 sphrs.workspace = true
 
