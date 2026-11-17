@@ -12,3 +12,4 @@ The following people have contributed to *hoomd-rs*:
 * Michelle Thran, University of Michigan
 * Suraj Kannur, University of Michigan
 * Tobias Dwyer, University of Michigan
+* Anubhav Anand, Amity University
