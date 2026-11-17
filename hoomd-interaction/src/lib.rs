@@ -88,6 +88,16 @@
 //! See [`external`] for a list of built-in [`SiteEnergy`], [`SiteForceAndVirial`] and
 //! [`SiteForceVirialAndTorque`] implementations.
 //!
+//! # Interactions between bodies and external objects
+//!
+//! [`PinPositions`] and [`PinOrientations`] apply harmonic springs between
+//! references and body positions and orientations, respectively. These are
+//! designed to facilitate Frenkel-Ladd free energy calculations but can
+//! also enable other use-cases.
+//!
+//! [`PinPositions`]: external::PinPositions
+//! [`PinOrientations`]: external::PinOrientations
+//!
 //! # Interactions between all pairs of sites
 //!
 //! The [`SitePairEnergy`] trait describes a type that computes the energy
