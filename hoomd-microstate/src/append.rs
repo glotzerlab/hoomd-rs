@@ -19,76 +19,96 @@ use crate::{
 
 /// Write `configuration_box` to the frame.
 macro_rules! configuration_box {
- ($frame:ident, $microstate:ident, $S:ty, Closed<$shape:ty>) => { $frame.configuration_box($microstate.boundary().0.to_gsd_box()) };
- ($frame:ident, $microstate:ident, $S:ty, Periodic<$shape:ty>) => { $frame.configuration_box($microstate.boundary().shape().to_gsd_box()) };
+    ($frame:ident, $microstate:ident, $S:ty, Closed<$shape:ty>) => {
+        $frame.configuration_box($microstate.boundary().0.to_gsd_box())
+    };
+    ($frame:ident, $microstate:ident, $S:ty, Periodic<$shape:ty>) => {
+        $frame.configuration_box($microstate.boundary().shape().to_gsd_box())
+    };
 }
 
 /// Write `configuration_dimensions` to the frame.
 macro_rules! configuration_dimensions {
- ($frame:ident, $microstate:ident, $S:ty, $boundary:ident<Rhomboid>) => { $frame.configuration_dimensions(Dimensions::Two)? };
- ($frame:ident, $microstate:ident, $S:ty, $boundary:ident<Triclinic>) => { $frame.configuration_dimensions(Dimensions::Three)? };
- ($frame:ident, $microstate:ident, $S:ty, $boundary:ident<$shape:ident<2>>) => { $frame.configuration_dimensions(Dimensions::Two)? };
- ($frame:ident, $microstate:ident, $S:ty, $boundary:ident<$shape:ident<3>>) => { $frame.configuration_dimensions(Dimensions::Three)? };
+    ($frame:ident, $microstate:ident, $S:ty, $boundary:ident<Rhomboid>) => {
+        $frame.configuration_dimensions(Dimensions::Two)?
+    };
+    ($frame:ident, $microstate:ident, $S:ty, $boundary:ident<Triclinic>) => {
+        $frame.configuration_dimensions(Dimensions::Three)?
+    };
+    ($frame:ident, $microstate:ident, $S:ty, $boundary:ident<$shape:ident<2>>) => {
+        $frame.configuration_dimensions(Dimensions::Two)?
+    };
+    ($frame:ident, $microstate:ident, $S:ty, $boundary:ident<$shape:ident<3>>) => {
+        $frame.configuration_dimensions(Dimensions::Three)?
+    };
 }
 
 /// Write `Cartesian<2>` positions to the frame
 macro_rules! cartesian_2 {
     ($frame:ident, $microstate:ident) => {
-            $frame.particles_position(
-                $microstate
-                    .iter_sites_tag_order()
-                    .map(|s| s.properties.position)
-                    .map(|p| [p[0], p[1], 0.0].into()),
-            )?
-        }
+        $frame.particles_position(
+            $microstate
+                .iter_sites_tag_order()
+                .map(|s| s.properties.position)
+                .map(|p| [p[0], p[1], 0.0].into()),
+        )?
+    };
 }
 
 /// Write `Cartesian<3>` positions to the frame
 macro_rules! cartesian_3 {
     ($frame:ident, $microstate:ident) => {
-            $frame.particles_position(
-                $microstate
-                    .iter_sites_tag_order()
-                    .map(|s| s.properties.position)
-            )?
-        }
+        $frame.particles_position(
+            $microstate
+                .iter_sites_tag_order()
+                .map(|s| s.properties.position),
+        )?
+    };
 }
 
 /// Write `particles_position` to the frame.
 macro_rules! particles_position {
-  ($frame:ident, $microstate:ident, $container:ident<Cartesian<2>, $R:ty>, $C: ty) => { cartesian_2!($frame, $microstate) };
-  ($frame:ident, $microstate:ident, $container:ident<Cartesian<2>>, $C: ty) => { cartesian_2!($frame, $microstate) };
-  ($frame:ident, $microstate:ident, $container:ident<Cartesian<3>, $R:ty>, $C: ty) => { cartesian_3!($frame, $microstate) };
-  ($frame:ident, $microstate:ident, $container:ident<Cartesian<3>>, $C: ty) => { cartesian_3!($frame, $microstate) };
+    ($frame:ident, $microstate:ident, $container:ident<Cartesian<2>, $R:ty>, $C: ty) => {
+        cartesian_2!($frame, $microstate)
+    };
+    ($frame:ident, $microstate:ident, $container:ident<Cartesian<2>>, $C: ty) => {
+        cartesian_2!($frame, $microstate)
+    };
+    ($frame:ident, $microstate:ident, $container:ident<Cartesian<3>, $R:ty>, $C: ty) => {
+        cartesian_3!($frame, $microstate)
+    };
+    ($frame:ident, $microstate:ident, $container:ident<Cartesian<3>>, $C: ty) => {
+        cartesian_3!($frame, $microstate)
+    };
 }
 
 /// Write `particles_orientation` to the frame.
 macro_rules! particles_orientation {
-  ($frame:ident, $microstate:ident, $container:ident<$V:ty>, $C: ty) => { $frame };
-  ($frame:ident, $microstate:ident, $container:ident<$V:ty, Angle>, $C: ty) =>
-    {
-    $frame.particles_orientation(
-                $microstate
-                    .iter_sites_tag_order()
-                    .map(|s| s.properties.orientation.theta)
-                    .map(|a| {
-                        Versor::from_axis_angle(
-                            [0.0, 0.0, 1.0]
-                                .try_into()
-                                .expect("hard-coded vector can be normalized"),
-                            a,
-                        )
-                    }),
-            )?
-};
-  ($frame:ident, $microstate:ident, $container:ident<$V:ty, Versor>, $C: ty) =>
-    {
-    $frame.particles_orientation(
-                $microstate
-                    .iter_sites_tag_order()
-                    .map(|s| s.properties.orientation)
-            )?
-};
+    ($frame:ident, $microstate:ident, $container:ident<$V:ty>, $C: ty) => {
+        $frame
+    };
+    ($frame:ident, $microstate:ident, $container:ident<$V:ty, Angle>, $C: ty) => {
+        $frame.particles_orientation(
+            $microstate
+                .iter_sites_tag_order()
+                .map(|s| s.properties.orientation.theta)
+                .map(|a| {
+                    Versor::from_axis_angle(
+                        [0.0, 0.0, 1.0]
+                            .try_into()
+                            .expect("hard-coded vector can be normalized"),
+                        a,
+                    )
+                }),
+        )?
+    };
+    ($frame:ident, $microstate:ident, $container:ident<$V:ty, Versor>, $C: ty) => {
+        $frame.particles_orientation(
+            $microstate
+                .iter_sites_tag_order()
+                .map(|s| s.properties.orientation),
+        )?
+    };
 }
 
 /// Implement `AppendMicrostate` for a site type / boundary type combination.
@@ -112,8 +132,14 @@ macro_rules! impl_append_microsate {
 
 impl_append_microsate!([Point<Cartesian<2>>], [Closed<Hypercuboid<2>>]);
 impl_append_microsate!([Point<Cartesian<2>>], [Periodic<Hypercuboid<2>>]);
-impl_append_microsate!([OrientedPoint<Cartesian<2>, Angle>], [Closed<Hypercuboid<2>>]);
-impl_append_microsate!([OrientedPoint<Cartesian<2>, Angle>], [Periodic<Hypercuboid<2>>]);
+impl_append_microsate!(
+    [OrientedPoint<Cartesian<2>, Angle>],
+    [Closed<Hypercuboid<2>>]
+);
+impl_append_microsate!(
+    [OrientedPoint<Cartesian<2>, Angle>],
+    [Periodic<Hypercuboid<2>>]
+);
 impl_append_microsate!([Point<Cartesian<2>>], [Closed<Rhomboid>]);
 impl_append_microsate!([Point<Cartesian<2>>], [Periodic<Rhomboid>]);
 impl_append_microsate!([OrientedPoint<Cartesian<2>, Angle>], [Closed<Rhomboid>]);
@@ -123,8 +149,14 @@ impl_append_microsate!([Point<Cartesian<3>>], [Closed<Hypercuboid<3>>]);
 impl_append_microsate!([Point<Cartesian<3>>], [Periodic<Hypercuboid<3>>]);
 impl_append_microsate!([Point<Cartesian<3>>], [Closed<Triclinic>]);
 impl_append_microsate!([Point<Cartesian<3>>], [Periodic<Triclinic>]);
-impl_append_microsate!([OrientedPoint<Cartesian<3>, Versor>], [Closed<Hypercuboid<3>>]);
-impl_append_microsate!([OrientedPoint<Cartesian<3>, Versor>], [Periodic<Hypercuboid<3>>]);
+impl_append_microsate!(
+    [OrientedPoint<Cartesian<3>, Versor>],
+    [Closed<Hypercuboid<3>>]
+);
+impl_append_microsate!(
+    [OrientedPoint<Cartesian<3>, Versor>],
+    [Periodic<Hypercuboid<3>>]
+);
 impl_append_microsate!([OrientedPoint<Cartesian<3>, Versor>], [Closed<Triclinic>]);
 impl_append_microsate!([OrientedPoint<Cartesian<3>, Versor>], [Periodic<Triclinic>]);
 

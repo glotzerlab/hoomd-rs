@@ -12,7 +12,7 @@ use rand::{
     distr::{Distribution, StandardUniform, Uniform},
 };
 
-use crate::{Cartesian, Rotate, Rotation, RotationalDistance, RotationMatrix};
+use crate::{Cartesian, Rotate, Rotation, RotationMatrix, RotationalDistance};
 
 /// Rotation in the plane.
 ///
@@ -253,11 +253,7 @@ impl RotationalDistance for Angle {
     #[inline]
     fn rotational_distance(&self, reference_orientation: &Self) -> f64 {
         let delta = (self.theta - reference_orientation.theta).rem_euclid(2.0 * PI);
-        if delta > PI {
-            2.0 * PI - delta
-        } else {
-            delta
-        }
+        if delta > PI { 2.0 * PI - delta } else { delta }
     }
 }
 

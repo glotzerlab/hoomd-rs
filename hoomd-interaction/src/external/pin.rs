@@ -53,9 +53,7 @@ pub struct PinOrientations<R> {
     pub reference: Vec<Vec<R>>,
 }
 
-
-impl<R> PinOrientations<R>
-{
+impl<R> PinOrientations<R> {
     /// Compute the energy for a given body.
     ///
     /// ```math
@@ -74,8 +72,15 @@ impl<R> PinOrientations<R>
         R: RotationalDistance,
         B: Orientation<Rotation = R>,
     {
-        self.reference[body_tag].iter()
-            .map(|reference_orientation| 0.5 * self.k * body_properties.orientation().rotational_distance(reference_orientation).powi(2))
+        self.reference[body_tag]
+            .iter()
+            .map(|reference_orientation| {
+                0.5 * self.k
+                    * body_properties
+                        .orientation()
+                        .rotational_distance(reference_orientation)
+                        .powi(2)
+            })
             .reduce(f64::min)
             .unwrap_or(0.0)
     }
@@ -95,7 +100,7 @@ where
     ) -> f64 {
         let tagged_body = &initial_microstate.bodies()[body_index];
         let body_tag = tagged_body.tag;
-        
+
         let energy_initial = self.body_energy(body_tag, &tagged_body.item.properties);
         let energy_final = self.body_energy(body_tag, &final_body.properties);
 
@@ -110,7 +115,8 @@ where
 {
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
-        microstate.bodies()
+        microstate
+            .bodies()
             .iter()
             .map(|tagged_body| self.body_energy(tagged_body.tag, &tagged_body.item.properties))
             .sum()
@@ -160,12 +166,7 @@ where
     V: InnerProduct,
 {
     #[inline]
-    pub fn body_energy<B, S, C>(
-        &self,
-        body_tag: usize,
-        body: &Body<B, S>,
-        boundary: &C,
-    ) -> f64
+    pub fn body_energy<B, S, C>(&self, body_tag: usize, body: &Body<B, S>, boundary: &C) -> f64
     where
         B: Position<Position = V>,
         C: GenerateGhosts<B>,
@@ -180,7 +181,11 @@ where
         // method to GenerateGhosts.
         let ghosts = boundary.generate_ghosts(&body.properties);
         std::iter::once(body.properties.position())
-            .chain(ghosts.iter().map(hoomd_microstate::property::Position::position))
+            .chain(
+                ghosts
+                    .iter()
+                    .map(hoomd_microstate::property::Position::position),
+            )
             .map(|position| 0.5 * self.k * (*position - *reference).norm_squared())
             .reduce(f64::min)
             .unwrap_or(0.0)
@@ -220,7 +225,8 @@ where
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         let boundary = microstate.boundary();
-        microstate.bodies()
+        microstate
+            .bodies()
             .iter()
             .map(|tagged_body| self.body_energy(tagged_body.tag, &tagged_body.item, boundary))
             .sum()

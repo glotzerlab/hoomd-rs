@@ -16,7 +16,10 @@ use rand::{
 };
 use rand_distr::StandardNormal;
 
-use crate::{Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationalDistance, RotationMatrix, Unit};
+use crate::{
+    Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMatrix, RotationalDistance,
+    Unit,
+};
 
 /// Extended complex number.
 ///
@@ -834,7 +837,10 @@ impl RotationalDistance for Versor {
     /// );
     ///
     /// assert_relative_eq!(identity.rotational_distance(&quarter), PI / 2.0);
-    /// assert_relative_eq!(identity.rotational_distance(&quarter), quarter.rotational_distance(&identity));
+    /// assert_relative_eq!(
+    ///     identity.rotational_distance(&quarter),
+    ///     quarter.rotational_distance(&identity)
+    /// );
     /// ```
     #[inline]
     fn rotational_distance(&self, reference_orientation: &Self) -> f64 {
@@ -842,11 +848,7 @@ impl RotationalDistance for Versor {
         // rotation angle, which we fold into [0, π] because a rotation by θ and by
         // 2π − θ (about the opposite axis) are the same rotation.
         let angle = 2.0 * self.arc_distance(reference_orientation);
-        if angle > PI {
-            2.0 * PI - angle
-        } else {
-            angle
-        }
+        if angle > PI { 2.0 * PI - angle } else { angle }
     }
 }
 

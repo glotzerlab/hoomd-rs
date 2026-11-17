@@ -13,4 +13,4 @@ mod linear;
 pub use linear::Linear;
 
 mod pin;
-pub use pin::{PinPositions, PinOrientations};
+pub use pin::{PinOrientations, PinPositions};
