@@ -11,11 +11,11 @@
 * `[hoomd-vector]`:  Implement `from_spherical_coordinates` for `Unit<Cartesian<3>>` (#293).
 * `[hoomd-workspace]`: Explain how to add new optional fields to state points (#482).
 
-
 *Changed:*
 
 * `[hoomd-gsd]`: Remove the 63 character type name limit (#477).
 * `[hoomd-microstate]`: Panic in `iter_sites_near` when the search radius is larger than the boundary's maximum interaction range. Adds a `C: GenerateGhosts<S>` bound to some implementations, but all boundaries must already implement `GenerateGhosts<S>` (#420).
+* `[hoomd-mc]`: Users can now set non-default values in `TuneOptions` (#483).
 
 *Deprecated:*
 
