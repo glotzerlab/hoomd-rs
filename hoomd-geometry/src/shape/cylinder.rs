@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::Circle;
-use crate::Volume;
+use crate::{Scale, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Versor};
 
@@ -45,6 +45,82 @@ impl Volume for Cylinder {
         }
         .volume()
             * self.height.get()
+    }
+}
+
+impl Scale for Cylinder {
+    /// Construct a scaled [`Cylinder`].
+    ///
+    /// The resulting cylinder's radius and height are the original's
+    /// scaled by *v*:
+    /// ```math
+    /// \begin{align*}
+    /// r_\mathrm{new} &= v r \\
+    /// h_\mathrm{new} &= v h \\
+    /// \end{align*}
+    /// ```
+    ///
+    /// The centroid remains at the origin.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Cylinder};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let cylinder = Cylinder {
+    ///     radius: 2.0.try_into()?,
+    ///     height: 3.0.try_into()?,
+    /// };
+    ///
+    /// let scaled_cylinder = cylinder.scale_length(2.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_cylinder.radius.get(), 4.0);
+    /// assert_eq!(scaled_cylinder.height.get(), 6.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        Self {
+            radius: self.radius * v,
+            height: self.height * v,
+        }
+    }
+
+    /// Construct a scaled [`Cylinder`].
+    ///
+    /// The resulting cylinder's radius and height are the original's scaled by
+    /// $`v^\frac{1}{3}`$:
+    /// ```math
+    /// \begin{align*}
+    /// r_\mathrm{new} &= v^\frac{1}{3} r \\
+    /// h_\mathrm{new} &= v^\frac{1}{3} h \\
+    /// \end{align*}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Cylinder};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let cylinder = Cylinder {
+    ///     radius: 2.0.try_into()?,
+    ///     height: 3.0.try_into()?,
+    /// };
+    ///
+    /// let scaled_cylinder = cylinder.scale_volume(8.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_cylinder.radius.get(), 4.0);
+    /// assert_eq!(scaled_cylinder.height.get(), 6.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().cbrt();
+        self.scale_length(v.try_into().expect("v^{1/3} should be a positive real"))
     }
 }
 
@@ -113,6 +189,7 @@ impl Cylinder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approxim::assert_relative_eq;
     use hoomd_vector::{Cartesian, InnerProduct, Versor};
     use rstest::rstest;
     use std::f64::consts::PI;
@@ -153,6 +230,42 @@ mod tests {
             c1.intersects_at_infinite(&c2, &v_ij_cartesian, &o_ij),
             expected,
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_length() -> Result<(), Box<dyn std::error::Error>> {
+        let cylinder = Cylinder {
+            radius: 4.0.try_into()?,
+            height: 6.0.try_into()?,
+        };
+
+        let scaled_cylinder = cylinder.scale_length(2.0.try_into()?);
+        assert_relative_eq!(scaled_cylinder.radius.get(), 8.0);
+        assert_relative_eq!(scaled_cylinder.height.get(), 12.0);
+
+        let scaled_cylinder = cylinder.scale_length(0.5.try_into()?);
+        assert_relative_eq!(scaled_cylinder.radius.get(), 2.0);
+        assert_relative_eq!(scaled_cylinder.height.get(), 3.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_volume() -> Result<(), Box<dyn std::error::Error>> {
+        let cylinder = Cylinder {
+            radius: 4.0.try_into()?,
+            height: 6.0.try_into()?,
+        };
+
+        let scaled_cylinder = cylinder.scale_volume(8.0.try_into()?);
+        assert_relative_eq!(scaled_cylinder.radius.get(), 8.0);
+        assert_relative_eq!(scaled_cylinder.height.get(), 12.0);
+
+        let scaled_cylinder = cylinder.scale_volume(0.125.try_into()?);
+        assert_relative_eq!(scaled_cylinder.radius.get(), 2.0);
+        assert_relative_eq!(scaled_cylinder.height.get(), 3.0);
 
         Ok(())
     }
