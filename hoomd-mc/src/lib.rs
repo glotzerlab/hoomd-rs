@@ -370,11 +370,11 @@ pub trait Adjust {
 /// - `steps`: 32
 pub struct TuneOptions {
     /// The target move acceptance ratio.
-    target_acceptance: OpenUnitIntervalNumber,
+    pub target_acceptance: OpenUnitIntervalNumber,
     /// Number of trial moves sampled per step.
-    samples: usize,
+    pub samples: usize,
     /// Tune the move size over this many steps.
-    steps: usize,
+    pub steps: usize,
 }
 
 impl Default for TuneOptions {
