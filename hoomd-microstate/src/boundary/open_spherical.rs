@@ -7,7 +7,7 @@ use arrayvec::ArrayVec;
 use serde::{Deserialize, Serialize};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
-use crate::property::Position;
+use crate::{boundary::GenerateMinimumImageCandidates, property::Position};
 use hoomd_manifold::Spherical;
 
 /// [`OpenSpherical<N>`] implements a hypercubic box enclosing a unit-radius
@@ -55,6 +55,16 @@ where
     }
     #[inline(always)]
     fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        ArrayVec::new()
+    }
+}
+
+impl<S, const N: usize> GenerateMinimumImageCandidates<S> for OpenSpherical<N>
+where
+    S: Default,
+{
+    #[inline(always)]
+    fn generate_minimum_image_candidates(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         ArrayVec::new()
     }
 }
