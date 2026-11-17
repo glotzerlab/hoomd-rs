@@ -368,6 +368,29 @@ pub trait Adjust {
 /// - `target_acceptance`: 0.2
 /// - `samples`: 8,000
 /// - `steps`: 32
+///
+/// # Examples
+///
+/// Default options:
+/// ```
+/// use hoomd_mc::TuneOptions;
+///
+/// let tune_options = TuneOptions::default();
+/// ```
+///
+/// Non-default options:
+/// ```
+/// use hoomd_mc::TuneOptions;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let tune_options = TuneOptions {
+///     target_acceptance: 0.25.try_into()?,
+///     samples: 4_000,
+///     ..Default::default()
+/// };
+/// # Ok(())
+/// # }
+/// ```
 pub struct TuneOptions {
     /// The target move acceptance ratio.
     pub target_acceptance: OpenUnitIntervalNumber,
