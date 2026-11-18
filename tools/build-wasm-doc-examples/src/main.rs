@@ -87,7 +87,7 @@ fn build_examples(table: &Table, args: &Args) -> anyhow::Result<()> {
         if !args.examples.is_empty() && !args.examples.contains(name) {
             continue;
         }
-    
+
         println!("{name}");
         let configuration = configuration
             .as_table()
