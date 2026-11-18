@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{
-    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, Scale, SupportMapping, Volume,
+    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale, SupportMapping, Volume,
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation};
@@ -200,6 +200,39 @@ impl<const N: usize> Scale for Capsule<N> {
     fn scale_volume(&self, v: PositiveReal) -> Self {
         let v = v.get().powf(1.0 / N as f64);
         self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
+    }
+}
+
+impl<const N: usize> IsPointInside<Cartesian<N>> for Capsule<N> {
+    /// Check if a vector is inside a capsule.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, shape::Capsule};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let capsule = Capsule {
+    ///     radius: 1.0.try_into()?,
+    ///     height: 4.0.try_into()?,
+    /// };
+    ///
+    /// assert!(capsule.is_point_inside(&Cartesian::from([0.25, 0.0, 2.75])));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
+        if point[N-1].abs() < self.height.get() / 2.0 {
+            let dot: f64 = point.coordinates[0..N-1].iter().map(|x| x.powi(2)).sum();
+            dot < self.radius.get().powi(2)
+        } else {
+            let delta_r_top = *point - axis_aligned_cartesian(self.height.get()/2.0);
+            let delta_r_bottom = *point - axis_aligned_cartesian(-self.height.get()/2.0);
+
+            delta_r_top.norm_squared() < self.radius.get().powi(2) || delta_r_bottom.norm_squared() < self.radius.get().powi(2)
+        }
     }
 }
 
@@ -617,5 +650,27 @@ mod tests {
         assert_relative_eq!(scaled_capsule.bounding_sphere_radius().get(), 3.5);
 
         Ok(())
+    }
+
+    #[rstest]
+    #[case::center([0.0, 0.0, 0.0], true)]
+    #[case::left_inside([-0.875, 0.0, 1.5], true)]
+    #[case::right_inside([0.875, 0.0, -1.5], true)]
+    #[case::left_outside([-1.125, 0.0, 1.5], false)]
+    #[case::top_outside([0.0, 1.125, 1.5], false)]
+    #[case::up_inside([0.0, 0.0, 2.875], true)]
+    #[case::down_inside([0.0, 0.0, -2.875], true)]
+    #[case::up_outside([0.0, 0.0, 3.125], false)]
+    #[case::down_outside([0.0, 0.0, -3.125], false)]
+    #[rstest]
+    fn test_is_point_inside(#[case] point: [f64; 3], #[case] expected: bool) -> anyhow::Result<()> {
+    let capsule = Capsule {
+        radius: 1.0.try_into()?,
+        height: 4.0.try_into()?,
+    };
+
+    assert_eq!(capsule.is_point_inside(&point.into()), expected);
+
+    Ok(())
     }
 }
