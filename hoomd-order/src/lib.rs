@@ -37,6 +37,7 @@
 //! Each type's documentation includes complete examples:
 //! * [`KAtic`]: 2D hexatic, tetratic, etc... order parameter.
 //! * [`Steinhardt`]: 3D Steinhardt order parameter.
+//! * [`RotationalAutocorrelation`]: 3D rotational autocorrelation function.
 //!
 //! # Neighbor queries
 //!
@@ -129,6 +130,9 @@ pub use k_atic::KAtic;
 
 mod steinhardt;
 pub use steinhardt::Steinhardt;
+
+mod rotational_autocorrelation;
+pub use rotational_autocorrelation::RotationalAutocorrelation;
 
 mod sites_in_ball;
 pub use sites_in_ball::SitesInBall;
