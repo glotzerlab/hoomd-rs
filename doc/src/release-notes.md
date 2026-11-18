@@ -11,11 +11,11 @@
 * `[hoomd-vector]`:  Implement `from_spherical_coordinates` for `Unit<Cartesian<3>>` (#293).
 * `[hoomd-workspace]`: Explain how to add new optional fields to state points (#482).
 
-
 *Changed:*
 
 * `[hoomd-gsd]`: Remove the 63 character type name limit (#477).
 * `[hoomd-microstate]`: Panic in `iter_sites_near` when the search radius is larger than the boundary's maximum interaction range. Adds a `C: GenerateGhosts<S>` bound to some implementations, but all boundaries must already implement `GenerateGhosts<S>` (#420).
+* `[hoomd-mc]`: Users can now set non-default values in `TuneOptions` (#483).
 
 *Deprecated:*
 
@@ -32,8 +32,8 @@
 *Added:*
 
 * `[hoomd-microstate]`: Add the `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and `max_ghosts_64` cargo features that set the maximum number of ghosts per site. The largest enabled feature is used when multiple are set simultaneously.
-* `[hoomd-microstate`]: Add the `OpenSpherical` boundary condition for use with the `SphericalVecCell` data structure (#313).
-* `[hoomd-spatial`]: Add `SphericalVecCell` that can perform efficient spatial searches in spherical space (#313).
+* `[hoomd-microstate]`: Add the `OpenSpherical` boundary condition for use with the `SphericalVecCell` data structure (#313).
+* `[hoomd-spatial]`: Add `SphericalVecCell` that can perform efficient spatial searches in spherical space (#313).
 * `[hoomd-utility]`: Add the `positive_real` macro that generates compile-time-checked `PositiveReal` values (#421).
 * `[hoomd-vector]`: Add the `DoubleVersor` type for rotations of `Cartesian<4>` (#346)
 * `[hoomd-mc]`: Add `DoubleVersor` sampling distribution for MC moves in 4D (#346)
