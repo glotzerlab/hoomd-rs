@@ -41,6 +41,14 @@ pub(crate) fn formatted<T: ?Sized + Serialize>(state_point: &T) -> Result<String
 ///
 /// [`Entry`] is implemented for all types that implement [`Serialize`].
 ///
+/// # None/null handling
+///
+/// - Use `Option<T>` for fields that are *always* set as `null` or a value
+///   in the JSON.
+/// - Add `#[serde(skip_serializing_if = "Option::is_none")]` to the line before
+///   the field when `None` values should be *omitted* from the JSON. Use this form
+///   when you write some state points to your workspace and later add a field.
+///
 /// # Example
 ///
 /// ```
@@ -175,6 +183,13 @@ mod tests {
     }
 
     #[derive(Serialize)]
+    struct Test3B {
+        b: f64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        a: Option<u32>,
+    }
+
+    #[derive(Serialize)]
     struct Test4 {
         z: Vec<f64>,
         x: i64,
@@ -194,7 +209,9 @@ mod tests {
     #[case(Test2 { b: "some_string".into() }, "594d1ea83433eefb661113b866e6eeba")]
     #[case(Test2 { b: "another_string".into() }, "26c23ac85e2be5058fab7ca3531f5244")]
     #[case(Test3 { b: 7.897_231_4, a: None }, "2ab6264db9442f72fc975d63d1eea743")]
+    #[case(Test3B { b: 7.897_231_4, a: None }, "b1f8ee6366e359545add8628723467f7")]
     #[case(Test3 { b: 7.897_231_4, a: Some(63) }, "6e9713313e9c7e6746eee47934d3f59e")]
+    #[case(Test3B { b: 7.897_231_4, a: Some(63) }, "6e9713313e9c7e6746eee47934d3f59e")]
     #[case(Test4 { z: vec![1.125, -4.25, 8.9375], x: -12, a: 18 }, "00d5437b248864b98a24dc9a96dc083c")]
     #[case(Test4 { z: vec![], x: -204, a: 0 }, "293e5fe23ff59e75d3ff9241c596670a")]
     #[case(Test5 { test_3: Test3 { b: 7.897_231_4, a: None }, test_4: Test4 { z: vec![], x: -204, a: 0 },

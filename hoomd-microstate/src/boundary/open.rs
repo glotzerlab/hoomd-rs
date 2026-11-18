@@ -4,6 +4,7 @@
 //! Implement Open
 
 use arrayvec::ArrayVec;
+use hoomd_geometry::IsPointInside;
 use serde::{Deserialize, Serialize};
 
 use crate::boundary::GenerateMinimumImageCandidates;
@@ -46,5 +47,12 @@ where
     #[inline(always)]
     fn generate_minimum_image_candidates(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         ArrayVec::new()
+    }
+}
+
+impl<P> IsPointInside<P> for Open {
+    #[inline]
+    fn is_point_inside(&self, _point: &P) -> bool {
+        true
     }
 }

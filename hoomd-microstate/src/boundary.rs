@@ -18,7 +18,10 @@
 //! they each implement. If the shape you want is not supported, you can write
 //! a custom shape type and implement `IsInside` so that it will work with
 //! [`Closed`]. To implement a custom periodic boundary, create your custom
-//! type and implement both [`Wrap`] and [`GenerateGhosts`] for it.
+//! type and implement both [`Wrap`] and [`GenerateGhosts`] for it. You may also
+//! need to implement [`IsPointInside`].
+//!
+//! [`IsPointInside`]: hoomd_geometry::IsPointInside
 
 use arrayvec::ArrayVec;
 use thiserror::Error;

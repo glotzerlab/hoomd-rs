@@ -6,7 +6,10 @@
 use serde::{Deserialize, Serialize};
 
 use super::sphere::sphere_volume_prefactor;
-use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
+use crate::{
+    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale, SupportMapping,
+    Volume,
+};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation};
 
@@ -82,6 +85,7 @@ pub type Spherocylinder = Capsule<3>;
 impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
+        const { assert!(N > 0, "N must be greater than 0") };
         // Same support function as a ConvexPolyhedron with 2 vertices, plus the radius.
         let mut v_tip = [0.0; N];
         v_tip[N - 1] = self.height.get() / 2.0;
@@ -124,6 +128,116 @@ impl<const N: usize> Volume for Capsule<N> {
         );
         let cylinder_volume = sphere_volume_prefactor(N - 1) * r_n_minus_one * self.height.get();
         cylinder_volume + sphere_volume_prefactor(N) * (r_n_minus_one * self.radius.get())
+    }
+}
+
+impl<const N: usize> Scale for Capsule<N> {
+    /// Construct a scaled [`Capsule`].
+    ///
+    /// The resulting capsule's radius and height are the original's
+    /// scaled by *v*:
+    /// ```math
+    /// \begin{align*}
+    /// r_\mathrm{new} &= v r \\
+    /// h_\mathrm{new} &= v h \\
+    /// \end{align*}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Capsule};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let capsule = Capsule::<3> {
+    ///     radius: 2.0.try_into()?,
+    ///     height: 3.0.try_into()?,
+    /// };
+    ///
+    /// let scaled_capsule = capsule.scale_length(2.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_capsule.radius.get(), 4.0);
+    /// assert_eq!(scaled_capsule.height.get(), 6.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        Self {
+            radius: self.radius * v,
+            height: self.height * v,
+        }
+    }
+
+    /// Construct a scaled [`Capsule`].
+    ///
+    /// The resulting capsule's radius and height are the original's
+    /// scaled by $`v^\frac{1}{N}`$:
+    /// ```math
+    /// \begin{align*}
+    /// r_\mathrm{new} &= v^\frac{1}{N} r \\
+    /// h_\mathrm{new} &= v^\frac{1}{N} h \\
+    /// \end{align*}
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Capsule};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let capsule = Capsule::<3> {
+    ///     radius: 2.0.try_into()?,
+    ///     height: 3.0.try_into()?,
+    /// };
+    ///
+    /// let scaled_capsule = capsule.scale_volume(8.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_capsule.radius.get(), 4.0);
+    /// assert_eq!(scaled_capsule.height.get(), 6.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().powf(1.0 / N as f64);
+        self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
+    }
+}
+
+impl<const N: usize> IsPointInside<Cartesian<N>> for Capsule<N> {
+    /// Check if a vector is inside a capsule.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, shape::Capsule};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let capsule = Capsule {
+    ///     radius: 1.0.try_into()?,
+    ///     height: 4.0.try_into()?,
+    /// };
+    ///
+    /// assert!(capsule.is_point_inside(&Cartesian::from([0.25, 0.0, 2.75])));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
+        const { assert!(N > 0, "N must be greater than 0") };
+
+        if point[N - 1].abs() < self.height.get() / 2.0 {
+            let dot: f64 = point.coordinates[0..N - 1].iter().map(|x| x.powi(2)).sum();
+            dot < self.radius.get().powi(2)
+        } else {
+            let delta_r_top = *point - axis_aligned_cartesian(self.height.get() / 2.0);
+            let delta_r_bottom = *point - axis_aligned_cartesian(-self.height.get() / 2.0);
+
+            delta_r_top.norm_squared() < self.radius.get().powi(2)
+                || delta_r_bottom.norm_squared() < self.radius.get().powi(2)
+        }
     }
 }
 
@@ -500,6 +614,68 @@ mod tests {
                 "Failed with r1={r1}, h1={h1}, r2={r2}, h2={h2}, v_ij={v_ij:?}, o_ij={o_ij:?}"
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_length() -> Result<(), Box<dyn std::error::Error>> {
+        let capsule = Capsule::<3> {
+            radius: 4.0.try_into()?,
+            height: 6.0.try_into()?,
+        };
+
+        let scaled_capsule = capsule.scale_length(2.0.try_into()?);
+        assert_relative_eq!(scaled_capsule.radius.get(), 8.0);
+        assert_relative_eq!(scaled_capsule.height.get(), 12.0);
+        assert_relative_eq!(scaled_capsule.bounding_sphere_radius().get(), 14.0);
+
+        let scaled_capsule = capsule.scale_length(0.5.try_into()?);
+        assert_relative_eq!(scaled_capsule.radius.get(), 2.0);
+        assert_relative_eq!(scaled_capsule.height.get(), 3.0);
+        assert_relative_eq!(scaled_capsule.bounding_sphere_radius().get(), 3.5);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_volume() -> Result<(), Box<dyn std::error::Error>> {
+        let capsule = Capsule::<3> {
+            radius: 4.0.try_into()?,
+            height: 6.0.try_into()?,
+        };
+
+        let scaled_capsule = capsule.scale_volume(8.0.try_into()?);
+        assert_relative_eq!(scaled_capsule.radius.get(), 8.0);
+        assert_relative_eq!(scaled_capsule.height.get(), 12.0);
+        assert_relative_eq!(scaled_capsule.bounding_sphere_radius().get(), 14.0);
+
+        let scaled_capsule = capsule.scale_volume(0.125.try_into()?);
+        assert_relative_eq!(scaled_capsule.radius.get(), 2.0);
+        assert_relative_eq!(scaled_capsule.height.get(), 3.0);
+        assert_relative_eq!(scaled_capsule.bounding_sphere_radius().get(), 3.5);
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::center([0.0, 0.0, 0.0], true)]
+    #[case::left_inside([-0.875, 0.0, 1.5], true)]
+    #[case::right_inside([0.875, 0.0, -1.5], true)]
+    #[case::left_outside([-1.125, 0.0, 1.5], false)]
+    #[case::top_outside([0.0, 1.125, 1.5], false)]
+    #[case::up_inside([0.0, 0.0, 2.875], true)]
+    #[case::down_inside([0.0, 0.0, -2.875], true)]
+    #[case::up_outside([0.0, 0.0, 3.125], false)]
+    #[case::down_outside([0.0, 0.0, -3.125], false)]
+    #[rstest]
+    fn test_is_point_inside(#[case] point: [f64; 3], #[case] expected: bool) -> anyhow::Result<()> {
+        let capsule = Capsule {
+            radius: 1.0.try_into()?,
+            height: 4.0.try_into()?,
+        };
+
+        assert_eq!(capsule.is_point_inside(&point.into()), expected);
+
         Ok(())
     }
 }
