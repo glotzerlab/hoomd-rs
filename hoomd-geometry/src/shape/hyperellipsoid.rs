@@ -315,9 +315,8 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperellipsoid<N> {
     }
 }
 
-
 impl<const N: usize> MapPoint<Cartesian<N>> for Hyperellipsoid<N> {
-    /// Map a point from one cylinder to another.
+    /// Map a point from one hyperellipsoid to another.
     ///
     /// Given a point P *inside `self`*, map it to the other shape
     /// by non-uniform scaling.
