@@ -161,7 +161,7 @@ jobs:
   tests_complete:
     name: All WASM example builds
     if: always()
-    needs: [build]
+    needs: collect
     runs-on: ubuntu-26.04
     permissions:
       contents: read
