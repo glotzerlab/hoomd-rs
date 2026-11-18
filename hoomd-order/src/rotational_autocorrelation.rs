@@ -87,6 +87,10 @@ impl<const L: usize> RotationalAutocorrelation<L> {
     /// use hoomd_order::RotationalAutocorrelation;
     /// let rot_autocorr = RotationalAutocorrelation::<3>::new();
     /// ```
+    #[expect(
+        clippy::new_without_default,
+        reason = "Default would allow construction without validation"
+    )]
     #[must_use]
     #[inline]
     pub fn new() -> Self {
