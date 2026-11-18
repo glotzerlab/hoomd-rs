@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::Circle;
-use crate::{IsPointInside, Scale, Volume};
+use crate::{Error, IsPointInside, MapPoint, Scale, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Versor};
 
@@ -149,6 +149,79 @@ impl IsPointInside<Cartesian<3>> for Cylinder {
         let circle = Circle { radius: self.radius };
 
         circle.is_point_inside(&projection) && point[2].abs() < self.height.get() / 2.0
+    }
+}
+
+impl MapPoint<Cartesian<3>> for Cylinder {
+    /// Map a point from one cylinder to another.
+    ///
+    /// Given a point P *inside `self`*, map it to the other shape
+    /// by non-uniform scaling.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::PointOutsideShape`] when `point` is outside the shape
+    /// `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{MapPoint, shape::Cylinder};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let cylinder_a = Cylinder {
+    ///     radius: 10.0.try_into()?,
+    ///     height: 40.0.try_into()?,
+    /// };
+    /// let cylinder_b = Cylinder {
+    ///     radius: 20.0.try_into()?,
+    ///     height: 10.0.try_into()?,
+    /// };
+    ///
+    /// let mapped_point =
+    ///     cylinder_a.map_point(Cartesian::from([-1.0, 0.5, 10.0]), &cylinder_b);
+    ///
+    /// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 1.0, 2.5])));
+    /// assert_eq!(
+    ///     cylinder_a.map_point(Cartesian::from([-100.0, 1.0, 0.0]), &cylinder_b),
+    ///     Err(hoomd_geometry::Error::PointOutsideShape)
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn map_point(&self, point: Cartesian<3>, other: &Self) -> Result<Cartesian<3>, Error> {
+        if !self.is_point_inside(&point) {
+            return Err(Error::PointOutsideShape);
+        }
+
+        // When multiplying by the scale factor, the floating point multiply
+        // might round up in a way that places the mapped point outside the
+        // other shape. Progressively make the scale smaller until the
+        // check passes.
+        let mut radial_scale = other.radius / self.radius;
+        let mut height_scale = other.height / self.height;
+        loop {
+            let point = [point[0] * radial_scale.get(),
+                point[1] * radial_scale.get(),
+                point[2] * height_scale.get()].into();
+
+            if other.is_point_inside(&point) {
+                return Ok(point);
+            }
+
+            radial_scale = radial_scale
+                .get()
+                .next_down()
+                .try_into()
+                .expect("scale should remain a positive real");
+            height_scale = height_scale
+                .get()
+                .next_down()
+                .try_into()
+                .expect("scale should remain a positive real");
+        }
     }
 }
 
@@ -314,6 +387,47 @@ mod tests {
     };
 
     assert_eq!(cylinder.is_point_inside(&point.into()), expected);
+
+    Ok(())
+    }
+
+    #[rstest]
+    #[case::center([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])]
+    #[case::left([-0.5, 0.25, 0.0], [-1.0, 0.5, 0.0])]
+    #[case::top([0.0, 0.0, 1.0], [0.0, 0.0, 0.25])]
+    #[case::all([0.25, 0.5, -1.0], [0.5, 1.0, -0.25])]
+    #[rstest]
+    fn test_map_point_inside(#[case] point: [f64; 3], #[case] expected: [f64; 3]) -> anyhow::Result<()> {
+    let cylinder_a = Cylinder {
+        radius: 1.0.try_into()?,
+        height: 4.0.try_into()?,
+    };
+    let cylinder_b = Cylinder {
+        radius: 2.0.try_into()?,
+        height: 1.0.try_into()?,
+    };
+
+    assert_relative_eq!(cylinder_a.map_point(point.into(), &cylinder_b)?, &expected.into());
+    assert_relative_eq!(cylinder_b.map_point(expected.into(), &cylinder_a)?, &point.into());
+    assert_relative_eq!(cylinder_a.map_point(point.into(), &cylinder_a)?, &point.into());
+
+    Ok(())
+    }
+
+    #[rstest]
+    #[case::left([-1.5, 0.25, 0.0])]
+    #[case::top([0.0, 0.0, 3.0])]
+    fn test_map_point_outside(#[case] point: [f64; 3]) -> anyhow::Result<()> {
+    let cylinder_a = Cylinder {
+        radius: 1.0.try_into()?,
+        height: 4.0.try_into()?,
+    };
+    let cylinder_b = Cylinder {
+        radius: 2.0.try_into()?,
+        height: 1.0.try_into()?,
+    };
+
+    assert_eq!(cylinder_a.map_point(point.into(), &cylinder_b), Err(Error::PointOutsideShape));
 
     Ok(())
     }
