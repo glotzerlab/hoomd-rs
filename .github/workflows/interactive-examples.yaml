@@ -69,7 +69,7 @@ jobs:
     - name: Remove extra rust toolchains
       run: >
         for toolchain in $(rustup toolchain list | grep -v default); do
-            rustup toolchain uninstall $toolchain
+            rustup toolchain uninstall "$toolchain"
         done
     - name: Install cargo-binstall
       run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "$HOME/.cargo/bin"

@@ -60,7 +60,7 @@ jobs:
     - name: Remove extra rust toolchains
       run: >
         for toolchain in $(rustup toolchain list | grep -v default); do
-            rustup toolchain uninstall $toolchain
+            rustup toolchain uninstall "$toolchain"
         done
     # rust-cache already includes a Cargo.lock hash in the key. However, it
     # eagerly restores caches with previous Cargo.lock files. This causes
