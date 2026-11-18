@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::Circle;
-use crate::{Scale, Volume};
+use crate::{IsPointInside, Scale, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Versor};
 
@@ -121,6 +121,34 @@ impl Scale for Cylinder {
     fn scale_volume(&self, v: PositiveReal) -> Self {
         let v = v.get().cbrt();
         self.scale_length(v.try_into().expect("v^{1/3} should be a positive real"))
+    }
+}
+
+impl IsPointInside<Cartesian<3>> for Cylinder {
+    /// Check if a vector is inside a cylinder.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, shape::Cylinder};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let cylinder = Cylinder {
+    ///     radius: 1.0.try_into()?,
+    ///     height: 4.0.try_into()?,
+    /// };
+    ///
+    /// assert!(cylinder.is_point_inside(&Cartesian::from([0.5, 0.0, 1.75])));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn is_point_inside(&self, point: &Cartesian<3>) -> bool {
+        let projection = Cartesian::from([point[0], point[1]]);
+        let circle = Circle { radius: self.radius };
+
+        circle.is_point_inside(&projection) && point[2].abs() < self.height.get() / 2.0
     }
 }
 
@@ -268,5 +296,25 @@ mod tests {
         assert_relative_eq!(scaled_cylinder.height.get(), 3.0);
 
         Ok(())
+    }
+
+    #[rstest]
+    #[case::center([0.0, 0.0, 0.0], true)]
+    #[case::left_inside([-0.875, 0.0, 1.5], true)]
+    #[case::right_inside([0.875, 0.0, -1.5], true)]
+    #[case::left_outside([-1.125, 0.0, 1.5], false)]
+    #[case::top_outside([0.0, 1.125, 1.5], false)]
+    #[case::up_outside([0.0, 0.0, 2.125], false)]
+    #[case::down_outside([0.0, 0.0, -2.125], false)]
+    #[rstest]
+    fn test_is_point_inside(#[case] point: [f64; 3], #[case] expected: bool) -> anyhow::Result<()> {
+    let cylinder = Cylinder {
+        radius: 1.0.try_into()?,
+        height: 4.0.try_into()?,
+    };
+
+    assert_eq!(cylinder.is_point_inside(&point.into()), expected);
+
+    Ok(())
     }
 }
