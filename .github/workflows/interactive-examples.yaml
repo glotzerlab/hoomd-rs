@@ -135,12 +135,13 @@ jobs:
       with:
         merge-multiple: 'true'
         pattern: web-*
+        path: web
+
+    - name: Directory contents
+      run: ls -lR .
 
     - name: Show web directory size
       run: du -hsc web/*
-
-    - name: Web directory contents
-      run: ls -lR web
 
     - name: Upload pages artifact
       uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
