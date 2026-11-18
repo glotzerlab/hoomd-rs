@@ -9,7 +9,7 @@ use std::ops::Mul;
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{
-    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, Scale, SupportMapping, Volume,
+    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale, SupportMapping, Volume,
 };
 use hoomd_linear_algebra::{
     QuadraticForm,
@@ -284,6 +284,34 @@ impl<const N: usize> Scale for Hyperellipsoid<N> {
     fn scale_volume(&self, v: PositiveReal) -> Self {
         let v = v.get().powf(1.0 / N as f64);
         self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
+    }
+}
+
+impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperellipsoid<N> {
+    /// Check if a vector is inside a hyperellipsoid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, shape::Ellipse};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let ellipse =
+    ///     Ellipse::with_semi_axes([1.0.try_into()?, 2.0.try_into()?]);
+    ///
+    /// assert!(ellipse.is_point_inside(&Cartesian::from([0.125, 0.875])));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
+        let implicit: f64 = point
+            .coordinates[0..N]
+            .iter()
+            .zip(self.semi_axes.iter().map(PositiveReal::get))
+            .map(|(x, a)| (x/a).powi(2)).sum();
+        implicit < 1.0
     }
 }
 
@@ -758,5 +786,24 @@ mod tests {
         assert_relative_eq!(scaled_ellipse.bounding_sphere_radius.get(), 2.0);
 
         Ok(())
+    }
+
+    #[rstest]
+    #[case::center([0.0, 0.0], true)]
+    #[case::left_inside([-0.875, 0.0], true)]
+    #[case::right_inside([0.875, 0.0], true)]
+    #[case::left_outside([-1.125, 0.0], false)]
+    #[case::right_outside([1.125, 0.0], false)]
+    #[case::up_inside([0.0, 1.875], true)]
+    #[case::down_inside([0.0, -1.875], true)]
+    #[case::up_outside([0.0, 2.125], false)]
+    #[case::down_outside([0.0, -2.125], false)]
+    #[rstest]
+    fn test_is_point_inside(#[case] point: [f64; 2], #[case] expected: bool) -> anyhow::Result<()> {
+    let ellipse = Ellipse::with_semi_axes([1.0.try_into()?, 2.0.try_into()?]);
+
+    assert_eq!(ellipse.is_point_inside(&point.into()), expected);
+
+    Ok(())
     }
 }
