@@ -84,6 +84,7 @@ pub type Spherocylinder = Capsule<3>;
 impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
+        const { assert!(N > 0, "N must be greater than 0") };
         // Same support function as a ConvexPolyhedron with 2 vertices, plus the radius.
         let mut v_tip = [0.0; N];
         v_tip[N - 1] = self.height.get() / 2.0;
@@ -224,6 +225,8 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Capsule<N> {
     /// ```
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
+        const { assert!(N > 0, "N must be greater than 0") };
+
         if point[N-1].abs() < self.height.get() / 2.0 {
             let dot: f64 = point.coordinates[0..N-1].iter().map(|x| x.powi(2)).sum();
             dot < self.radius.get().powi(2)
