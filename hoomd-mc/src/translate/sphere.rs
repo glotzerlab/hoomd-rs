@@ -126,6 +126,29 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
         rng: &mut R,
         body_properties: Point<Spherical<4>>,
     ) -> Point<Spherical<4>> {
+        /* let v = base_point.coordinates();            // v[0] = real part
+    let d = max_dist * rng.random::<f64>();      // rng.gen::<f64>() on rand 0.8
+    let (sn, cs) = d.sin_cos();                  // full angle: r^2, not r
+
+    // Random direction; normalisation folded into the sin factor
+    let g: [f64; 3] = std::array::from_fn(|_| rng.sample(StandardNormal));
+    let sg = sn / (g[0]*g[0] + g[1]*g[1] + g[2]*g[2]).sqrt();
+
+    // t = s û s, expanded (singular only at v = -1)
+    let k = v[1]*g[0] + v[2]*g[1] + v[3]*g[2];
+    let a = 1.0 + v[0];
+    let m = if a > 1e-12 { k / a } else { 0.0 }; // at v = -1, any pure û is tangent
+
+    let new = [
+        cs*v[0] - sg*k,
+        cs*v[1] + sg*(g[0] - m*v[1]),
+        cs*v[2] + sg*(g[1] - m*v[2]),
+        cs*v[3] + sg*(g[2] - m*v[3]),
+    ];
+    let new_pos = Spherical::<4>::from_cartesian_coordinates(new.into());     // use an unchecked constructor if you have one
+    let ultimate_displacement = new_pos.distance(&base_point);
+    //debug_assert!((new_pos.distance(&base_point) - d).abs() < 1e-9);
+     */
         let mut trial = body_properties;
         let dist = Uniform::new(0.0, self.maximum_distance().get())
             .expect("max distance must be positive real");
