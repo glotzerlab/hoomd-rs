@@ -64,7 +64,14 @@ jobs:
         toolchain: 1.100.0
         targets: wasm32-unknown-unknown
     - name: Check rust installation
-      run: rustc -vV
+      run: rustup toolchain list
+    # extra toolchains occur on some actions runners but not others, resulting in cache misses 
+    - name: Remove extra rust toolchains
+      run: >
+        for toolchain in $(rustup toolchain list | grep -v default)
+        do
+            rustup toolchain uninstall $toolchain
+        done
     - name: Install cargo-binstall
       run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "$HOME/.cargo/bin"
     - name: Install wasm-bindgen
@@ -82,8 +89,9 @@ jobs:
     - name: Cache
       uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
-        key: wasm32-unknown-unknown-${{ hashFiles('Cargo.lock') }}
+        key: build-interactive-examples-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
+        add-job-id-key: false
         save-if: ${{ github.ref != 'refs/heads/trunk' && matrix.example == 'applying-interactions' }}
 
     - name: Create output directory
