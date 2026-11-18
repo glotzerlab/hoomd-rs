@@ -24,10 +24,32 @@ env:
 
 jobs:
   build:
-    name: Build
+    name: Build [${{ matrix.example }}]
     runs-on: ubuntu-26.04
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+        - applying-interactions
+        - binary-hard-shapes
+        - capsules-on-a-plane
+        - crystal-stability
+        - custom-random-walk
+        - ellipse-gcmc-2d
+        - hard-disk-self-assembly
+        - hard-ellipse-self-assembly
+        - hard-tetrahedron-self-assembly
+        - lj-fluid
+        - multi-site-patchy-shapes
+        - patchy-body-2d
+        - patchy-body-3d
+        - patchy-particle-self-assembly
+        - polydisperse-hard-disk-model
+        - seeded-self-assembly
+        - tetronimoes
+        - type-dependent-interactions
 
     steps:
     - name: Checkout
@@ -42,11 +64,19 @@ jobs:
         toolchain: 1.100.0
         targets: wasm32-unknown-unknown
     - name: Check rust installation
-      run: rustc -vV
+      run: rustup toolchain list
+    # extra toolchains occur on some actions runners but not others, resulting in cache misses
+    - name: Remove extra rust toolchains
+      run: >
+        for toolchain in $(rustup toolchain list | grep -v default); do
+            rustup toolchain uninstall "$toolchain"
+        done
     - name: Install cargo-binstall
       run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "$HOME/.cargo/bin"
     - name: Install wasm-bindgen
       run: cargo binstall wasm-bindgen-cli@0.2.130 --no-confirm --disable-strategies=compile --disable-telemetry
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Install binaryen
       run: curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "$HOME/.cargo/bin"
 
@@ -58,9 +88,10 @@ jobs:
     - name: Cache
       uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
-        key: wasm32-unknown-unknown-${{ hashFiles('Cargo.lock') }}
+        key: build-interactive-examples-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
-        save-if: ${{ github.ref != 'refs/heads/trunk' }}
+        add-job-id-key: false
+        save-if: ${{ github.ref != 'refs/heads/trunk' && matrix.example == 'applying-interactions' }}
 
     - name: Create output directory
       run: mkdir -p web
@@ -73,6 +104,7 @@ jobs:
         --
         --reduce-size
         --root web
+        ${{ matrix.example }}
 
     - name: Show target directory size
       run: du -hsc target/*
@@ -83,7 +115,34 @@ jobs:
     - name: Web directory contents
       run: ls -lR web
 
-    - name: Upload artifact
+    - name: Upload example
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: web-${{ matrix.example }}
+        path: web
+
+  collect:
+    name: Collect built examples
+    needs: build
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        merge-multiple: 'true'
+        pattern: web-*
+        path: web
+
+    - name: Directory contents
+      run: ls -lR .
+
+    - name: Show web directory size
+      run: du -hsc web/*
+
+    - name: Upload pages artifact
       uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
       with:
         path: ./web
@@ -96,7 +155,7 @@ jobs:
       pages: write
       id-token: write
 
-    needs: build
+    needs: collect
 
     environment:
       name: github-pages
@@ -112,7 +171,7 @@ jobs:
   tests_complete:
     name: All WASM example builds
     if: always()
-    needs: [build]
+    needs: collect
     runs-on: ubuntu-26.04
     permissions:
       contents: read
