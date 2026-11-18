@@ -55,7 +55,13 @@ jobs:
         toolchain: 1.100.0
         targets: ${{ matrix.target }}
     - name: Check rust installation
-      run: rustc -vV
+      run: rustup toolchain list
+    # extra toolchains occur on some actions runners but not others, resulting in cache misses
+    - name: Remove extra rust toolchains
+      run: >
+        for toolchain in $(rustup toolchain list | grep -v default); do
+            rustup toolchain uninstall $toolchain
+        done
     # rust-cache already includes a Cargo.lock hash in the key. However, it
     # eagerly restores caches with previous Cargo.lock files. This causes
     # multiple builds to be cached in target/ increasing the cache usage
@@ -64,8 +70,9 @@ jobs:
     - name: Cache
       uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
-        key: ${{ matrix.target || 'native' }}-${{ hashFiles('Cargo.lock') }}
+        key: test-${{ matrix.target || 'native' }}-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
+        add-job-id-key: false
         save-if: ${{ github.ref != 'refs/heads/trunk' }}
 
     - name: Build [default features]
