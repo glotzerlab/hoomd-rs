@@ -63,7 +63,7 @@ use crate::math::Gegenbauer;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug)]
 pub struct RotationalAutocorrelation<const L: usize> {
     /// Evaluate the Gegenbauer polynomial.
     gegenbauer: Gegenbauer<L>,
