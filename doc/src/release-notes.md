@@ -5,14 +5,14 @@
 *Added:*
 
 * `[hoomd-geometry]`: Implement `Scale` for `Capsule`, `ConvexPolytope`, `Cylinder`, and `Hyperellipsoid`.
-* `[hoomd-geometry]`: Implement `IsPointInside` for `Capsule`, `ConvexPolytope`, `Cylinder`, and `Hyperellipsoid`.
+* `[hoomd-geometry]`: Implement `IsPointInside` for `Capsule`, `Cylinder`, and `Hyperellipsoid`.
+* `[hoomd-geometry]`: Implement `IsPointInside` for `Cylinder` and `Hyperellipsoid`.
 * `[hoomd-gsd]`: Add `Frame::particles_type_shapes` to write `particles/type_shapes` (#477).
 * `[hoomd-microstate`]: Implement `IsPointInside` for `Open`, `Closed`, and `Periodic` (#420).
 * `[hoomd-order]`: Add the `hoomd-order` crate. It implements Spherical Harmonics, Steinhardt and *k-atic* order parameters, neighbor queries, and an algorithm that averages values over neighbors (#293, #420).
 * `[hoomd-utility]`: Implement `Add`, `AddAssign`, `cbrt`, and `sqrt` for `PositiveReal` (#466).
 * `[hoomd-vector]`:  Implement `from_spherical_coordinates` for `Unit<Cartesian<3>>` (#293).
 * `[hoomd-workspace]`: Explain how to add new optional fields to state points (#482).
-
 
 *Changed:*
 
