@@ -889,11 +889,17 @@ mod tests {
 
         let scaled_rectangle = rectangle.scale_length(2.0.try_into()?);
         assert_relative_eq!(scaled_rectangle.vertices()[0], [-4.0, -2.0].into());
-        assert_relative_eq!(scaled_rectangle.bounding_sphere_radius().get(), 20.0_f64.sqrt());
+        assert_relative_eq!(
+            scaled_rectangle.bounding_sphere_radius().get(),
+            20.0_f64.sqrt()
+        );
 
         let scaled_rectangle = rectangle.scale_length(0.5.try_into()?);
         assert_relative_eq!(scaled_rectangle.vertices()[0], [-1.0, -0.5].into());
-        assert_relative_eq!(scaled_rectangle.bounding_sphere_radius().get(), 1.25_f64.sqrt());
+        assert_relative_eq!(
+            scaled_rectangle.bounding_sphere_radius().get(),
+            1.25_f64.sqrt()
+        );
 
         Ok(())
     }
@@ -909,11 +915,17 @@ mod tests {
 
         let scaled_rectangle = rectangle.scale_volume(9.0.try_into()?);
         assert_relative_eq!(scaled_rectangle.vertices()[0], [-6.0, -3.0].into());
-        assert_relative_eq!(scaled_rectangle.bounding_sphere_radius().get(), 45.0_f64.sqrt());
+        assert_relative_eq!(
+            scaled_rectangle.bounding_sphere_radius().get(),
+            45.0_f64.sqrt()
+        );
 
         let scaled_rectangle = rectangle.scale_volume(0.25.try_into()?);
         assert_relative_eq!(scaled_rectangle.vertices()[0], [-1.0, -0.5].into());
-        assert_relative_eq!(scaled_rectangle.bounding_sphere_radius().get(), 1.25_f64.sqrt());
+        assert_relative_eq!(
+            scaled_rectangle.bounding_sphere_radius().get(),
+            1.25_f64.sqrt()
+        );
 
         Ok(())
     }

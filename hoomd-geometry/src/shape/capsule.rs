@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{
-    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale, SupportMapping, Volume,
+    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale, SupportMapping,
+    Volume,
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation};
@@ -227,14 +228,15 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Capsule<N> {
     fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
         const { assert!(N > 0, "N must be greater than 0") };
 
-        if point[N-1].abs() < self.height.get() / 2.0 {
-            let dot: f64 = point.coordinates[0..N-1].iter().map(|x| x.powi(2)).sum();
+        if point[N - 1].abs() < self.height.get() / 2.0 {
+            let dot: f64 = point.coordinates[0..N - 1].iter().map(|x| x.powi(2)).sum();
             dot < self.radius.get().powi(2)
         } else {
-            let delta_r_top = *point - axis_aligned_cartesian(self.height.get()/2.0);
-            let delta_r_bottom = *point - axis_aligned_cartesian(-self.height.get()/2.0);
+            let delta_r_top = *point - axis_aligned_cartesian(self.height.get() / 2.0);
+            let delta_r_bottom = *point - axis_aligned_cartesian(-self.height.get() / 2.0);
 
-            delta_r_top.norm_squared() < self.radius.get().powi(2) || delta_r_bottom.norm_squared() < self.radius.get().powi(2)
+            delta_r_top.norm_squared() < self.radius.get().powi(2)
+                || delta_r_bottom.norm_squared() < self.radius.get().powi(2)
         }
     }
 }
@@ -667,13 +669,13 @@ mod tests {
     #[case::down_outside([0.0, 0.0, -3.125], false)]
     #[rstest]
     fn test_is_point_inside(#[case] point: [f64; 3], #[case] expected: bool) -> anyhow::Result<()> {
-    let capsule = Capsule {
-        radius: 1.0.try_into()?,
-        height: 4.0.try_into()?,
-    };
+        let capsule = Capsule {
+            radius: 1.0.try_into()?,
+            height: 4.0.try_into()?,
+        };
 
-    assert_eq!(capsule.is_point_inside(&point.into()), expected);
+        assert_eq!(capsule.is_point_inside(&point.into()), expected);
 
-    Ok(())
+        Ok(())
     }
 }

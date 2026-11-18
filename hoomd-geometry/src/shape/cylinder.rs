@@ -146,7 +146,9 @@ impl IsPointInside<Cartesian<3>> for Cylinder {
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<3>) -> bool {
         let projection = Cartesian::from([point[0], point[1]]);
-        let circle = Circle { radius: self.radius };
+        let circle = Circle {
+            radius: self.radius,
+        };
 
         circle.is_point_inside(&projection) && point[2].abs() < self.height.get() / 2.0
     }
@@ -203,9 +205,12 @@ impl MapPoint<Cartesian<3>> for Cylinder {
         let mut radial_scale = other.radius / self.radius;
         let mut height_scale = other.height / self.height;
         loop {
-            let point = [point[0] * radial_scale.get(),
+            let point = [
+                point[0] * radial_scale.get(),
                 point[1] * radial_scale.get(),
-                point[2] * height_scale.get()].into();
+                point[2] * height_scale.get(),
+            ]
+            .into();
 
             if other.is_point_inside(&point) {
                 return Ok(point);
@@ -381,14 +386,14 @@ mod tests {
     #[case::down_outside([0.0, 0.0, -2.125], false)]
     #[rstest]
     fn test_is_point_inside(#[case] point: [f64; 3], #[case] expected: bool) -> anyhow::Result<()> {
-    let cylinder = Cylinder {
-        radius: 1.0.try_into()?,
-        height: 4.0.try_into()?,
-    };
+        let cylinder = Cylinder {
+            radius: 1.0.try_into()?,
+            height: 4.0.try_into()?,
+        };
 
-    assert_eq!(cylinder.is_point_inside(&point.into()), expected);
+        assert_eq!(cylinder.is_point_inside(&point.into()), expected);
 
-    Ok(())
+        Ok(())
     }
 
     #[rstest]
@@ -397,38 +402,53 @@ mod tests {
     #[case::top([0.0, 0.0, 1.0], [0.0, 0.0, 0.25])]
     #[case::all([0.25, 0.5, -1.0], [0.5, 1.0, -0.25])]
     #[rstest]
-    fn test_map_point_inside(#[case] point: [f64; 3], #[case] expected: [f64; 3]) -> anyhow::Result<()> {
-    let cylinder_a = Cylinder {
-        radius: 1.0.try_into()?,
-        height: 4.0.try_into()?,
-    };
-    let cylinder_b = Cylinder {
-        radius: 2.0.try_into()?,
-        height: 1.0.try_into()?,
-    };
+    fn test_map_point_inside(
+        #[case] point: [f64; 3],
+        #[case] expected: [f64; 3],
+    ) -> anyhow::Result<()> {
+        let cylinder_a = Cylinder {
+            radius: 1.0.try_into()?,
+            height: 4.0.try_into()?,
+        };
+        let cylinder_b = Cylinder {
+            radius: 2.0.try_into()?,
+            height: 1.0.try_into()?,
+        };
 
-    assert_relative_eq!(cylinder_a.map_point(point.into(), &cylinder_b)?, &expected.into());
-    assert_relative_eq!(cylinder_b.map_point(expected.into(), &cylinder_a)?, &point.into());
-    assert_relative_eq!(cylinder_a.map_point(point.into(), &cylinder_a)?, &point.into());
+        assert_relative_eq!(
+            cylinder_a.map_point(point.into(), &cylinder_b)?,
+            &expected.into()
+        );
+        assert_relative_eq!(
+            cylinder_b.map_point(expected.into(), &cylinder_a)?,
+            &point.into()
+        );
+        assert_relative_eq!(
+            cylinder_a.map_point(point.into(), &cylinder_a)?,
+            &point.into()
+        );
 
-    Ok(())
+        Ok(())
     }
 
     #[rstest]
     #[case::left([-1.5, 0.25, 0.0])]
     #[case::top([0.0, 0.0, 3.0])]
     fn test_map_point_outside(#[case] point: [f64; 3]) -> anyhow::Result<()> {
-    let cylinder_a = Cylinder {
-        radius: 1.0.try_into()?,
-        height: 4.0.try_into()?,
-    };
-    let cylinder_b = Cylinder {
-        radius: 2.0.try_into()?,
-        height: 1.0.try_into()?,
-    };
+        let cylinder_a = Cylinder {
+            radius: 1.0.try_into()?,
+            height: 4.0.try_into()?,
+        };
+        let cylinder_b = Cylinder {
+            radius: 2.0.try_into()?,
+            height: 1.0.try_into()?,
+        };
 
-    assert_eq!(cylinder_a.map_point(point.into(), &cylinder_b), Err(Error::PointOutsideShape));
+        assert_eq!(
+            cylinder_a.map_point(point.into(), &cylinder_b),
+            Err(Error::PointOutsideShape)
+        );
 
-    Ok(())
+        Ok(())
     }
 }
