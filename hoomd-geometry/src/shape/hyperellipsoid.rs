@@ -5,10 +5,13 @@
 
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::ops::Mul;
+use std::{array, ops::Mul};
 
 use super::sphere::sphere_volume_prefactor;
-use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
+use crate::{
+    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, MapPoint, Scale,
+    SupportMapping, Volume,
+};
 use hoomd_linear_algebra::{
     QuadraticForm,
     matrix::{DiagonalMatrix, Matrix22},
@@ -226,6 +229,162 @@ impl<const N: usize> Volume for Hyperellipsoid<N> {
     }
 }
 
+impl<const N: usize> Scale for Hyperellipsoid<N> {
+    /// Construct a scaled [`Hyperellipsoid`].
+    ///
+    /// The resulting hyperellipsoid's semi-axes are the original's scaled by
+    /// *v*:
+    /// ```math
+    /// a_{i,\mathrm{new}} = v a_i
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Ellipse};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let ellipse = Ellipse::with_semi_axes([2.0.try_into()?, 4.0.try_into()?]);
+    ///
+    /// let scaled_ellipse = ellipse.scale_length(2.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_ellipse.semi_axes()[0].get(), 4.0);
+    /// assert_eq!(scaled_ellipse.semi_axes()[1].get(), 8.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        Self::with_semi_axes(self.semi_axes.map(|a| a * v))
+    }
+
+    /// Construct a scaled [`Hyperellipsoid`].
+    ///
+    /// The resulting hyperellipsoid's semi-axes are the original's scaled by
+    /// $`v^\frac{1}{N}`$:
+    /// ```math
+    /// a_{i,\mathrm{new}} = v^\frac{1}{N} a_i
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Ellipse};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let ellipse = Ellipse::with_semi_axes([2.0.try_into()?, 4.0.try_into()?]);
+    ///
+    /// let scaled_ellipse = ellipse.scale_volume(4.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_ellipse.semi_axes()[0].get(), 4.0);
+    /// assert_eq!(scaled_ellipse.semi_axes()[1].get(), 8.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().powf(1.0 / N as f64);
+        self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
+    }
+}
+
+impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperellipsoid<N> {
+    /// Check if a vector is inside a hyperellipsoid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, shape::Ellipse};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let ellipse = Ellipse::with_semi_axes([1.0.try_into()?, 2.0.try_into()?]);
+    ///
+    /// assert!(ellipse.is_point_inside(&Cartesian::from([0.125, 0.875])));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
+        let implicit: f64 = point.coordinates[0..N]
+            .iter()
+            .zip(self.semi_axes.iter().map(PositiveReal::get))
+            .map(|(x, a)| (x / a).powi(2))
+            .sum();
+        implicit < 1.0
+    }
+}
+
+impl<const N: usize> MapPoint<Cartesian<N>> for Hyperellipsoid<N> {
+    /// Map a point from one hyperellipsoid to another.
+    ///
+    /// Given a point P *inside `self`*, map it to the other shape
+    /// by non-uniform scaling.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::PointOutsideShape`] when `point` is outside the shape
+    /// `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{MapPoint, shape::Hyperellipsoid};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let ellipsoid_a = Hyperellipsoid::with_semi_axes([
+    ///     2.0.try_into()?,
+    ///     4.0.try_into()?,
+    ///     6.0.try_into()?,
+    /// ]);
+    /// let ellipsoid_b = Hyperellipsoid::with_semi_axes([
+    ///     1.0.try_into()?,
+    ///     8.0.try_into()?,
+    ///     24.0.try_into()?,
+    /// ]);
+    ///
+    /// let mapped_point =
+    ///     ellipsoid_a.map_point(Cartesian::from([-1.0, 0.5, 2.0]), &ellipsoid_b);
+    ///
+    /// assert_eq!(mapped_point, Ok(Cartesian::from([-0.5, 1.0, 8.0])));
+    /// assert_eq!(
+    ///     ellipsoid_a
+    ///         .map_point(Cartesian::from([-100.0, 1.0, 0.0]), &ellipsoid_b),
+    ///     Err(hoomd_geometry::Error::PointOutsideShape)
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn map_point(&self, point: Cartesian<N>, other: &Self) -> Result<Cartesian<N>, Error> {
+        if !self.is_point_inside(&point) {
+            return Err(Error::PointOutsideShape);
+        }
+
+        // When multiplying by the scale factor, the floating point multiply
+        // might round up in a way that places the mapped point outside the
+        // other shape. Progressively make the scale smaller until the
+        // check passes.
+        let mut scale: [PositiveReal; N] =
+            array::from_fn(|i| other.semi_axes[i] / self.semi_axes[i]);
+        loop {
+            let point = array::from_fn(|i| scale[i].get() * point[i]).into();
+
+            if other.is_point_inside(&point) {
+                return Ok(point);
+            }
+
+            scale = array::from_fn(|i| {
+                scale[i]
+                    .get()
+                    .next_down()
+                    .try_into()
+                    .expect("scale should remain a positive real")
+            });
+        }
+    }
+}
 impl<R> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R> for Hyperellipsoid<2>
 where
     R: Copy,
@@ -663,5 +822,107 @@ mod tests {
                 d.get()
             );
         }
+    }
+
+    #[test]
+    fn test_scale_length() -> Result<(), Box<dyn std::error::Error>> {
+        let ellipse = Ellipse::with_semi_axes([2.0.try_into()?, 4.0.try_into()?]);
+
+        let scaled_ellipse = ellipse.scale_length(2.0.try_into()?);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[0].get(), 4.0);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[1].get(), 8.0);
+        assert_relative_eq!(scaled_ellipse.bounding_sphere_radius.get(), 8.0);
+
+        let scaled_ellipse = ellipse.scale_length(0.5.try_into()?);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[0].get(), 1.0);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[1].get(), 2.0);
+        assert_relative_eq!(scaled_ellipse.bounding_sphere_radius.get(), 2.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_volume() -> Result<(), Box<dyn std::error::Error>> {
+        let ellipse = Ellipse::with_semi_axes([2.0.try_into()?, 4.0.try_into()?]);
+
+        let scaled_ellipse = ellipse.scale_volume(4.0.try_into()?);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[0].get(), 4.0);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[1].get(), 8.0);
+        assert_relative_eq!(scaled_ellipse.bounding_sphere_radius.get(), 8.0);
+
+        let scaled_ellipse = ellipse.scale_volume(0.25.try_into()?);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[0].get(), 1.0);
+        assert_relative_eq!(scaled_ellipse.semi_axes()[1].get(), 2.0);
+        assert_relative_eq!(scaled_ellipse.bounding_sphere_radius.get(), 2.0);
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::center([0.0, 0.0], true)]
+    #[case::left_inside([-0.875, 0.0], true)]
+    #[case::right_inside([0.875, 0.0], true)]
+    #[case::left_outside([-1.125, 0.0], false)]
+    #[case::right_outside([1.125, 0.0], false)]
+    #[case::up_inside([0.0, 1.875], true)]
+    #[case::down_inside([0.0, -1.875], true)]
+    #[case::up_outside([0.0, 2.125], false)]
+    #[case::down_outside([0.0, -2.125], false)]
+    #[rstest]
+    fn test_is_point_inside(#[case] point: [f64; 2], #[case] expected: bool) -> anyhow::Result<()> {
+        let ellipse = Ellipse::with_semi_axes([1.0.try_into()?, 2.0.try_into()?]);
+
+        assert_eq!(ellipse.is_point_inside(&point.into()), expected);
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::center([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])]
+    #[case::left([-1.0, 0.0, 0.0], [-0.5, 0.0, 0.0])]
+    #[case::up([0.0, 1.0, 0.0], [0.0, 2.0, 0.0])]
+    #[case::top([0.0, 0.0, 1.0], [0.0, 0.0, 4.0])]
+    #[case::all([0.25, 0.5, -1.0], [0.125, 1.0, -4.0])]
+    #[rstest]
+    fn test_map_point_inside(
+        #[case] point: [f64; 3],
+        #[case] expected: [f64; 3],
+    ) -> anyhow::Result<()> {
+        let ellipsoid_a =
+            Hyperellipsoid::with_semi_axes([2.0.try_into()?, 4.0.try_into()?, 6.0.try_into()?]);
+        let ellipsoid_b =
+            Hyperellipsoid::with_semi_axes([1.0.try_into()?, 8.0.try_into()?, 24.0.try_into()?]);
+
+        assert_relative_eq!(
+            ellipsoid_a.map_point(point.into(), &ellipsoid_b)?,
+            &expected.into()
+        );
+        assert_relative_eq!(
+            ellipsoid_b.map_point(expected.into(), &ellipsoid_a)?,
+            &point.into()
+        );
+        assert_relative_eq!(
+            ellipsoid_a.map_point(point.into(), &ellipsoid_a)?,
+            &point.into()
+        );
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::left([-2.5, 0.0, 0.0])]
+    #[case::top([0.0, 0.0, 8.0])]
+    fn test_map_point_outside(#[case] point: [f64; 3]) -> anyhow::Result<()> {
+        let ellipsoid_a =
+            Hyperellipsoid::with_semi_axes([2.0.try_into()?, 4.0.try_into()?, 6.0.try_into()?]);
+        let ellipsoid_b =
+            Hyperellipsoid::with_semi_axes([1.0.try_into()?, 8.0.try_into()?, 24.0.try_into()?]);
+
+        assert_eq!(
+            ellipsoid_a.map_point(point.into(), &ellipsoid_b),
+            Err(Error::PointOutsideShape)
+        );
+
+        Ok(())
     }
 }
