@@ -51,13 +51,13 @@ use crate::{DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 /// use hoomd_vector::{Angle, Cartesian};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let body = Body {
-///     properties: OrientedPoint {
+/// let body = Body::single_site(
+///     OrientedPoint {
 ///         position: Cartesian::from([0.0, 0.0]),
 ///         orientation: Angle::from(0.5),
 ///     },
-///     sites: [Point::new(Cartesian::from([0.0, 0.0]))].into(),
-/// };
+///     Point::default(),
+/// );
 /// let microstate = Microstate::builder().bodies([body]).try_build()?;
 ///
 /// let pin_orientations = PinOrientations {
@@ -254,11 +254,12 @@ where
     /// Compute the energy for a given body.
     ///
     /// ```math
-    /// U_\mathrm{body} = \begin{cases}
-    /// \min_j \frac{1}{2} k (\Delta \vec{r}_j)^2 & n_\mathrm{references} > 0 \\
-    /// 0 & n_\mathrm{references} = 0 \\
-    /// \end{cases}
+    /// \min_j \frac{1}{2} k (\Delta \vec{r}_j)^2
     /// ```
+    ///
+    /// Apply a harmonic external potential to the distance between the body's
+    /// position and a given reference position. Take the minimum over all
+    /// candidate minimum images *j*.
     ///
     /// The body must exist in the microstate with the given `body_tag`.
     /// The `body_properties` may match those in the microstate or may be
@@ -295,6 +296,7 @@ where
     /// # }
     /// ```
     #[inline]
+    #[expect(clippy::missing_panics_doc, reason = "the panic will never occur")]
     pub fn body_energy<B, C>(&self, body_tag: usize, body_properties: &B, boundary: &C) -> f64
     where
         B: Position<Position = P>,
@@ -310,7 +312,7 @@ where
             )
             .map(|position| 0.5 * self.k * position.distance_squared(reference))
             .reduce(f64::min)
-            .unwrap_or(0.0)
+            .expect("the iterator chain should always produce at least 1 item")
     }
 }
 
@@ -382,16 +384,17 @@ mod tests {
     mod pin_orientations {
         use super::*;
 
+        fn oriented_point<R>(orientation: R) -> OrientedPoint<Cartesian<2>, R> {
+            OrientedPoint {
+                position: Cartesian::default(),
+                orientation,
+            }
+        }
+
         fn oriented_body<R>(
             orientation: R,
         ) -> Body<OrientedPoint<Cartesian<2>, R>, Point<Cartesian<2>>> {
-            Body {
-                properties: OrientedPoint {
-                    position: Cartesian::default(),
-                    orientation,
-                },
-                sites: [Point::new(Cartesian::default())].into(),
-            }
+            Body::single_site(oriented_point(orientation), Point::default())
         }
 
         #[test]
@@ -400,9 +403,9 @@ mod tests {
                 k: 2.0,
                 reference: vec![vec![]],
             };
-            let body = oriented_body(Angle::from(1.0));
+            let properties = oriented_point(Angle::from(1.0));
 
-            check!(pin.body_energy(0, &body.properties) == 0.0);
+            check!(pin.body_energy(0, &properties) == 0.0);
         }
 
         #[rstest]
@@ -416,10 +419,10 @@ mod tests {
                 k: 2.0,
                 reference: vec![vec![Angle::from(0.0)]],
             };
-            let body = oriented_body(Angle::from(theta));
+            let properties = oriented_point(Angle::from(theta));
 
             assert_relative_eq!(
-                pin.body_energy(0, &body.properties),
+                pin.body_energy(0, &properties),
                 expected,
                 epsilon = 1e-12
             );
@@ -436,10 +439,10 @@ mod tests {
                     Angle::from(3.0 * PI / 2.0),
                 ]],
             };
-            let body = oriented_body(Angle::from(PI / 2.0 + 0.2));
+            let properties = oriented_point(Angle::from(PI / 2.0 + 0.2));
 
             assert_relative_eq!(
-                pin.body_energy(0, &body.properties),
+                pin.body_energy(0, &properties),
                 0.5 * 3.0 * 0.2 * 0.2,
                 epsilon = 1e-12
             );
@@ -545,14 +548,11 @@ mod tests {
 
             // After removal, index 0 holds a body with a different tag.
             microstate.remove_body(0);
-            let tag = microstate.bodies()[0].tag;
-            let initial_theta = [0.1, 0.9, 2.2][tag];
-            let final_theta = 2.0 + 0.4;
-            let final_body = oriented_body(Angle::from(final_theta));
-            let reference = [0.0, 1.0, 2.0][tag];
+            check!(microstate.bodies()[0].tag == 2);
+            let final_body = oriented_body(Angle::from(2.4));
             assert_relative_eq!(
                 pin.delta_energy_one(&microstate, 0, &final_body),
-                (final_theta - reference).powi(2) - (initial_theta - reference).powi(2),
+                0.4 * 0.4 - 0.2 * 0.2,
                 epsilon = 1e-12
             );
             Ok(())
@@ -577,9 +577,9 @@ mod tests {
                 k: 2.0,
                 reference: vec![Cartesian::from([0.0, 0.0])],
             };
-            let body = Body::point(Cartesian::from([3.0, 4.0]));
+            let properties = Point::new(Cartesian::from([3.0, 4.0]));
 
-            check!(pin.body_energy(0, &body.properties, &Open) == 25.0);
+            check!(pin.body_energy(0, &properties, &Open) == 25.0);
         }
 
         #[test]
@@ -590,30 +590,30 @@ mod tests {
                 reference: vec![Cartesian::from([4.5, 0.0]), Cartesian::from([4.5, 4.5])],
             };
 
-            let body = Body::point(Cartesian::from([-4.5, 0.0]));
+            let properties = Point::new(Cartesian::from([-4.5, 0.0]));
             assert_relative_eq!(
-                pin.body_energy(0, &body.properties, &boundary),
+                pin.body_energy(0, &properties, &boundary),
                 1.0,
                 epsilon = 1e-12
             );
             // Without the periodic boundary, the full distance applies.
             assert_relative_eq!(
-                pin.body_energy(0, &body.properties, &Open),
+                pin.body_energy(0, &properties, &Open),
                 81.0,
                 epsilon = 1e-12
             );
 
-            let body = Body::point(Cartesian::from([3.5, 0.0]));
+            let properties = Point::new(Cartesian::from([3.5, 0.0]));
             assert_relative_eq!(
-                pin.body_energy(0, &body.properties, &boundary),
+                pin.body_energy(0, &properties, &boundary),
                 1.0,
                 epsilon = 1e-12
             );
 
             // Wrap across a corner.
-            let body = Body::point(Cartesian::from([-4.5, -4.5]));
+            let properties = Point::new(Cartesian::from([-4.5, -4.5]));
             assert_relative_eq!(
-                pin.body_energy(1, &body.properties, &boundary),
+                pin.body_energy(1, &properties, &boundary),
                 2.0,
                 epsilon = 1e-12
             );
