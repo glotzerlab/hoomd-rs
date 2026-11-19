@@ -104,7 +104,7 @@ impl<const N: usize> Periodic<Hypercuboid<N>> {
     fn generate_ghosts_in_range<S>(
         &self,
         site_properties: &S,
-        range: f64,
+        range: [f64; N],
     ) -> ArrayVec<S, MAX_GHOSTS>
     where
         S: Position<Position = Cartesian<N>> + Copy + Default,
@@ -123,10 +123,10 @@ impl<const N: usize> Periodic<Hypercuboid<N>> {
             if x < -half || x >= half {
                 return result;
             }
-            if x > half - range {
+            if x > half - range[i] {
                 near_facets_bitmask |= 1 << i;
                 per_dimension_translation[i] = -self.shape.edge_lengths[i].get();
-            } else if x < -half + range {
+            } else if x < -half + range[i] {
                 near_facets_bitmask |= 1 << i;
                 per_dimension_translation[i] = self.shape.edge_lengths[i].get();
             }
@@ -196,7 +196,7 @@ where
     /// ```
     #[inline(always)]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
-        self.generate_ghosts_in_range(site_properties, self.maximum_interaction_range)
+        self.generate_ghosts_in_range(site_properties, [self.maximum_interaction_range; N])
     }
 }
 
@@ -230,7 +230,7 @@ where
     fn generate_minimum_image_candidates(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         self.generate_ghosts_in_range(
             site_properties,
-            self.shape.maximum_allowable_interaction_range(),
+            array::from_fn(|i| self.shape.edge_lengths[i].get() / 2.0),
         )
     }
 }
@@ -540,6 +540,19 @@ mod tests {
                 let ghosts = periodic.generate_ghosts(&Point::new(point));
                 assert!(ghosts.is_empty());
             }
+        }
+
+        #[test]
+        fn unequal_edges_candidates() -> anyhow::Result<()> {
+            let cuboid = Hypercuboid {
+                edge_lengths: [10.0.try_into()?, 100.0.try_into()?],
+            };
+            let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
+
+            let candidates = periodic.generate_minimum_image_candidates(&Point::new([1.0, -40.0].into()));
+            assert_eq!(candidates.len(), 3);
+
+            Ok(())
         }
 
         #[test]
@@ -897,6 +910,19 @@ mod tests {
                 let ghosts = periodic.generate_ghosts(&Point::new(point));
                 assert!(ghosts.is_empty());
             }
+        }
+
+        #[test]
+        fn unequal_edges_candidates() -> anyhow::Result<()> {
+            let cuboid = Hypercuboid {
+                edge_lengths: [10.0.try_into()?, 100.0.try_into()?, 20.0.try_into()?],
+            };
+            let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
+
+            let candidates = periodic.generate_minimum_image_candidates(&Point::new([1.0, -40.0, 2.0].into()));
+            assert_eq!(candidates.len(), 7);
+
+            Ok(())
         }
 
         #[expect(clippy::too_many_lines, reason = "There are many cases to test.")]

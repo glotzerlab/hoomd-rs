@@ -704,6 +704,30 @@ mod tests {
         }
 
         #[test]
+        fn body_energy_periodic_unequal_edges() -> anyhow::Result<()> {
+            // Box is 10 along x and 100 along y. The body and reference are 80 apart
+            // along y, but only 20 apart through the periodic boundary.
+            let boundary = Periodic::new(
+                1.0,
+                Rectangle {
+                    edge_lengths: [10.0.try_into()?, 100.0.try_into()?],
+                },
+            )?;
+            let pin = PinPositions {
+                k: 2.0,
+                reference: vec![Cartesian::from([0.0, 40.0])],
+            };
+            let properties = Point::new(Cartesian::from([0.0, -40.0]));
+
+            assert_relative_eq!(
+                pin.body_energy(0, &properties, &boundary),
+                0.5 * 2.0 * 20.0 * 20.0,
+                epsilon = 1e-12
+            );
+            Ok(())
+        }
+
+        #[test]
         fn maximum_interaction_range() {
             let pin = PinPositions::<Cartesian<2>> {
                 k: 1.0,

@@ -94,7 +94,7 @@ impl<const N: usize> Periodic<Hyperparallelepiped<N>> {
     fn generate_ghosts_in_range<S>(
         &self,
         site_properties: &S,
-        range: f64,
+        range: [f64; N],
     ) -> ArrayVec<S, MAX_GHOSTS>
     where
         S: Position<Position = Cartesian<N>> + Copy + Default,
@@ -109,7 +109,7 @@ impl<const N: usize> Periodic<Hyperparallelepiped<N>> {
 
         // Determine fractional coordinates of "twilight zones," where ghosts must be generated
         let plane_distances = self.shape.nearest_plane_distances();
-        let fractional_cutoffs: [f64; N] = array::from_fn(|i| range / plane_distances[i].get());
+        let fractional_cutoffs: [f64; N] = array::from_fn(|i| range[i] / plane_distances[i].get());
         let fractional_coordinate = self.shape.fractional(*r);
 
         // For each axis, determine if the particle is near the negative or positive face.
@@ -155,7 +155,7 @@ where
     /// Place periodic images of sites near the edge of the periodic boundary.
     #[inline(always)]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
-        self.generate_ghosts_in_range(site_properties, self.maximum_interaction_range)
+        self.generate_ghosts_in_range(site_properties, [self.maximum_interaction_range; N])
     }
 }
 
@@ -166,9 +166,10 @@ where
     /// Place periodic images of sites near the edge of the periodic boundary.
     #[inline(always)]
     fn generate_minimum_image_candidates(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        let plane_distances = self.shape.nearest_plane_distances();
         self.generate_ghosts_in_range(
             site_properties,
-            self.shape.maximum_allowable_interaction_range(),
+            array::from_fn(|i| plane_distances[i].get() * 0.5),
         )
     }
 }
@@ -240,6 +241,26 @@ mod tests {
 
         let candidates = periodic.generate_minimum_image_candidates(&Point::new(abs_pos));
         assert!(!candidates.is_empty());
+    }
+
+    #[test]
+    fn unequal_edges_candidates() -> anyhow::Result<()> {
+        let hyperparallelepiped = hyper_from_triclinic(&Triclinic {
+            extents: [
+                20.0.try_into()?,
+                10.0.try_into()?,
+                100.0.try_into()?,
+            ],
+            tilt_factors: [0.2, 0.3, 0.4],
+        });
+        let periodic = Periodic::new(0.0, hyperparallelepiped).expect("hard-coded range should be valid");
+
+        let point = Point::new([-2.0, -4.0, -3.0].into());
+        assert!(periodic.is_point_inside(point.position()));
+        let candidates = periodic.generate_minimum_image_candidates(&point);
+        assert_eq!(candidates.len(), 7);
+
+        Ok(())
     }
 
     #[rstest]
