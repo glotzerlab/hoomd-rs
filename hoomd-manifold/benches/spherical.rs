@@ -13,7 +13,7 @@ use rand::{Rng, RngExt, SeedableRng, distr::Uniform, rngs::StdRng};
 use rand_distr::StandardNormal;
 
 use hoomd_manifold::Spherical;
-use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Versor};
+use hoomd_vector::{Cartesian, Metric, Rotate, Versor};
 
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
@@ -148,24 +148,4 @@ fn translation_3sphere<const D: i32>(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .bench_local(|| black_box(translate_3sphere_point::<_>(&mut rng, 10_f64.powi(D))));
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-#[divan::bench(consts = MAX_STEPSIZES)]
-fn translation_2sphere_old<const D: i32>(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
-
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .bench_local(|| black_box(translate_2sphere_point_old::<_>(&mut rng, 10_f64.powi(D))));
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-#[divan::bench(consts = MAX_STEPSIZES)]
-fn translation_3sphere_old<const D: i32>(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
-
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .bench_local(|| black_box(translate_3sphere_point_old::<_>(&mut rng, 10_f64.powi(D))));
 }
