@@ -37,6 +37,41 @@ use crate::{DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 /// [`PinOrientations`] stores references in *body tag order*. Take care
 /// to keep the references in sync when adding and/or removing bodies from the
 /// microstate.
+///
+/// # Example
+///
+/// Pin each body to its initial orientation:
+///
+/// ```
+/// use hoomd_interaction::{TotalEnergy, external::PinOrientations};
+/// use hoomd_microstate::{
+///     Body, Microstate,
+///     property::{OrientedPoint, Point},
+/// };
+/// use hoomd_vector::{Angle, Cartesian};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let body = Body {
+///     properties: OrientedPoint {
+///         position: Cartesian::from([0.0, 0.0]),
+///         orientation: Angle::from(0.5),
+///     },
+///     sites: [Point::new(Cartesian::from([0.0, 0.0]))].into(),
+/// };
+/// let microstate = Microstate::builder().bodies([body]).try_build()?;
+///
+/// let pin_orientations = PinOrientations {
+///     k: 10.0,
+///     reference: microstate
+///         .iter_bodies_tag_order()
+///         .map(|tagged_body| vec![tagged_body.item.properties.orientation])
+///         .collect(),
+/// };
+///
+/// assert_eq!(pin_orientations.total_energy(&microstate), 0.0);
+/// # Ok(())
+/// # }
+/// ```
 pub struct PinOrientations<R> {
     /// The spring constant $`[\mathrm{energy}]`$.
     pub k: f64,
@@ -57,6 +92,32 @@ impl<R> PinOrientations<R> {
     /// The body must exist in the microstate with the given `body_tag`.
     /// The `body_properties` may match those in the microstate or may be
     /// modified (i.e. a trial move).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_interaction::external::PinOrientations;
+    /// use hoomd_microstate::property::OrientedPoint;
+    /// use hoomd_vector::{Angle, Cartesian};
+    /// use std::f64::consts::PI;
+    ///
+    /// // A body with 2-fold symmetry has two equivalent references.
+    /// let pin_orientations = PinOrientations {
+    ///     k: 2.0,
+    ///     reference: vec![vec![Angle::from(0.0), Angle::from(PI)]],
+    /// };
+    /// let body_properties = OrientedPoint {
+    ///     position: Cartesian::from([0.0, 0.0]),
+    ///     orientation: Angle::from(PI - 0.5),
+    /// };
+    ///
+    /// assert_relative_eq!(
+    ///     pin_orientations.body_energy(0, &body_properties),
+    ///     0.25,
+    ///     epsilon = 1e-12
+    /// );
+    /// ```
     #[inline]
     pub fn body_energy<B>(&self, body_tag: usize, body_properties: &B) -> f64
     where
@@ -144,6 +205,41 @@ impl<R> MaximumInteractionRange for PinOrientations<R> {
 /// [`PinPositions`] stores references in *body tag order*. Take care to
 /// keep the references in sync when adding and/or removing bodies from the
 /// microstate.
+///
+/// # Example
+///
+/// Pin each body to its initial position:
+///
+/// ```
+/// use hoomd_geometry::shape::Rectangle;
+/// use hoomd_interaction::{TotalEnergy, external::PinPositions};
+/// use hoomd_microstate::{Body, Microstate, boundary::Periodic};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let microstate = Microstate::builder()
+///     .boundary(Periodic::new(
+///         1.0,
+///         Rectangle::with_equal_edges(10.0.try_into()?),
+///     )?)
+///     .bodies([
+///         Body::point(Cartesian::from([1.0, 0.0])),
+///         Body::point(Cartesian::from([-1.0, 2.0])),
+///     ])
+///     .try_build()?;
+///
+/// let pin_positions = PinPositions {
+///     k: 10.0,
+///     reference: microstate
+///         .iter_bodies_tag_order()
+///         .map(|tagged_body| tagged_body.item.properties.position)
+///         .collect(),
+/// };
+///
+/// assert_eq!(pin_positions.total_energy(&microstate), 0.0);
+/// # Ok(())
+/// # }
+/// ```
 pub struct PinPositions<V> {
     /// The spring constant $`[\mathrm{energy}] \cdot [\mathrm{length}]^{-2}`$.
     pub k: f64,
@@ -169,6 +265,35 @@ where
     /// modified (i.e. a trial move). Pass the microstate's boundary
     /// condition to `boundary`. It will be used to generate the candidate
     /// minimum images.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_interaction::external::PinPositions;
+    /// use hoomd_microstate::{boundary::Periodic, property::Point};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let boundary =
+    ///     Periodic::new(1.0, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    /// let pin_positions = PinPositions {
+    ///     k: 2.0,
+    ///     reference: vec![Cartesian::from([4.5, 0.0])],
+    /// };
+    ///
+    /// // The minimum image of the body is 1.0 away from the reference.
+    /// let body_properties = Point::new(Cartesian::from([-4.5, 0.0]));
+    ///
+    /// assert_relative_eq!(
+    ///     pin_positions.body_energy(0, &body_properties, &boundary),
+    ///     1.0,
+    ///     epsilon = 1e-12
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     pub fn body_energy<B, C>(&self, body_tag: usize, body_properties: &B, boundary: &C) -> f64
     where
