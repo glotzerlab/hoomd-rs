@@ -116,10 +116,6 @@ where
 
 impl Periodic<Triclinic> {
     /// Generate ghosts within a given range.
-    #[expect(
-        clippy::too_many_lines,
-        reason = "There are many (literal) corner cases."
-    )]
     #[inline(always)]
     fn generate_ghosts_in_range<S>(
         &self,
