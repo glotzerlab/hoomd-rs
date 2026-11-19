@@ -34,10 +34,9 @@ use crate::{DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 /// body orientations exactly at the initial condition, do not apply rotational
 /// trial moves.
 ///
-/// [`PinOrientations`] stores references in *body tag order*. It is thus not
-/// suitable for simulations that remove bodies from the microstate. If you
-/// need to pin orientations *and* remove bodies, write a custom external
-/// potential that uses a custom `reference` stored in the body properties.
+/// [`PinOrientations`] stores references in *body tag order*. Take care
+/// to keep the references in sync when adding and/or removing bodies from the
+/// microstate.
 pub struct PinOrientations<R> {
     /// The spring constant $`[\mathrm{energy}]`$.
     pub k: f64,
@@ -142,10 +141,9 @@ impl<R> MaximumInteractionRange for PinOrientations<R> {
 /// body positions exactly at the initial condition, do not apply translational
 /// trial moves.
 ///
-/// [`PinPositions`] stores references in *body tag order*. It is thus not
-/// suitable for simulations that remove bodies from the microstate. If you
-/// need to pin positions *and* remove bodies, write a custom external
-/// potential that uses a custom `reference` stored in the body properties.
+/// [`PinPositions`] stores references in *body tag order*. Take care to
+/// keep the references in sync when adding and/or removing bodies from the
+/// microstate.
 pub struct PinPositions<V> {
     /// The spring constant $`[\mathrm{energy}] \cdot [\mathrm{length}]^{-2}`$.
     pub k: f64,
