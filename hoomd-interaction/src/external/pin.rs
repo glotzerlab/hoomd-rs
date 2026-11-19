@@ -421,11 +421,7 @@ mod tests {
             };
             let properties = oriented_point(Angle::from(theta));
 
-            assert_relative_eq!(
-                pin.body_energy(0, &properties),
-                expected,
-                epsilon = 1e-12
-            );
+            assert_relative_eq!(pin.body_energy(0, &properties), expected, epsilon = 1e-12);
         }
 
         #[test]
