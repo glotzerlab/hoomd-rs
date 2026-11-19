@@ -549,7 +549,8 @@ mod tests {
             };
             let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
 
-            let candidates = periodic.generate_minimum_image_candidates(&Point::new([1.0, -40.0].into()));
+            let candidates =
+                periodic.generate_minimum_image_candidates(&Point::new([1.0, -40.0].into()));
             assert_eq!(candidates.len(), 3);
 
             Ok(())
@@ -919,7 +920,8 @@ mod tests {
             };
             let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
 
-            let candidates = periodic.generate_minimum_image_candidates(&Point::new([1.0, -40.0, 2.0].into()));
+            let candidates =
+                periodic.generate_minimum_image_candidates(&Point::new([1.0, -40.0, 2.0].into()));
             assert_eq!(candidates.len(), 7);
 
             Ok(())
