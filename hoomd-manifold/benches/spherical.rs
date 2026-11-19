@@ -64,29 +64,6 @@ fn translate_2sphere_point<R: Rng>(rng: &mut R, max_distance: f64) -> Spherical<
     Spherical::<3>::from_cartesian_coordinates(new.into())
 }
 
-fn translate_2sphere_point_old<R: Rng>(rng: &mut R, max_distance: f64) -> Spherical<3> {
-    let sph = create_random_2sphere::<_>(rng);
-    let coord = sph.coordinates();
-    let displacement =
-        rng.sample(Uniform::new(0.0, max_distance).expect("max distance must be positive"));
-    // let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
-    let (sn, cs) = (displacement.sin(), displacement.cos());
-    let vec = Cartesian::<3>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
-    let proj = vec.dot(sph.point());
-    let tangent = Cartesian::from([
-        vec[0] - proj * coord[0],
-        vec[1] - proj * coord[1],
-        vec[2] - proj * coord[2],
-    ]);
-    let (unit, _norm) = tangent.to_unit().expect("cannot be null");
-    let new = Cartesian::from([
-        coord[0] * cs + unit.get().coordinates[0] * sn,
-        coord[1] * cs + unit.get().coordinates[1] * sn,
-        coord[2] * cs + unit.get().coordinates[2] * sn,
-    ]);
-    Spherical::<3>::from_cartesian_coordinates(new)
-}
-
 fn translate_3sphere_point<R: Rng>(rng: &mut R, max_distance: f64) -> Spherical<4> {
     let sph = create_random_3sphere::<_>(rng);
     let coord = sph.coordinates();
@@ -107,31 +84,6 @@ fn translate_3sphere_point<R: Rng>(rng: &mut R, max_distance: f64) -> Spherical<
         cs * coord[3] + sg * (vec[2] - k_rescale * coord[3]),
     ];
     Spherical::<4>::from_cartesian_coordinates(new.into())
-}
-
-fn translate_3sphere_point_old<R: Rng>(rng: &mut R, max_distance: f64) -> Spherical<4> {
-    let sph = create_random_3sphere::<_>(rng);
-    let coord = sph.coordinates();
-    let displacement =
-        rng.sample(Uniform::new(0.0, max_distance).expect("max distance must be positive"));
-    // let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
-    let (sn, cs) = (displacement.sin(), displacement.cos());
-    let vec = Cartesian::<4>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
-    let proj = vec.dot(sph.point());
-    let tangent = Cartesian::from([
-        vec[0] - proj * coord[0],
-        vec[1] - proj * coord[1],
-        vec[2] - proj * coord[2],
-        vec[3] - proj * coord[3],
-    ]);
-    let (unit, _norm) = tangent.to_unit().expect("cannot be null");
-    let new = Cartesian::from([
-        coord[0] * cs + unit.get().coordinates[0] * sn,
-        coord[1] * cs + unit.get().coordinates[1] * sn,
-        coord[2] * cs + unit.get().coordinates[2] * sn,
-        coord[3] * cs + unit.get().coordinates[3] * sn,
-    ]);
-    Spherical::<4>::from_cartesian_coordinates(new)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
