@@ -333,6 +333,21 @@ mod tests {
     }
 
     #[test]
+    fn wrap_rotated_square() {
+        let square = Hyperparallelepiped::new([[0.0, 10.0].into(), [-10.0, 0.0].into()]);
+        let periodic = Periodic::new(1.0, square).expect("valid periodic hyperparallelepiped");
+
+        let wrapped = periodic
+            .wrap(Point::new(Cartesian::from([6.0, -13.0])))
+            .expect("wrap should succeed");
+        assert_relative_eq!(wrapped.position, Cartesian::from([-4.0, -3.0]));
+
+        let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([4.5, 0.0])));
+        assert_eq!(ghosts.len(), 1);
+        assert_relative_eq!(ghosts[0].position, Cartesian::from([-5.5, 0.0]));
+    }
+
+    #[test]
     fn same_behavior_as_triclinic() {
         let triclinic = Triclinic {
             extents: [
