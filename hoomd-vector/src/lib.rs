@@ -825,12 +825,12 @@ pub trait Rotation: Copy {
 /// The distance between two rotations.
 ///
 /// The `RotationalDistance` trait describes rotations where one can calculate
-/// the smallest rotation angle $` \Delta \theta `$ that rotations one to the
+/// the smallest rotation angle $` \Delta \theta `$ that rotates one to the
 /// other.
 ///
 /// * [`Angle`]: $` \Delta \theta = (\theta_2 - \theta_1) \bmod 2\pi `$ wrapped to
 ///   the range $` [0, \pi] `$.
-/// * [`Versor`]: $` \Delta theta = 2 d(\mathbf{q}_0, \mathbf{q}_1) `$ wrapped to
+/// * [`Versor`]: $` \Delta \theta = 2 d(\mathbf{q}_0, \mathbf{q}_1) `$ wrapped to
 ///   the range $` [0, \pi] `$ where *d* is given by [`arc_distance`].
 ///
 /// [`arc_distance`]: Versor::arc_distance
