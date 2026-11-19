@@ -157,11 +157,9 @@ impl Spherical<4> {
     /// let x_versor = x.to_versor();
     /// let pole_quat = Quaternion {
     ///     scalar: 1.0,
-    ///     vector: [0.0,0.0,0.0].into(),
+    ///     vector: [0.0, 0.0, 0.0].into(),
     /// };
-    /// let pole_versor = pole_quat
-    ///     .to_versor()
-    ///     .expect("not a null vector");
+    /// let pole_versor = pole_quat.to_versor().expect("not a null vector");
     /// let transformation =
     ///     (*x_versor.get() * *pole_versor.get() * *x_versor.get())
     ///         .to_versor()
@@ -196,11 +194,11 @@ impl Spherical<4> {
     pub fn to_versor(&self) -> Versor {
         let coords = self.coordinates();
         let a = 1.0 + coords[0];
-        //let scale = (coords[1]*coords[1] + coords[2]*coords[2] + coords[3]*coords[3] + a*a).sqrt();
-        //let scale_inv = 1.0/scale;
+        // let scale = (coords[1]*coords[1] + coords[2]*coords[2] + coords[3]*coords[3] + a*a).sqrt();
+        // let scale_inv = 1.0/scale;
         let quat = Quaternion {
             scalar: a,
-            vector: Cartesian::from([coords[1], coords[2], coords[3]])
+            vector: Cartesian::from([coords[1], coords[2], coords[3]]),
         };
         quat.to_versor_unchecked()
     }
