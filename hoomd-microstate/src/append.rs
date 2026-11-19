@@ -112,7 +112,7 @@ macro_rules! particles_orientation {
 }
 
 /// Implement `AppendMicrostate` for a site type / boundary type combination.
-macro_rules! impl_append_microsate {
+macro_rules! impl_append_microstate {
  ([$($S:tt)*], [$($C:tt)*]) => { impl<B, X> AppendMicrostate<B, $($S)*, X, $($C)*> for HoomdGsdFile
     {
     #[inline]
@@ -130,35 +130,35 @@ macro_rules! impl_append_microsate {
 } }
 }
 
-impl_append_microsate!([Point<Cartesian<2>>], [Closed<Hypercuboid<2>>]);
-impl_append_microsate!([Point<Cartesian<2>>], [Periodic<Hypercuboid<2>>]);
-impl_append_microsate!(
+impl_append_microstate!([Point<Cartesian<2>>], [Closed<Hypercuboid<2>>]);
+impl_append_microstate!([Point<Cartesian<2>>], [Periodic<Hypercuboid<2>>]);
+impl_append_microstate!(
     [OrientedPoint<Cartesian<2>, Angle>],
     [Closed<Hypercuboid<2>>]
 );
-impl_append_microsate!(
+impl_append_microstate!(
     [OrientedPoint<Cartesian<2>, Angle>],
     [Periodic<Hypercuboid<2>>]
 );
-impl_append_microsate!([Point<Cartesian<2>>], [Closed<Rhomboid>]);
-impl_append_microsate!([Point<Cartesian<2>>], [Periodic<Rhomboid>]);
-impl_append_microsate!([OrientedPoint<Cartesian<2>, Angle>], [Closed<Rhomboid>]);
-impl_append_microsate!([OrientedPoint<Cartesian<2>, Angle>], [Periodic<Rhomboid>]);
+impl_append_microstate!([Point<Cartesian<2>>], [Closed<Rhomboid>]);
+impl_append_microstate!([Point<Cartesian<2>>], [Periodic<Rhomboid>]);
+impl_append_microstate!([OrientedPoint<Cartesian<2>, Angle>], [Closed<Rhomboid>]);
+impl_append_microstate!([OrientedPoint<Cartesian<2>, Angle>], [Periodic<Rhomboid>]);
 
-impl_append_microsate!([Point<Cartesian<3>>], [Closed<Hypercuboid<3>>]);
-impl_append_microsate!([Point<Cartesian<3>>], [Periodic<Hypercuboid<3>>]);
-impl_append_microsate!([Point<Cartesian<3>>], [Closed<Triclinic>]);
-impl_append_microsate!([Point<Cartesian<3>>], [Periodic<Triclinic>]);
-impl_append_microsate!(
+impl_append_microstate!([Point<Cartesian<3>>], [Closed<Hypercuboid<3>>]);
+impl_append_microstate!([Point<Cartesian<3>>], [Periodic<Hypercuboid<3>>]);
+impl_append_microstate!([Point<Cartesian<3>>], [Closed<Triclinic>]);
+impl_append_microstate!([Point<Cartesian<3>>], [Periodic<Triclinic>]);
+impl_append_microstate!(
     [OrientedPoint<Cartesian<3>, Versor>],
     [Closed<Hypercuboid<3>>]
 );
-impl_append_microsate!(
+impl_append_microstate!(
     [OrientedPoint<Cartesian<3>, Versor>],
     [Periodic<Hypercuboid<3>>]
 );
-impl_append_microsate!([OrientedPoint<Cartesian<3>, Versor>], [Closed<Triclinic>]);
-impl_append_microsate!([OrientedPoint<Cartesian<3>, Versor>], [Periodic<Triclinic>]);
+impl_append_microstate!([OrientedPoint<Cartesian<3>, Versor>], [Closed<Triclinic>]);
+impl_append_microstate!([OrientedPoint<Cartesian<3>, Versor>], [Periodic<Triclinic>]);
 
 impl<B, X, C> AppendMicrostate<B, Point<Spherical<3>>, X, C> for HoomdGsdFile {
     #[inline]
