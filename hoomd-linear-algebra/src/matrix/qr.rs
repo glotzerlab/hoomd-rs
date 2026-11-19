@@ -385,9 +385,31 @@ pub fn times_qt<const N: usize, const M: usize, const K: usize>(
 
 /// Solve `A x = b` in the least-squares sense using QR decomposition.
 ///
-/// The function computes a packed QR decomposition of `A`, applies `Q^T` to the
-/// right-hand side `b`, and then solves the upper triangular system `R x = Q^T b`
-/// by back substitution. The output has shape `M × 1`.
+/// `a` is the original matrix $`A`$, *not* a packed factorization. The
+/// function computes the packed QR decomposition of `a`, applies `Q^T` to the
+/// right-hand side `b`, and then solves the upper triangular system
+/// `R x = Q^T b` by back substitution. The output has shape `M × 1`.
+///
+/// To solve many systems with the same matrix, factorize it once with
+/// [`Matrix::qr`] and call [`qr_solve_factored`].
+///
+/// # Example
+///
+/// ```
+/// use approxim::assert_relative_eq;
+/// use hoomd_linear_algebra::matrix::{Matrix, qr::qr_solve};
+///
+/// let a = Matrix {
+///     rows: [[0.0, -10.0], [10.0, 0.0]],
+/// };
+/// let b = Matrix {
+///     rows: [[1.0], [2.0]],
+/// };
+///
+/// let x = qr_solve(&a, &b);
+/// assert_relative_eq!(x[(0, 0)], 0.2);
+/// assert_relative_eq!(x[(1, 0)], -0.1);
+/// ```
 #[inline]
 #[must_use]
 pub fn qr_solve<const N: usize, const M: usize>(
@@ -395,10 +417,45 @@ pub fn qr_solve<const N: usize, const M: usize>(
     b: &Matrix<N, 1>,
 ) -> Matrix<M, 1> {
     let (qr, taus) = super::qr_decomposition(a);
+    qr_solve_factored(&qr, &taus, b)
+}
+
+/// Solve `A x = b` in the least-squares sense given the packed QR
+/// factorization of `A`.
+///
+/// `qr` and `taus` are the outputs of [`Matrix::qr`]. Both are required:
+/// the strictly lower triangle of `qr` holds the Householder vectors and
+/// `taus` holds their scale factors, which together encode `Q`.
+///
+/// # Example
+///
+/// ```
+/// use approxim::assert_relative_eq;
+/// use hoomd_linear_algebra::matrix::{Matrix, qr::qr_solve_factored};
+///
+/// let a = Matrix {
+///     rows: [[0.0, -10.0], [10.0, 0.0]],
+/// };
+/// let (qr, taus) = a.qr();
+/// let b = Matrix {
+///     rows: [[1.0], [2.0]],
+/// };
+///
+/// let x = qr_solve_factored(&qr, &taus, &b);
+/// assert_relative_eq!(x[(0, 0)], 0.2);
+/// assert_relative_eq!(x[(1, 0)], -0.1);
+/// ```
+#[inline]
+#[must_use]
+pub fn qr_solve_factored<const N: usize, const M: usize>(
+    qr: &Matrix<N, M>,
+    taus: &[f64],
+    b: &Matrix<N, 1>,
+) -> Matrix<M, 1> {
     let rank = N.min(M);
 
     // Compute Q^T * b.
-    let qt_b = qt_times(b, &qr, &taus);
+    let qt_b = qt_times(b, qr, taus);
 
     // Solve R * x = Q^T b by back substitution.
     let mut x = Matrix::<M, 1>::zeros();

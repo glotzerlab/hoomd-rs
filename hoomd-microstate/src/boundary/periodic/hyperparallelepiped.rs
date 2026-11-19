@@ -13,10 +13,6 @@ use crate::{
 };
 use arrayvec::ArrayVec;
 use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
-use hoomd_linear_algebra::{
-    MatMul,
-    matrix::{Matrix, qr},
-};
 use hoomd_vector::Cartesian;
 use itertools::Itertools;
 
@@ -43,6 +39,10 @@ where
     P: Position<Position = Cartesian<N>>,
 {
     /// Wrap any cartesian vector to the inside of the given hyperparallelepiped.
+    ///
+    /// The wrapped point is shifted by a whole lattice vector so that every
+    /// fractional coordinate lies in the half-open interval $`[-1/2, 1/2)`$.
+    /// Points on a $`+1/2`$ face map to the opposite $`-1/2`$ face.
     ///
     /// # Example
     ///
@@ -73,15 +73,18 @@ where
         let mut properties = properties;
         let r = properties.position_mut();
 
-        let a = Matrix::<N, N> {
-            rows: self.shape.edge_vectors().map(|v| v.coordinates),
-        }
-        .transpose();
+        let fractional = self.shape.fractional(*r);
 
-        let fractional = qr::qr_solve(&a, &r.to_column_matrix());
+        // `f64::round` rounds ties away from zero, so a fractional coordinate of
+        // -0.5 would become +0.5, which lies outside the half-open box. Shift by
+        // one more image in that case.
+        let image = Cartesian::from(array::from_fn(|i| {
+            let s = fractional[i];
+            let n = s.round();
+            if s - n >= 0.5 { n + 1.0 } else { n }
+        }));
 
-        let position_offset = a.matmul(&fractional.map_elements(f64::round));
-        *r -= Cartesian::from_column_matrix(&position_offset);
+        *r -= self.shape.absolute(image);
 
         Ok(properties)
     }

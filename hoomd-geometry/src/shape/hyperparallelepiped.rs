@@ -52,17 +52,51 @@ use crate::{IsPointInside, MapPoint, Scale, SupportMapping, Volume};
 ///     Cartesian::from([1.0, -4.0, 14.0]),
 /// ]);
 /// ```
-#[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(
+    from = "HyperparallelepipedData<N>",
+    into = "HyperparallelepipedData<N>"
+)]
 pub struct Hyperparallelepiped<const N: usize> {
     /// The N edge vectors that define the shape. Each vector spans one
     /// edge of the parallelotope.
-    #[serde_as(as = "[_; N]")]
     pub(crate) edge_vectors: [Cartesian<N>; N],
 
     /// Cached (condensed) QR factorization of the column matrix formed by the
     /// edge vectors.
     qr: Matrix<N, N>,
+
+    /// Householder scale factors that, together with `qr`, encode `Q`.
+    taus: [f64; N],
+}
+
+/// Serialized form of [`Hyperparallelepiped`].
+///
+/// Only the edge vectors are stored. The QR factorization is derived state and
+/// is recomputed on deserialization, so it can never be inconsistent with the
+/// edge vectors.
+#[serde_as]
+#[derive(Clone, Serialize, Deserialize)]
+struct HyperparallelepipedData<const N: usize> {
+    /// The N edge vectors.
+    #[serde_as(as = "[_; N]")]
+    edge_vectors: [Cartesian<N>; N],
+}
+
+impl<const N: usize> From<HyperparallelepipedData<N>> for Hyperparallelepiped<N> {
+    #[inline]
+    fn from(data: HyperparallelepipedData<N>) -> Self {
+        Self::new(data.edge_vectors)
+    }
+}
+
+impl<const N: usize> From<Hyperparallelepiped<N>> for HyperparallelepipedData<N> {
+    #[inline]
+    fn from(shape: Hyperparallelepiped<N>) -> Self {
+        Self {
+            edge_vectors: shape.edge_vectors,
+        }
+    }
 }
 
 impl<const N: usize> Hyperparallelepiped<N> {
@@ -94,9 +128,11 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// ```
     #[inline]
     pub fn new(edge_vectors: [Cartesian<N>; N]) -> Self {
+        let (qr, taus) = Self::calculate_qr(&edge_vectors);
         Self {
             edge_vectors,
-            qr: Self::calculate_qr(&edge_vectors),
+            qr,
+            taus,
         }
     }
 
@@ -109,19 +145,18 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// Compute and cache the QR factorization of the edge-vector matrix.
     ///
     /// The edge vectors are assembled into an N×N matrix $`\mathbf{A}`$ whose *columns*
-    /// are the edge vectors, and the result is stored in `self.qr`. This
+    /// are the edge vectors, and the result is stored in `self.qr` and `self.taus`. This
     /// factorization is later used by [`fractional`](Self::fractional),
     /// [`is_point_inside`](IsPointInside::is_point_inside), and
     /// [`map_point`](MapPoint::map_point) to solve the linear system
     /// $`\mathbf{A} \vec{s} = \vec{r}`$.
     #[inline]
-    fn calculate_qr(edge_vectors: &[Cartesian<N>; N]) -> Matrix<N, N> {
+    fn calculate_qr(edge_vectors: &[Cartesian<N>; N]) -> (Matrix<N, N>, [f64; N]) {
         let box_matrix = Matrix {
             rows: std::array::from_fn(|r| std::array::from_fn(|c| edge_vectors[c].coordinates[r])),
         };
 
-        let (qr, _) = box_matrix.qr();
-        qr
+        box_matrix.qr()
     }
 
     /// Determine the maximal extents of the hyperparallelepiped along each
@@ -212,7 +247,11 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// ```
     #[inline]
     pub fn fractional(&self, absolute: Cartesian<N>) -> Cartesian<N> {
-        Cartesian::from_column_matrix(&qr::qr_solve(&self.qr, &absolute.to_column_matrix()))
+        Cartesian::from_column_matrix(&qr::qr_solve_factored(
+            &self.qr,
+            &self.taus,
+            &absolute.to_column_matrix(),
+        ))
     }
 
     /// Convert fractional coordinates to absolute position.
@@ -392,9 +431,7 @@ impl<const N: usize> Scale for Hyperparallelepiped<N> {
     #[inline]
     fn scale_length(&self, v: PositiveReal) -> Self {
         let edge_vectors = self.edge_vectors.map(|ev| ev * v);
-        let qr = Self::calculate_qr(&edge_vectors);
-
-        Self { edge_vectors, qr }
+        Self::new(edge_vectors)
     }
 
     /// Produce a scaled hyperparallelepiped by uniformly scaling volume.
@@ -499,7 +536,7 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
     /// ```
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
-        let fractional = qr::qr_solve(&self.qr, &point.to_column_matrix());
+        let fractional = qr::qr_solve_factored(&self.qr, &self.taus, &point.to_column_matrix());
 
         fractional
             .rows
@@ -897,6 +934,51 @@ mod tests {
 
         for i in 0..3 {
             assert_relative_eq!(expected[i], distances[i].get(), epsilon = 1.0e-4);
+        }
+    }
+
+    #[test]
+    fn rotated_square() {
+        // A 10x10 square rotated by 90 degrees. The edge-vector matrix is not
+        // upper triangular, so its packed QR factorization differs from it.
+        // r = s0 * (0, 10) + s1 * (-10, 0) = (-10 s1, 10 s0).
+        let b =
+            Hyperparallelepiped::new([Cartesian::from([0.0, 10.0]), Cartesian::from([-10.0, 0.0])]);
+
+        let fractional = b.fractional(Cartesian::from([1.0, 2.0]));
+        assert_relative_eq!(fractional[0], 0.2, epsilon = 1e-12);
+        assert_relative_eq!(fractional[1], -0.1, epsilon = 1e-12);
+
+        assert!(b.is_point_inside(&Cartesian::from([4.9, 4.9])));
+        assert!(b.is_point_inside(&Cartesian::from([-4.9, -4.9])));
+        assert!(!b.is_point_inside(&Cartesian::from([5.1, 0.0])));
+        assert!(!b.is_point_inside(&Cartesian::from([0.0, 5.1])));
+    }
+
+    #[test]
+    fn fractional_round_trip_general_matrix() {
+        // Edge vectors with no zero entries, so the edge-vector matrix is far from
+        // upper triangular.
+        let b = Hyperparallelepiped::new([
+            Cartesian::from([3.0, 1.0, -2.0, 0.5]),
+            Cartesian::from([-1.0, 4.0, 1.5, 2.0]),
+            Cartesian::from([2.0, -0.5, 5.0, -1.0]),
+            Cartesian::from([0.5, 1.0, -1.0, 6.0]),
+        ]);
+
+        let fractional = [
+            Cartesian::from([0.1, -0.2, 0.3, -0.4]),
+            Cartesian::from([-0.45, 0.45, -0.05, 0.25]),
+            Cartesian::from([2.0, -3.0, 0.5, 1.5]),
+        ];
+        for s in fractional {
+            let r = b.absolute(s);
+            let s_round_trip = b.fractional(r);
+            for i in 0..4 {
+                assert_relative_eq!(s_round_trip[i], s[i], epsilon = 1e-12);
+            }
+            let inside = s.coordinates.iter().all(|x| (-0.5..0.5).contains(x));
+            assert_eq!(b.is_point_inside(&r), inside);
         }
     }
 
