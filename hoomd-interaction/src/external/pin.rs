@@ -21,7 +21,7 @@ use crate::{DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 /// \end{cases}
 /// ```
 ///
-/// Apply a harmonic external potential to to the angle between the body's
+/// Apply a harmonic external potential to the angle between the body's
 /// orientation and a given reference orientation. Take the minimum over all
 /// symmetric references *j*. $`\Delta \theta_j`$ is the smallest angle that
 /// rotates the body to reference *j* (as given by `R`'s
@@ -30,7 +30,7 @@ use crate::{DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 /// If there is no reference orientation for a body, the energy is 0.
 ///
 /// Use [`PinOrientations`] for Frenkel-Ladd free energy computations or any
-/// time you want to loosely pin body orientations in place. To fix body
+/// time you want to loosely pin body orientations in place. To fix
 /// body orientations exactly at the initial condition, do not apply rotational
 /// trial moves.
 ///
@@ -41,7 +41,7 @@ use crate::{DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 pub struct PinOrientations<R> {
     /// The spring constant $`[\mathrm{energy}]`$.
     pub k: f64,
-    /// Set of references orientations for each body (in tag order).
+    /// Set of reference orientations for each body (in tag order).
     pub reference: Vec<Vec<R>>,
 }
 
@@ -132,13 +132,13 @@ impl<R> MaximumInteractionRange for PinOrientations<R> {
 /// \end{cases}
 /// ```
 ///
-/// Apply a harmonic external potential to to the separation distance between a
+/// Apply a harmonic external potential to the separation distance between a
 /// body's position and a reference position. Take the minimum over all
 /// symmetric references *j* given by any periodic boundary conditions
 /// in effect.
 ///
 /// Use [`PinPositions`] for Frenkel-Ladd free energy computations or any
-/// time you want to loosely pin body positions in place. To fix body
+/// time you want to loosely pin body positions in place. To fix
 /// body positions exactly at the initial condition, do not apply translational
 /// trial moves.
 ///
@@ -168,16 +168,18 @@ where
     ///
     /// The body must exist in the microstate with the given `body_tag`.
     /// The `body_properties` may match those in the microstate or may be
-    /// modified (i.e. a trial move).
+    /// modified (i.e. a trial move). Pass the microstate's boundary
+    /// condition to `boundary`. It will be used to generate the candidate
+    /// minimum images.
     #[inline]
-    pub fn body_energy<B, S, C>(&self, body_tag: usize, body: &Body<B, S>, boundary: &C) -> f64
+    pub fn body_energy<B, C>(&self, body_tag: usize, body_properties: &B, boundary: &C) -> f64
     where
         B: Position<Position = P>,
         C: GenerateMinimumImageCandidates<B>,
     {
         let reference = &self.reference[body_tag];
-        let ghosts = boundary.generate_minimum_image_candidates(&body.properties);
-        std::iter::once(body.properties.position())
+        let ghosts = boundary.generate_minimum_image_candidates(body_properties);
+        std::iter::once(body_properties.position())
             .chain(
                 ghosts
                     .iter()
@@ -206,8 +208,8 @@ where
         let body_tag = tagged_body.tag;
         let boundary = initial_microstate.boundary();
 
-        let energy_initial = self.body_energy(body_tag, &tagged_body.item, boundary);
-        let energy_final = self.body_energy(body_tag, final_body, boundary);
+        let energy_initial = self.body_energy(body_tag, &tagged_body.item.properties, boundary);
+        let energy_final = self.body_energy(body_tag, &final_body.properties, boundary);
 
         energy_final - energy_initial
     }
@@ -225,7 +227,9 @@ where
         microstate
             .bodies()
             .iter()
-            .map(|tagged_body| self.body_energy(tagged_body.tag, &tagged_body.item, boundary))
+            .map(|tagged_body| {
+                self.body_energy(tagged_body.tag, &tagged_body.item.properties, boundary)
+            })
             .sum()
     }
 }
@@ -452,7 +456,7 @@ mod tests {
             };
             let body = Body::point(Cartesian::from([3.0, 4.0]));
 
-            check!(pin.body_energy(0, &body, &Open) == 25.0);
+            check!(pin.body_energy(0, &body.properties, &Open) == 25.0);
         }
 
         #[test]
@@ -464,16 +468,32 @@ mod tests {
             };
 
             let body = Body::point(Cartesian::from([-4.5, 0.0]));
-            assert_relative_eq!(pin.body_energy(0, &body, &boundary), 1.0, epsilon = 1e-12);
+            assert_relative_eq!(
+                pin.body_energy(0, &body.properties, &boundary),
+                1.0,
+                epsilon = 1e-12
+            );
             // Without the periodic boundary, the full distance applies.
-            assert_relative_eq!(pin.body_energy(0, &body, &Open), 81.0, epsilon = 1e-12);
+            assert_relative_eq!(
+                pin.body_energy(0, &body.properties, &Open),
+                81.0,
+                epsilon = 1e-12
+            );
 
             let body = Body::point(Cartesian::from([3.5, 0.0]));
-            assert_relative_eq!(pin.body_energy(0, &body, &boundary), 1.0, epsilon = 1e-12);
+            assert_relative_eq!(
+                pin.body_energy(0, &body.properties, &boundary),
+                1.0,
+                epsilon = 1e-12
+            );
 
             // Wrap across a corner.
             let body = Body::point(Cartesian::from([-4.5, -4.5]));
-            assert_relative_eq!(pin.body_energy(1, &body, &boundary), 2.0, epsilon = 1e-12);
+            assert_relative_eq!(
+                pin.body_energy(1, &body.properties, &boundary),
+                2.0,
+                epsilon = 1e-12
+            );
             Ok(())
         }
 
