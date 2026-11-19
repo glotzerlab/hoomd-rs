@@ -129,7 +129,7 @@ pub trait Wrap<P> {
 /// of the given site **and** within the maximum interaction range of the boundary.
 /// [`Closed`] boundary conditions place no ghosts. [`Periodic`] boundary conditions
 /// may place 0, 1, 2, or more ghosts depending on the location of the site. For
-/// example sites in the center of a cubic box will have 0 ghosts, those near the
+/// example sites in the center of a square box will have 0 ghosts, those near the
 /// center of a face will have 1, those near an edge will have 2, and those near a
 /// vertex will have 3.
 ///

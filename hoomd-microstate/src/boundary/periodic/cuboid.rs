@@ -113,7 +113,7 @@ impl<const N: usize> Periodic<Hypercuboid<N>> {
 
         let r = site_properties.position();
 
-        // Record what facets a site is within the maximum_interaction_range of, or
+        // Record what facets a site is within range of, or
         // none if outside the box (as checked by `x < -half || x >= half`).
         let mut near_facets_bitmask = 0u32;
         let mut per_dimension_translation = [0.0_f64; N];
