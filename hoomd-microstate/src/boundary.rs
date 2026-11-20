@@ -112,7 +112,7 @@ pub trait Wrap<P> {
     /// process is successful.
     ///
     /// Nominally, `wrap` places the result so that its position will pass an
-    /// `is_point_inside_check` on the boundary's shape. However, that is only
+    /// `is_point_inside` check on the boundary's shape. However, that is only
     /// true in a world with infinite precision. Callers must be resilient to
     /// `wrap` results that sit exactly on or just outside the boundary
     /// (typically within a few ULPs). `hoomd-rs` at large handles this by
@@ -190,9 +190,9 @@ pub trait MaximumAllowableInteractionRange {
 
 /// Place periodic images of sites at all candidate minimum image locations.
 ///
-/// Like [`GenerateGhosts`], but it generates all images. Useful for
-/// calculations of bonds or other pairwise interactions that are not between
-/// sites and ghosts.
+/// Like [`GenerateGhosts`], but it generates all images in the maximum
+/// allowable interaction range. Useful for calculations of bonds or other
+/// pairwise interactions that are not between sites and ghosts.
 pub trait GenerateMinimumImageCandidates<S> {
     /// Place periodic images of sites at all candidate minimum image locations
     /// within the maximum allowed interaction range.

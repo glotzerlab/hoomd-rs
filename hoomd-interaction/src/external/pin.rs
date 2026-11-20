@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement [`PinOrientations`]
+//! Implement [`PinOrientations`] and [`PinPositions`]
 
 use hoomd_geometry::IsPointInside;
 use hoomd_microstate::{
@@ -189,9 +189,9 @@ impl<R> MaximumInteractionRange for PinOrientations<R> {
 /// ```math
 /// U_\mathrm{body} = \begin{cases}
 /// \frac{1}{2} k \min_j (\Delta \vec{r}_j)^2 & n_\mathrm{references} > 0 \land
-/// \min_j (\Delta \vec{r}_j)^2 < r_\mathrm{max\_allowable} \\
+/// \min_j (\Delta \vec{r}_j)^2 < r_\mathrm{max\_allowable}^2 \\
 /// 0 & n_\mathrm{references} = 0 \lor
-/// \min_j (\Delta \vec{r}_j)^2 \ge r_\mathrm{max\_allowable} \\
+/// \min_j (\Delta \vec{r}_j)^2 \ge r_\mathrm{max\_allowable}^2 \\
 /// \end{cases}
 /// ```
 ///
@@ -212,9 +212,9 @@ impl<R> MaximumInteractionRange for PinOrientations<R> {
 ///
 /// With a low *k* value, bodies may move far from their reference positions.
 /// When this occurs, [`PinPositions`] will apply a cutoff and evaluate
-/// $` U_\mathrm{body} = 0 `$ when the body is at a distance greater than the
+/// $` U_\mathrm{body} = 0 `$ when the body is at or beyond the
 /// boundary's maximum allowable interaction range (e.g.
-/// $` \min \frac{L_i}{2} `$ in orthorhombic boundaries.
+/// $` \min \frac{L_i}{2} `$ in orthorhombic boundaries).
 ///
 /// # Example
 ///
