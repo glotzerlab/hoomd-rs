@@ -111,6 +111,17 @@ pub trait Wrap<P> {
     /// boundary's periodicity. `wrap` returns [`Ok(properties)`](Ok) when this
     /// process is successful.
     ///
+    /// Nominally, `wrap` places the result so that its position will pass an
+    /// `is_point_inside` check on the boundary's shape. However, that is only
+    /// true in a world with infinite precision. Callers must be resilient to
+    /// `wrap` results that sit exactly on or just outside the boundary
+    /// (typically within a few ULPs). `hoomd-rs` at large handles this by
+    /// never assuming that the output of `wrap` will pass `is_point_inside`.
+    /// An `Ok` result from `wrap` is instead assumed to be inside the boundary
+    /// or close enough that one of the ghosts (by [`GenerateGhosts`]) will catch
+    /// the needed site-site interactions across the boundary within the limits
+    /// of floating point precision.
+    ///
     /// # Errors
     ///
     /// `wrap` returns [`Error::CannotWrapProperties`] when it is not possible
@@ -129,7 +140,7 @@ pub trait Wrap<P> {
 /// of the given site **and** within the maximum interaction range of the boundary.
 /// [`Closed`] boundary conditions place no ghosts. [`Periodic`] boundary conditions
 /// may place 0, 1, 2, or more ghosts depending on the location of the site. For
-/// example sites in the center of a cubic box will have 0 ghosts, those near the
+/// example sites in the center of a square box will have 0 ghosts, those near the
 /// center of a face will have 1, those near an edge will have 2, and those near a
 /// vertex will have 3.
 ///
@@ -175,4 +186,54 @@ pub trait GenerateGhosts<S> {
 pub trait MaximumAllowableInteractionRange {
     /// The largest value that the maximum interaction range can take.
     fn maximum_allowable_interaction_range(&self) -> f64;
+}
+
+/// Place periodic images of sites at all candidate minimum image locations.
+///
+/// Like [`GenerateGhosts`], but it generates all images in the maximum
+/// allowable interaction range. Useful for calculations of bonds or other
+/// pairwise interactions that are not between sites and ghosts.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_geometry::shape::Rectangle;
+/// use hoomd_microstate::{
+///     boundary::{GenerateMinimumImageCandidates, Periodic},
+///     property::Point,
+/// };
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let periodic =
+///     Periodic::new(0.0, Rectangle::with_equal_edges(10.0.try_into()?))?;
+/// let candidates = periodic.generate_minimum_image_candidates(&Point::new(
+///     Cartesian::from([4.6, 4.6]),
+/// ));
+/// assert_eq!(candidates.len(), 3);
+/// # Ok(())
+/// # }
+/// ```
+pub trait GenerateMinimumImageCandidates<S> {
+    /// Place periodic images of sites at all candidate minimum image locations
+    /// within the maximum allowed interaction range.
+    ///
+    /// Given `site_properties` inside the boundary,
+    /// `generate_minimum_image_candidates` places periodic images of that site
+    /// that would be candidates for the minimum image, but only for interactions
+    /// with sites inside the boundary that are within the maximum allowable
+    /// interaction range (as given by [`MaximumAllowableInteractionRange`]).
+    /// This is for two reasons: 1) Most interactions are short ranged
+    /// to start with. 2) It would be prohibitively expensive to compute
+    /// the large number of images to account for all possible interactions in
+    /// highly sheared boundaries.
+    ///
+    /// The provided site is **not included** in the candidates, only its images.
+    ///
+    /// # Panics
+    ///
+    /// `generate_minimum_image_candidates` panics when the boundary condition places
+    /// more images than [`MAX_GHOSTS`]. Choose a larger value with the
+    /// `max_ghosts_*` cargo features of `hoomd-microstate` if needed.
+    fn generate_minimum_image_candidates(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS>;
 }

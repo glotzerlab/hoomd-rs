@@ -12,7 +12,7 @@ use rand::{
     distr::{Distribution, StandardUniform, Uniform},
 };
 
-use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
+use crate::{Cartesian, Rotate, Rotation, RotationMatrix, RotationalDistance};
 
 /// Rotation in the plane.
 ///
@@ -231,6 +231,32 @@ impl Rotation for Angle {
     }
 }
 
+impl RotationalDistance for Angle {
+    /// Compute the rotational distance between `self` and `reference_orientation`.
+    ///
+    /// The distance is the smallest rotation angle (in radians) that separates the
+    /// two rotations. It is symmetric and lies in the range $`[0, \pi]`$.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_vector::{Angle, RotationalDistance};
+    /// use std::f64::consts::PI;
+    ///
+    /// let a = Angle::from(PI / 4.0);
+    /// let b = Angle::from(PI);
+    ///
+    /// assert_relative_eq!(a.rotational_distance(&b), PI - PI / 4.0);
+    /// assert_relative_eq!(a.rotational_distance(&b), b.rotational_distance(&a));
+    /// ```
+    #[inline]
+    fn rotational_distance(&self, reference_orientation: &Self) -> f64 {
+        let delta = (self.theta - reference_orientation.theta).rem_euclid(2.0 * PI);
+        if delta > PI { 2.0 * PI - delta } else { delta }
+    }
+}
+
 impl fmt::Display for Angle {
     /// Format an Angle as `<{theta}>`.
     #[inline]
@@ -318,6 +344,23 @@ mod tests {
         let angle2 = angle1.inverted();
         assert_eq!(angle2.theta, -theta);
         assert_relative_eq!(angle1.combine(&angle2), Angle::identity());
+    }
+
+    #[rstest]
+    #[case(0.0, PI / 4.0, PI / 4.0)]
+    #[case(PI / 2.0, PI, PI / 2.0)]
+    #[case(0.0, PI, PI)]
+    #[case(PI / 3.0, -PI / 3.0, 2.0 * PI / 3.0)]
+    fn rotational_distance(#[case] theta_1: f64, #[case] theta_2: f64, #[case] expected: f64) {
+        let angle1 = Angle::from(theta_1);
+        let angle2 = Angle::from(theta_2);
+
+        assert_relative_eq!(angle1.rotational_distance(&angle2), expected);
+        // The distance is symmetric in its arguments.
+        assert_relative_eq!(
+            angle1.rotational_distance(&angle2),
+            angle2.rotational_distance(&angle1)
+        );
     }
 
     #[test]

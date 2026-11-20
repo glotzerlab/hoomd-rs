@@ -4,6 +4,7 @@
 //! Implement [`Quaternion`] and related types.
 use serde::{Deserialize, Serialize};
 use std::{
+    f64::consts::PI,
     fmt,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
@@ -15,7 +16,10 @@ use rand::{
 };
 use rand_distr::StandardNormal;
 
-use crate::{Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMatrix, Unit};
+use crate::{
+    Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMatrix, RotationalDistance,
+    Unit,
+};
 
 /// Extended complex number.
 ///
@@ -607,6 +611,12 @@ impl Versor {
     /// This value always lies in the range $`[0, \pi]`$, and is symmetric: while there
     /// are multiple arcs separating a pair of quaternions, this metric always chooses
     /// the shortest.
+    ///
+    /// Note: The `arc_distance` is the distance between two **versors**. This is
+    /// not the same as the rotational distance between the two 3D rotations that the
+    /// versors represent. Use [`rotational_distance`] to compute that value.
+    ///
+    /// [`rotational_distance`]: Self::rotational_distance
     #[inline]
     #[must_use]
     pub fn arc_distance(&self, other: &Self) -> f64 {
@@ -801,6 +811,44 @@ impl Rotation for Versor {
         let Versor(quaternion) = self;
 
         Versor(quaternion.conjugate())
+    }
+}
+
+impl RotationalDistance for Versor {
+    /// Compute the rotational distance between `self` and `reference_orientation`.
+    ///
+    /// This is the rotation angle (in radians) of the rotation that maps `self` to
+    /// `reference_orientation`. The output is in the range $`[0, \pi]`$.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_vector::{Rotation, RotationalDistance, Versor};
+    /// use std::f64::consts::PI;
+    ///
+    /// let identity = Versor::identity();
+    /// // A 90° rotation about z has rotation angle π/2.
+    /// let quarter = Versor::from_axis_angle(
+    ///     [0.0, 0.0, 1.0]
+    ///         .try_into()
+    ///         .expect("hard-coded vector should have non-zero length"),
+    ///     PI / 2.0,
+    /// );
+    ///
+    /// assert_relative_eq!(identity.rotational_distance(&quarter), PI / 2.0);
+    /// assert_relative_eq!(
+    ///     identity.rotational_distance(&quarter),
+    ///     quarter.rotational_distance(&identity)
+    /// );
+    /// ```
+    #[inline]
+    fn rotational_distance(&self, reference_orientation: &Self) -> f64 {
+        // `arc_distance` is the half-angle on the unit 3-sphere; doubling it gives the
+        // rotation angle, which we fold into [0, π] because a rotation by θ and by
+        // 2π − θ (about the opposite axis) are the same rotation.
+        let angle = 2.0 * self.arc_distance(reference_orientation);
+        if angle > PI { 2.0 * PI - angle } else { angle }
     }
 }
 
@@ -1155,6 +1203,41 @@ mod tests {
             for dot_sum in dot_sums {
                 assert_abs_diff_eq!(dot_sum / f64::from(samples), 0.0, epsilon = 0.01);
             }
+        }
+
+        #[test]
+        fn rotational_distance() {
+            let identity = Versor::identity();
+            let quarter = Versor::from_axis_angle(
+                [0.0, 0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
+                PI / 2.0,
+            );
+            let half = Versor::from_axis_angle(
+                [0.0, 0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
+                PI,
+            );
+            let three_quarters = Versor::from_axis_angle(
+                [0.0, 0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
+                3.0 * PI / 2.0,
+            );
+
+            // The rotational distance is the rotation angle in SO(3), in [0, π].
+            assert_relative_eq!(identity.rotational_distance(&quarter), PI / 2.0);
+            assert_relative_eq!(identity.rotational_distance(&half), PI);
+            assert_relative_eq!(identity.rotational_distance(&identity), 0.0);
+            // A 270° rotation is the same rotation as a 90° rotation about the
+            // opposite axis, so it folds back to π/2.
+            assert_relative_eq!(identity.rotational_distance(&three_quarters), PI / 2.0);
+            assert_relative_eq!(
+                identity.rotational_distance(&quarter),
+                quarter.rotational_distance(&identity)
+            );
         }
     }
 }
