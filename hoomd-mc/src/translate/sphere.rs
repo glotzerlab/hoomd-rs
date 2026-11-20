@@ -70,28 +70,6 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
         let new: [f64; 3] = std::array::from_fn(|i| cs * coord[i] + sn * tangent[i] / tang_norm);
         *trial.position_mut() = Spherical::<3>::from_cartesian_coordinates(new.into());
         trial
-
-        // let mut trial = body_properties;
-        // let dist = Uniform::new(0.0, self.maximum_distance().get())
-        // .expect("max distance must be positive real");
-        // let displacement = dist.sample(rng);
-        // let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
-        // let (sn, cs) = (displacement.sin(), displacement.cos());
-        // let vec = Cartesian::<3>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
-        // let proj = vec.dot(trial.position.point());
-        // let tangent = Cartesian::from([
-        // vec[0] - proj * trial.position.coordinates()[0],
-        // vec[1] - proj * trial.position.coordinates()[1],
-        // vec[2] - proj * trial.position.coordinates()[2],
-        // ]);
-        // let (unit, _norm) = tangent.to_unit().expect("cannot be null");
-        // let new = Cartesian::from([
-        // trial.position.coordinates()[0] * cs + unit.get().coordinates[0] * sn,
-        // trial.position.coordinates()[1] * cs + unit.get().coordinates[1] * sn,
-        // trial.position.coordinates()[2] * cs + unit.get().coordinates[2] * sn,
-        // ]);
-        // trial.position_mut() = Spherical::from_cartesian_coordinates(new);
-        // trial
     }
 }
 
