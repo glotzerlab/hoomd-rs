@@ -834,6 +834,20 @@ pub trait Rotation: Copy {
 ///   the range $` [0, \pi] `$ where *d* is given by [`arc_distance`].
 ///
 /// [`arc_distance`]: Versor::arc_distance
+///
+/// # Example
+///
+/// ```
+/// use approxim::assert_relative_eq;
+/// use hoomd_vector::{Angle, RotationalDistance};
+/// use std::f64::consts::PI;
+///
+/// let a = Angle::from(PI / 4.0);
+/// let b = Angle::from(PI);
+///
+/// assert_relative_eq!(a.rotational_distance(&b), PI - PI / 4.0);
+/// assert_relative_eq!(a.rotational_distance(&b), b.rotational_distance(&a));
+/// ```
 pub trait RotationalDistance {
     /// Compute the rotational distance between `self` and `reference_orientation`.
     fn rotational_distance(&self, reference_orientation: &Self) -> f64;

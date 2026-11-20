@@ -193,6 +193,27 @@ pub trait MaximumAllowableInteractionRange {
 /// Like [`GenerateGhosts`], but it generates all images in the maximum
 /// allowable interaction range. Useful for calculations of bonds or other
 /// pairwise interactions that are not between sites and ghosts.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_geometry::shape::Rectangle;
+/// use hoomd_microstate::{
+///     boundary::{GenerateMinimumImageCandidates, Periodic},
+///     property::Point,
+/// };
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let periodic =
+///     Periodic::new(0.0, Rectangle::with_equal_edges(10.0.try_into()?))?;
+/// let candidates = periodic.generate_minimum_image_candidates(&Point::new(
+///     Cartesian::from([4.6, 4.6]),
+/// ));
+/// assert_eq!(candidates.len(), 3);
+/// # Ok(())
+/// # }
+/// ```
 pub trait GenerateMinimumImageCandidates<S> {
     /// Place periodic images of sites at all candidate minimum image locations
     /// within the maximum allowed interaction range.
