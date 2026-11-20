@@ -543,9 +543,9 @@ mod tests {
 
         let mut sub_iter = m.iter_submatrix(0..N, 0..M);
 
-        for i in 0..N {
+        for row in &m.rows {
             let row_slice = sub_iter.next().unwrap();
-            assert_eq!(row_slice, &m.rows[i][..]);
+            assert_eq!(row_slice, &row[..]);
         }
         assert!(sub_iter.next().is_none());
     }

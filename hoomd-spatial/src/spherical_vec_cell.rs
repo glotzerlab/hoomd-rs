@@ -27,8 +27,7 @@ use crate::{
 /// to use either the `Spherical` geodesic distance or the Euclidean
 /// "line-of-site" distance when specifying nominal and maximum search radii.
 ///
-/// [`VecCell`]: hoomd_spatial::VecCell;
-/// [`Spherical`]: hoomd_manifold::Spherical;
+/// [`VecCell`]: crate::VecCell
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SphericalVecCell<K: Eq + Hash, const D: usize>(pub VecCell<K, D>);

@@ -114,6 +114,54 @@
 //! # }
 //! ```
 //!
+//! # Expanding state points
+//!
+//! If you later add a field to your state point, the existing JSON files in your
+//! workspace will lack keys for the new field. In this case, you *must* make that
+//! field an `Option<T>` and mark it
+//! `#[serde(skip_serializing_if = "Option::is_none")]` so that the [`identifier`]
+//! will be computed correctly. To extract the value, use
+//! `field.unwrap_or(<default value>)`.
+//!
+//! ```
+//! use hoomd_workspace::Entry;
+//! use serde::Serialize;
+//!
+//! #[derive(Serialize)]
+//! struct MyStatePoint {
+//!     temperature: f64,
+//!     pressure: f64,
+//! }
+//!
+//! const DEFAULT_SEED: u32 = 0;
+//!
+//! #[derive(Serialize)]
+//! struct MyNewStatePoint {
+//!     temperature: f64,
+//!     pressure: f64,
+//!     #[serde(skip_serializing_if = "Option::is_none")]
+//!     seed: Option<u32>,
+//! }
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let old_state_point = MyStatePoint {
+//!     temperature: 1.0,
+//!     pressure: 2.0,
+//! };
+//!
+//! let new_state_point = MyNewStatePoint {
+//!     temperature: 1.0,
+//!     pressure: 2.0,
+//!     seed: None,
+//! };
+//!
+//! assert_eq!(old_state_point.identifier()?, new_state_point.identifier()?);
+//!
+//! let seed = new_state_point.seed.unwrap_or(DEFAULT_SEED);
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! [signac framework]: https://signac.readthedocs.io
 //! [signac Python package]: https://signac.readthedocs.io/projects/core/en/latest/
 //! [`identifier`]: Entry::identifier

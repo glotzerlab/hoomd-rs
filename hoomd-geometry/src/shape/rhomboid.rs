@@ -494,12 +494,7 @@ impl Scale for Rhomboid {
     /// ```
     #[inline]
     fn scale_volume(&self, v: PositiveReal) -> Self {
-        let v = v
-            .get()
-            .sqrt()
-            .try_into()
-            .expect("sqrt of positive real is positive");
-        self.scale_length(v)
+        self.scale_length(v.sqrt())
     }
 }
 
@@ -531,10 +526,7 @@ impl IsPointInside<Cartesian<2>> for Rhomboid {
         }
         let lx_half = self.lx().get() / 2.0;
         let x_skew = x - self.xy() * y;
-        if x_skew < -lx_half || x_skew >= lx_half {
-            return false;
-        }
-        true
+        !(x_skew < -lx_half || x_skew >= lx_half)
     }
 }
 
@@ -684,11 +676,7 @@ where
         let cross_term = tx * c + ty * s;
         let dist_n22 = xy2 * dist_n21 - cross_term;
         let r1_on_n22 = (c + s * xy2).abs() * lx1 + det_part.abs() * ly1;
-        if 2.0 * dist_n22.abs() > r1_on_n22 + lx2 {
-            return false;
-        }
-
-        true
+        2.0 * dist_n22.abs() <= r1_on_n22 + lx2
     }
 }
 
@@ -707,9 +695,8 @@ where
         r_other: &Cartesian<2>,
         o_other: &R,
     ) -> bool {
-        let max_separation =
-            self.bounding_sphere_radius().get() + other.bounding_sphere_radius().get();
-        if r_self.distance_squared(r_other) >= max_separation.powi(2) {
+        let max_separation = self.bounding_sphere_radius() + other.bounding_sphere_radius();
+        if r_self.distance_squared(r_other) >= max_separation.get().powi(2) {
             return false;
         }
 
