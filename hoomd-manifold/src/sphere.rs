@@ -194,8 +194,6 @@ impl Spherical<4> {
     pub fn to_versor(&self) -> Versor {
         let coords = self.coordinates();
         let a = 1.0 + coords[0];
-        // let scale = (coords[1]*coords[1] + coords[2]*coords[2] + coords[3]*coords[3] + a*a).sqrt();
-        // let scale_inv = 1.0/scale;
         let quat = Quaternion {
             scalar: a,
             vector: Cartesian::from([coords[1], coords[2], coords[3]]),
