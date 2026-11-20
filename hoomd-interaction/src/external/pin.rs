@@ -200,8 +200,9 @@ impl<R> MaximumInteractionRange for PinOrientations<R> {
 /// Use [`PinPositions`] for Frenkel-Ladd free energy computations or any
 /// time you want to loosely pin body positions in place. To fix
 /// body positions exactly at the initial condition, do not apply translational
-/// trial moves. All reference positions must lie inside the microstate's
-/// boundary.
+/// trial moves. [`PinPositions`] wraps every reference position back into the
+/// boundary to ensure proper handling of periodic body images. If the position
+/// cannot be wrapped, it is used as-is.
 ///
 /// [`PinPositions`] stores references in *body tag order*. Take care to
 /// keep the references in sync when adding and/or removing bodies from the
@@ -213,9 +214,6 @@ impl<R> MaximumInteractionRange for PinOrientations<R> {
 /// boundary's maximum allowable interaction range (e.g.
 /// $` \min \frac{L_i}{2} `$ in orthorhombic boundaries).
 ///
-/// [`PinPositions`] wraps every reference position back into the boundary
-/// to ensure proper handling of periodic body images. If the position cannot
-/// be wrapped, it is used as-is.
 ///
 /// # Example
 ///
