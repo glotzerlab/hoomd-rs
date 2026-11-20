@@ -18,6 +18,7 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 workspace = true
 
 [dependencies]
+forkunion.workspace = true
 itertools.workspace = true
 log.workspace = true
 rand.workspace = true
