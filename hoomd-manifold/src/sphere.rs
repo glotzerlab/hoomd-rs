@@ -198,12 +198,14 @@ impl Spherical<4> {
             Quaternion {
                 scalar: a,
                 vector: Cartesian::from([coords[1], coords[2], coords[3]]),
-            }.to_versor_unchecked()
+            }
+            .to_versor_unchecked()
         } else {
             Quaternion {
                 scalar: 0.0,
-                vector: Cartesian::from([1.0,0.0,0.0])
-            }.to_versor_unchecked()
+                vector: Cartesian::from([1.0, 0.0, 0.0]),
+            }
+            .to_versor_unchecked()
         }
     }
 }
