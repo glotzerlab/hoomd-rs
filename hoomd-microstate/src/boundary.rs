@@ -183,11 +183,18 @@ pub trait MaximumAllowableInteractionRange {
 /// calculations of bonds or other pairwise interactions that are not between
 /// sites and ghosts.
 pub trait GenerateMinimumImageCandidates<S> {
-    /// Place periodic images of sites at all candidate minimum image locations.
+    /// Place periodic images of sites at all candidate minimum image locations
+    /// within the maximum allowed interaction range.
     ///
     /// Given `site_properties` inside the boundary,
     /// `generate_minimum_image_candidates` places periodic images of that site
-    /// that would be candidates for the minimum image.
+    /// that would be candidates for the minimum image, but only for interactions
+    /// with sites inside the boundary that are within the maximum allowable
+    /// interaction range (as given by [`MaximumAllowableInteractionRange`]).
+    /// This is for two reasons: 1) Most interactions are short ranged
+    /// to start with. 2) It would be prohibitively expensive to compute
+    /// the large number of images to account for all possible interactions in
+    /// highly sheared boundaries.
     ///
     /// The provided site is **not included** in the candidates, only its images.
     ///

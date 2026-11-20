@@ -104,7 +104,7 @@ impl<const N: usize> Periodic<Hypercuboid<N>> {
     fn generate_ghosts_in_range<S>(
         &self,
         site_properties: &S,
-        range: [f64; N],
+        range: f64,
     ) -> ArrayVec<S, MAX_GHOSTS>
     where
         S: Position<Position = Cartesian<N>> + Copy + Default,
@@ -123,10 +123,10 @@ impl<const N: usize> Periodic<Hypercuboid<N>> {
             if x < -half || x >= half {
                 return result;
             }
-            if x > half - range[i] {
+            if x > half - range{
                 near_facets_bitmask |= 1 << i;
                 per_dimension_translation[i] = -self.shape.edge_lengths[i].get();
-            } else if x < -half + range[i] {
+            } else if x < -half + range {
                 near_facets_bitmask |= 1 << i;
                 per_dimension_translation[i] = self.shape.edge_lengths[i].get();
             }
@@ -196,7 +196,7 @@ where
     /// ```
     #[inline(always)]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
-        self.generate_ghosts_in_range(site_properties, [self.maximum_interaction_range; N])
+        self.generate_ghosts_in_range(site_properties, self.maximum_interaction_range)
     }
 }
 
@@ -230,7 +230,7 @@ where
     fn generate_minimum_image_candidates(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         self.generate_ghosts_in_range(
             site_properties,
-            array::from_fn(|i| self.shape.edge_lengths[i].get() / 2.0),
+            self.shape.maximum_allowable_interaction_range(),
         )
     }
 }
@@ -549,9 +549,19 @@ mod tests {
             };
             let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
 
+            // only one image within a distance of 5.0 from the narrowest face
             let candidates =
-                periodic.generate_minimum_image_candidates(&Point::new([1.0, -40.0].into()));
+                periodic.generate_minimum_image_candidates(&Point::new([0.0, -48.0].into()));
+            assert_eq!(candidates.len(), 1);
+            assert_relative_eq!(candidates[0].position(), &[0.0, 52.0].into());
+
+            // three images within a distance of 5.0 from a vertex
+            let candidates =
+                periodic.generate_minimum_image_candidates(&Point::new([-4.8, -48.0].into()));
             assert_eq!(candidates.len(), 3);
+            assert_relative_eq!(candidates[0].position(), &[5.2, 52.0].into());
+            assert_relative_eq!(candidates[1].position(), &[-4.8, 52.0].into());
+            assert_relative_eq!(candidates[2].position(), &[5.2, -48.0].into());
 
             Ok(())
         }
@@ -916,13 +926,35 @@ mod tests {
         #[test]
         fn unequal_edges_candidates() -> anyhow::Result<()> {
             let cuboid = Hypercuboid {
-                edge_lengths: [10.0.try_into()?, 100.0.try_into()?, 20.0.try_into()?],
+                edge_lengths: [20.0.try_into()?, 10.0.try_into()?, 100.0.try_into()?],
             };
             let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
 
+            // only one image is within a distance of 5.0 from the narrowest face
             let candidates =
-                periodic.generate_minimum_image_candidates(&Point::new([1.0, -40.0, 2.0].into()));
+                periodic.generate_minimum_image_candidates(&Point::new([0.0, -4.8, 0.0].into()));
+            assert_eq!(candidates.len(), 1);
+            assert_relative_eq!(candidates[0].position(), &[0.0, 5.2, 0.0].into());
+
+            // 3 images within a distance of 5.0 from an edge
+            let candidates =
+                periodic.generate_minimum_image_candidates(&Point::new([0.0, -4.8, -48.0].into()));
+            assert_eq!(candidates.len(), 3);
+            assert_relative_eq!(candidates[0].position(), &[0.0, 5.2, 52.0].into());
+            assert_relative_eq!(candidates[1].position(), &[0.0, -4.8, 52.0].into());
+            assert_relative_eq!(candidates[2].position(), &[0.0, 5.2, -48.0].into());
+
+            // 7 images within a distance of 5.0 from a vertex
+            let candidates =
+                periodic.generate_minimum_image_candidates(&Point::new([-9.6, -4.8, -48.0].into()));
             assert_eq!(candidates.len(), 7);
+            assert_relative_eq!(candidates[0].position(), &[10.4, 5.2, 52.0].into());
+            assert_relative_eq!(candidates[1].position(), &[-9.6, 5.2, 52.0].into());
+            assert_relative_eq!(candidates[2].position(), &[10.4, -4.8, 52.0].into());
+            assert_relative_eq!(candidates[3].position(), &[-9.6, -4.8, 52.0].into());
+            assert_relative_eq!(candidates[4].position(), &[10.4, 5.2, -48.0].into());
+            assert_relative_eq!(candidates[5].position(), &[-9.6, 5.2, -48.0].into());
+            assert_relative_eq!(candidates[6].position(), &[10.4, -4.8, -48.0].into());
 
             Ok(())
         }

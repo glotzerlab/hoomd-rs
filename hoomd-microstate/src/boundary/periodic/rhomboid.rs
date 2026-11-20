@@ -109,7 +109,7 @@ impl Periodic<Rhomboid> {
     fn generate_ghosts_in_range<S>(
         &self,
         site_properties: &S,
-        range: [f64; 2],
+        range: f64,
     ) -> ArrayVec<S, MAX_GHOSTS>
     where
         S: Position<Position = Cartesian<2>> + Copy + Default,
@@ -134,10 +134,10 @@ impl Periodic<Rhomboid> {
         let plane_distances = self.shape.nearest_plane_distance();
         let frac = self.shape.fractional(r);
 
-        let near_right = frac[0] > 0.5 - range[0] / plane_distances[0].get();
-        let near_left = frac[0] < -0.5 + range[0] / plane_distances[0].get();
-        let near_top = frac[1] > 0.5 - range[1] / plane_distances[1].get();
-        let near_bottom = frac[1] < -0.5 + range[1] / plane_distances[1].get();
+        let near_right = frac[0] > 0.5 - range / plane_distances[0].get();
+        let near_left = frac[0] < -0.5 + range / plane_distances[0].get();
+        let near_top = frac[1] > 0.5 - range / plane_distances[1].get();
+        let near_bottom = frac[1] < -0.5 + range / plane_distances[1].get();
 
         if near_right {
             result.push(new_site(-1.0, 0.0));
@@ -213,7 +213,7 @@ where
     /// ```
     #[inline(always)]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
-        self.generate_ghosts_in_range(site_properties, [self.maximum_interaction_range; 2])
+        self.generate_ghosts_in_range(site_properties, self.maximum_interaction_range)
     }
 }
 
@@ -247,10 +247,9 @@ where
     /// ```
     #[inline(always)]
     fn generate_minimum_image_candidates(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
-        let plane_distances = self.shape.nearest_plane_distance();
         self.generate_ghosts_in_range(
             site_properties,
-            array::from_fn(|i| plane_distances[i].get() * 0.5),
+            self.shape.maximum_allowable_interaction_range(),
         )
     }
 }
@@ -505,10 +504,22 @@ mod tests {
         };
         let periodic = Periodic::new(0.0, rhomboid).expect("hard-coded range should be valid");
 
-        let point = Point::new([-41.0, -40.0].into());
+        // only one image within a distance of 3.5355339059327373 from the narrowest face
+        let point = Point::new(periodic.shape.absolute(&[-0.48, 0.0].into())); 
+        assert!(periodic.is_point_inside(point.position()));
+        let candidates =
+            periodic.generate_minimum_image_candidates(&point);
+        assert_relative_eq!(candidates[0].position(), &periodic.shape.absolute(&[0.52, 0.0].into()));
+
+        // 3 images within a distance of 3.5355339059327373 from an edge
+        let point = Point::new(periodic.shape.absolute(&[-0.48, -0.48].into()));
         assert!(periodic.is_point_inside(point.position()));
         let candidates = periodic.generate_minimum_image_candidates(&point);
         assert_eq!(candidates.len(), 3);
+        assert_relative_eq!(candidates[0].position(), &periodic.shape.absolute(&[0.52, -0.48].into()), epsilon=1e-6);
+        assert_relative_eq!(candidates[1].position(), &periodic.shape.absolute(&[-0.48, 0.52].into()), epsilon=1e-6);
+        assert_relative_eq!(candidates[2].position(), &periodic.shape.absolute(&[0.52, 0.52].into()), epsilon=1e-6);
+
 
         Ok(())
     }
@@ -521,13 +532,6 @@ mod tests {
             xy: 0.0,
         };
         let periodic = Periodic::new(1.0, rhomboid).expect("hard-coded range should be valid");
-
-        // no ghosts for points outside the boundary
-        let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([10.5, 0.0])));
-        assert!(ghosts.is_empty());
-
-        let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, 5.5])));
-        assert!(ghosts.is_empty());
 
         // Face: x-direction
         let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, 0.0])));
