@@ -382,10 +382,9 @@ impl Distribution<Spherical<4>> for SphericalDisk<4> {
         let position_versor = Quaternion::from(*point.coordinates())
             .to_versor()
             .expect("spherical points cannot be null");
-        let transformation =
-            ((*translation_versor.get()) * (*position_versor.get()) * (*translation_versor.get()))
-                .to_versor()
-                .expect("spherical points cannot be null");
+        let transformation = ((*translation_versor.get()) * (*position_versor.get()))
+            .to_versor()
+            .expect("spherical points cannot be null");
         let sphere_point = Spherical::<4>::from_versor(transformation);
         Spherical::<4>::from_cartesian_coordinates(*sphere_point.point())
     }
