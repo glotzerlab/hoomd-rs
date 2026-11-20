@@ -4,7 +4,9 @@
 //! Implement [`PinOrientations`] and [`PinPositions`]
 
 use hoomd_microstate::{
-    Body, Microstate, boundary::{GenerateMinimumImageCandidates, MaximumAllowableInteractionRange, Wrap}, property::{Orientation, Point, Position},
+    Body, Microstate,
+    boundary::{GenerateMinimumImageCandidates, MaximumAllowableInteractionRange, Wrap},
+    property::{Orientation, Point, Position},
 };
 use hoomd_vector::{Metric, RotationalDistance};
 
@@ -315,7 +317,7 @@ where
     where
         B: Position<Position = P>,
         C: GenerateMinimumImageCandidates<B> + Wrap<Point<P>> + MaximumAllowableInteractionRange,
-        P: Copy
+        P: Copy,
     {
         let unwrapped = Point::new(self.reference[body_tag]);
         let reference = *boundary.wrap(unwrapped).unwrap_or(unwrapped).position();
