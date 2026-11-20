@@ -11,17 +11,26 @@
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
-    Convex, IntersectsAt,
+    Convex, IntersectsAt, SupportMapping,
     shape::{
         Capsule, ConvexPolytope, Cylinder, Hypercuboid, Hyperellipsoid, Hypersphere, Simplex3,
     },
-    xenocollide::{collide2d, collide3d},
+    xenocollide::{collide2d, collide3d, collide4d},
 };
-use hoomd_vector::{Angle, Cartesian, InnerProduct, Versor};
+use hoomd_vector::{Angle, Cartesian, InnerProduct, Rotate, RotationMatrix, Versor};
 use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 
 fn main() {
     divan::main();
+}
+/// A direction uniform on the unit (N-1)-sphere.
+#[inline]
+fn unit_direction<const N: usize, R: Rng>(rng: &mut R) -> Cartesian<N> {
+    let (unit, _) = rng
+        .random::<Cartesian<N>>()
+        .to_unit()
+        .expect("random vector is non-zero");
+    *unit.get()
 }
 
 fn shapes_to_convex<S>(tup: (S, S)) -> (Convex<S>, Convex<S>) {
@@ -152,6 +161,80 @@ mod cuboid {
     }
 }
 
+/// Get a loose upper bound for the separation distance of `a` and `b` along `u`.
+fn contact_bound<S, Q, const N: usize>(a: &S, b: &S, orientation: Q, u: &Cartesian<N>) -> f64
+where
+    S: SupportMapping<Cartesian<N>>,
+    Q: Copy,
+    RotationMatrix<N>: From<Q>,
+{
+    let q = RotationMatrix::<N>::from(orientation);
+    let q_inv = q.inverted();
+    let b_support = q.rotate(&b.support_mapping(&q_inv.rotate(&(-*u))));
+    a.support_mapping(u).dot(u) - b_support.dot(u)
+}
+
+/// Relative contact distance for shallow penetrations and near misses.
+const SPAN: (f64, f64) = (-1.0e-3, 1.0e-3);
+
+/// Bisection to find the last-overlap point along a ray.
+fn bisect(hi: f64, overlaps: impl Fn(f64) -> bool) -> f64 {
+    let mut lo = 0.0_f64;
+    let mut hi = hi;
+    for _ in 0..32 {
+        let mid = lo.midpoint(hi);
+        if overlaps(mid) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    lo
+}
+
+/// Generate one 2D near-boundary configuration
+fn boundary_input<S>(inner: &S, shape: &Convex<S>, rng: &mut StdRng) -> (Cartesian<2>, Angle)
+where
+    S: SupportMapping<Cartesian<2>> + Clone,
+{
+    let u = unit_direction(rng);
+    let angle: Angle = rng.random();
+    let delta = SPAN.0 + rng.random::<f64>() * (SPAN.1 - SPAN.0);
+    let bound = contact_bound(inner, &inner.clone(), angle, &u);
+    let contact = bisect(bound, |t| collide2d(shape, shape, &(u * t), &angle));
+    (u * (contact * (1.0 + delta)), angle)
+}
+
+/// Generate one 3D near-boundary configuration
+fn boundary_input_3d<S>(inner: &S, shape: &Convex<S>, rng: &mut StdRng) -> (Cartesian<3>, Versor)
+where
+    S: SupportMapping<Cartesian<3>> + Clone,
+{
+    let u = unit_direction(rng);
+    let versor: Versor = rng.random();
+    let delta = SPAN.0 + rng.random::<f64>() * (SPAN.1 - SPAN.0);
+    let bound = contact_bound(inner, &inner.clone(), versor, &u);
+    let contact = bisect(bound, |t| collide3d(shape, shape, &(u * t), &versor));
+    (u * (contact * (1.0 + delta)), versor)
+}
+
+/// Generate one 4D near-boundary configuration
+fn boundary_input_4d<S>(
+    inner: &S,
+    shape: &Convex<S>,
+    rng: &mut StdRng,
+) -> (Cartesian<4>, RotationMatrix<4>)
+where
+    S: SupportMapping<Cartesian<4>> + Clone,
+{
+    let q = RotationMatrix::<4>::default(); // TODO: orient! (PR #346 DoubleVersor)
+    let u = unit_direction(rng);
+    let delta = SPAN.0 + rng.random::<f64>() * (SPAN.1 - SPAN.0);
+    let bound = contact_bound(inner, &inner.clone(), q, &u);
+    let contact = bisect(bound, |t| collide4d(shape, shape, &(u * t), &q));
+    (u * (contact * (1.0 + delta)), q)
+}
+
 #[divan::bench_group()]
 mod polytopes {
     use hoomd_geometry::shape::ConvexSurfaceMesh2d;
@@ -160,37 +243,48 @@ mod polytopes {
 
     #[divan::bench(consts = NUM_VERTICES)]
     fn polygon_2d<const N: usize>(bencher: Bencher) {
-        let mut rng = StdRng::seed_from_u64(1);
         let shape = Convex(ConvexPolytope::<2>::regular(N));
+        let mut rng = StdRng::seed_from_u64(1);
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| sample_offset_angle(&mut rng, 0.9, 1.0))
+            .with_inputs(|| boundary_input(&shape.0, &shape, &mut rng))
             .bench_local_values(|(t, r)| black_box(collide2d(&shape, &shape, &t, &r)));
     }
 
     #[divan::bench(consts = NUM_VERTICES)]
     fn polygon_2d_fast<const N: usize>(bencher: Bencher) {
-        let mut rng = StdRng::seed_from_u64(1);
-        let regular = ConvexPolytope::<2>::regular(N);
-        let shape = ConvexSurfaceMesh2d::try_from(regular)
+        let shape = ConvexSurfaceMesh2d::try_from(ConvexPolytope::<2>::regular(N))
             .expect("regular polygon should be a valid surface mesh");
+        let proxy = Convex(ConvexPolytope::<2>::regular(N));
+        let mut rng = StdRng::seed_from_u64(1);
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| sample_offset_angle(&mut rng, 0.9, 1.0))
+            .with_inputs(|| boundary_input(&proxy.0, &proxy, &mut rng))
             .bench_local_values(|(t, r)| black_box(shape.intersects_at(&shape, &t, &r)));
     }
 
     #[divan::bench(consts = DIPYRAMID_VERTICES)]
     fn dipyramid_3d<const N: usize>(bencher: Bencher) {
-        let mut rng = StdRng::seed_from_u64(1);
         let shape = Convex(create_dipyramid(N));
+        let mut rng = StdRng::seed_from_u64(1);
 
         bencher
             .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| create_offset_3d(&mut rng))
+            .with_inputs(|| boundary_input_3d(&shape.0, &shape, &mut rng))
             .bench_local_values(|(t, r)| black_box(collide3d(&shape, &shape, &t, &r)));
+    }
+
+    #[divan::bench]
+    fn hypercube_4d(bencher: Bencher) {
+        let shape = Convex(ConvexPolytope::<4, 16>::hypercube());
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| boundary_input_4d(&shape.0, &shape, &mut rng))
+            .bench_local_values(|(t, q)| black_box(collide4d(&shape, &shape, &t, &q)));
     }
 }
 
