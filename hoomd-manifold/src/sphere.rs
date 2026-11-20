@@ -194,11 +194,17 @@ impl Spherical<4> {
     pub fn to_versor(&self) -> Versor {
         let coords = self.coordinates();
         let a = 1.0 + coords[0];
-        let quat = Quaternion {
-            scalar: a,
-            vector: Cartesian::from([coords[1], coords[2], coords[3]]),
-        };
-        quat.to_versor_unchecked()
+        if a > 1e-12 {
+            Quaternion {
+                scalar: a,
+                vector: Cartesian::from([coords[1], coords[2], coords[3]]),
+            }.to_versor_unchecked()
+        } else {
+            Quaternion {
+                scalar: 0.0,
+                vector: Cartesian::from([1.0,0.0,0.0])
+            }.to_versor_unchecked()
+        }
     }
 }
 
