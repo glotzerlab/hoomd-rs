@@ -586,6 +586,31 @@ mod tests {
         use super::*;
 
         #[test]
+        fn reference_from_wrapped_microstate() -> anyhow::Result<()> {
+            let rhomboid = Rhomboid {
+                extents: [2.0.try_into()?, 10.0.try_into()?],
+                xy: 0.2,
+            };
+            let position = rhomboid.absolute(&Cartesian::from([0.5_f64.next_down(), -0.47]));
+            let microstate = Microstate::builder()
+                .boundary(Periodic::new(0.0, rhomboid)?)
+                .bodies([Body::point(position)])
+                .try_build()?;
+            let pin = PinPositions {
+                k: 2.0,
+                reference: microstate
+                    .iter_bodies_tag_order()
+                    .map(|tagged_body| tagged_body.item.properties.position)
+                    .collect(),
+            };
+
+            // Wrapping can round a valid position onto the excluded upper face.
+            // References copied from the microstate should still be usable.
+            check!(pin.total_energy(&microstate) == 0.0);
+            Ok(())
+        }
+
+        #[test]
         fn body_energy_open() {
             let pin = PinPositions {
                 k: 2.0,
