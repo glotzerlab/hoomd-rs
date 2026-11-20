@@ -13,7 +13,7 @@ use crate::{
     property::Position,
 };
 use arrayvec::ArrayVec;
-use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
+use hoomd_geometry::shape::Hyperparallelepiped;
 use hoomd_linear_algebra::{
     MatMul,
     matrix::{Matrix, qr},
@@ -44,6 +44,11 @@ where
     P: Position<Position = Cartesian<N>>,
 {
     /// Wrap any cartesian vector to the inside of the given hyperparallelepiped.
+    ///
+    /// *Nominally*, wrapped points will be greater than or equal to the left
+    /// boundary and less than the right. However, callers must be resilient
+    /// to floating point round off errors that result in points exactly on
+    /// the right boundary or slightly outside of either.
     ///
     /// # Example
     ///
@@ -102,10 +107,6 @@ impl<const N: usize> Periodic<Hyperparallelepiped<N>> {
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();
-
-        if !self.shape.is_point_inside(r) {
-            return result;
-        }
 
         // Determine fractional coordinates of "twilight zones," where ghosts must be generated
         let plane_distances = self.shape.nearest_plane_distances();
@@ -178,7 +179,7 @@ mod tests {
     use super::*;
     use crate::property::Point;
     use approxim::assert_relative_eq;
-    use hoomd_geometry::shape::{Hyperparallelepiped, Triclinic};
+    use hoomd_geometry::{IsPointInside, shape::{Hyperparallelepiped, Triclinic}};
     use hoomd_vector::Cartesian;
     use rstest::{fixture, rstest};
 

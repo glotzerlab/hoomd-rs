@@ -62,6 +62,11 @@ where
 {
     /// Wrap any cartesian vector to the inside of the given cuboid.
     ///
+    /// *Nominally*, wrapped points will be greater than or equal to the left
+    /// boundary and less than the right. However, callers must be resilient
+    /// to floating point round off errors that result in points exactly on
+    /// the right boundary or slightly outside of either.
+    ///
     /// # Example
     ///
     /// ```

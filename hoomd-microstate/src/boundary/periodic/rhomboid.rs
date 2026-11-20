@@ -17,7 +17,7 @@ use crate::{
     },
     property::Position,
 };
-use hoomd_geometry::{IsPointInside, shape::Rhomboid};
+use hoomd_geometry::shape::Rhomboid;
 
 use hoomd_vector::Cartesian;
 
@@ -65,6 +65,11 @@ where
     /// Points are wrapped using fractional coordinates that account for
     /// the rhomboid tilt factors. The wrapping ensures particles remain
     /// within the periodic boundaries.
+    ///
+    /// *Nominally*, wrapped points will be greater than or equal to the left
+    /// boundary and less than the right. However, callers must be resilient
+    /// to floating point round off errors that result in points exactly on
+    /// the right boundary or slightly outside of either.
     ///
     /// # Example
     ///
@@ -117,10 +122,6 @@ impl Periodic<Rhomboid> {
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();
-
-        if !self.shape.is_point_inside(r) {
-            return result;
-        }
 
         let edge_vectors = self.shape.edge_vectors();
 
@@ -358,7 +359,8 @@ mod tests {
 
     use approxim::assert_relative_eq;
 
-    use rstest::{fixture, rstest};
+    use hoomd_geometry::IsPointInside;
+use rstest::{fixture, rstest};
 
     #[fixture]
     fn sheared_rhomboid() -> Rhomboid {

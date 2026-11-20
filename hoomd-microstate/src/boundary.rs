@@ -111,6 +111,17 @@ pub trait Wrap<P> {
     /// boundary's periodicity. `wrap` returns [`Ok(properties)`](Ok) when this
     /// process is successful.
     ///
+    /// Nominally, `wrap` places the result so that its position will pass an
+    /// `is_point_inside_check` on the boundary's shape. However, that is only
+    /// true in a world with infinite precision. Callers must be resilient to
+    /// `wrap` results that sit exactly on or just outside the boundary
+    /// (typically within a few ULPs). `hoomd-rs` at large handles this by
+    /// never assuming that the output of `wrap` will pass `is_point_inside`.
+    /// An `Ok` result from `wrap` is instead assumed to be inside the boundary
+    /// or close enough that one of the ghosts (by [`GenerateGhosts`]) will catch
+    /// the needed site-site interactions across the boundary within the limits
+    /// of floating point precision.
+    ///
     /// # Errors
     ///
     /// `wrap` returns [`Error::CannotWrapProperties`] when it is not possible

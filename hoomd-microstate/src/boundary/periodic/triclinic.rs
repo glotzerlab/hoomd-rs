@@ -17,7 +17,7 @@ use crate::{
     },
     property::Position,
 };
-use hoomd_geometry::{IsPointInside, shape::Triclinic};
+use hoomd_geometry::shape::Triclinic;
 
 use hoomd_vector::Cartesian;
 
@@ -74,6 +74,11 @@ where
     /// the triclinic tilt factors. The wrapping ensures particles remain
     /// within the periodic boundaries.
     ///
+    /// *Nominally*, wrapped points will be greater than or equal to the left
+    /// boundary and less than the right. However, callers must be resilient
+    /// to floating point round off errors that result in points exactly on
+    /// the right boundary or slightly outside of either.
+    ///
     /// # Example
     ///
     /// ```
@@ -127,9 +132,6 @@ impl Periodic<Triclinic> {
     {
         let mut result = ArrayVec::new();
         let r: &Cartesian<3> = site_properties.position();
-        if !self.shape.is_point_inside(r) {
-            return result;
-        }
         let edge_vectors = self.shape.edge_vectors();
         let new_site = |x, y, z| {
             let mut new_site = *site_properties;
@@ -434,7 +436,8 @@ mod tests {
 
     use approxim::assert_relative_eq;
 
-    use rstest::{fixture, rstest};
+    use hoomd_geometry::IsPointInside;
+use rstest::{fixture, rstest};
 
     #[fixture]
     fn sheared_triclinic() -> Triclinic {
