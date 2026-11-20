@@ -3,11 +3,8 @@
 
 //! Implement [`PinOrientations`] and [`PinPositions`]
 
-use hoomd_geometry::IsPointInside;
 use hoomd_microstate::{
-    Body, Microstate,
-    boundary::{GenerateMinimumImageCandidates, MaximumAllowableInteractionRange},
-    property::{Orientation, Position},
+    Body, Microstate, boundary::{GenerateMinimumImageCandidates, MaximumAllowableInteractionRange, Wrap}, property::{Orientation, Point, Position},
 };
 use hoomd_vector::{Metric, RotationalDistance};
 
@@ -216,6 +213,10 @@ impl<R> MaximumInteractionRange for PinOrientations<R> {
 /// boundary's maximum allowable interaction range (e.g.
 /// $` \min \frac{L_i}{2} `$ in orthorhombic boundaries).
 ///
+/// [`PinPositions`] wraps every reference position back into the boundary
+/// to ensure proper handling of periodic body images. If the position cannot
+/// be wrapped, it is used as-is.
+///
 /// # Example
 ///
 /// Pin each body to its initial position:
@@ -310,10 +311,11 @@ where
     pub fn body_energy<B, C>(&self, body_tag: usize, body_properties: &B, boundary: &C) -> f64
     where
         B: Position<Position = P>,
-        C: GenerateMinimumImageCandidates<B> + IsPointInside<P> + MaximumAllowableInteractionRange,
+        C: GenerateMinimumImageCandidates<B> + Wrap<Point<P>> + MaximumAllowableInteractionRange,
+        P: Copy
     {
-        let reference = &self.reference[body_tag];
-        debug_assert!(boundary.is_point_inside(reference));
+        let unwrapped = Point::new(self.reference[body_tag]);
+        let reference = *boundary.wrap(unwrapped).unwrap_or(unwrapped).position();
         let ghosts = boundary.generate_minimum_image_candidates(body_properties);
         let delta_r_sq = std::iter::once(body_properties.position())
             .chain(
@@ -321,7 +323,7 @@ where
                     .iter()
                     .map(hoomd_microstate::property::Position::position),
             )
-            .map(|position| position.distance_squared(reference))
+            .map(|position| position.distance_squared(&reference))
             .reduce(f64::min)
             .expect("the iterator chain should always produce at least 1 item");
 
@@ -336,8 +338,8 @@ where
 impl<B, S, X, C, P> DeltaEnergyOne<B, S, X, C> for PinPositions<P>
 where
     B: Position<Position = P>,
-    C: GenerateMinimumImageCandidates<B> + IsPointInside<P> + MaximumAllowableInteractionRange,
-    P: Metric,
+    C: GenerateMinimumImageCandidates<B> + Wrap<Point<P>> + MaximumAllowableInteractionRange,
+    P: Copy + Metric,
 {
     #[inline]
     fn delta_energy_one(
@@ -360,8 +362,8 @@ where
 impl<B, S, X, C, P> TotalEnergy<Microstate<B, S, X, C>> for PinPositions<P>
 where
     B: Position<Position = P>,
-    C: GenerateMinimumImageCandidates<B> + IsPointInside<P> + MaximumAllowableInteractionRange,
-    P: Metric,
+    C: GenerateMinimumImageCandidates<B> + Wrap<Point<P>> + MaximumAllowableInteractionRange,
+    P: Copy + Metric,
 {
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
