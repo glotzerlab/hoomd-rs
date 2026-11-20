@@ -57,4 +57,4 @@ nothing to stdout by default — it uses the `log` crate.
   ```math
   <math>
   ```
-  
+
