@@ -263,7 +263,12 @@ where
     /// Compute the energy for a given body.
     ///
     /// ```math
-    /// \min_j \frac{1}{2} k (\Delta \vec{r}_j)^2
+    /// U_\mathrm{body} = \begin{cases}
+    /// \frac{1}{2} k \min_j (\Delta \vec{r}_j)^2 & n_\mathrm{references} > 0 \land
+    /// \min_j (\Delta \vec{r}_j)^2 < r_\mathrm{max\_allowable}^2 \\
+    /// 0 & n_\mathrm{references} = 0 \lor
+    /// \min_j (\Delta \vec{r}_j)^2 \ge r_\mathrm{max\_allowable}^2 \\
+    /// \end{cases}
     /// ```
     ///
     /// Apply a harmonic external potential to the distance between the body's
