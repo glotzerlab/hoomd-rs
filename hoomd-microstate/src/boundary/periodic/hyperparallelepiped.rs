@@ -179,7 +179,10 @@ mod tests {
     use super::*;
     use crate::property::Point;
     use approxim::assert_relative_eq;
-    use hoomd_geometry::{IsPointInside, shape::{Hyperparallelepiped, Triclinic}};
+    use hoomd_geometry::{
+        IsPointInside,
+        shape::{Hyperparallelepiped, Triclinic},
+    };
     use hoomd_vector::Cartesian;
     use rstest::{fixture, rstest};
 
@@ -246,43 +249,73 @@ mod tests {
     #[test]
     fn unequal_edges_candidates() -> anyhow::Result<()> {
         let hyperparallelepiped = hyper_from_triclinic(&Triclinic {
-            extents: [
-                20.0.try_into()?,
-                10.0.try_into()?,
-                100.0.try_into()?,
-            ],
+            extents: [20.0.try_into()?, 10.0.try_into()?, 100.0.try_into()?],
             tilt_factors: [0.2, 0.3, 0.4],
         });
-        let periodic = Periodic::new(0.0, hyperparallelepiped).expect("hard-coded range should be valid");
-            
+        let periodic =
+            Periodic::new(0.0, hyperparallelepiped).expect("hard-coded range should be valid");
+
         // only one image is within a distance of 4.642383454426295 from the narrowest face
         let point = Point::new(periodic.shape.absolute([0.0, -0.48, 0.0].into()));
         assert!(periodic.is_point_inside(point.position()));
         let candidates = periodic.generate_minimum_image_candidates(&point);
         assert_eq!(candidates.len(), 1);
-        assert_relative_eq!(candidates[0].position(), &periodic.shape.absolute([0.0, 0.52, 0.0].into()));
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute([0.0, 0.52, 0.0].into())
+        );
 
         // 3 images within a distance of 4.642383454426295 from an edge
         let point = Point::new(periodic.shape.absolute([0.0, 0.48, -0.48].into()));
         assert!(periodic.is_point_inside(point.position()));
         let candidates = periodic.generate_minimum_image_candidates(&point);
         assert_eq!(candidates.len(), 3);
-        assert_relative_eq!(candidates[0].position(), &periodic.shape.absolute([0.0, -0.52, -0.48].into()));
-        assert_relative_eq!(candidates[1].position(), &periodic.shape.absolute([0.0, 0.48, 0.52].into()));
-        assert_relative_eq!(candidates[2].position(), &periodic.shape.absolute([0.0, -0.52, 0.52].into()));
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute([0.0, -0.52, -0.48].into())
+        );
+        assert_relative_eq!(
+            candidates[1].position(),
+            &periodic.shape.absolute([0.0, 0.48, 0.52].into())
+        );
+        assert_relative_eq!(
+            candidates[2].position(),
+            &periodic.shape.absolute([0.0, -0.52, 0.52].into())
+        );
 
         // 7 images within a distance of 4.642383454426295 from a vertex
         let point = Point::new(periodic.shape.absolute([-0.48, 0.48, -0.48].into()));
         assert!(periodic.is_point_inside(point.position()));
         let candidates = periodic.generate_minimum_image_candidates(&point);
         assert_eq!(candidates.len(), 7);
-        assert_relative_eq!(candidates[0].position(), &periodic.shape.absolute([0.52, 0.48, -0.48].into()));
-        assert_relative_eq!(candidates[1].position(), &periodic.shape.absolute([-0.48, -0.52, -0.48].into()));
-        assert_relative_eq!(candidates[2].position(), &periodic.shape.absolute([-0.48, 0.48, 0.52].into()));
-        assert_relative_eq!(candidates[3].position(), &periodic.shape.absolute([0.52, -0.52, -0.48].into()));
-        assert_relative_eq!(candidates[4].position(), &periodic.shape.absolute([0.52, 0.48, 0.52].into()));
-        assert_relative_eq!(candidates[5].position(), &periodic.shape.absolute([-0.48, -0.52, 0.52].into()));
-        assert_relative_eq!(candidates[6].position(), &periodic.shape.absolute([0.52, -0.52, 0.52].into()));
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute([0.52, 0.48, -0.48].into())
+        );
+        assert_relative_eq!(
+            candidates[1].position(),
+            &periodic.shape.absolute([-0.48, -0.52, -0.48].into())
+        );
+        assert_relative_eq!(
+            candidates[2].position(),
+            &periodic.shape.absolute([-0.48, 0.48, 0.52].into())
+        );
+        assert_relative_eq!(
+            candidates[3].position(),
+            &periodic.shape.absolute([0.52, -0.52, -0.48].into())
+        );
+        assert_relative_eq!(
+            candidates[4].position(),
+            &periodic.shape.absolute([0.52, 0.48, 0.52].into())
+        );
+        assert_relative_eq!(
+            candidates[5].position(),
+            &periodic.shape.absolute([-0.48, -0.52, 0.52].into())
+        );
+        assert_relative_eq!(
+            candidates[6].position(),
+            &periodic.shape.absolute([0.52, -0.52, 0.52].into())
+        );
 
         Ok(())
     }

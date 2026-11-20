@@ -128,7 +128,7 @@ impl<const N: usize> Periodic<Hypercuboid<N>> {
             if x < -half || x >= half {
                 return result;
             }
-            if x > half - range{
+            if x > half - range {
                 near_facets_bitmask |= 1 << i;
                 per_dimension_translation[i] = -self.shape.edge_lengths[i].get();
             } else if x < -half + range {

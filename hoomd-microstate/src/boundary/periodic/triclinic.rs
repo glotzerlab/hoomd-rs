@@ -437,7 +437,7 @@ mod tests {
     use approxim::assert_relative_eq;
 
     use hoomd_geometry::IsPointInside;
-use rstest::{fixture, rstest};
+    use rstest::{fixture, rstest};
 
     #[fixture]
     fn sheared_triclinic() -> Triclinic {
@@ -606,29 +606,73 @@ use rstest::{fixture, rstest};
         assert!(periodic.is_point_inside(point.position()));
         let candidates = periodic.generate_minimum_image_candidates(&point);
         assert_eq!(candidates.len(), 1);
-        assert_relative_eq!(candidates[0].position(), &periodic.shape.absolute(&[0.0, 0.52, 0.0].into()), epsilon=1e-6);
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute(&[0.0, 0.52, 0.0].into()),
+            epsilon = 1e-6
+        );
 
         // 3 images within a distance of 4.642383454426295 from an edge
         let point = Point::new(periodic.shape.absolute(&[0.0, 0.48, -0.48].into()));
         assert!(periodic.is_point_inside(point.position()));
         let candidates = periodic.generate_minimum_image_candidates(&point);
         assert_eq!(candidates.len(), 3);
-        assert_relative_eq!(candidates[0].position(), &periodic.shape.absolute(&[0.0, -0.52, -0.48].into()), epsilon=1e-6);
-        assert_relative_eq!(candidates[1].position(), &periodic.shape.absolute(&[0.0, 0.48, 0.52].into()), epsilon=1e-6);
-        assert_relative_eq!(candidates[2].position(), &periodic.shape.absolute(&[0.0, -0.52, 0.52].into()), epsilon=1e-6);
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute(&[0.0, -0.52, -0.48].into()),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            candidates[1].position(),
+            &periodic.shape.absolute(&[0.0, 0.48, 0.52].into()),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            candidates[2].position(),
+            &periodic.shape.absolute(&[0.0, -0.52, 0.52].into()),
+            epsilon = 1e-6
+        );
 
         // 7 images within a distance of 4.642383454426295 from a vertex
         let point = Point::new(periodic.shape.absolute(&[-0.48, 0.48, -0.48].into()));
         assert!(periodic.is_point_inside(point.position()));
         let candidates = periodic.generate_minimum_image_candidates(&point);
         assert_eq!(candidates.len(), 7);
-        assert_relative_eq!(candidates[0].position(), &periodic.shape.absolute(&[0.52, 0.48, -0.48].into()), epsilon=1e-6);
-        assert_relative_eq!(candidates[1].position(), &periodic.shape.absolute(&[-0.48, -0.52, -0.48].into()), epsilon=1e-6);
-        assert_relative_eq!(candidates[2].position(), &periodic.shape.absolute(&[-0.48, 0.48, 0.52].into()), epsilon=1e-6);
-        assert_relative_eq!(candidates[3].position(), &periodic.shape.absolute(&[0.52, -0.52, -0.48].into()), epsilon=1e-6);
-        assert_relative_eq!(candidates[4].position(), &periodic.shape.absolute(&[0.52, 0.48, 0.52].into()), epsilon=1e-6);
-        assert_relative_eq!(candidates[5].position(), &periodic.shape.absolute(&[-0.48, -0.52, 0.52].into()), epsilon=1e-6);
-        assert_relative_eq!(candidates[6].position(), &periodic.shape.absolute(&[0.52, -0.52, 0.52].into()), epsilon=1e-6);
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute(&[0.52, 0.48, -0.48].into()),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            candidates[1].position(),
+            &periodic.shape.absolute(&[-0.48, -0.52, -0.48].into()),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            candidates[2].position(),
+            &periodic.shape.absolute(&[-0.48, 0.48, 0.52].into()),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            candidates[3].position(),
+            &periodic.shape.absolute(&[0.52, -0.52, -0.48].into()),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            candidates[4].position(),
+            &periodic.shape.absolute(&[0.52, 0.48, 0.52].into()),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            candidates[5].position(),
+            &periodic.shape.absolute(&[-0.48, -0.52, 0.52].into()),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            candidates[6].position(),
+            &periodic.shape.absolute(&[0.52, -0.52, 0.52].into()),
+            epsilon = 1e-6
+        );
 
         Ok(())
     }

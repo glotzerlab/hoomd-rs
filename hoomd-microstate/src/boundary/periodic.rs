@@ -399,8 +399,8 @@ where
 
 impl<T> MaximumAllowableInteractionRange for Periodic<T>
 where
-T: MaximumAllowableInteractionRange
- {
+    T: MaximumAllowableInteractionRange,
+{
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
         self.shape.maximum_allowable_interaction_range()

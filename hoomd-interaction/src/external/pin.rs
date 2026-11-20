@@ -5,7 +5,9 @@
 
 use hoomd_geometry::IsPointInside;
 use hoomd_microstate::{
-    Body, Microstate, boundary::{GenerateMinimumImageCandidates, MaximumAllowableInteractionRange}, property::{Orientation, Position},
+    Body, Microstate,
+    boundary::{GenerateMinimumImageCandidates, MaximumAllowableInteractionRange},
+    property::{Orientation, Position},
 };
 use hoomd_vector::{Metric, RotationalDistance};
 
@@ -735,10 +737,7 @@ mod tests {
 
             // The body is far enough from its reference that the potential
             // is cut off.
-            assert_relative_eq!(
-                pin.body_energy(0, &properties, &boundary),
-                0.0,
-            );
+            assert_relative_eq!(pin.body_energy(0, &properties, &boundary), 0.0,);
             Ok(())
         }
 
