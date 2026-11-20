@@ -7,7 +7,7 @@ use arrayvec::ArrayVec;
 use hoomd_geometry::IsPointInside;
 use serde::{Deserialize, Serialize};
 
-use crate::boundary::GenerateMinimumImageCandidates;
+use crate::boundary::{GenerateMinimumImageCandidates, MaximumAllowableInteractionRange};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 
@@ -47,6 +47,13 @@ where
     #[inline(always)]
     fn generate_minimum_image_candidates(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         ArrayVec::new()
+    }
+}
+
+impl MaximumAllowableInteractionRange for Open {
+    #[inline]
+    fn maximum_allowable_interaction_range(&self) -> f64 {
+        f64::INFINITY
     }
 }
 

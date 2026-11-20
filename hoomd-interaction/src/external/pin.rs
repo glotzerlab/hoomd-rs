@@ -3,10 +3,9 @@
 
 //! Implement [`PinOrientations`]
 
+use hoomd_geometry::IsPointInside;
 use hoomd_microstate::{
-    Body, Microstate,
-    boundary::GenerateMinimumImageCandidates,
-    property::{Orientation, Position},
+    Body, Microstate, boundary::{GenerateMinimumImageCandidates, MaximumAllowableInteractionRange}, property::{Orientation, Position},
 };
 use hoomd_vector::{Metric, RotationalDistance};
 
@@ -187,8 +186,10 @@ impl<R> MaximumInteractionRange for PinOrientations<R> {
 ///
 /// ```math
 /// U_\mathrm{body} = \begin{cases}
-/// \min_j \frac{1}{2} k (\Delta \vec{r}_j)^2 & n_\mathrm{references} > 0 \\
-/// 0 & n_\mathrm{references} = 0 \\
+/// \frac{1}{2} k \min_j (\Delta \vec{r}_j)^2 & n_\mathrm{references} > 0 \land
+/// \min_j (\Delta \vec{r}_j)^2 < r_\mathrm{max\_allowable} \\
+/// 0 & n_\mathrm{references} = 0 \lor
+/// \min_j (\Delta \vec{r}_j)^2 \ge r_\mathrm{max\_allowable} \\
 /// \end{cases}
 /// ```
 ///
@@ -200,11 +201,18 @@ impl<R> MaximumInteractionRange for PinOrientations<R> {
 /// Use [`PinPositions`] for Frenkel-Ladd free energy computations or any
 /// time you want to loosely pin body positions in place. To fix
 /// body positions exactly at the initial condition, do not apply translational
-/// trial moves.
+/// trial moves. All reference positions must lie inside the microstate's
+/// boundary.
 ///
 /// [`PinPositions`] stores references in *body tag order*. Take care to
 /// keep the references in sync when adding and/or removing bodies from the
 /// microstate.
+///
+/// With a low *k* value, bodies may move far from their reference positions.
+/// When this occurs, [`PinPositions`] will apply a cutoff and evaluate
+/// $` U_\mathrm{body} = 0 `$ when the body is at a distance greater than the
+/// boundary's maximum allowable interaction range (e.g.
+/// $` \min \frac{L_i}{2} `$ in orthorhombic boundaries.
 ///
 /// # Example
 ///
@@ -300,26 +308,33 @@ where
     pub fn body_energy<B, C>(&self, body_tag: usize, body_properties: &B, boundary: &C) -> f64
     where
         B: Position<Position = P>,
-        C: GenerateMinimumImageCandidates<B>,
+        C: GenerateMinimumImageCandidates<B> + IsPointInside<P> + MaximumAllowableInteractionRange,
     {
         let reference = &self.reference[body_tag];
+        debug_assert!(boundary.is_point_inside(reference));
         let ghosts = boundary.generate_minimum_image_candidates(body_properties);
-        std::iter::once(body_properties.position())
+        let delta_r_sq = std::iter::once(body_properties.position())
             .chain(
                 ghosts
                     .iter()
                     .map(hoomd_microstate::property::Position::position),
             )
-            .map(|position| 0.5 * self.k * position.distance_squared(reference))
+            .map(|position| position.distance_squared(reference))
             .reduce(f64::min)
-            .expect("the iterator chain should always produce at least 1 item")
+            .expect("the iterator chain should always produce at least 1 item");
+
+        if delta_r_sq < boundary.maximum_allowable_interaction_range().powi(2) {
+            0.5 * self.k * delta_r_sq
+        } else {
+            0.0
+        }
     }
 }
 
 impl<B, S, X, C, P> DeltaEnergyOne<B, S, X, C> for PinPositions<P>
 where
     B: Position<Position = P>,
-    C: GenerateMinimumImageCandidates<B>,
+    C: GenerateMinimumImageCandidates<B> + IsPointInside<P> + MaximumAllowableInteractionRange,
     P: Metric,
 {
     #[inline]
@@ -343,7 +358,7 @@ where
 impl<B, S, X, C, P> TotalEnergy<Microstate<B, S, X, C>> for PinPositions<P>
 where
     B: Position<Position = P>,
-    C: GenerateMinimumImageCandidates<B>,
+    C: GenerateMinimumImageCandidates<B> + IsPointInside<P> + MaximumAllowableInteractionRange,
     P: Metric,
 {
     #[inline]
@@ -372,12 +387,13 @@ mod tests {
     use super::*;
     use approxim::assert_relative_eq;
     use assert2::check;
-    use hoomd_geometry::shape::Rectangle;
+    use hoomd_geometry::shape::{Rectangle, Rhomboid};
     use hoomd_microstate::{
-        boundary::{Open, Periodic},
+        boundary::{Open, Periodic, Wrap},
         property::{OrientedPoint, Point},
     };
     use hoomd_vector::{Angle, Cartesian, Rotation, Versor};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
 
@@ -705,8 +721,6 @@ mod tests {
 
         #[test]
         fn body_energy_periodic_unequal_edges() -> anyhow::Result<()> {
-            // Box is 10 along x and 100 along y. The body and reference are 80 apart
-            // along y, but only 20 apart through the periodic boundary.
             let boundary = Periodic::new(
                 1.0,
                 Rectangle {
@@ -719,11 +733,59 @@ mod tests {
             };
             let properties = Point::new(Cartesian::from([0.0, -40.0]));
 
+            // The body is far enough from its reference that the potential
+            // is cut off.
             assert_relative_eq!(
                 pin.body_energy(0, &properties, &boundary),
-                0.5 * 2.0 * 20.0 * 20.0,
-                epsilon = 1e-12
+                0.0,
             );
+            Ok(())
+        }
+
+        #[rstest]
+        #[case::mild([10.0, 10.0], 0.5)]
+        #[case::strong([10.0, 100.0], 1.0)]
+        fn body_energy_periodic_sheared(
+            #[case] extents: [f64; 2],
+            #[case] xy: f64,
+        ) -> anyhow::Result<()> {
+            use hoomd_microstate::boundary::MaximumAllowableInteractionRange;
+
+            let rhomboid = Rhomboid {
+                extents: [extents[0].try_into()?, extents[1].try_into()?],
+                xy,
+            };
+            let boundary = Periodic::new(1.0, rhomboid)?;
+            let max_allowed = rhomboid.maximum_allowable_interaction_range();
+            let mut rng = StdRng::seed_from_u64(1);
+
+            for _ in 0..1000 {
+                // A reference strictly inside the box, sampled in fractional
+                // coordinates.
+                let reference = rhomboid.absolute(&Cartesian::from([
+                    rng.random_range(-0.49..0.49),
+                    rng.random_range(-0.49..0.49),
+                ]));
+
+                // A body displaced by less than the maximum allowable interaction
+                // range, wrapped back into the box (possibly across a boundary).
+                let distance = rng.random_range(0.0..0.99) * max_allowed;
+                let angle = rng.random_range(0.0..(2.0 * PI));
+                let displacement =
+                    Cartesian::from([distance * angle.cos(), distance * angle.sin()]);
+                let body = boundary.wrap(Point::new(reference + displacement))?;
+
+                let pin = PinPositions {
+                    k: 2.0,
+                    reference: vec![reference],
+                };
+
+                assert_relative_eq!(
+                    pin.body_energy(0, &body, &boundary),
+                    0.5 * 2.0 * distance * distance,
+                    epsilon = 1e-9
+                );
+            }
             Ok(())
         }
 
