@@ -274,7 +274,7 @@ fn edge_test(
 }
 
 /// Separating edge cases used in ``check_edge_is_separating``
-const _SEPARATING_EDGE_CASES: [(u8, u8, usize, usize); 6] = [
+const SEPARATING_EDGE_CASES: [(u8, u8, usize, usize); 6] = [
     (1, 2, 0, 1),
     (1, 4, 0, 2),
     (1, 8, 0, 3),
@@ -295,7 +295,7 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
     let xa = ma & (ma ^ mb);
     let xb = mb & (ma ^ mb);
 
-    if _SEPARATING_EDGE_CASES
+    if SEPARATING_EDGE_CASES
         .iter()
         .any(|&(a, b, i, j)| edge_test(xa, xb, a, b, i, j, aff_a, aff_b))
     {
@@ -456,10 +456,7 @@ where
         // f* 4 3
         let n = edge_vectors_q[4].cross(&edge_vectors_q[3]);
         let aff = self.vertices.map(|v| (v - q.vertices[1]).dot(&n));
-        if check_face_on_q_is_separating(&aff) {
-            return false;
-        }
-        true // No separating planes -> intersection!
+        !check_face_on_q_is_separating(&aff) // No separating planes -> intersection!
     }
 }
 

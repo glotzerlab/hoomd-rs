@@ -21,7 +21,7 @@ hooks = [
 [[repos]]
 repo = "builtin"
 hooks = [
-  { id = "end-of-file-fixer" },
+  { id = "end-of-file-fixer", exclude = 'AGENTS.md' },
   { id = "trailing-whitespace" },
   { id = "check-json" },
   { id = "check-toml" },
