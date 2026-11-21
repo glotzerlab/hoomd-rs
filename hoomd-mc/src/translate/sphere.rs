@@ -3,16 +3,12 @@
 
 //! Implement Translation moves on curved surfaces
 
-use rand::{
-    Rng, RngExt,
-    distr::{Distribution, Uniform},
-};
+use rand::{Rng, RngExt, distr::Uniform};
 use rand_distr::StandardNormal;
 
 use crate::{LocalTrial, Translate};
 use hoomd_manifold::Spherical;
 use hoomd_microstate::property::{Point, Position};
-use hoomd_vector::{Cartesian, InnerProduct};
 
 impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     /// Propose local trial moves for a body on the surface of a sphere
@@ -56,25 +52,23 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
         body_properties: Point<Spherical<3>>,
     ) -> Point<Spherical<3>> {
         let mut trial = body_properties;
-        let dist = Uniform::new(0.0, self.maximum_distance().get())
-            .expect("max distance must be positive real");
-        let displacement = dist.sample(rng);
-        // let displacement = (self.maximum_distance().get()) * rng.sample::<f64, _>(StandardNormal);
-        let (sn, cs) = (displacement.sin(), displacement.cos());
-        let vec = Cartesian::<3>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
-        let proj = vec.dot(trial.position.point());
-        let tangent = Cartesian::from([
-            vec[0] - proj * trial.position.coordinates()[0],
-            vec[1] - proj * trial.position.coordinates()[1],
-            vec[2] - proj * trial.position.coordinates()[2],
-        ]);
-        let (unit, _norm) = tangent.to_unit().expect("cannot be null");
-        let new = Cartesian::from([
-            trial.position.coordinates()[0] * cs + unit.get().coordinates[0] * sn,
-            trial.position.coordinates()[1] * cs + unit.get().coordinates[1] * sn,
-            trial.position.coordinates()[2] * cs + unit.get().coordinates[2] * sn,
-        ]);
-        *trial.position_mut() = Spherical::from_cartesian_coordinates(new);
+        let coord = trial.position.coordinates();
+        let d = rng.sample(
+            Uniform::new(0.0, self.maximum_distance.get()).expect("max distance must be positive"),
+        );
+
+        // create a tangent vector at v
+        let mut tangent: [f64; 3] = std::array::from_fn(|_| rng.sample(StandardNormal));
+        let tang_v: f64 = (0..3).map(|i| tangent[i] * coord[i]).sum();
+        for i in 0..3 {
+            tangent[i] -= tang_v * coord[i];
+        }
+        let tang_norm = tangent.iter().map(|x| x * x).sum::<f64>().sqrt();
+
+        // Riemann exponential map
+        let (sn, cs) = d.sin_cos();
+        let new: [f64; 3] = std::array::from_fn(|i| cs * coord[i] + sn * tangent[i] / tang_norm);
+        *trial.position_mut() = Spherical::<3>::from_cartesian_coordinates(new.into());
         trial
     }
 }
@@ -127,26 +121,24 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
         body_properties: Point<Spherical<4>>,
     ) -> Point<Spherical<4>> {
         let mut trial = body_properties;
-        let dist = Uniform::new(0.0, self.maximum_distance().get())
-            .expect("max distance must be positive real");
-        let displacement = dist.sample(rng);
-        let (sn, cs) = ((displacement.abs()).sin(), (displacement.abs()).cos());
-        let vec = Cartesian::<4>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
-        let proj = vec.dot(trial.position.point());
-        let tangent = Cartesian::from([
-            vec[0] - proj * trial.position.coordinates()[0],
-            vec[1] - proj * trial.position.coordinates()[1],
-            vec[2] - proj * trial.position.coordinates()[2],
-            vec[3] - proj * trial.position.coordinates()[3],
-        ]);
-        let (unit, _norm) = tangent.to_unit().expect("cannot be null");
-        let new = Cartesian::from([
-            trial.position.coordinates()[0] * cs + unit.get().coordinates[0] * sn,
-            trial.position.coordinates()[1] * cs + unit.get().coordinates[1] * sn,
-            trial.position.coordinates()[2] * cs + unit.get().coordinates[2] * sn,
-            trial.position.coordinates()[3] * cs + unit.get().coordinates[3] * sn,
-        ]);
-        *trial.position_mut() = Spherical::from_cartesian_coordinates(new);
+        let coord = trial.position.coordinates();
+        let displacement = self.maximum_distance.get() * rng.random::<f64>();
+        let (sn, cs) = displacement.sin_cos();
+
+        let vec: [f64; 3] = std::array::from_fn(|_| rng.sample(StandardNormal));
+        // based on algebraic simplifiation of quaternion "square root"
+        let sg = sn / (vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]).sqrt();
+        let k = coord[1] * vec[0] + coord[2] * vec[1] + coord[3] * vec[2];
+        let a = 1.0 + coord[0];
+        // clip for instability near south pole
+        let k_rescale = if a > 1e-12 { k / a } else { 0.0 };
+        let new = [
+            cs * coord[0] - sg * k,
+            cs * coord[1] + sg * (vec[0] - k_rescale * coord[1]),
+            cs * coord[2] + sg * (vec[1] - k_rescale * coord[2]),
+            cs * coord[3] + sg * (vec[2] - k_rescale * coord[3]),
+        ];
+        *trial.position_mut() = Spherical::<4>::from_cartesian_coordinates(new.into());
         trial
     }
 }
@@ -155,7 +147,7 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
 mod tests {
     use super::*;
     use approxim::assert_relative_eq;
-    use hoomd_vector::Metric;
+    use hoomd_vector::{InnerProduct, Metric};
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
@@ -163,7 +155,7 @@ mod tests {
     const N: usize = 256;
 
     #[rstest]
-    fn translate_2spherical_point(#[values(0.01, 0.1, 1.0)] d: f64) {
+    fn translate_2spherical_point(#[values(0.001, 0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(1459);
         let initial_point = Point::new(Spherical::<3>::from_cartesian_coordinates(
             [0.5_f64.sqrt(), 0.0, 0.5_f64.sqrt()].into(),
@@ -189,7 +181,7 @@ mod tests {
     }
 
     #[rstest]
-    fn translate_3spherical_point(#[values(0.01, 0.1, 1.0)] d: f64) {
+    fn translate_3spherical_point(#[values(0.001, 0.01, 0.1, 1.0)] d: f64) {
         let mut rng = StdRng::seed_from_u64(1459);
         let initial_point = Point::new(Spherical::<4>::from_polar_coordinates(
             PI / 4.0,

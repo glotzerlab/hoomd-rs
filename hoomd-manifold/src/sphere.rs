@@ -139,7 +139,7 @@ impl Spherical<4> {
         let (a, b, c, d) = (quat.scalar, quat.vector[0], quat.vector[1], quat.vector[2]);
         Spherical::<4>::from_cartesian_coordinates(Cartesian::from([a, b, c, d]))
     }
-    /// Create a versor which maps $`(1,0,0,0)`$ to the target `Spherical<4>` point.
+    /// Create a versor which maps the pole $`(1,0,0,0)`$ to the target `Spherical<4>` point.
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
@@ -155,9 +155,11 @@ impl Spherical<4> {
     ///     5.0 * PI / 4.0,
     /// );
     /// let x_versor = x.to_versor();
-    /// let pole_versor = Quaternion::from([1.0, 0.0, 0.0, 0.0])
-    ///     .to_versor()
-    ///     .expect("not a null vector");
+    /// let pole_quat = Quaternion {
+    ///     scalar: 1.0,
+    ///     vector: [0.0, 0.0, 0.0].into(),
+    /// };
+    /// let pole_versor = pole_quat.to_versor().expect("not a null vector");
     /// let transformation =
     ///     (*x_versor.get() * *pole_versor.get() * *x_versor.get())
     ///         .to_versor()
@@ -190,21 +192,21 @@ impl Spherical<4> {
     #[inline]
     #[must_use]
     pub fn to_versor(&self) -> Versor {
-        let phi = self.coordinates()[3].atan2(self.coordinates()[2]);
-        let theta = ((self.coordinates()[3].powi(2) + self.coordinates()[2].powi(2)).sqrt())
-            .atan2(self.coordinates()[1]);
-        let psi = ((self.coordinates()[3].powi(2)
-            + self.coordinates()[2].powi(2)
-            + self.coordinates()[1].powi(2))
-        .sqrt())
-        .atan2(self.coordinates()[0]);
-        let n_hat = Cartesian::from([
-            theta.cos(),
-            (theta.sin()) * (phi.cos()),
-            (theta.sin()) * (phi.sin()),
-        ])
-        .to_unit_unchecked();
-        Versor::from_axis_angle(n_hat.0, psi)
+        let coords = self.coordinates();
+        let a = 1.0 + coords[0];
+        if a > 1e-12 {
+            Quaternion {
+                scalar: a,
+                vector: Cartesian::from([coords[1], coords[2], coords[3]]),
+            }
+            .to_versor_unchecked()
+        } else {
+            Quaternion {
+                scalar: 0.0,
+                vector: Cartesian::from([1.0, 0.0, 0.0]),
+            }
+            .to_versor_unchecked()
+        }
     }
 }
 
@@ -388,10 +390,9 @@ impl Distribution<Spherical<4>> for SphericalDisk<4> {
         let position_versor = Quaternion::from(*point.coordinates())
             .to_versor()
             .expect("spherical points cannot be null");
-        let transformation =
-            ((*translation_versor.get()) * (*position_versor.get()) * (*translation_versor.get()))
-                .to_versor()
-                .expect("spherical points cannot be null");
+        let transformation = ((*translation_versor.get()) * (*position_versor.get()))
+            .to_versor()
+            .expect("spherical points cannot be null");
         let sphere_point = Spherical::<4>::from_versor(transformation);
         Spherical::<4>::from_cartesian_coordinates(*sphere_point.point())
     }

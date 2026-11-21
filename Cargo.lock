@@ -3885,6 +3885,7 @@ dependencies = [
  "num-complex",
  "paste",
  "rand 0.10.3",
+ "rand_distr",
  "rstest",
  "serde",
  "serde_with",
