@@ -394,7 +394,10 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
         if n.into_iter().all(|x| x.abs() < Self::TOLERANCE) {
             return Discovery::Known(true);
         }
+        // Orient the portal and its normal together, as the face tests in the
+        // validation loop require det([v1-v0, v2-v0, v3-v0, v4-v0]) > 0.
         if n.dot(v0) > 0.0 {
+            (v1, v2) = (v2, v1);
             n = -n;
         }
 
@@ -431,6 +434,9 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
                 v3 = v4;
                 n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
                 if n.dot(v0) > 0.0 {
+                    // Maintain portal handedness (see orientation comment above).
+                    // Unreachable in practice: n.dot(v0) equals the det, which is < 0
+                    (v1, v2) = (v2, v1);
                     n = -n;
                 }
                 continue;
@@ -440,6 +446,7 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
                 v1 = v4;
                 n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
                 if n.dot(v0) > 0.0 {
+                    (v1, v2) = (v2, v1);
                     n = -n;
                 }
                 continue;
@@ -449,6 +456,7 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
                 v2 = v4;
                 n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
                 if n.dot(v0) > 0.0 {
+                    (v1, v2) = (v2, v1);
                     n = -n;
                 }
                 continue;
