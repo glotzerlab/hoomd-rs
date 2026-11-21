@@ -50,18 +50,8 @@ simplicity > efficient algorithms > hardware micro-optimizations. No GPU / domai
 decomposition; array-of-structures over structure-of-arrays. `hoomd-rs` writes
 nothing to stdout by default — it uses the `log` crate.
 
-## Tests and documentation
+## Tests
 
 - Unit tests live in the same file as the implementation in `mod tests`.
 - Use `approxim::assert_relative_eq` for floating point number comparisons when
   values are not exact.
-- Doctests serve as minimal examples to users. Provide one doc test for each method,
-  type, and trait. Doc tests are allowed to have unused variables for demonstration
-  purposes.
-- Inline LaTeX math in documentation is dollar-outside, backtick-inside: $`<math>`$.
-- Display LaTex math in documentation is:
-  ```math
-  <math>
-  ```
-- Release notes are documented in `doc/src/release-notes.md`.
-- Credits are listed in `doc/src/credits.md`
