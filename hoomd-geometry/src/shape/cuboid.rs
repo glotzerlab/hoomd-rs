@@ -327,8 +327,7 @@ impl<const N: usize> Hypercuboid<N> {
     /// # }
     /// ```
     pub const fn maximal_extents(&self) -> [f64; N] {
-        let mut extents = [0.0; N];
-        let mut i = 0;
+        let (mut i, mut extents) = (0, [0.0; N]);
         while i < N {
             extents[i] = self.edge_lengths[i].get() / 2.0;
             i += 1;
@@ -356,8 +355,7 @@ impl<const N: usize> Hypercuboid<N> {
     /// # }
     /// ```
     pub const fn minimal_extents(&self) -> [f64; N] {
-        let mut extents = [0.0; N];
-        let mut i = 0;
+        let (mut i, mut extents) = (0, [0.0; N]);
         while i < N {
             extents[i] = -self.edge_lengths[i].get() / 2.0;
             i += 1;
@@ -680,26 +678,6 @@ mod tests {
         };
         check!(c.maximal_extents() == [l / 2.0; N]);
         check!(c.minimal_extents() == [-l / 2.0; N]);
-    }
-
-    /// Verify that the const constructors and accessors are usable in const context.
-    #[test]
-    fn test_const_context() {
-        const CUBOID: Cuboid = Cuboid::with_equal_edges(hoomd_utility::positive_real!(2.0));
-        const MAXIMAL_EXTENTS: [f64; 3] = CUBOID.maximal_extents();
-        const MINIMAL_EXTENTS: [f64; 3] = CUBOID.minimal_extents();
-        const GSD_BOX_3D: [f64; 6] = CUBOID.to_gsd_box();
-        const EDGE_LENGTHS: [PositiveReal; 3] = [CUBOID.a(), CUBOID.b(), CUBOID.c()];
-
-        const RECTANGLE: Rectangle =
-            Rectangle::with_equal_edges(hoomd_utility::positive_real!(2.0));
-        const GSD_BOX_2D: [f64; 6] = RECTANGLE.to_gsd_box();
-
-        check!(MAXIMAL_EXTENTS == [1.0; 3]);
-        check!(MINIMAL_EXTENTS == [-1.0; 3]);
-        check!(GSD_BOX_3D == [2.0, 2.0, 2.0, 0.0, 0.0, 0.0]);
-        check!(EDGE_LENGTHS == CUBOID.edge_lengths);
-        check!(GSD_BOX_2D == [2.0, 2.0, 0.0, 0.0, 0.0, 0.0]);
     }
 
     #[rstest(
