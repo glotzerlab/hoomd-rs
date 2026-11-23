@@ -633,6 +633,38 @@ pub(crate) fn incremental_hull(
     Ok(((0..points.len()).filter(|&i| on_hull[i]).collect(), faces))
 }
 
+/// The first two vertices of a simplex in any dimension.
+///
+/// The first is the lexicographically smallest point of the set and the second is the
+/// point farthest from it. Both are guaranteed to be vertices of the final hull.
+///
+/// # Errors
+///
+/// Returns [`Error::DegeneratePolytope`] when the set is empty or every point coincides
+/// with the first.
+fn first_two_vertices<const N: usize>(points: &[Cartesian<N>]) -> Result<(usize, usize), Error> {
+    let a = points
+        .iter()
+        .position_min_by(|x, y| {
+            x.coordinates
+                .iter()
+                .zip(&y.coordinates)
+                .fold(Ordering::Equal, |order, (&x, &y)| {
+                    order.then(x.total_cmp(&y))
+                })
+        })
+        .ok_or(Error::DegeneratePolytope)?;
+    let b = (0..points.len())
+        .filter(|&i| points[i] != points[a])
+        .max_by(|&i, &j| {
+            (points[i] - points[a])
+                .norm_squared()
+                .total_cmp(&(points[j] - points[a]).norm_squared())
+        })
+        .ok_or(Error::DegeneratePolytope)?; // Every point coincides with a.
+    Ok((a, b))
+}
+
 /// Find an initial tetrahedron for the incremental hull.
 ///
 /// The four points are vertices of the hull: `a` is the lexicographically smallest point,
@@ -644,28 +676,7 @@ pub(crate) fn incremental_hull(
 /// Returns [`Error::DegeneratePolytope`] when all points coincide, all are colinear, or
 /// all are coplanar.
 fn initial_tetrahedron(points: &[Cartesian<3>]) -> Result<(usize, usize, usize, usize), Error> {
-    // a is the lowest, leftmost point in the set
-    let a = points
-        .iter()
-        .position_min_by(|x, y| {
-            x[0].total_cmp(&y[0])
-                .then(x[1].total_cmp(&y[1]))
-                .then(x[2].total_cmp(&y[2]))
-        })
-        .expect("the point set is not empty");
-
-    // b is the point farthest from a.
-    let b = (0..points.len())
-        .filter(|&i| i != a)
-        .max_by(|&i, &j| {
-            (points[i] - points[a])
-                .norm_squared()
-                .total_cmp(&(points[j] - points[a]).norm_squared())
-        })
-        .expect("there are at least two points");
-    if (points[b] - points[a]).norm_squared() == 0.0 {
-        return Err(Error::DegeneratePolytope); // Every point coincides with a.
-    }
+    let (a, b) = first_two_vertices(points)?;
 
     // c is the farthest noncolinear point from the segment ab.
     let direction = points[b] - points[a];
@@ -804,27 +815,10 @@ fn incremental_hull_4d(points: &[Cartesian<4>]) -> Result<(Vec<usize>, Vec<[usiz
 /// Start at the lexicographically smallest point. Choose each next point
 /// by its distance from the affine span of the points already selected.
 fn initial_fivecell(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
-    let mut result = [42; 5];
-    result[0] = points
-        .iter()
-        .position_min_by(|x, y| {
-            x[0].total_cmp(&y[0])
-                .then(x[1].total_cmp(&y[1]))
-                .then(x[2].total_cmp(&y[2]))
-                .then(x[3].total_cmp(&y[3]))
-        })
-        .ok_or(Error::DegeneratePolytope)?;
-    let origin = points[result[0]];
-
-    let b = (0..points.len())
-        .filter(|&i| points[i] != origin)
-        .max_by(|&i, &j| {
-            (points[i] - origin)
-                .norm_squared()
-                .total_cmp(&(points[j] - origin).norm_squared())
-        })
-        .ok_or(Error::DegeneratePolytope)?;
+    let (a, b) = first_two_vertices(points)?;
+    let mut result = [a; 5];
     result[1] = b;
+    let origin = points[a];
 
     // Find the independent coordinates in ab so we can re-use the vectors later.
     let pivot_coord = (0..4)
@@ -846,7 +840,7 @@ fn initial_fivecell(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
     }
 
     let ab = points[b] - origin;
-    result[2] = farthest_4d(points, &mut basis, &[result[0], b], |point| {
+    result[2] = farthest_4d(points, &mut basis, &[a, b], |point| {
         ab.wedge(&(point - origin)).norm_squared()
     })?;
 
@@ -856,12 +850,9 @@ fn initial_fivecell(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
     })?;
 
     let normal = Cartesian::counary_cross(&[ab, ac, points[result[3]] - origin]);
-    result[4] = farthest_4d(
-        points,
-        &mut basis,
-        &[result[0], b, result[2], result[3]],
-        |point| normal.dot(&(point - origin)).abs(),
-    )?;
+    result[4] = farthest_4d(points, &mut basis, &[a, b, result[2], result[3]], |point| {
+        normal.dot(&(point - origin)).abs()
+    })?;
     Ok(result)
 }
 
