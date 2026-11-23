@@ -13,7 +13,6 @@ value_file = "signac_statepoint.json"
 
 [default.action]
 command = "target/release/action $ACTION_NAME {directories}"
-launchers = ["rayon"]
 
 [[action]]
 name = "simulate"
@@ -33,30 +32,21 @@ The `command` tells [row] how to launch the `action` binary. Use the
 so that the default `command` can execute any new action subcommands
 you might add.
 
-### Launcher
+### Parallel simulations
 
-*hoomd-rs* uses [rayon] for thread-level parallelism. Set the *rayon* launcher
-to correctly configure the number of threads:
+*hoomd-rs* uses thread-level parallelism and automatically uses the cores
+that the scheduler assigns, as set by `threads_per_process`.
 ```toml
-launchers = ["rayon"]
-```
-also set `threads_per_process` to a non-default value:
-```toml
-resources.threads_per_process = 1
+resources.threads_per_process = 4
 ```
 
-> [!WARNING]
-> Skip either of these settings and *hoomd-rs* will attempt to use *all* cores
-> on the compute node (e.g. 128) even if SLURM has locked your job to 1 core.
-> The resulting resource contention will cause your simulations to run
-> *extremely slowly*.
-
-How should you choose `threads_per_process`? Most of *hoomd-rs* uses only
-1 thread, so start thre. In the current release, only `hoomd_mc::ParallelSweep`
-and `hoomd_md::UpdateNetForce*` use multiple threads. Benchmark and see how your
-model scales before submitting a set of jobs to a cluster. You would waste your own
-time if you requested `threads_per_process=32`, but your model ran even
-faster with `threads_per_process=8`.
+How should you choose `threads_per_process`? Start with 1. Most of *hoomd-rs*
+uses only 1 thread, so asking for more is a waste of resources. In the current
+release, only `hoomd_mc::ParallelSweep` and `hoomd_md::UpdateNetForce*` use
+multiple threads. Benchmark and see how your model scales before submitting
+a set of jobs to a cluster. You would waste your own time if you requested
+`threads_per_process=32`, but your model ran even faster with
+`threads_per_process=8`.
 
 ### Maximum Size
 
@@ -106,4 +96,3 @@ When it reaches step 100,000, `trajectory.in-progress.gsd` will be renamed to
 `trajectory.gsd`.
 
 [row]: https://row.readthedocs.io
-[rayon]: https://docs.rs/rayon

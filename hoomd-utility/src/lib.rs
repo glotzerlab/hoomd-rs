@@ -22,3 +22,4 @@
 pub mod data;
 pub mod dyad;
 pub mod valid;
+pub mod parallel;

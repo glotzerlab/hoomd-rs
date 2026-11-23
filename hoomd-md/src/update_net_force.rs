@@ -3,13 +3,14 @@
 
 //! Define `UpdateNetForce`
 
-use rayon::prelude::*;
+use forkunion::{DynamicScheduler, IntoParallelIterator, ParallelIteratorExt};
 
 use hoomd_interaction::{NetBodyForceAndVirial, NetBodyForceVirialAndTorque};
 use hoomd_microstate::{
     Microstate,
     property::{NetForce, NetTorque, NetVirial},
 };
+use hoomd_utility::parallel::with_thread_pool;
 use hoomd_vector::{Outer, Vector, Wedge};
 
 /// Compute the net force and virial given by an interaction model and apply it
@@ -73,6 +74,10 @@ pub trait UpdateNetForceAndVirial<E> {
 /// [`UpdateNetForceVirialAndTorque`] sets the [`NetForce`], [`NetVirial`] and
 /// [`NetTorque`] properties of each body in the microstate to the ones computed
 /// by the interaction model.
+///
+/// Uses the [`hoomd_utility::parallel`] thread pool to compute forces in
+/// parallel. To avoid deadlocks, do not call this method within a parallel
+/// section.
 ///
 /// [`NetBodyForceVirialAndTorque`]: hoomd_interaction::NetBodyForceVirialAndTorque
 /// [`NetForce`]: hoomd_microstate::property::NetForce
@@ -145,16 +150,26 @@ where
 {
     #[inline]
     fn update_net_force_and_virial(&mut self, interaction_model: &E) {
-        let mut net_force_and_virial_tmp = Vec::new();
+        let mut net_force_and_virial_tmp: Vec<Option<(V, V::Tensor)>> =
+            vec![None; self.bodies().len()];
 
-        (0..self.bodies().len())
-            .into_par_iter()
-            .map(|body_index| interaction_model.net_body_force_and_virial(self, body_index))
-            .collect_into_vec(&mut net_force_and_virial_tmp);
+        with_thread_pool(|pool| {
+            net_force_and_virial_tmp
+                .as_mut_slice()
+                .into_par_iter()
+                .with_schedule(pool, DynamicScheduler)
+                .for_each(|result, body_index, _| {
+                    *result =
+                        Some(interaction_model.net_body_force_and_virial(self, body_index));
+                })
+        })
+        .expect("force computation should succeed");
 
-        for (body_index, (net_force, net_virial)) in net_force_and_virial_tmp.iter().enumerate() {
-            self.set_body_net_force(body_index, *net_force);
-            self.set_body_net_virial(body_index, *net_virial);
+        for (body_index, result) in net_force_and_virial_tmp.into_iter().enumerate() {
+            let (net_force, net_virial) =
+                result.expect("each body's force and virial should have been computed");
+            self.set_body_net_force(body_index, net_force);
+            self.set_body_net_virial(body_index, net_virial);
         }
     }
 }
@@ -175,19 +190,28 @@ where
 {
     #[inline]
     fn update_net_force_virial_and_torque(&mut self, interaction_model: &E) {
-        let mut net_force_virial_and_torque_tmp = Vec::new();
+        let mut net_force_virial_and_torque_tmp: Vec<Option<(V, V::Tensor, V::Bivector)>> =
+            vec![None; self.bodies().len()];
 
-        (0..self.bodies().len())
-            .into_par_iter()
-            .map(|body_index| interaction_model.net_body_force_virial_and_torque(self, body_index))
-            .collect_into_vec(&mut net_force_virial_and_torque_tmp);
+        with_thread_pool(|pool| {
+            net_force_virial_and_torque_tmp
+                .as_mut_slice()
+                .into_par_iter()
+                .with_schedule(pool, DynamicScheduler)
+                .for_each(|result, body_index, _| {
+                    *result = Some(
+                        interaction_model.net_body_force_virial_and_torque(self, body_index),
+                    );
+                })
+        })
+        .expect("force computation should succeed");
 
-        for (body_index, (net_force, net_virial, net_torque)) in
-            net_force_virial_and_torque_tmp.iter().enumerate()
-        {
-            self.set_body_net_force(body_index, *net_force);
-            self.set_body_net_virial(body_index, *net_virial);
-            self.set_body_net_torque(body_index, *net_torque);
+        for (body_index, result) in net_force_virial_and_torque_tmp.into_iter().enumerate() {
+            let (net_force, net_virial, net_torque) =
+                result.expect("each body's force, virial, and torque should have been computed");
+            self.set_body_net_force(body_index, net_force);
+            self.set_body_net_virial(body_index, net_virial);
+            self.set_body_net_torque(body_index, net_torque);
         }
     }
 }
@@ -206,6 +230,40 @@ mod test {
     use hoomd_vector::{Angle, Cartesian, Versor};
 
     // TODO: add virial tests
+
+    #[test]
+    fn empty_net_force_and_virial() -> anyhow::Result<()> {
+        let mut microstate: Microstate<DynamicPoint<Cartesian<2>>, Point<Cartesian<2>>, _, _> =
+            Microstate::builder().bodies([]).try_build()?;
+        let rigid = Rigid(PairwiseCutoff(Isotropic {
+            interaction: LennardJones::<12, 6>::default(),
+            r_cut: 2.5,
+        }));
+
+        microstate.update_net_force_and_virial(&rigid);
+
+        check!(microstate.bodies().is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn empty_net_force_virial_and_torque() -> anyhow::Result<()> {
+        let mut microstate: Microstate<
+            DynamicOrientedPoint<Cartesian<2>, Angle>,
+            Point<Cartesian<2>>,
+            _,
+            _,
+        > = Microstate::builder().bodies([]).try_build()?;
+        let rigid = Rigid(PairwiseCutoff(Isotropic {
+            interaction: LennardJones::<12, 6>::default(),
+            r_cut: 2.5,
+        }));
+
+        microstate.update_net_force_virial_and_torque(&rigid);
+
+        check!(microstate.bodies().is_empty());
+        Ok(())
+    }
 
     #[test]
     fn net_force_2d() -> anyhow::Result<()> {

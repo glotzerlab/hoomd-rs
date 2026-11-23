@@ -206,5 +206,3 @@ In the initial implementation, step 6 will be serialized. TODO: Test performance
 and determine how best to parallelize step 6. Perhaps `Microstate` should
 implement `update_many_bodies_properties`. MC will only ever update a fraction
 at a time, while MD will often update them all.
-
-Questions: Can rayon's step_by() be used to iterate over all cells of the same color?

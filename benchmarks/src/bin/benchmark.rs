@@ -19,8 +19,8 @@ use benchmarks::{Benchmark, Effort, mc, md};
 use hoomd_microstate::SiteKey;
 use hoomd_simulation::Simulation;
 use hoomd_spatial::VecCell;
+use hoomd_utility::parallel::set_thread_pool_size;
 
-use rayon::ThreadPoolBuilder;
 use wildmatch::WildMatch;
 
 /// Command line options.
@@ -245,11 +245,8 @@ fn main() -> anyhow::Result<()> {
         }
 
         loop {
-            let pool = ThreadPoolBuilder::new()
-                .num_threads(threads)
-                .build()
-                .expect("the thread pool should be valid");
-            pool.install(|| execute_matching(&mut results, n, threads, &options))?;
+            set_thread_pool_size(threads);
+            execute_matching(&mut results, n, threads, &options)?;
 
             n *= 2;
             if n > n_max {
