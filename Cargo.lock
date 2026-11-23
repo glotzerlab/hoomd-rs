@@ -3929,7 +3929,6 @@ dependencies = [
  "log",
  "rand 0.10.3",
  "rand_distr",
- "rayon",
  "rstest",
  "serde",
  "serde_with",
