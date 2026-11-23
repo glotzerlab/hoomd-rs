@@ -397,9 +397,8 @@ where
         r_other: &Cartesian<2>,
         o_other: &R,
     ) -> bool {
-        let max_separation =
-            self.bounding_sphere_radius().get() + other.bounding_sphere_radius().get();
-        if r_self.distance_squared(r_other) >= max_separation.powi(2) {
+        let max_separation = self.bounding_sphere_radius() + other.bounding_sphere_radius();
+        if r_self.distance_squared(r_other) >= max_separation.get().powi(2) {
             return false;
         }
 
@@ -461,11 +460,7 @@ where
 
         let o_j_inverted = o_j.inverted();
         let v_ji = o_j_inverted.rotate(&-*v_ij);
-        if b_edge_separates(other, self, &v_ji, &o_j_inverted) {
-            return false;
-        }
-
-        true
+        !b_edge_separates(other, self, &v_ji, &o_j_inverted)
     }
 }
 

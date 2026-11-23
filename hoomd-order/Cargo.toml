@@ -1,0 +1,39 @@
+[package]
+name = "hoomd-order"
+description = "Evaluate Spherical Harmonics at a given Cartesian point."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+num-complex.workspace = true
+thiserror.workspace = true
+
+hoomd-geometry.workspace = true
+hoomd-microstate.workspace = true
+hoomd-spatial.workspace = true
+hoomd-vector.workspace = true
+
+[dev-dependencies]
+anyhow.workspace = true
+approxim.workspace = true
+divan.workspace = true
+itertools.workspace = true
+rand.workspace = true
+rstest.workspace = true
+sphrs.workspace = true
+
+hoomd-geometry.workspace = true
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "harmonics"
+harness = false

@@ -30,18 +30,16 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      # Test the latest Rust on all platforms.
       matrix:
         os:
-          - ubuntu-24.04
+          - ubuntu-26.04
           - macos-26
           - windows-2025
         target:
          - ''
 
         include:
-        - os: ubuntu-24.04
-          rust: 1.96.0
+        - os: ubuntu-26.04
           target: wasm32-unknown-unknown
 
     steps:
@@ -54,20 +52,27 @@ jobs:
     - name: Configure Rust
       uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
       with:
-        toolchain: 1.98.1
+        toolchain: 1.100.0
         targets: ${{ matrix.target }}
     - name: Check rust installation
-      run: rustc -vV
+      run: rustup toolchain list
+    # extra toolchains occur on some actions runners but not others, resulting in cache misses
+    - name: Remove extra rust toolchains
+      run: >
+        for toolchain in $(rustup toolchain list | grep -v default); do
+            rustup toolchain uninstall "$toolchain"
+        done
     # rust-cache already includes a Cargo.lock hash in the key. However, it
     # eagerly restores caches with previous Cargo.lock files. This causes
     # multiple builds to be cached in target/ increasing the cache usage
     # dramatically. Add the Cargo.lock hash again in the key portion to
     # prevent this restoration.
     - name: Cache
-      uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
-        key: ${{ matrix.target || 'native' }}-${{ hashFiles('Cargo.lock') }}
+        key: test-${{ matrix.target || 'native' }}-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
+        add-job-id-key: false
         save-if: ${{ github.ref != 'refs/heads/trunk' }}
 
     - name: Build [default features]

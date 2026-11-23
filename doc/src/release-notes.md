@@ -4,12 +4,45 @@
 
 *Added:*
 
+* `[hoomd-geometry]`: Implement `Scale` for `Capsule`, `ConvexPolytope`, `Cylinder`, and `Hyperellipsoid` (#484).
+* `[hoomd-geometry]`: Implement `IsPointInside` for `Capsule`, `Cylinder`, and `Hyperellipsoid` (#484).
+* `[hoomd-geometry]`: Implement `MapPoint` for `Cylinder` and `Hyperellipsoid` (#484).
+* `[hoomd-gsd]`: Add `Frame::particles_type_shapes` to write `particles/type_shapes` (#477).
+* `[hoomd-microstate]`: Implement `IsPointInside` for `Open`, `Closed`, and `Periodic` (#420).
+* `[hoomd-order]`: Add the `hoomd-order` crate. It implements Rotational autocorrelation, Spherical Harmonics, Steinhardt and *k-atic* order parameters, neighbor queries, and an algorithm that averages values over neighbors (#293, #420, #481).
+* `[hoomd-utility]`: Implement `Add`, `AddAssign`, `cbrt`, and `sqrt` for `PositiveReal` (#466).
+* `[hoomd-vector]`:  Implement `from_spherical_coordinates` for `Unit<Cartesian<3>>` (#293).
+* `[hoomd-workspace]`: Explain how to add new optional fields to state points (#482).
+
+*Changed:*
+
+* `[hoomd-gsd]`: Remove the 63 character type name limit (#477).
+* `[hoomd-microstate]`: Panic in `iter_sites_near` when the search radius is larger than the boundary's maximum interaction range. Adds a `C: GenerateGhosts<S>` bound to some implementations, but all boundaries must already implement `GenerateGhosts<S>` (#420).
+* `[hoomd-mc]`: Users can now set non-default values in `TuneOptions` (#483).
+
+*Deprecated:*
+
+*Removed:*
+
+*Fixed:*
+
+* [`benchmarks`]: Fix inconsistencies in the output (#489).
+* `[hoomd-mc]`: `ParallelSweep` no longer separately tracks `TrialStatus::Invalid` moves, fixing a subtle inconsistency in the statistics of parallel MC simulations. Moves proposed in empty cells are marked with the new `TrialStatus::EmptySpace` to keep move counts reasonable (#490).
+
+## 1.4.0 (2026-10-26)
+
+*Highlight:*
+
+**hoomd-rs 1.4** brings a number of performance improvements, bug fixes, and new features. It fixes a critical bug where *hoomd-rs* processes would sometimes freeze when writing GSD files. It also includes new functionality to enable the cell list data structure in spherical space and to support rotations in 4D.
+
+*Added:*
+
 * `[hoomd-microstate]`: Add the `max_ghosts_12`, `max_ghosts_16`, `max_ghosts_32`, and `max_ghosts_64` cargo features that set the maximum number of ghosts per site. The largest enabled feature is used when multiple are set simultaneously.
-* `[hoomd-geometry]`: New `ConvexHull` trait, which subsumes `ConvexSurfaceMesh2d::construct_convex_hull` and adds a new implementation for three-dimensional hulls (#426).
-* `[hoomd-geometry]`: New `ConvexSurfaceMesh3d` type for explicit convex faceted bodies in three dimensions (#426).
-* `[hoomd-microstate`]: Add the `OpenSpherical` boundary condition for use with the `SphericalVecCell` data structure (#313).
-* `[hoomd-spatial`]: Add `SphericalVecCell` that can perform efficient spatial searches in spherical space (#313).
+* `[hoomd-microstate]`: Add the `OpenSpherical` boundary condition for use with the `SphericalVecCell` data structure (#313).
+* `[hoomd-spatial]`: Add `SphericalVecCell` that can perform efficient spatial searches in spherical space (#313).
 * `[hoomd-utility]`: Add the `positive_real` macro that generates compile-time-checked `PositiveReal` values (#421).
+* `[hoomd-vector]`: Add the `DoubleVersor` type for rotations of `Cartesian<4>` (#346)
+* `[hoomd-mc]`: Add `DoubleVersor` sampling distribution for MC moves in 4D (#346)
 
 *Changed:*
 
@@ -20,13 +53,11 @@
 * `[tutorials]`: The workflow tutorial now uses `hoomd-workspace` (#403).
 * `[hoomd-microstate]`: `Periodic<Hypercuboid<N>>::GenerateGhosts` now works for arbitrary dimension (#338)
 
-*Deprecated:*
-
-*Removed:*
-
 *Fixed:*
 
-`[hoomd-linear-algebra]`: `Matrix::add_assign` no longer uses excess memory (#416).
+* `[hoomd-linear-algebra]`: `Matrix::add_assign` no longer uses excess memory (#416).
+* `[hoomd-geometry]`: `Simplex3::IntersectsAt` now matches Xenocollide in all cases (#458).
+* `[hoomd-gsd]`: Fix random hang when writing GSD files (#467).
 
 ## 1.3.0 (2026-08-26)
 

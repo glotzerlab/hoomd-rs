@@ -667,12 +667,7 @@ impl Scale for Triclinic {
     /// ```
     #[inline]
     fn scale_volume(&self, v: PositiveReal) -> Self {
-        let v = v
-            .get()
-            .cbrt()
-            .try_into()
-            .expect("v^{1/3} should be a positive real");
-        self.scale_length(v)
+        self.scale_length(v.cbrt())
     }
 }
 
