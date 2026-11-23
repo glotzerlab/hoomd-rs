@@ -243,51 +243,83 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
                 .into_par_iter()
                 .with_schedule(pool, DynamicScheduler)
                 .for_each(|body_trial, task_index, _| {
-                    // Presume the space is empty until a body is chosen. This also
-                    // overwrites any status cached from a previous checkerboard pass.
-                    body_trial.status = TrialStatus::EmptySpace;
-                    let space_index = space_indices[task_index];
-                    let mut rng = microstate.counter().index(space_index as u64).make_rng();
-
-                    if let Some(body_index) = spaces[space_index].choose(&mut rng) {
-                        let body_index = *body_index;
-                        body_trial
-                            .body
-                            .clone_from(&microstate.bodies()[body_index].item);
-                        body_trial.body_index = body_index;
-
-                        match microstate
-                            .boundary()
-                            .wrap(local_trial.propose(&mut rng, body_trial.body.properties))
-                        {
-                            Ok(new_properties)
-                                if checkerboard.point_to_space_index(new_properties.position())
-                                    != Some(space_index) =>
-                            {
-                                body_trial.status = TrialStatus::Rejected;
-                            }
-                            Ok(new_properties) => {
-                                body_trial.body.properties = new_properties;
-
-                                let delta_h = hamiltonian.delta_energy_one(
-                                    microstate,
-                                    body_index,
-                                    &body_trial.body,
-                                );
-                                if delta_h != f64::INFINITY
-                                    && (delta_h <= 0.0 || rng.random::<f64>() < (-delta_h / kt).exp())
-                                {
-                                    body_trial.status = TrialStatus::Accepted;
-                                } else {
-                                    body_trial.status = TrialStatus::Rejected;
-                                }
-                            }
-                            Err(_) => body_trial.status = TrialStatus::Rejected,
-                        }
-                    }
+                    Self::generate_trial_move(
+                        local_trial,
+                        body_trial,
+                        microstate,
+                        hamiltonian,
+                        kt,
+                        checkerboard,
+                        spaces,
+                        space_indices[task_index],
+                    );
                 })
         })
         .expect("for_each should succeed");
+    }
+
+    /// Generate and evaluate one trial move in a checkerboard space.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "many arguments must be passed to avoid too many lines of code in other methods"
+    )]
+    #[inline(always)]
+    fn generate_trial_move<P1, P2, X, C, H>(
+        local_trial: &L,
+        body_trial: &mut BodyTrial<B, S>,
+        microstate: &Microstate<B, S, X, C>,
+        hamiltonian: &H,
+        kt: f64,
+        checkerboard: &K,
+        spaces: &[Vec<usize>],
+        space_index: usize,
+    ) where
+        P1: Copy,
+        P2: Copy,
+        B: Copy + Transform<S> + Position<Position = P1>,
+        S: Copy + Position<Position = P2>,
+        L: LocalTrial<B>,
+        H: DeltaEnergyOne<B, S, X, C>,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+        K: Checkerboard<P1>,
+    {
+        // Presume the space is empty until a body is chosen. This also
+        // overwrites any status cached from a previous checkerboard pass.
+        body_trial.status = TrialStatus::EmptySpace;
+        let mut rng = microstate.counter().index(space_index as u64).make_rng();
+        let Some(&body_index) = spaces[space_index].choose(&mut rng) else {
+            return;
+        };
+
+        body_trial
+            .body
+            .clone_from(&microstate.bodies()[body_index].item);
+        body_trial.body_index = body_index;
+
+        match microstate
+            .boundary()
+            .wrap(local_trial.propose(&mut rng, body_trial.body.properties))
+        {
+            Ok(new_properties)
+                if checkerboard.point_to_space_index(new_properties.position())
+                    != Some(space_index) =>
+            {
+                body_trial.status = TrialStatus::Rejected;
+            }
+            Ok(new_properties) => {
+                body_trial.body.properties = new_properties;
+
+                let delta_h = hamiltonian.delta_energy_one(microstate, body_index, &body_trial.body);
+                if delta_h != f64::INFINITY
+                    && (delta_h <= 0.0 || rng.random::<f64>() < (-delta_h / kt).exp())
+                {
+                    body_trial.status = TrialStatus::Accepted;
+                } else {
+                    body_trial.status = TrialStatus::Rejected;
+                }
+            }
+            Err(_) => body_trial.status = TrialStatus::Rejected,
+        }
     }
 
     /// Update the properties of bodies with accepted moves.
