@@ -407,6 +407,8 @@ pub trait Vector:
 /// * When the inputs are 2D vectors ([`Cartesian<2>`]), the result is a scalar.
 /// * When the inputs are 3D vectors ([`Cartesian<3>`]), the result is another
 ///   [`Cartesian<3>`].
+/// * When the inputs are 4D vectors ([`Cartesian<4>`]), the result is a
+///   [`Cartesian<6>`].
 ///
 /// [bivector]: https://en.wikipedia.org/wiki/Bivector
 pub trait Wedge {
@@ -438,6 +440,16 @@ pub trait Wedge {
     /// let a = Cartesian::from([1.0, 0.0, 0.0]);
     /// let b = Cartesian::from([0.0, 1.0, 0.0]);
     /// assert_eq!(a.wedge(&b), [0.0, 0.0, 1.0].into());
+    /// ```
+    ///
+    /// 4D:
+    /// ```
+    /// use hoomd_vector::{Cartesian, InnerProduct, Wedge};
+    /// let a = Cartesian::from([1.0, 2.0, 0.0, 0.0]);
+    /// let b = Cartesian::from([0.0, 3.0, 4.0, 5.0]);
+    /// let area = a.wedge(&b);
+    /// assert_eq!(area, [3.0, 4.0, 5.0, 8.0, 10.0, 0.0].into());
+    /// assert_eq!(area.norm_squared(), 214.0);
     /// ```
     fn wedge(&self, other: &Self) -> Self::Bivector;
 }
