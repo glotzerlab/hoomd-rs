@@ -129,7 +129,7 @@ where
     /// ```
     #[inline]
     #[must_use]
-    pub fn nominal_search_radius(mut self, nominal_search_radius: PositiveReal) -> Self {
+    pub const fn nominal_search_radius(mut self, nominal_search_radius: PositiveReal) -> Self {
         self.nominal_search_radius = nominal_search_radius;
         self
     }
@@ -154,7 +154,7 @@ where
     /// ```
     #[inline]
     #[must_use]
-    pub fn maximum_search_radius(mut self, maximum_search_radius: f64) -> Self {
+    pub const fn maximum_search_radius(mut self, maximum_search_radius: f64) -> Self {
         self.maximum_search_radius = maximum_search_radius;
         self
     }

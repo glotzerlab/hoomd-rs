@@ -87,7 +87,7 @@ impl Counter {
     /// ```
     #[must_use]
     #[inline]
-    pub fn new(step: u64, substep: u32, seed: u32) -> Self {
+    pub const fn new(step: u64, substep: u32, seed: u32) -> Self {
         Counter {
             step,
             substep,
@@ -134,7 +134,7 @@ impl Counter {
     /// ```
     #[must_use]
     #[inline]
-    pub fn index(mut self, index: u64) -> Self {
+    pub const fn index(mut self, index: u64) -> Self {
         self.index = index;
         self
     }

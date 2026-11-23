@@ -708,7 +708,7 @@ pub struct Unit<V>(V);
 impl<V> Unit<V> {
     /// Get the unit vector.
     #[inline]
-    pub fn get(&self) -> &V {
+    pub const fn get(&self) -> &V {
         &self.0
     }
 }

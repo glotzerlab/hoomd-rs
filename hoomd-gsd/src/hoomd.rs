@@ -370,7 +370,7 @@ impl HoomdGsdFile {
     /// ```
     #[inline]
     #[must_use]
-    pub fn auto_sync_delay(&self) -> &Duration {
+    pub const fn auto_sync_delay(&self) -> &Duration {
         &self.auto_sync_delay
     }
 
@@ -393,7 +393,7 @@ impl HoomdGsdFile {
     /// ```
     #[inline]
     #[must_use]
-    pub fn auto_sync_delay_mut(&mut self) -> &mut Duration {
+    pub const fn auto_sync_delay_mut(&mut self) -> &mut Duration {
         &mut self.auto_sync_delay
     }
 }

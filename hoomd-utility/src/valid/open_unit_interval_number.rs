@@ -39,7 +39,7 @@ impl OpenUnitIntervalNumber {
     /// # }
     #[must_use]
     #[inline]
-    pub fn get(&self) -> f64 {
+    pub const fn get(&self) -> f64 {
         self.0
     }
 }

@@ -86,7 +86,7 @@ impl<const N: usize> NoséHooverChain<N> {
     /// # }
     /// ```
     #[inline]
-    pub fn zero(tau: PositiveReal) -> Self {
+    pub const fn zero(tau: PositiveReal) -> Self {
         Self {
             tau,
             xi: [0.0; N],
@@ -229,7 +229,7 @@ impl<const N: usize> NoséHooverChain<N> {
     /// # }
     /// ```
     #[inline]
-    pub fn energy(&self) -> f64 {
+    pub const fn energy(&self) -> f64 {
         self.energy
     }
 
@@ -248,7 +248,7 @@ impl<const N: usize> NoséHooverChain<N> {
     /// # }
     /// ```
     #[inline]
-    pub fn eta(&self) -> &[f64; N] {
+    pub const fn eta(&self) -> &[f64; N] {
         &self.eta
     }
 
@@ -267,7 +267,7 @@ impl<const N: usize> NoséHooverChain<N> {
     /// # }
     /// ```
     #[inline]
-    pub fn xi(&self) -> &[f64; N] {
+    pub const fn xi(&self) -> &[f64; N] {
         &self.xi
     }
 }

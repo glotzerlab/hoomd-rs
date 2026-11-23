@@ -41,7 +41,7 @@ impl<P> Point<P> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn new(position: P) -> Self {
+    pub const fn new(position: P) -> Self {
         Self { position }
     }
 }

@@ -61,7 +61,7 @@ impl<const L: usize> Gegenbauer<L> {
     /// ```
     #[must_use]
     #[inline]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 
@@ -114,7 +114,7 @@ impl<const L: usize> Gegenbauer<L> {
     /// ```
     #[must_use]
     #[inline]
-    pub fn normalization(&self) -> f64 {
+    pub const fn normalization(&self) -> f64 {
         (L + 1) as f64
     }
 }

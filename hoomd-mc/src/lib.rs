@@ -228,7 +228,7 @@ impl Count {
     /// ```
     #[inline]
     #[must_use]
-    pub fn total(&self) -> u64 {
+    pub const fn total(&self) -> u64 {
         self.accepted + self.rejected
     }
 

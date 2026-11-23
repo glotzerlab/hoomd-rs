@@ -181,7 +181,7 @@ impl<P, B, S, X, C> SitesInBall<'_, P, B, S, X, C> {
     /// # }
     /// ```
     #[inline]
-    pub fn point(&self) -> &P {
+    pub const fn point(&self) -> &P {
         &self.point
     }
 
@@ -203,7 +203,7 @@ impl<P, B, S, X, C> SitesInBall<'_, P, B, S, X, C> {
     /// # }
     /// ```
     #[inline]
-    pub fn r(&self) -> f64 {
+    pub const fn r(&self) -> f64 {
         self.r
     }
 }

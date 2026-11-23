@@ -205,7 +205,7 @@ impl<D> QuickInsert<D> {
     /// # }
     /// ```
     #[inline]
-    pub fn target(&self) -> usize {
+    pub const fn target(&self) -> usize {
         self.target
     }
 

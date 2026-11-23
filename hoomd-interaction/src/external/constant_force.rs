@@ -107,7 +107,7 @@ where
     /// ```
     #[inline]
     #[must_use]
-    pub fn force(&self) -> V {
+    pub const fn force(&self) -> V {
         self.force
     }
 }

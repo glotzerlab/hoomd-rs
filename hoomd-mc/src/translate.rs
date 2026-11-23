@@ -63,7 +63,7 @@ impl<P> Translate<P> {
     /// ```
     #[must_use]
     #[inline]
-    pub fn with_maximum_distance(maximum_distance: PositiveReal) -> Self {
+    pub const fn with_maximum_distance(maximum_distance: PositiveReal) -> Self {
         Self {
             maximum_distance,
             marker: PhantomData,
@@ -73,13 +73,13 @@ impl<P> Translate<P> {
     /// Get the maximum distance.
     #[must_use]
     #[inline]
-    pub fn maximum_distance(&self) -> &PositiveReal {
+    pub const fn maximum_distance(&self) -> &PositiveReal {
         &self.maximum_distance
     }
 
     /// Get the maximum distance.
     #[inline]
-    pub fn maximum_distance_mut(&mut self) -> &mut PositiveReal {
+    pub const fn maximum_distance_mut(&mut self) -> &mut PositiveReal {
         &mut self.maximum_distance
     }
 }

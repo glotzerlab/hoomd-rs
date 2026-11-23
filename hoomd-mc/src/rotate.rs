@@ -76,7 +76,7 @@ impl<P> Rotate<P> {
     /// ```
     #[must_use]
     #[inline]
-    pub fn with_maximum_rotation(maximum_rotation: PositiveReal) -> Self {
+    pub const fn with_maximum_rotation(maximum_rotation: PositiveReal) -> Self {
         Self {
             maximum_rotation,
             marker: PhantomData,
@@ -86,13 +86,13 @@ impl<P> Rotate<P> {
     /// Get the maximum rotation.
     #[must_use]
     #[inline]
-    pub fn maximum_rotation(&self) -> &PositiveReal {
+    pub const fn maximum_rotation(&self) -> &PositiveReal {
         &self.maximum_rotation
     }
 
     /// Get the maximum rotation.
     #[inline]
-    pub fn maximum_rotation_mut(&mut self) -> &mut PositiveReal {
+    pub const fn maximum_rotation_mut(&mut self) -> &mut PositiveReal {
         &mut self.maximum_rotation
     }
 }
