@@ -30,6 +30,9 @@ enum TrialStatus {
 
     /// The trial move was accepted.
     Accepted,
+
+    /// The checkerboard space was empty, so no trial move was attempted.
+    EmptySpace,
 }
 
 /// A body trial move and its status
@@ -230,7 +233,9 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
             .zip(space_indices)
             .for_each(|(body_trial, space_index)| {
                 // body_trials.iter_mut().zip(space_indices).for_each(|(body_trial, space_index)| {
-                body_trial.status = TrialStatus::Rejected;
+                // Presume the space is empty until a body is chosen. This also
+                // overwrites any status cached from a previous checkerboard pass.
+                body_trial.status = TrialStatus::EmptySpace;
                 let space_index = *space_index;
                 let mut rng = microstate.counter().index(space_index as u64).make_rng();
 
@@ -291,6 +296,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
 
         for body_trial in body_trials {
             match body_trial.status {
+                TrialStatus::EmptySpace => {}
                 TrialStatus::Rejected => count.rejected += 1,
                 TrialStatus::Accepted => {
                     if microstate
@@ -336,9 +342,9 @@ where
     ///
     /// `ParallelSweep` covers the simulation domain with a colored checkerboard
     /// (given by the `K` type). For each color, `apply` applies trial moves
-    /// in parallel to bodies checkerboard spaces of that color (one trial move
-    /// per space). A move is invalid when the body center leaves the initial
-    /// checkerboard space. The return value counts only valid moves.
+    /// in parallel to bodies in checkerboard spaces of that color (one trial move
+    /// per space). A trial move is rejected when the body center leaves the initial
+    /// checkerboard space. Empty spaces do not attempt any moves.
     ///
     /// One invocation of `apply` continues to apply trial moves until it
     /// has attempted at least as many trial moves as there are bodies in
@@ -498,5 +504,39 @@ where
             },
             |_| true,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{HypercuboidCheckerboard, Translate};
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_interaction::Zero;
+    use hoomd_microstate::{boundary::Closed, property::Point};
+    use hoomd_simulation::macrostate::Isothermal;
+    use hoomd_utility::positive_real;
+    use hoomd_vector::Cartesian;
+
+    #[test]
+    fn empty_spaces_are_not_counted() {
+        let square = Closed(Rectangle::with_equal_edges(positive_real!(10.0)));
+        let mut microstate = Microstate::builder()
+            .boundary(square)
+            .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+            .try_build()
+            .expect("the hard-coded body is inside the boundary");
+
+        let translate = Translate::with_maximum_distance(positive_real!(0.1));
+        let mut translate_sweep = ParallelSweep::<
+            _,
+            HypercuboidCheckerboard<2>,
+            Point<Cartesian<2>>,
+            Point<Cartesian<2>>,
+        >::new(positive_real!(1.0), translate);
+
+        let count = translate_sweep.apply(&mut microstate, &Zero, &Isothermal { temperature: 1.0 });
+
+        assert_eq!(count.total(), 1);
     }
 }
