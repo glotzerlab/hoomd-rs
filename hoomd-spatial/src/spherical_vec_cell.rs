@@ -107,7 +107,10 @@ where
     /// than the maximum.
     #[inline]
     #[must_use]
-    pub const fn euclidean_maximum_search_radius(mut self, euclidean_maximum_search_radius: f64) -> Self {
+    pub const fn euclidean_maximum_search_radius(
+        mut self,
+        euclidean_maximum_search_radius: f64,
+    ) -> Self {
         self.0.maximum_search_radius = euclidean_maximum_search_radius;
         self
     }
