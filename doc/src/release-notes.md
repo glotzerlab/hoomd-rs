@@ -26,6 +26,8 @@
 
 *Fixed:*
 
+* [`benchmarks`]: Fix inconsistencies in the output (#489).
+
 ## 1.4.0 (2026-10-26)
 
 *Highlight:*

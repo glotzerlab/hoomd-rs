@@ -105,7 +105,7 @@ where
 
     Ok(Performance {
         benchmark: name.to_string(),
-        unit: "step".to_string(),
+        unit: S::units(),
         n,
         threads,
         time_per_operation,
@@ -279,7 +279,7 @@ fn main() -> anyhow::Result<()> {
             let operations_per_second = 1.0 / result.time_per_operation;
             let name = result.benchmark;
             let unit = result.unit;
-            println!("{name:20}: {operations_per_second:9.3} {unit}s/s");
+            println!("{name:24}: {operations_per_second:9.3} {unit}s/s");
         }
     }
 
