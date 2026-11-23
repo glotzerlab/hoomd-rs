@@ -78,7 +78,7 @@ impl Triclinic {
     /// # }
     /// ```
     #[inline]
-    pub fn cube(side_length: PositiveReal) -> Self {
+    pub const fn cube(side_length: PositiveReal) -> Self {
         Self {
             extents: [side_length, side_length, side_length],
             tilt_factors: [0.0; 3],
@@ -104,7 +104,7 @@ impl Triclinic {
     /// # }
     /// ```
     #[inline]
-    pub fn cuboid(
+    pub const fn cuboid(
         x_side_length: PositiveReal,
         y_side_length: PositiveReal,
         z_side_length: PositiveReal,
@@ -193,37 +193,37 @@ impl Triclinic {
 
     /// Returns the box extent in the x-direction (lx)
     #[inline]
-    pub fn lx(&self) -> PositiveReal {
+    pub const fn lx(&self) -> PositiveReal {
         self.extents[0]
     }
 
     /// Returns the box extent in the y-direction (ly)
     #[inline]
-    pub fn ly(&self) -> PositiveReal {
+    pub const fn ly(&self) -> PositiveReal {
         self.extents[1]
     }
 
     /// Returns the box extent in the z-direction (lz)
     #[inline]
-    pub fn lz(&self) -> PositiveReal {
+    pub const fn lz(&self) -> PositiveReal {
         self.extents[2]
     }
 
     /// Returns the xy tilt factor
     #[inline]
-    pub fn xy(&self) -> f64 {
+    pub const fn xy(&self) -> f64 {
         self.tilt_factors[0]
     }
 
     /// Returns the xz tilt factor
     #[inline]
-    pub fn xz(&self) -> f64 {
+    pub const fn xz(&self) -> f64 {
         self.tilt_factors[1]
     }
 
     /// Returns the yz tilt factor
     #[inline]
-    pub fn yz(&self) -> f64 {
+    pub const fn yz(&self) -> f64 {
         self.tilt_factors[2]
     }
 
@@ -483,7 +483,7 @@ impl Triclinic {
     /// # }
     /// ```
     #[inline]
-    pub fn to_gsd_box(&self) -> [f64; 6] {
+    pub const fn to_gsd_box(&self) -> [f64; 6] {
         [
             self.extents[0].get(),
             self.extents[1].get(),

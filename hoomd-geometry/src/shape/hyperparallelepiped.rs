@@ -102,7 +102,7 @@ impl<const N: usize> Hyperparallelepiped<N> {
 
     /// Get the edge vectors.
     #[inline]
-    pub fn edge_vectors(&self) -> &[Cartesian<N>; N] {
+    pub const fn edge_vectors(&self) -> &[Cartesian<N>; N] {
         &self.edge_vectors
     }
 
