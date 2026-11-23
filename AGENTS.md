@@ -30,12 +30,18 @@ Commands match `doc/src/development.md` and the CI workflows
 
 Lints, format, and prek checks are not needed after every task, only once when the
 complete pull request is finalized.
-- **Lint:** `cargo clippy --all-targets --all-features --quiet`.
-  Single crate: `cargo clippy --all-targets --all-features --quiet -p <crate>`.
-- **Format:** `cargo +nightly-2025-09-17 fmt --quiet` — use the pinned nightly.
-  `.rustfmt.toml` uses `unstable_features = true` and 2024 style options, so
-  `cargo fmt` on **stable** silently warns and does not format doctests.
-- **Pre-commit hooks:** `prek run --quiet --show-diff-on-failure --files <modified files>`
+- **Lint Rust code:**
+  - Single crate (check only): `cargo clippy --all-targets --all-features --quiet  --no-deps -p <crate>`.
+  - Whole workspace (check only): `cargo clippy --all-targets --all-features --quiet  --quiet --no-deps`.
+- **Format Rust code:**
+  - Single crate (check only): `cargo +nightly-2025-09-17 --quiet fmt --check -p <crate>`
+  - Whole workspace (check only): `cargo +nightly-2025-09-17 --quiet fmt --check`
+  - Use the pinned nightly. Remove `--check` when it is appropriate to apply the
+    formatting changes.
+- **Other lints:**
+  - Specific files: `prek run --quiet --show-diff-on-failure --files <modified files>`
+  - Whole workspace: `prek run --quiet --show-diff-on-failure --all-files`
+  - There is no check-only variant for `prek`.
 
 ## Design guidelines
 
@@ -44,17 +50,8 @@ simplicity > efficient algorithms > hardware micro-optimizations. No GPU / domai
 decomposition; array-of-structures over structure-of-arrays. `hoomd-rs` writes
 nothing to stdout by default — it uses the `log` crate.
 
-## Tests and documentation
+## Tests
 
 - Unit tests live in the same file as the implementation in `mod tests`.
 - Use `approxim::assert_relative_eq` for floating point number comparisons when
   values are not exact.
-- Doctests serve as minimal examples to users. Provide one doc test for each method,
-  type, and trait. Doc tests are allowed to have unused variables for demonstration
-  purposes.
-- Inline LaTeX math in documentation is dollar-outside, backtick-inside: $`<math>`$.
-- Display LaTex math in documentation is:
-  ```math
-  <math>
-  ```
-  

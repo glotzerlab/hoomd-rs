@@ -37,7 +37,7 @@ impl Default for Benchmark {
 impl Benchmark {
     /// Measure the average run time of a simulation.
     ///
-    /// Return the average time per step (in milliseconds) when the simulation is successful.
+    /// Return the average time (in seconds) per unit of effort when the simulation is successful.
     ///
     /// # Errors
     ///
@@ -69,7 +69,7 @@ impl Benchmark {
                 last_info_effort = simulation.effort();
                 last_info_instant = time;
             }
-            if !warmup && time.duration_since(total_time) >= self.warmup_time {
+            if warmup && time.duration_since(total_time) >= self.warmup_time {
                 warmup = false;
                 start_time = time;
                 start_effort = simulation.effort();
@@ -83,11 +83,7 @@ impl Benchmark {
         let effort = simulation.effort() - start_effort;
         let seconds_per_effort = run_time / effort;
 
-        info!(
-            "Average: {} {}/s",
-            effort / start_time.elapsed().as_secs_f64(),
-            S::units()
-        );
+        info!("Average: {} {}/s", effort / run_time, S::units());
 
         Ok(seconds_per_effort)
     }
