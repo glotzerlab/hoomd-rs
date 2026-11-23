@@ -3,7 +3,7 @@
 
 //! Implement `ParallelSweep`
 
-use forkunion::{ParallelSliceMut, ThreadPool, Topology};
+use forkunion::{DynamicScheduler, IntoParallelIterator, ParallelIteratorExt, ThreadPool, Topology};
 use rand::{RngExt, seq::IndexedRandom};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -158,10 +158,12 @@ impl<T: Send> ForEachSpace<T> for std::slice::IterMut<'_, T> {
             }
         };
 
-        ParallelSliceMut::new(self.into_slice()).for_each_dynamic(pool, |trial, task_index, _| {
-            function((trial, &space_indices[task_index]));
-        }).expect("for_each should succeed");
-    }
+        self.into_slice()
+          .into_par_iter()
+          .with_schedule(pool, DynamicScheduler)
+          .for_each(|trial, task_index, _| {
+             function((trial, &space_indices[task_index]));
+         }).expect("for_each should succeed");    }
 }
 
 impl<L, K, B, S> ParallelSweep<L, K, B, S>
