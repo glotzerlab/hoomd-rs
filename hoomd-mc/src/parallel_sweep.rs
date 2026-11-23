@@ -30,9 +30,6 @@ enum TrialStatus {
 
     /// The trial move was accepted.
     Accepted,
-
-    /// Either no trial move was performed (the space was empty) or the trial move left the space.
-    Invalid,
 }
 
 /// A body trial move and its status
@@ -233,7 +230,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
             .zip(space_indices)
             .for_each(|(body_trial, space_index)| {
                 // body_trials.iter_mut().zip(space_indices).for_each(|(body_trial, space_index)| {
-                body_trial.status = TrialStatus::Invalid;
+                body_trial.status = TrialStatus::Rejected;
                 let space_index = *space_index;
                 let mut rng = microstate.counter().index(space_index as u64).make_rng();
 
@@ -295,7 +292,6 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
         for body_trial in body_trials {
             match body_trial.status {
                 TrialStatus::Rejected => count.rejected += 1,
-                TrialStatus::Invalid => {}
                 TrialStatus::Accepted => {
                     if microstate
                         .update_body_properties(body_trial.body_index, body_trial.body.properties)
