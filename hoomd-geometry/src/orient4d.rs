@@ -20,25 +20,14 @@
 //! they lie on a common hyperplane. For example, the points at the origin and
 //! the four coordinate axes in the order `(o, x, y, z, w)` evaluate to `+1`.
 //!
-//! The predicate is evaluated in two stages:
+//! [`orient4d`] returns the floating-point determinant's sign when its magnitude
+//! exceeds the error bound. Otherwise, [`orient4d_exact`] scales the stored coordinates
+//! to integers with a common power-of-two scale and computes the determinant using
+//! [`I512`] arithmetic.
 //!
-//! 1. A plain f64 prefilter evaluates the determinant by a Laplace expansion, together
-//!    with a rigorous bound on its roundoff error. When the magnitude of the computed
-//!    determinant exceeds the bound, its sign is known and can be returned.
-//! 2. Otherwise, [`orient4d_exact`] evaluates the determinant exactly: the
-//!    coordinates are converted to integers with a common power-of-two
-//!    scale, and the determinant is computed with 512-bit integer
-//!    arithmetic ([`I512`]). The sign is then exact for the coordinates as
-//!    stored.
-//!
-//! The exact stage accommodates coordinates whose exponents span up to 72
-//! powers of two (roughly 21 orders of magnitude, e.g. values in
-//! $` [10^{-16}, 10^{3}] `$). Note the span is measured on the raw coordinates: a
-//! point set clustered near a large offset (small coordinate differences,
-//! large coordinates) is rejected even though its differences span little.
-//! Point sets with a wider dynamic range, or with non-finite coordinates,
-//! cannot be resolved and produce
-//! [`Error::NumericallyAmbiguousPolytope`].
+//! The exact stage returns [`Error::NumericallyAmbiguousPolytope`] for nonfinite
+//! coordinates or when the exponents of the nonzero coordinates differ by more
+//! than [`MAX_EXPONENT_SPAN`]. The span is measured before subtracting points.
 
 use crate::Error;
 use hoomd_linear_algebra::matrix::Matrix44;
@@ -50,88 +39,38 @@ use i256::I512;
 const UNIT_ROUNDOFF: f64 = f64::EPSILON / 2.0;
 
 /// The smallest positive subnormal f64, `2⁻¹⁰⁷⁴`.
-///
-/// Follows the precomputed constants of Shewchuk's `predicates.c` and the `robust`.
-const MIN_SUBNORMAL: f64 = 5e-324;
+const MIN_SUBNORMAL: f64 = f64::from_bits(1);
 
-/// Higham's `γₖ = ku / (1 - ku)`: the bound on the relative error of a
-/// floating-point expression evaluated with `k` rounding operations, relative
-/// to the sum of the absolute values of its terms.
+/// Roundoff bound relative to the sum of absolute determinant terms.
 ///
-/// Source: N. J. Higham, *Accuracy and Stability of Numerical Algorithms*, 2nd ed.,
-/// SIAM, 2002, Lemma 3.1
-const fn roundoff_bound(k: u32) -> f64 {
-    let k = k as f64;
-    k * UNIT_ROUNDOFF / (1.0 - k * UNIT_ROUNDOFF)
-}
+/// Use Higham's `γₖ = ku / (1 - ku)` with `k = 49`, allowing all 45 operations
+/// of `Matrix44::determinant` plus four rounded coordinate differences per
+/// determinant term. The factor of two allows for rounding in the computed sum.
+/// See Higham, *Accuracy and Stability of Numerical Algorithms*, 2nd ed., Lemma 3.1.
+const ROUNDING_ERROR: f64 = 2.0 * (49.0 * UNIT_ROUNDOFF / (1.0 - 49.0 * UNIT_ROUNDOFF));
 
-/// The bound on the rounding error of the filtered evaluation, relative to `Λ̂`, the
-/// permanent of the elementwise absolute value of the input matrix.
+/// Underflow allowance for determinant intermediates, scaled by the largest entry squared.
 ///
-/// Two sources of rounding combine into one bound over the same sum:
-///
-/// * Evaluating the expansion: `Matrix44::determinant` uses 45 roundings (six
-///   2×2 minors at 3 roundings each; four groups of a row entry times a
-///   three-term minor combination at 6 roundings each; three final combines).
-///   Following one determinant term along its path to the result, it passes
-///   through at most 9 of them: one rounding of its product inside a 2×2
-///   minor, the minor's subtraction, the multiplication by a second-row
-///   entry, the two combines within its group's parentheses, the
-///   multiplication by the first-row entry, and the three final combines.
-///   Each of the 24 terms enters the expanded sum exactly once (the six
-///   shared minors feed distinct terms of the two groups they enter), so
-///   `|fl(det(M)) - det(M)| ≤ γ₉·Λ ≤ γ₄₅·Λ` by Higham Lemma 3.1.
-/// * Rounding the differences: each entry `mᵢⱼ = fl(dᵢⱼ) = dᵢⱼ(1 + δᵢⱼ)` with
-///   `|δᵢⱼ| ≤ u` makes each determinant term of the exact matrix `D` equal to
-///   the corresponding term of `M` times a product of four `(1 + δᵢⱼ)⁻¹`
-///   factors, i.e. four more roundings per term, again by Lemma 3.1 (which
-///   admits negative exponents). Thus `|det(M) - det(D)| ≤ γ₄·Λ`.
-///
-/// The leading 2 covers the rounding of `Λ̂` itself.
-///
-/// Sources: N. J. Higham, *Accuracy and Stability of Numerical Algorithms*
-const ROUNDING_ERROR: f64 = 2.0 * roundoff_bound(49);
-
-/// The absolute floor for subnormal intermediates in the determinant evaluation,
-/// scaled by the square of the largest entry.
-///
-/// A subnormal intermediate has absolute error up to `2⁻¹⁰⁷⁵` (half the smallest
-/// subnormal spacing) instead of a relatively bounded one. Any intermediate of
-/// `Matrix44::determinant` is multiplied by at most two further entries on its path
-/// to the determinant, and there are 45 operations: `45·2⁻¹⁰⁷⁵·max² < 64·2⁻¹⁰⁷⁴·max²`.
+/// Each error is at most half a subnormal spacing and can be multiplied by at
+/// most two more entries. Counting shared minors twice gives 63 operations.
 const EVALUATION_UNDERFLOW_ERROR: f64 = 64.0 * MIN_SUBNORMAL;
 
-/// The absolute floor for subnormal differences, scaled by the greatest entry cubed.
+/// Underflow allowance for coordinate differences, scaled by the largest entry cubed.
 ///
-/// When a rounded difference `mᵢⱼ` is subnormal or zero, the relative bound in
-/// [`ROUNDING_ERROR`] fails: its absolute error is at most `2⁻¹⁰⁷⁵`. Replacing one
-/// entry perturbs a determinant term by that much times the product of the other three
-/// entries, a term contains at most four subnormal entries, and there are 24 terms:
-/// `4·24·2⁻¹⁰⁷⁵·max³ = 48·2⁻¹⁰⁷⁴·max³`. We keep a margin for the rounding of max³ too.
+/// The bound allows half a subnormal spacing for each of four factors in each
+/// of the 24 determinant terms, with margin for rounding the scale factor.
 const DIFFERENCE_UNDERFLOW_ERROR: f64 = 256.0 * MIN_SUBNORMAL;
 
-/// The absolute floor for matrices so tiny that the scaled floors above underflow to 0.
+/// Underflow allowance when all entries have magnitude below one.
 const UNDERFLOW_ERROR: f64 = 32.0 * MIN_SUBNORMAL;
 
 /// The largest span of coordinate exponents the exact orientation predicate can handle.
 ///
-/// Every nonzero coordinate is `m · 2^e` with `|m| ≤ 2⁵³ - 1 < 2⁵³`. Scaling the
-/// coordinates to a common exponent can raise the magnitude by at most `2^span`, and
-/// differencing two coordinates can double it, so a matrix entry is bounded by `|d| <
-/// 2^(54 + span)`. The determinant terms and their sum then follow from the exponents:
-///
-/// ```text
-/// λ = product of four entries < (2^(54 + span))⁴ = 2^(4·54 + 4·span) = 2^(216 + 4·span)
-/// |det| ≤ Σ₂₄ |λ| < 2⁵ · 2^(216 + 4·span) = 2^(216 + 5 + 4·span) = 2^(221 + 4·span)
-/// ```
-///
-/// with `216 = 4·54` the four-entry product exponent and `221 = 216 + 5` the sum
-/// exponent. Requiring that bound to fit the signed 512-bit range, `|x| ≤ 2⁵¹¹` gives
-/// `221 + 4·span ≤ 511`, i.e. `span ≤ ⌊290/4⌋ = 72`: a dynamic range of 72 powers of 2
-///
-/// The same argument bounds every intermediate of the Laplace evaluation (each is a
-/// partial sum of at most 24 terms bounded as above), so with this budget enforced the
-/// [`I512`] arithmetic of the exact stage cannot overflow and is used unchecked.
+/// After scaling and subtraction, each entry has magnitude below `2^(54 + span)`
+/// (53 mantissa bits, up to `span` shift bits, and one bit for subtraction).
+/// Each intermediate is a sum of at most 24 products of up to four entries,
+/// so its magnitude is below `2^(4 · (54 + span) + 5)`. Keeping that exponent at
+/// most 511 gives a span of 72 and guarantees that [`I512`] arithmetic fits.
 pub const MAX_EXPONENT_SPAN: i32 = 72;
 
 /// Compute the sign of the four-dimensional orientation determinant.
@@ -141,10 +80,8 @@ pub const MAX_EXPONENT_SPAN: i32 = 72;
 ///
 /// # Errors
 ///
-/// Returns [`Error::NumericallyAmbiguousPolytope`] when the determinant
-/// cannot be resolved exactly. See `MAX_EXPONENT_SPAN` for the allowed range
-/// of values, and ensure your data does not contain subnormal or nonfinite
-/// numbers.
+/// Returns [`Error::NumericallyAmbiguousPolytope`] when the filter is inconclusive
+/// and the coordinates fall outside the range supported by [`orient4d_exact`].
 ///
 /// # Example
 ///
@@ -173,7 +110,10 @@ pub fn orient4d(
     pd: Cartesian<4>,
     pe: Cartesian<4>,
 ) -> Result<i64, Error> {
-    if let Some(sign) = orient4d_filtered(&differences(pa, pb, pc, pd, pe)) {
+    let differences = Matrix44 {
+        rows: [pa, pb, pc, pd].map(|point| (point - pe).coordinates),
+    };
+    if let Some(sign) = orient4d_filtered(&differences) {
         return Ok(sign);
     }
 
@@ -184,15 +124,11 @@ pub fn orient4d(
 ///
 /// The coordinates are converted to large integers scaled by a common power of two,
 /// and the determinant is evaluated with [`I512`] arithmetic so the returned
-/// sign is exact for the coordinates as stored. The budget of [`MAX_EXPONENT_SPAN`]
-/// bounds every intermediate below the 512-bit range, so the arithmetic cannot overflow
+/// sign is exact for the coordinates as stored.
 ///
 /// # Errors
-///
-/// Returns [`Error::NumericallyAmbiguousPolytope`] when any coordinate is not finite,
-/// or when the exponents of the coordinates span too many powers of two. This is
-/// uncommon for normal geometries, but can occur with very large or very inaccurate
-/// point sets.
+/// Returns [`Error::NumericallyAmbiguousPolytope`] for nonfinite coordinates
+/// or when the exponents of nonzero coordinates differ by more than [`MAX_EXPONENT_SPAN`].
 #[inline]
 pub fn orient4d_exact(
     pa: Cartesian<4>,
@@ -201,52 +137,44 @@ pub fn orient4d_exact(
     pd: Cartesian<4>,
     pe: Cartesian<4>,
 ) -> Result<i64, Error> {
-    let coordinates = decode_points(&[pa, pb, pc, pd, pe])?;
-
-    // Zero mantissas do not constrain the common scale; if every coordinate
-    // is zero, all five points coincide.
-    let Some((min_exponent, max_exponent)) = exponent_range(&coordinates) else {
+    let mut coordinates = [[Dyad::ZERO; 4]; 5];
+    let mut min_exponent = i32::MAX;
+    let mut max_exponent = i32::MIN;
+    for (row, point) in coordinates.iter_mut().zip([pa, pb, pc, pd, pe]) {
+        for (coordinate, value) in row.iter_mut().zip(point.coordinates) {
+            *coordinate = Dyad::try_from(value).map_err(|_| Error::NumericallyAmbiguousPolytope)?;
+            if !coordinate.is_zero() {
+                min_exponent = min_exponent.min(coordinate.exponent());
+                max_exponent = max_exponent.max(coordinate.exponent());
+            }
+        }
+    }
+    // Only nonzero coordinates constrain the scale. An empty range means all are zero.
+    if min_exponent > max_exponent {
         return Ok(0);
-    };
+    }
     if max_exponent - min_exponent > MAX_EXPONENT_SPAN {
         return Err(Error::NumericallyAmbiguousPolytope);
     }
 
-    // Scale the coordinates exactly, then difference the points.
-    let mut scaled = [[I512::ZERO; 4]; 5];
-    for (row, coordinates) in scaled.iter_mut().zip(&coordinates) {
-        for (entry, &coordinate) in row.iter_mut().zip(coordinates) {
-            *entry = coordinate.scale_to(min_exponent);
+    let scale = |coordinate: Dyad| {
+        if coordinate.is_zero() {
+            return I512::ZERO;
         }
-    }
-
-    let mut matrix = [[I512::ZERO; 4]; 4];
-    for i in 0..4 {
-        for j in 0..4 {
-            matrix[i][j] = scaled[i][j] - scaled[4][j];
-        }
-    }
+        let shift = u32::try_from(coordinate.exponent() - min_exponent)
+            .expect("nonzero coordinates are at or above the minimum exponent");
+        I512::from_i64(coordinate.mantissa()) << shift
+    };
+    let [rows @ .., anchor] = coordinates;
+    let anchor = anchor.map(scale);
+    let matrix = rows.map(|row| std::array::from_fn(|j| scale(row[j]) - anchor[j]));
 
     Ok(det44i(&matrix).signum().as_i64())
 }
 
 /// Compute the sign of the determinant of a 4×4 matrix of differences, if f64 is safe.
 ///
-/// The determinant is evaluated by a Laplace expansion, and its total error
-/// relative to the determinant of the *exact* differences is bounded by
-///
-/// ```text
-/// errbound = R·Λ̂ + E·max² + D·max³ + F
-/// ```
-///
-/// with `Λ̂` the computed sum of the absolute values of the 24 determinant terms
-/// (`lambda4`) and `max` the largest absolute entry of the matrix. `R`
-/// ([`ROUNDING_ERROR`]) covers all rounding, of the evaluation and of the differences
-/// alike; `E`, `D` and `F` are absolute floors for subnormal intermediates, subnormal
-/// differences and fully subnormal matrices ([`EVALUATION_UNDERFLOW_ERROR`],
-/// [`DIFFERENCE_UNDERFLOW_ERROR`], [`UNDERFLOW_ERROR`]). When `|det|` exceeds the
-/// bound, its sign is certified; otherwise the caller must fall back to an exact
-/// evaluation. `Λ̂` or a floor may overflow to infinity, which only inflates the bound.
+/// A nonfinite determinant or a magnitude within the error bound requires exact evaluation.
 #[inline]
 fn orient4d_filtered(m: &Matrix44) -> Option<i64> {
     let det = m.determinant();
@@ -254,7 +182,9 @@ fn orient4d_filtered(m: &Matrix44) -> Option<i64> {
         return None;
     }
 
-    let max = max_absolute_value(m);
+    let max = m
+        .iter_elements()
+        .fold(0.0_f64, |max, entry| max.max(entry.abs()));
     let errbound = ROUNDING_ERROR * permanent_abs(&m.rows)
         + EVALUATION_UNDERFLOW_ERROR * max.powi(2)
         + DIFFERENCE_UNDERFLOW_ERROR * max.powi(3)
@@ -269,94 +199,20 @@ fn orient4d_filtered(m: &Matrix44) -> Option<i64> {
     }
 }
 
-/// The matrix of differences of four points from a fifth, by rows.
+/// Sum of the absolute values of the 24 determinant terms.
 #[inline]
-fn differences(
-    pa: Cartesian<4>,
-    pb: Cartesian<4>,
-    pc: Cartesian<4>,
-    pd: Cartesian<4>,
-    pe: Cartesian<4>,
-) -> Matrix44 {
-    let row = |p: Cartesian<4>| (p - pe).coordinates;
-    Matrix44 {
-        rows: [row(pa), row(pb), row(pc), row(pd)],
-    }
-}
-
-/// Permanent of the element-wise absolute value matrix.
-///
-/// For N = 3 this is the sum of the absolute values of the 6 determinant terms;
-/// for N = 4 it is the sum of the absolute values of the 24 determinant terms.
-#[inline]
-fn permanent_abs<const N: usize>(m: &[[f64; N]; N]) -> f64 {
+fn permanent_abs(m: &[[f64; 4]; 4]) -> f64 {
     #[inline]
-    fn recurr<const N: usize>(m: &[[f64; N]; N], row: usize, used: u64) -> f64 {
-        if row == N {
+    fn sum_terms(m: &[[f64; 4]; 4], row: usize, used: u64) -> f64 {
+        if row == 4 {
             return 1.0;
         }
-        (0..N)
+        (0..4)
             .filter(|&j| used & (1 << j) == 0)
-            .map(|j| m[row][j].abs() * recurr(m, row + 1, used | (1 << j)))
+            .map(|j| m[row][j].abs() * sum_terms(m, row + 1, used | (1 << j)))
             .sum()
     }
-    recurr(m, 0, 0)
-}
-
-/// The largest absolute entry of a 4×4 matrix.
-#[inline]
-fn max_absolute_value(m: &Matrix44) -> f64 {
-    m.iter_elements()
-        .fold(0.0_f64, |max, entry| max.max(entry.abs()))
-}
-
-/// Decompose every coordinate of five points into an exact dyadic rational.
-///
-/// # Errors
-///
-/// Returns [`Error::NumericallyAmbiguousPolytope`] when any coordinate is not finite.
-fn decode_points(points: &[Cartesian<4>; 5]) -> Result<[[Dyad; 4]; 5], Error> {
-    let mut decoded = [[Dyad::ZERO; 4]; 5];
-    for (row, point) in decoded.iter_mut().zip(points) {
-        for (entry, &value) in row.iter_mut().zip(&point.coordinates) {
-            *entry = Dyad::try_from(value).map_err(|_| Error::NumericallyAmbiguousPolytope)?;
-        }
-    }
-    Ok(decoded)
-}
-
-/// The range of exponents of the nonzero mantissas, or [`None`] when all of them are 0.
-fn exponent_range(coordinates: &[[Dyad; 4]; 5]) -> Option<(i32, i32)> {
-    coordinates
-        .iter()
-        .flatten()
-        .filter(|dyad| !dyad.is_zero())
-        .map(|dyad| dyad.exponent())
-        .fold(None, |range, exponent| {
-            Some(match range {
-                Some((min, max)) => (min.min(exponent), max.max(exponent)),
-                None => (exponent, exponent),
-            })
-        })
-}
-
-/// Scale a dyadic coordinate to the common exponent of a point set.
-trait ScaleTo {
-    /// The value scaled by `2^(exponent - min_exponent)`, as an [`I512`].
-    fn scale_to(self, min_exponent: i32) -> I512;
-}
-
-impl ScaleTo for Dyad {
-    #[inline]
-    fn scale_to(self, min_exponent: i32) -> I512 {
-        if self.is_zero() {
-            return I512::ZERO;
-        }
-
-        let shift = u32::try_from(self.exponent() - min_exponent)
-            .expect("nonzero mantissas are at or above the minimum exponent");
-        I512::from_i64(self.mantissa()) << shift
-    }
+    sum_terms(m, 0, 0)
 }
 
 /// The determinant of a 4x4 matrix of [`I512`] values, by Laplace expansion.
@@ -364,10 +220,18 @@ impl ScaleTo for Dyad {
 fn det44i(mat: &[[I512; 4]; 4]) -> I512 {
     let [[a, b, c, d], [e, f, g, h], [i, j, k, l], [m, n, o, p]] = *mat;
 
-    a * (f * (k * p - l * o) - g * (j * p - l * n) + h * (j * o - k * n))
-        - b * (e * (k * p - l * o) - g * (i * p - l * m) + h * (i * o - k * m))
-        + c * (e * (j * p - l * n) - f * (i * p - l * m) + h * (i * n - j * m))
-        - d * (e * (j * o - k * n) - f * (i * o - k * m) + g * (i * n - j * m))
+    // Each minor uses the bottom two rows. The subscripts are its column indices.
+    let minor_23 = k * p - l * o;
+    let minor_13 = j * p - l * n;
+    let minor_12 = j * o - k * n;
+    let minor_03 = i * p - l * m;
+    let minor_02 = i * o - k * m;
+    let minor_01 = i * n - j * m;
+
+    a * (f * minor_23 - g * minor_13 + h * minor_12)
+        - b * (e * minor_23 - g * minor_03 + h * minor_02)
+        + c * (e * minor_13 - f * minor_03 + h * minor_01)
+        - d * (e * minor_12 - f * minor_02 + g * minor_01)
 }
 
 #[cfg(test)]
@@ -398,6 +262,7 @@ mod tests {
     #[test]
     fn transposing_two_points_flips_the_sign() {
         assert_eq!(orient4d(X, O, Y, Z, W), Ok(-1));
+        assert_eq!(orient4d_exact(X, O, Y, Z, W), Ok(-1));
     }
 
     #[test]
@@ -407,15 +272,19 @@ mod tests {
     }
 
     #[test]
-    fn unresolvable_coordinates_error() {
-        // An exponent span of 73 exceeds the exact stage's budget of 72.
-        // (The prefilter may resolve this one, so query the exact stage.)
+    fn exact_exponent_span_boundary() {
+        let tiny = Cartesian::from([0.0, 0.0, 0.0, 2.0_f64.powi(-72)]);
+        assert_eq!(orient4d_exact(O, X, Y, Z, tiny), Ok(1));
+
         let tiny = Cartesian::from([0.0, 0.0, 0.0, 2.0_f64.powi(-73)]);
         assert_eq!(
             orient4d_exact(O, X, Y, Z, tiny),
             Err(Error::NumericallyAmbiguousPolytope)
         );
+    }
 
+    #[test]
+    fn nonfinite_coordinates_error() {
         let nan = Cartesian::from([f64::NAN, 0.0, 0.0, 0.0]);
         assert_eq!(
             orient4d(O, X, Y, Z, nan),
