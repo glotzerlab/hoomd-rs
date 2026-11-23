@@ -4,6 +4,7 @@
 
 *Added:*
 
+* `[hoomd-geometry]`: Implement `MinkowskiPortalRefinement` for `Cartesian<4>` (#306).
 * `[hoomd-geometry]`: Implement `Scale` for `Capsule`, `ConvexPolytope`, `Cylinder`, and `Hyperellipsoid` (#484).
 * `[hoomd-geometry]`: Implement `IsPointInside` for `Capsule`, `Cylinder`, and `Hyperellipsoid` (#484).
 * `[hoomd-geometry]`: Implement `MapPoint` for `Cylinder` and `Hyperellipsoid` (#484).
