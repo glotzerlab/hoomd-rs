@@ -4,6 +4,8 @@
 
 *Added:*
 
+* `[hoomd-geometry]`: New `ConvexHull` trait, which subsumes `ConvexSurfaceMesh2d::construct_convex_hull` and adds a new implementation for three-dimensional hulls (#426).
+* `[hoomd-geometry]`: New `ConvexSurfaceMesh3d` type for explicit convex faceted bodies in three dimensions (#426).
 * `[hoomd-geometry]`: Implement `Scale` for `Capsule`, `ConvexPolytope`, `Cylinder`, and `Hyperellipsoid` (#484).
 * `[hoomd-geometry]`: Implement `IsPointInside` for `Capsule`, `Cylinder`, and `Hyperellipsoid` (#484).
 * `[hoomd-geometry]`: Implement `MapPoint` for `Cylinder` and `Hyperellipsoid` (#484).
