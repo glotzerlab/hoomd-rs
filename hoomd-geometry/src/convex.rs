@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping,
     shape::{Circle, Sphere},
-    xenocollide::{collide2d, collide3d},
+    xenocollide::{collide2d, collide3d, collide4d},
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Metric, Rotate, Rotation, RotationMatrix};
