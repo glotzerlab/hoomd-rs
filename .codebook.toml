@@ -1,4 +1,5 @@
 words = [
+    "SLURM",
     "Steinhardt",
     "Gegenbauer",
     "hyperspherical",
@@ -14,6 +15,7 @@ words = [
     "coxeter",
     "dyn",
     "egui",
+    "forkunion",
     "frenkel",
     "gsd",
     "hoomd",
