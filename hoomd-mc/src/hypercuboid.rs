@@ -43,7 +43,7 @@ use crate::{Checkerboard, Cover};
 /// other boundaries. For example: cylindrical boundaries (periodic in one
 /// direction) and closed boundaries of any shape. There may be many overhanging
 /// spaces (some completely outside the boundary) in these cases. However, the
-/// checkerboard is still valid and rayon's dynamic load balancing scheme should
+/// checkerboard is still valid and `ForkUnion`'s dynamic load balancing scheme should
 /// be able to handle the empty cells efficiently.
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
