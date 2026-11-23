@@ -82,7 +82,6 @@ pub const MAX_EXPONENT_SPAN: i32 = 72;
 ///
 /// Returns [`Error::NumericallyAmbiguousPolytope`] when the filter is inconclusive
 /// and the coordinates fall outside the range supported by [`orient4d_exact`].
-///
 #[inline]
 pub fn orient4d(
     pa: Cartesian<4>,
