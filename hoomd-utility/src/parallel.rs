@@ -10,6 +10,10 @@
 //! where they are needed. Therefore, this module defines a single shared thread
 //! pool that all methods can access through [`with_thread_pool`].
 //!
+//! By default, it will spawn a pool with the number of thread set to
+//! the number of available high performance cores available. Use
+//! [`set_thread_pool_size`] to override its default thread count.
+//!
 //! [`ForkUnion`]: https://github.com/ashvardanian/ForkUnion
 //!
 //! # Example
@@ -31,18 +35,12 @@
 //! assert_eq!(data, (0..1000).map(|value| value * 2).collect::<Vec<_>>());
 //! ```
 
-use std::{
-    collections::BTreeMap,
-    sync::{LazyLock, Mutex},
-};
+use std::{collections::BTreeMap, sync::Mutex};
 
 use forkunion::{ComputeDomain, ThreadPool, Topology};
 
 /// The global thread pool.
-static THREAD_POOL: LazyLock<Mutex<ThreadPool>> = LazyLock::new(|| {
-    let topology = Topology::new().expect("should be able to detect hardware topology");
-    Mutex::new(forkunion::spawn(&topology, default_thread_count(&topology)))
-});
+static THREAD_POOL: Mutex<Option<ThreadPool>> = Mutex::new(None);
 
 /// Execute a closure with exclusive mutable access to the global thread pool.
 ///
@@ -55,9 +53,10 @@ static THREAD_POOL: LazyLock<Mutex<ThreadPool>> = LazyLock::new(|| {
 ///   automatically choose the number of requested cores.
 /// - In other situations, it will choose the total number of CPU cores in the system.
 ///
-/// The pool initializes on first use. The lock is held throughout the closure
-/// and released when it returns; independent callers serialize their parallel
-/// operations. Returns the closure's result.
+/// Unless configured with [`set_thread_pool_size`], the pool initializes on first
+/// use. The lock is held throughout the closure and released when it returns;
+/// independent callers serialize their parallel operations. Returns the closure's
+/// result.
 ///
 /// Do not call this function recursively or from a task running on the pool,
 /// as doing so can deadlock.
@@ -68,10 +67,64 @@ static THREAD_POOL: LazyLock<Mutex<ThreadPool>> = LazyLock::new(|| {
 /// poisoned.
 #[inline]
 pub fn with_thread_pool<R, F: FnOnce(&mut ThreadPool) -> R>(f: F) -> R {
-    let mut pool = THREAD_POOL
+    let mut shared = THREAD_POOL
         .lock()
         .expect("thread pool mutex should not be poisoned");
-    f(&mut pool)
+    let pool = shared.get_or_insert_with(|| {
+        let topology = Topology::new().expect("should be able to detect hardware topology");
+        forkunion::spawn(&topology, default_thread_count(&topology))
+    });
+    f(pool)
+}
+
+/// Rebuild the global thread pool with the given number of threads.
+///
+/// Waits for any current [`with_thread_pool`] operation to finish, then drops
+/// the old pool before spawning its replacement. Calling this function before
+/// any parallel work initializes only the requested pool, not the default pool.
+///
+/// Do not call this function inside [`with_thread_pool`] or from a task running
+/// on the pool, as doing so can deadlock.
+///
+/// # Panics
+///
+/// Panics if `threads` is zero, hardware topology detection fails, or the thread
+/// pool mutex is poisoned.
+///
+/// # Example
+///
+/// ```standalone_crate
+/// use forkunion::prelude::*;
+/// use hoomd_utility::parallel::{set_thread_pool_size, with_thread_pool};
+///
+/// for threads in [1, 2] {
+///     set_thread_pool_size(threads);
+///     let mut data = vec![0; 1000];
+///     with_thread_pool(|pool| {
+///         assert_eq!(pool.threads_count(), threads);
+///
+///         data.as_mut_slice()
+///             .into_par_iter()
+///             .with_schedule(pool, DynamicScheduler)
+///             .for_each(|value, body_index, _| {
+///                 *value = body_index;
+///             })
+///     }).expect("should be able to execute parallel work");
+///     assert_eq!(data, (0..1000).collect::<Vec<_>>());
+/// }
+/// ```
+#[inline]
+pub fn set_thread_pool_size(threads: usize) {
+    assert!(threads > 0, "thread pool size must be greater than zero");
+
+    let mut shared = THREAD_POOL
+        .lock()
+        .expect("thread pool mutex should not be poisoned");
+    let topology = Topology::new().expect("should be able to detect hardware topology");
+
+    // Join the old workers before spawning their replacements.
+    drop(shared.take());
+    *shared = Some(forkunion::spawn(&topology, threads));
 }
 
 /// Determine the default number of threads
@@ -100,4 +153,15 @@ fn default_thread_count(topology: &Topology) -> usize {
             .or_insert(cores);
     }
     cores_by_level.last_entry().map_or(1, |entry| *entry.get())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "thread pool size must be greater than zero")]
+    fn zero_thread_pool_size() {
+        set_thread_pool_size(0);
+    }
 }
