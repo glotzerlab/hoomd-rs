@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{BoundingSphereRadius, Error, SupportMapping};
+use crate::{BoundingSphereRadius, Error, Scale, SupportMapping};
 use arrayvec::ArrayVec;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
@@ -210,6 +210,8 @@ impl<const N: usize, const MAX_VERTICES: usize> ConvexPolytope<N, MAX_VERTICES> 
 impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
     /// Create an icosahedron with edge length 2.
     ///
+    /// Requires `MAX_VERTICES >= 12`. Smaller capacities fail to compile.
+    ///
     /// # Example
     /// ```
     /// use hoomd_geometry::shape::ConvexPolyhedron;
@@ -218,12 +220,19 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
     ///
     /// assert_eq!(icosahedron.vertices().len(), 12);
     /// ```
-    /// # Panics
-    ///
-    /// If the shape is initialized with `MAX_VERTICES` < 12.
     #[inline]
     #[must_use]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
     pub fn icosahedron() -> ConvexPolytope<3, MAX_VERTICES> {
+        const {
+            assert!(
+                MAX_VERTICES >= 12,
+                "an icosahedron requires MAX_VERTICES >= 12"
+            );
+        };
         let phi = std::f64::consts::GOLDEN_RATIO;
         let mut vertices = Vec::with_capacity(12);
         for a in [-1.0, 1.0] {
@@ -234,10 +243,12 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
             }
         }
         ConvexPolytope::with_vertices(vertices)
-            .expect("an icosahedron requires at least 12 vertices")
+            .expect("the 12 vertices of an icosahedron always fit")
     }
 
     /// Create a dodecahedron with edge length `2 / phi`.
+    ///
+    /// Requires `MAX_VERTICES >= 20`. Smaller capacities fail to compile.
     ///
     /// # Example
     /// ```
@@ -247,12 +258,19 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
     ///
     /// assert_eq!(dodecahedron.vertices().len(), 20);
     /// ```
-    ///
-    /// # Panics
-    ///
-    /// If the shape is initialized with `MAX_VERTICES` < 20.
     #[inline]
+    #[must_use]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
     pub fn dodecahedron() -> ConvexPolytope<3, MAX_VERTICES> {
+        const {
+            assert!(
+                MAX_VERTICES >= 20,
+                "a dodecahedron requires MAX_VERTICES >= 20"
+            );
+        };
         let phi = std::f64::consts::GOLDEN_RATIO;
         let mut vertices: Vec<Cartesian<3>> = Vec::with_capacity(20);
         for x in [-1.0, 1.0] {
@@ -270,7 +288,7 @@ impl<const MAX_VERTICES: usize> ConvexPolytope<3, MAX_VERTICES> {
             }
         }
         ConvexPolytope::with_vertices(vertices)
-            .expect("a dodecahedron requires at least 20 vertices")
+            .expect("the 20 vertices of a dodecahedron always fit")
     }
 }
 
@@ -319,10 +337,86 @@ impl<const N: usize, const MAX_VERTICES: usize> BoundingSphereRadius
     }
 }
 
+impl<const N: usize, const MAX_VERTICES: usize> Scale for ConvexPolytope<N, MAX_VERTICES> {
+    /// Construct a scaled [`ConvexPolytope`].
+    ///
+    /// The resulting polytope's vertices are the original's scaled by *v*:
+    /// ```math
+    /// \vec{p}_{i,\mathrm{new}} = v \vec{p}_i
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::ConvexPolygon};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rectangle = ConvexPolygon::with_vertices([
+    ///     [-2.0, -1.0].into(),
+    ///     [2.0, -1.0].into(),
+    ///     [2.0, 1.0].into(),
+    ///     [-2.0, 1.0].into(),
+    /// ])?;
+    ///
+    /// let scaled_rectangle = rectangle.scale_length(2.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_rectangle.vertices()[0], [-4.0, -2.0].into());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        let vertices = self
+            .vertices
+            .iter()
+            .map(|&r| r * v.get())
+            .collect::<ArrayVec<Cartesian<N>, MAX_VERTICES>>();
+        let bounding_radius = Self::bounding_radius(&vertices);
+
+        Self {
+            vertices,
+            bounding_radius,
+        }
+    }
+
+    /// Construct a scaled [`ConvexPolytope`].
+    ///
+    /// The resulting polytope's vertices are the original's scaled by
+    /// $` v^\frac{1}{N} `$:
+    /// ```math
+    /// \vec{p}_{i,\mathrm{new}} = v^\frac{1}{N} \vec{p}_i
+    /// ```
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::ConvexPolygon};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rectangle = ConvexPolygon::with_vertices([
+    ///     [-2.0, -1.0].into(),
+    ///     [2.0, -1.0].into(),
+    ///     [2.0, 1.0].into(),
+    ///     [-2.0, 1.0].into(),
+    /// ])?;
+    ///
+    /// let scaled_rectangle = rectangle.scale_volume(9.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_rectangle.vertices()[0], [-6.0, -3.0].into());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().powf(1.0 / N as f64);
+        self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Convex, ConvexHull, IntersectsAt};
+    use crate::{Convex, IntersectsAt, hull::ConvexHull};
     use hoomd_vector::{Angle, Cartesian, InnerProduct, Rotate, Rotation, Versor};
 
     use approxim::assert_relative_eq;
@@ -868,6 +962,7 @@ mod tests {
         assert_symmetric_overlap([0.9, -0.9, 0.0].into(), &cube, &cube, q_a, q_b, true);
         assert_symmetric_overlap([-0.9, 0.9, 0.1].into(), &cube, &cube, q_a, q_b, true);
     }
+
     /// Each platonic solid has the expected number of vertices, all at a
     /// common distance from the center, and every vertex is a vertex of the
     /// convex hull of the vertices.
@@ -881,8 +976,62 @@ mod tests {
             assert_relative_eq!(vertex.norm_squared(), solid.vertices()[0].norm_squared());
         }
 
-        let (hull_vertices, _facets) = Cartesian::<3>::convex_hull(solid.vertices())
+        let (hull_vertices, _facets) = solid
+            .vertices()
+            .convex_hull()
             .expect("platonic solid vertices form a convex body");
         assert_eq!(hull_vertices.len(), n);
+    }
+
+    #[test]
+    fn test_scale_length() -> Result<(), Box<dyn std::error::Error>> {
+        let rectangle = ConvexPolygon::with_vertices([
+            [-2.0, -1.0].into(),
+            [2.0, -1.0].into(),
+            [2.0, 1.0].into(),
+            [-2.0, 1.0].into(),
+        ])?;
+
+        let scaled_rectangle = rectangle.scale_length(2.0.try_into()?);
+        assert_relative_eq!(scaled_rectangle.vertices()[0], [-4.0, -2.0].into());
+        assert_relative_eq!(
+            scaled_rectangle.bounding_sphere_radius().get(),
+            20.0_f64.sqrt()
+        );
+
+        let scaled_rectangle = rectangle.scale_length(0.5.try_into()?);
+        assert_relative_eq!(scaled_rectangle.vertices()[0], [-1.0, -0.5].into());
+        assert_relative_eq!(
+            scaled_rectangle.bounding_sphere_radius().get(),
+            1.25_f64.sqrt()
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_volume() -> Result<(), Box<dyn std::error::Error>> {
+        let rectangle = ConvexPolygon::with_vertices([
+            [-2.0, -1.0].into(),
+            [2.0, -1.0].into(),
+            [2.0, 1.0].into(),
+            [-2.0, 1.0].into(),
+        ])?;
+
+        let scaled_rectangle = rectangle.scale_volume(9.0.try_into()?);
+        assert_relative_eq!(scaled_rectangle.vertices()[0], [-6.0, -3.0].into());
+        assert_relative_eq!(
+            scaled_rectangle.bounding_sphere_radius().get(),
+            45.0_f64.sqrt()
+        );
+
+        let scaled_rectangle = rectangle.scale_volume(0.25.try_into()?);
+        assert_relative_eq!(scaled_rectangle.vertices()[0], [-1.0, -0.5].into());
+        assert_relative_eq!(
+            scaled_rectangle.bounding_sphere_radius().get(),
+            1.25_f64.sqrt()
+        );
+
+        Ok(())
     }
 }

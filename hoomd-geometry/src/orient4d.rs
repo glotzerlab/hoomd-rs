@@ -83,25 +83,6 @@ pub const MAX_EXPONENT_SPAN: i32 = 72;
 /// Returns [`Error::NumericallyAmbiguousPolytope`] when the filter is inconclusive
 /// and the coordinates fall outside the range supported by [`orient4d_exact`].
 ///
-/// # Example
-///
-/// ```
-/// use hoomd_geometry::orient4d::orient4d;
-/// use hoomd_vector::Cartesian;
-///
-/// let origin = Cartesian::from([0.0, 0.0, 0.0, 0.0]);
-/// let x = Cartesian::from([1.0, 0.0, 0.0, 0.0]);
-/// let y = Cartesian::from([0.0, 1.0, 0.0, 0.0]);
-/// let z = Cartesian::from([0.0, 0.0, 1.0, 0.0]);
-/// let w = Cartesian::from([0.0, 0.0, 0.0, 1.0]);
-///
-/// // The apex w lies off the hyperplane through o, x, y and z.
-/// assert_eq!(orient4d(origin, x, y, z, w), Ok(1));
-///
-/// // A point in that hyperplane gives exactly zero.
-/// let in_plane = Cartesian::from([1.0, 1.0, 0.0, 0.0]);
-/// assert_eq!(orient4d(origin, x, y, z, in_plane), Ok(0));
-/// ```
 #[inline]
 pub fn orient4d(
     pa: Cartesian<4>,

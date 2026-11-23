@@ -1,29 +1,34 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Convex polygon represented by vertices and edges.
+//! Convex polyhedron represented by vertices and triangular facets.
 
-use crate::{ConvexHull, Error, Facet, Volume, shape::ConvexPolytope};
+use crate::{
+    Error, Volume,
+    hull::{Facet, incremental_hull},
+    shape::ConvexPolytope,
+};
 use hoomd_linear_algebra::matrix::Matrix33;
 use serde::{Deserialize, Serialize};
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
-/// The vertices and edges that make up a convex polygon.
+/// The vertices and triangular facets that make up a convex polyhedron.
 ///
 /// [`ConvexPolytope::<3>`] and [`ConvexSurfaceMesh3d`] can both represent
 /// 3d convex polyhedra. The first is defined *implicitly* as the convex hull
 /// of a set of points. It stores the given point set without any modification,
 /// and can therefore be constructed quickly. The *implicit* convex hull is
-/// formed by [`SupportMapping`] during intersection tests of
-/// `Convex(ConvexPolygon)` with other `Convex(_)` types.
+/// formed by the support mapping of `Convex` during intersection tests of
+/// `Convex(ConvexPolyhedron)` with other `Convex(_)` types.
 ///
 /// In contrast, [`ConvexSurfaceMesh3d`] *explicitly* computes the convex hull
-/// on construction with [`ConvexHull`]. After construction, the [`vertices`] of
+/// on construction, with the same incremental algorithm that backs
+/// [`ConvexHull`](crate::hull::ConvexHull). After construction, the [`vertices`] of
 /// the shape include only the points on the convex hull, and the [`facets`] are
 /// the triangular faces of the body. Using this representation, [`ConvexSurfaceMesh3d`]
-/// is able to provide implementations of [`Volume`] and [`IsPointInside`].
+/// is able to provide an implementation of [`Volume`].
 ///
 /// [`vertices`]: Self::vertices
 /// [`facets`]: Self::facets
@@ -48,8 +53,8 @@ use hoomd_vector::Cartesian;
 pub struct ConvexSurfaceMesh3d {
     /// The vertices of the polyhedron.
     vertices: Vec<Cartesian<3>>,
-    /// The triangular facets of the polyhedron, as indices into `vertices`.
-    faces: Vec<Facet<3>>,
+    /// The triangular faces of the polyhedron, as indices into `vertices`.
+    faces: Vec<[usize; 3]>,
     /// The radius of a bounding sphere of the geometry.
     bounding_radius: PositiveReal,
 }
@@ -63,6 +68,7 @@ impl ConvexSurfaceMesh3d {
     ///
     /// # Errors
     ///
+    /// * [`Error::NotFinite`] when any coordinate input is not finite.
     /// * [`Error::DegeneratePolytope`] when there are fewer than 4 non-coplanar points.
     ///
     /// # Example
@@ -80,17 +86,69 @@ impl ConvexSurfaceMesh3d {
     /// # }
     /// ```
     #[inline]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
     pub fn from_point_set<I>(points: I) -> Result<Self, Error>
     where
         I: IntoIterator<Item = Cartesian<3>>,
     {
-        let (vertices, faces) = Cartesian::<3>::convex_hull(points)?;
+        let points: Vec<Cartesian<3>> = points.into_iter().collect();
+        let (indices, faces) = incremental_hull(&points)?;
+
+        // The faces index the input points, so remap them to the compacted list of
+        // hull vertices the mesh stores. The vertex indices are sorted, so a binary
+        // search locates the new position of each vertex.
+        let position = |i: usize| {
+            indices
+                .binary_search(&i)
+                .expect("the vertices of a face are vertices of the hull")
+        };
+        let faces = faces
+            .iter()
+            .map(|&[a, b, c]| [position(a), position(b), position(c)])
+            .collect();
+        let vertices: Vec<Cartesian<3>> = indices.iter().map(|&i| points[i]).collect();
 
         Ok(Self {
             bounding_radius: ConvexPolytope::<3>::bounding_radius(&vertices),
             vertices,
             faces,
         })
+    }
+
+    /// The vertices of the convex polyhedron, in the order of the input points.
+    #[inline]
+    #[must_use]
+    pub fn vertices(&self) -> &[Cartesian<3>] {
+        &self.vertices
+    }
+
+    /// The triangular facets of the convex polyhedron.
+    ///
+    /// Each facet is bound to [`Self::vertices`], the points its indices correspond to.
+    #[inline]
+    pub fn facets(&self) -> impl Iterator<Item = Facet<'_, 3>> + '_ {
+        self.faces
+            .iter()
+            .map(|&indices| Facet::new(&self.vertices, indices))
+    }
+
+    /// The edges of the convex polyhedron, as vertex index pairs.
+    ///
+    /// Edges are returned sorted, as tuples `(i, j)` with `i < j`: one per edge of the
+    /// triangulation.
+    #[inline]
+    pub fn edges(&self) -> Vec<(usize, usize)> {
+        let mut edges: Vec<(usize, usize)> = self
+            .faces
+            .iter()
+            .flat_map(|&[i, j, k]| [(i, j), (j, k), (k, i)])
+            .filter(|&(i, j)| i < j)
+            .collect();
+        edges.sort_unstable();
+        edges
     }
 }
 
@@ -126,12 +184,45 @@ impl Volume for ConvexSurfaceMesh3d {
             .iter()
             .map(|face| {
                 Matrix33 {
-                    rows: face.indices().map(|i| self.vertices[i].coordinates),
+                    rows: face.map(|i| self.vertices[i].coordinates),
                 }
                 .determinant()
             })
             .sum::<f64>()
-            .abs()
             / 6.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+    use rstest::*;
+
+    #[rstest]
+    #[case::icosahedron(ConvexPolytope::<3, 32>::icosahedron(), 30)]
+    #[case::dodecahedron(ConvexPolytope::<3, 32>::dodecahedron(), 54)]
+    fn edges_of_platonic_triangulations(
+        #[case] solid: ConvexPolytope<3, 32>,
+        #[case] expected: usize,
+    ) {
+        let mesh = ConvexSurfaceMesh3d::from_point_set(solid.vertices().iter().copied())
+            .expect("platonic solid vertices form a convex body");
+        let edges = mesh.edges();
+        let mut face_edges: Vec<(usize, usize)> = mesh
+            .facets()
+            .map(|f| f.indices())
+            .flat_map(|[a, b, c]| [(a, b), (b, c), (c, a)])
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .filter(|&(i, j)| i < j)
+            .collect();
+        face_edges.sort_unstable();
+        assert_eq!(
+            edges, face_edges,
+            "edges must be sorted, unique, and match the reference"
+        );
+        assert_eq!(edges.len(), expected, "E must satisfy V - E + F = 2");
     }
 }

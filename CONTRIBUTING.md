@@ -5,6 +5,32 @@ Contributions are welcomed via `pull requests on GitHub
 developers before starting work to ensure it meshes well with the planned
 development direction and standards set for the project.
 
+## AI use
+
+AI is a **tool**. Like a chainsaw, you could use it with brute force to cut
+down a tree and leave the brush pile for someone else to deal with. Or you
+could apply it with finesse and create a beautiful stump carving.
+
+**hoomd-rs** accepts AI-assisted pull requests and issues where **you** chose
+to apply the tool with *finesse*:
+- Use AI to help you understand a problem.
+- Use AI to suggest several possible fixes.
+- If you absolutely must, use AI to draft code. Then ask it to simplify its code.
+- **YOU** are responsible for understanding every single line you change.
+  If you don't understand, ask your AI to explain it until you do.
+  If you still don't understand, then don't make the change.
+- Use AI to review your branch before you submit and save the reviewer's time.
+  Apply any reasonable fixes, as long as you understand them.
+
+**hoomd-rs** does not accept fully AI-generated pull requests or issue reports:
+- DO NOT submit an AI generated pull request description, issue, or comment.
+  **Your** tool's output is to assist **you** in making an informed choice.
+  Post pull requests, issues, and comments 100% in your own words.
+  If the reviewers want to see a model's output, they will use their own
+  tool.
+- DO NOT submit code changes that you do not understand. **You** are
+  responsible for 100% of the changes you propose.
+
 ## Features
 
 ### Contribute widely applicable features
@@ -67,11 +93,13 @@ and ensure that it behaves as intended.
 ### Document types, traits, and methods
 
 Fully document your code using **rustdoc** documentation comments. Include
-example snippets for *everything*.
+at least one doc test for each method, type, and trait. Trivial and obvious
+methods may omit examples as long as the type's documentation explains
+the expected behavior.
 
 ### Add developer to the credits
 
-Update the credits documentation to list the name and affiliation of each
+Update the `doc/src/credits.md` to list the name and affiliation of each
 individual that has contributed to the code.
 
 ### Propose a change log entry

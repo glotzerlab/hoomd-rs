@@ -5,7 +5,7 @@ set -euo pipefail
 export CARGO_TERM_QUIET=true
 
 for package in derive linear-algebra simulation utility rand vector gsd manifold spatial \
-               geometry microstate interaction mc bevy
+               geometry microstate interaction mc bevy md order
 do
   echo '------------------------------------------------------'
   echo "hoomd-${package}:"

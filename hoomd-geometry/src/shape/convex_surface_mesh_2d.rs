@@ -7,8 +7,8 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BoundingSphereRadius, ConvexHull, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside,
-    Scale, SupportMapping, Volume, shape::ConvexPolytope,
+    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, Scale,
+    SupportMapping, Volume, hull::ConvexHull, shape::ConvexPolytope,
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
@@ -84,7 +84,7 @@ pub struct ConvexSurfaceMesh2d {
 }
 
 impl ConvexSurfaceMesh2d {
-    /// Create an convex surface mesh from the convex hull of the given set of points.
+    /// Create a convex surface mesh from the convex hull of the given set of points.
     ///
     /// The resulting shape contains a subset of the given points, including
     /// only the non-degenerate points on the convex hull. The result's vertices
@@ -92,6 +92,7 @@ impl ConvexSurfaceMesh2d {
     ///
     /// # Errors
     ///
+    /// * [`Error::NotFinite`] when any coordinate input is not finite.
     /// * [`Error::DegeneratePolytope`] when there are fewer than 3 non-collinear points.
     ///
     /// # Example
@@ -112,9 +113,11 @@ impl ConvexSurfaceMesh2d {
     where
         I: IntoIterator<Item = Cartesian<2>>,
     {
+        let points: Vec<Cartesian<2>> = points.into_iter().collect();
+
         // The edges of the hull are implied by the counter-clockwise order of the
         // vertices, so we just discard the facets.
-        let (vertices, _edges) = Cartesian::<2>::convex_hull(points)?;
+        let (vertices, _edges) = points.convex_hull()?;
 
         Ok(Self {
             bounding_radius: ConvexPolytope::<2>::bounding_radius(&vertices),
@@ -263,7 +266,7 @@ impl Scale for ConvexSurfaceMesh2d {
     /// The resulting surface meshs' vertices $` \vec{p}_\mathrm{new} `$ are
     /// the original's $` \vec{p} `$ scaled by $` v `$:
     /// ```math
-    /// \vec{p}_\mathrm{new} = v \vec}{p}
+    /// \vec{p}_\mathrm{new} = v \vec{p}
     /// ```
     ///
     /// # Example
@@ -306,7 +309,7 @@ impl Scale for ConvexSurfaceMesh2d {
     /// The resulting surface meshs' vertices $` \vec{p}_\mathrm{new} `$ are
     /// the original's $` \vec{p} `$ scaled by $` v^{\frac{1}{2}} `$:
     /// ```math
-    /// \vec{p}_\mathrm{new} = v \vec}{p}
+    /// \vec{p}_\mathrm{new} = v^{\frac{1}{2}} \vec{p}
     /// ```
     ///
     /// # Example
@@ -394,9 +397,8 @@ where
         r_other: &Cartesian<2>,
         o_other: &R,
     ) -> bool {
-        let max_separation =
-            self.bounding_sphere_radius().get() + other.bounding_sphere_radius().get();
-        if r_self.distance_squared(r_other) >= max_separation.powi(2) {
+        let max_separation = self.bounding_sphere_radius() + other.bounding_sphere_radius();
+        if r_self.distance_squared(r_other) >= max_separation.get().powi(2) {
             return false;
         }
 
@@ -458,11 +460,7 @@ where
 
         let o_j_inverted = o_j.inverted();
         let v_ji = o_j_inverted.rotate(&-*v_ij);
-        if b_edge_separates(other, self, &v_ji, &o_j_inverted) {
-            return false;
-        }
-
-        true
+        !b_edge_separates(other, self, &v_ji, &o_j_inverted)
     }
 }
 
@@ -500,14 +498,7 @@ fn is_separating(a: &ConvexSurfaceMesh2d, p: &Cartesian<2>, n: &Cartesian<2>) ->
     // check if n dot (v[i]-p) < 0 for every vertex in the polygon
     // distribute: (n dot v[i] - n dot p) < 0
     let n_dot_p = n.dot(p);
-
-    for v in &a.vertices {
-        if n.dot(v) - n_dot_p <= 0.0 {
-            return false;
-        }
-    }
-
-    true
+    a.vertices.iter().all(|v| n.dot(v) - n_dot_p > 0.0)
 }
 
 impl<const MAX_VERTICES: usize> TryFrom<ConvexPolytope<2, MAX_VERTICES>> for ConvexSurfaceMesh2d {

@@ -18,7 +18,10 @@
 //! they each implement. If the shape you want is not supported, you can write
 //! a custom shape type and implement `IsInside` so that it will work with
 //! [`Closed`]. To implement a custom periodic boundary, create your custom
-//! type and implement both [`Wrap`] and [`GenerateGhosts`] for it.
+//! type and implement both [`Wrap`] and [`GenerateGhosts`] for it. You may also
+//! need to implement [`IsPointInside`].
+//!
+//! [`IsPointInside`]: hoomd_geometry::IsPointInside
 
 use arrayvec::ArrayVec;
 use thiserror::Error;
@@ -61,12 +64,12 @@ pub enum Error {
 /// 4-dimensional Cartesian periodic boundaries (15), 32 for 5 dimensions, and 64 for
 /// 6 dimensions.
 ///
-/// [`Hypercuboid`]: hoomd_geometry::Hypercuboid
-/// [`Hyperparallelepiped`]: hoomd_geometry::Hyperparalellepiped
-/// [`Rhomboid`]: hoomd_geometry::Rhomboid
-/// [`Triclinic`]: hoomd_geometry::Triclinic
-/// [`EightEight`]: hoomd_geometry::EightEight
-/// [`TwelveTwelve`]: hoomd_geometry::TwelveTwelve
+/// [`Hypercuboid`]: hoomd_geometry::shape::Hypercuboid
+/// [`Hyperparallelepiped`]: hoomd_geometry::shape::Hyperparallelepiped
+/// [`Rhomboid`]: hoomd_geometry::shape::Rhomboid
+/// [`Triclinic`]: hoomd_geometry::shape::Triclinic
+/// [`EightEight`]: hoomd_geometry::shape::EightEight
+/// [`TwelveTwelve`]: hoomd_geometry::shape::TwelveTwelve
 ///
 /// Boundary conditions panic when they place more images than this within the
 /// interaction range.
