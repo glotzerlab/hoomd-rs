@@ -666,12 +666,10 @@ where
 
         // If the portal's (N-1)-simplex is degenerate, the normal is near zero and the
         // rest of the algorithm does not make sense (so we fail safe -> overlap).
-        // The normal scales as L^(N-1).
-        if normal.norm_squared()
-            < Cartesian::<N>::TOLERANCE.powi(2)
-                * v0.norm()
-                    .powi(i32::try_from(2 * (N - 1)).expect("N is small"))
-        {
+        // The unsquare norm scales as L^(N-1), so the error band is (TOL * v0^(N-1))^2
+        let degenerate_band =
+            Cartesian::<N>::TOLERANCE * v0.norm().powi(i32::try_from(N - 1).expect("N is small"));
+        if normal.norm_squared() < degenerate_band.powi(2) {
             return true;
         }
 
