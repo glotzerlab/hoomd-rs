@@ -75,7 +75,8 @@ fn finite_points<const N: usize>(points: &[Cartesian<N>]) -> bool {
 /// A facet of a convex hull, given as `N` indices into a slice of vertices.
 ///
 /// A facet of a two-dimensional hull is an edge (`Facet<2>`) and a facet of a
-/// three-dimensional hull is a triangle (`Facet<3>`).
+/// three-dimensional hull is a triangle (`Facet<3>`). A four-dimensional hull
+/// has tetrahedral facets (`Facet<4>`).
 ///
 /// The facet holds a reference to the points its indices refer to. A facet borrowed
 /// from a hull remains valid as long as the points the hull was computed from.
@@ -213,6 +214,21 @@ impl PointPlaneOrientation<3> for Cartesian<3> {
     }
 }
 
+impl PointPlaneOrientation<4> for Cartesian<4> {
+    #[inline]
+    fn orientation(simplex: &[Cartesian<4>; 4], point: &Cartesian<4>) -> Result<Side, Error> {
+        let [a, b, c, d] = *simplex;
+        if !finite_points(simplex) || !finite_points(std::slice::from_ref(point)) {
+            return Err(Error::NotFinite);
+        }
+        Ok(match orient4d(a, b, c, d, *point)?.cmp(&0) {
+            Ordering::Greater => Side::Above,
+            Ordering::Less => Side::Below,
+            Ordering::Equal => Side::On,
+        })
+    }
+}
+
 #[expect(
     private_bounds,
     reason = "Bound restricts the implementation to valid dimensions."
@@ -236,6 +252,8 @@ where
     /// # Errors
     ///
     /// Returns [`Error::NotFinite`] when any coordinate is not finite.
+    /// In four dimensions, returns [`Error::NumericallyAmbiguousPolytope`] if the
+    /// orientation cannot be resolved.
     ///
     /// # Example
     ///
@@ -303,15 +321,15 @@ pub trait ConvexHull<const N: usize> {
     /// Compute the convex hull of a set of points.
     ///
     /// Returns the vertices of the hull together with the facets that bound
-    /// it. The vertices are a subset of the given points, including only the
-    /// non-degenerate points on the convex hull, arranged in a deterministic
-    /// order: counter-clockwise in two dimensions, and in the order of the
-    /// input in three dimensions and higher. Each facet is a set of indices
-    /// into the given points: an edge (`Facet<2>`) in two dimensions and a
-    /// triangle (`Facet<3>`) in three. The facets are bound to the given
-    /// points; resolve the vertices of a facet with [`Facet::as_simplex`].
-    /// Facets are oriented with outward normals: every point of the hull lies
-    /// [`Side::Below`] or [`Side::On`] each of them.
+    /// it. The vertices are a subset of the given points, ordered counter-clockwise
+    /// in two dimensions and in input order in higher dimensions. In three dimensions
+    /// and higher, the returned vertices are those used by the boundary triangulation,
+    /// and can include non-extreme points on the hull boundary (for example, a point
+    /// exactly on an edge or facet). Facets are edges (`Facet<2>`), triangles
+    /// (`Facet<3>`), or tetrahedra (`Facet<4>`) depending on the hull dimension. The
+    /// facets are bound to the given points; resolve the vertices of a facet with
+    /// [`Facet::as_simplex`]. Facets are oriented with outward normals: every point of
+    /// the hull lies [`Side::Below`] or [`Side::On`] each of them.
     ///
     /// # Errors
     ///
