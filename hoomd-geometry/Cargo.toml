@@ -27,7 +27,7 @@ hoomd-manifold.workspace = true
 hoomd-vector.workspace = true
 hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
-i256 = { version = "0.2.5", features = ["num-traits", "i512", "std"] }
+i256.workspace = true
 
 [lints]
 workspace = true
