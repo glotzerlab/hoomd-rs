@@ -59,7 +59,7 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    pub fn square(side_length: PositiveReal) -> Self {
+    pub const fn square(side_length: PositiveReal) -> Self {
         Self {
             extents: [side_length, side_length],
             xy: 0.0,
@@ -83,7 +83,7 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    pub fn rectangle(x_side_length: PositiveReal, y_side_length: PositiveReal) -> Self {
+    pub const fn rectangle(x_side_length: PositiveReal, y_side_length: PositiveReal) -> Self {
         Self {
             extents: [x_side_length, y_side_length],
             xy: 0.0,
@@ -150,19 +150,19 @@ impl Rhomboid {
 
     /// The extent in the x-direction: $`L_x`$
     #[inline]
-    pub fn lx(&self) -> PositiveReal {
+    pub const fn lx(&self) -> PositiveReal {
         self.extents[0]
     }
 
     /// The extent in the y-direction: $`L_y`$
     #[inline]
-    pub fn ly(&self) -> PositiveReal {
+    pub const fn ly(&self) -> PositiveReal {
         self.extents[1]
     }
 
     /// The xy shear factor
     #[inline]
-    pub fn xy(&self) -> f64 {
+    pub const fn xy(&self) -> f64 {
         self.xy
     }
 
@@ -385,7 +385,7 @@ impl Rhomboid {
     /// # }
     /// ```
     #[inline]
-    pub fn to_gsd_box(&self) -> [f64; 6] {
+    pub const fn to_gsd_box(&self) -> [f64; 6] {
         [
             self.extents[0].get(),
             self.extents[1].get(),
