@@ -129,6 +129,11 @@ pub use convex::Convex;
 
 pub mod hull;
 
+#[allow(
+    dead_code,
+    reason = "used by the upcoming four-dimensional hull implementation"
+)]
+pub(crate) mod orient4d;
 pub mod shape;
 pub mod xenocollide;
 
@@ -461,6 +466,10 @@ pub enum Error {
     /// Too many vertices were provided.
     #[error("too many vertices")]
     TooManyVertices,
+
+    /// The orientation of the point set cannot be resolved numerically.
+    #[error("cannot resolve the orientation of the given points")]
+    NumericallyAmbiguousPolytope,
 
     /// A coordinate of the input is not finite.
     #[error("a coordinate of the input is not finite")]

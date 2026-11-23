@@ -3816,6 +3816,7 @@ dependencies = [
  "hoomd-manifold",
  "hoomd-utility",
  "hoomd-vector",
+ "i256",
  "itertools 0.15.0",
  "rand 0.10.3",
  "robust",
@@ -4080,6 +4081,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "27f864f10dfb56725ce5ce5472bc52252c8f93a4ab86327122cebf62c5f59a17"
 dependencies = [
  "typenum",
+]
+
+[[package]]
+name = "i256"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71f322bef38504278e52119d503bb89ac1fb7fb6cdff10a5c33bea43541a2fba"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]
