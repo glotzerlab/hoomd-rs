@@ -13,8 +13,8 @@ use std::cmp::Ordering;
 
 use itertools::Itertools;
 
-use crate::Error;
-use hoomd_vector::{Cartesian, Cross, InnerProduct};
+use crate::{Error, orient4d::orient4d};
+use hoomd_vector::{Cartesian, Cross, InnerProduct, Wedge};
 
 /// The side of an oriented hyperplane a point lies on.
 ///
@@ -719,6 +719,196 @@ fn collinear(points: &[Cartesian<3>], a: usize, b: usize, c: usize) -> bool {
     })
 }
 
+impl ConvexHull<4> for [Cartesian<4>] {
+    /// Compute the four-dimensional hull by inserting points into an initial
+    /// simplex and triangulating the visible region of the boundary.
+    ///
+    /// # Errors
+    /// Returns [`Error::NotFinite`] for nonfinite coordinates,
+    /// [`Error::DegeneratePolytope`] if the points do not span four dimensions, or
+    /// [`Error::NumericallyAmbiguousPolytope`] if an orientation cannot be resolved.
+    #[inline]
+    fn convex_hull(&self) -> Result<(Vec<Cartesian<4>>, Vec<Facet<'_, 4>>), Error> {
+        let (indices, cells) = incremental_hull_4d(self)?;
+        let vertices = indices.into_iter().map(|i| self[i]).collect();
+        let facets = cells
+            .into_iter()
+            .map(|cell| Facet::new(self, cell))
+            .collect();
+        Ok((vertices, facets))
+    }
+}
+
+/// Build the four-dimensional hull as vertex indices and outward-oriented cells.
+fn incremental_hull_4d(points: &[Cartesian<4>]) -> Result<(Vec<usize>, Vec<[usize; 4]>), Error> {
+    if points.len() < 5 {
+        return Err(Error::DegeneratePolytope);
+    }
+    if !finite_points(points) {
+        return Err(Error::NotFinite);
+    }
+
+    let initial = initial_fivecell(points)?;
+    let outside = |[a, b, c, d]: [usize; 4], p| {
+        orient4d(points[a], points[b], points[c], points[d], points[p]).map(|sign| sign > 0)
+    };
+    let mut cells = Vec::with_capacity(5);
+    for (i, &opposite) in initial.iter().enumerate() {
+        let mut cell = std::array::from_fn(|j| initial[j + usize::from(j >= i)]);
+        if outside(cell, opposite)? {
+            cell.swap(0, 1);
+        }
+        cells.push(cell);
+    }
+
+    let (mut retained, mut triangles) = (Vec::new(), Vec::new());
+    for p in (0..points.len()).filter(|p| !initial.contains(p)) {
+        triangles.clear();
+        for [a, b, c, d] in cells.drain(..) {
+            if outside([a, b, c, d], p)? {
+                // The alternating boundary of the oriented tetrahedron.
+                triangles.extend(
+                    [[b, c, d], [a, d, c], [a, b, d], [a, c, b]].map(|[a, b, c]| {
+                        // Rotate the smallest index first, preserving orientation.
+                        if a < b && a < c {
+                            [a, b, c]
+                        } else if b < c {
+                            [b, c, a]
+                        } else {
+                            [c, a, b]
+                        }
+                    }),
+                );
+            } else {
+                retained.push([a, b, c, d]);
+            }
+        }
+        std::mem::swap(&mut cells, &mut retained);
+
+        // Interior triangles cancel with their reversed orientation.
+        triangles.sort_unstable();
+        for &[a, b, c] in &triangles {
+            if triangles.binary_search(&[a, c, b]).is_err() {
+                cells.push([p, a, b, c]);
+            }
+        }
+    }
+
+    let mut on_hull = vec![false; points.len()];
+    for &i in cells.iter().flatten() {
+        on_hull[i] = true;
+    }
+    Ok(((0..points.len()).filter(|&i| on_hull[i]).collect(), cells))
+}
+
+/// Find an initial five-cell for the incremental hull.
+///
+/// Start at the lexicographically smallest point. Choose each next point
+/// by its distance from the affine span of the points already selected.
+fn initial_fivecell(points: &[Cartesian<4>]) -> Result<[usize; 5], Error> {
+    let mut result = [42; 5];
+    result[0] = points
+        .iter()
+        .position_min_by(|x, y| {
+            x[0].total_cmp(&y[0])
+                .then(x[1].total_cmp(&y[1]))
+                .then(x[2].total_cmp(&y[2]))
+                .then(x[3].total_cmp(&y[3]))
+        })
+        .ok_or(Error::DegeneratePolytope)?;
+    let origin = points[result[0]];
+
+    let b = (0..points.len())
+        .filter(|&i| points[i] != origin)
+        .max_by(|&i, &j| {
+            (points[i] - origin)
+                .norm_squared()
+                .total_cmp(&(points[j] - origin).norm_squared())
+        })
+        .ok_or(Error::DegeneratePolytope)?;
+    result[1] = b;
+
+    // Find the independent coordinates in ab so we can re-use the vectors later.
+    let pivot_coord = (0..4)
+        .find(|&axis| origin[axis] != points[b][axis])
+        .ok_or(Error::DegeneratePolytope)?;
+    let mut basis = [origin; 5];
+    basis[1] = points[b];
+
+    for (i, axis) in (0..4).filter(|&axis| axis != pivot_coord).enumerate() {
+        let coordinate = if origin[axis] == 0.0 {
+            points.iter().map(|p| p[axis].abs()).fold(0.0, f64::max)
+        } else {
+            -origin[axis]
+        };
+        if coordinate == origin[axis] {
+            return Err(Error::DegeneratePolytope);
+        }
+        basis[i + 2][axis] = coordinate;
+    }
+
+    let ab = points[b] - origin;
+    result[2] = farthest_4d(points, &mut basis, &[result[0], b], |point| {
+        ab.wedge(&(point - origin)).norm_squared()
+    })?;
+
+    let ac = points[result[2]] - origin;
+    result[3] = farthest_4d(points, &mut basis, &[result[0], b, result[2]], |point| {
+        Cartesian::counary_cross(&[ab, ac, point - origin]).norm_squared()
+    })?;
+
+    let normal = Cartesian::counary_cross(&[ab, ac, points[result[3]] - origin]);
+    result[4] = farthest_4d(
+        points,
+        &mut basis,
+        &[result[0], b, result[2], result[3]],
+        |point| normal.dot(&(point - origin)).abs(),
+    )?;
+    Ok(result)
+}
+
+/// Find the farthest point from a set of up to 5 points in 4D.
+///
+/// This is a general helper, which allows for ranking of varied subdimensional
+/// geometric components. Use `Cartesian::wedge` for planes, `Cartesian::counary_cross`
+/// for hyperplanes, and a standard dot product for full-dimensional volumes.
+fn farthest_4d(
+    points: &[Cartesian<4>],
+    basis: &mut [Cartesian<4>; 5],
+    selected: &[usize],
+    rank: impl Fn(Cartesian<4>) -> f64,
+) -> Result<usize, Error> {
+    let next = selected.len();
+    let (mut best, mut error) = (None, Error::DegeneratePolytope);
+    for (i, &point) in points.iter().enumerate() {
+        if selected.contains(&i) {
+            continue;
+        }
+        let distance = rank(point).max(0.0);
+        if best.is_some_and(|(rank, _, _)| distance <= rank) {
+            continue;
+        }
+        for slot in next..5 {
+            let mut candidate = *basis;
+            candidate[slot] = point;
+            let [v0, v1, v2, v3, v4] = candidate;
+            match orient4d(v0, v1, v2, v3, v4) {
+                Ok(0) => (),
+                Ok(_) => {
+                    best = Some((distance, i, slot));
+                    break;
+                }
+                Err(err) => error = err,
+            }
+        }
+    }
+
+    let (_, index, slot) = best.ok_or(error)?;
+    basis[slot] = points[index];
+    basis.swap(next, slot);
+    Ok(index)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -732,6 +922,50 @@ mod tests {
     use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
     use rstest_reuse::{self, apply, template};
+
+    #[test]
+    fn test_4d_hull_prefers_farther_seed_vertices() -> Result<(), Error> {
+        let points: [Cartesian<4>; 6] = [
+            [0.0, 0.0, 0.0, 0.0].into(),
+            [1.0, 0.0, 0.0, 0.0].into(),
+            [2.0, 0.0, 0.0, 0.0].into(),
+            [0.0, 1.0, 0.0, 0.0].into(),
+            [0.0, 0.0, 1.0, 0.0].into(),
+            [0.0, 0.0, 0.0, 1.0].into(),
+        ];
+        let (vertices, facets) = points.convex_hull()?;
+        assert_eq!(
+            vertices,
+            [points[0], points[2], points[3], points[4], points[5]]
+        );
+        assert_eq!(facets.len(), 5);
+        Ok(())
+    }
+
+    #[test]
+    fn test_4d_hull() -> Result<(), Error> {
+        // The 16-cell has eight vertices and 16 tetrahedral facets.
+        let points: [Cartesian<4>; 9] = std::array::from_fn(|i| {
+            Cartesian::from(std::array::from_fn(|axis| {
+                if i / 2 == axis {
+                    if i % 2 == 0 { 1.0 } else { -1.0 }
+                } else {
+                    0.0
+                }
+            }))
+        });
+        let (vertices, facets) = points.convex_hull()?;
+        assert_eq!(vertices, points[..8]);
+        assert_eq!(facets.len(), 16);
+        for facet in facets {
+            assert_eq!(facet.vertices(), &points);
+            assert_eq!(facet.orientation(&points[8])?, Side::Below);
+            for point in &points {
+                assert_ne!(facet.orientation(point)?, Side::Above);
+            }
+        }
+        Ok(())
+    }
 
     #[rstest]
     fn test_square_corners() {
@@ -1478,6 +1712,27 @@ mod tests {
     fn test_3d_degenerate(#[case] points: Vec<[f64; 3]>) {
         let points: Vec<Cartesian<3>> = points.into_iter().map(Cartesian::from).collect();
         check!(points.convex_hull() == Err(Error::DegeneratePolytope));
+    }
+
+    #[test]
+    fn test_3d_hull_can_retain_edge_midpoint() -> Result<(), Error> {
+        let points: [Cartesian<3>; 6] = [
+            [0.0, 0.0, 0.0].into(),
+            [10.0, 0.0, 0.0].into(),
+            [0.0, 10.0, 0.0].into(),
+            [0.0, 0.0, 10.0].into(),
+            [8.5, 1.0, 1.0].into(),
+            [7.0, 2.0, 2.0].into(),
+        ];
+        let midpoint = (points[1] + points[5]) * 0.5;
+        let (vertices, facets) = points.convex_hull()?;
+        assert!(vertices.contains(&midpoint));
+        assert!(
+            facets
+                .iter()
+                .any(|facet| facet.as_simplex().contains(&midpoint))
+        );
+        Ok(())
     }
 
     #[rstest]
