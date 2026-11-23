@@ -322,11 +322,12 @@ impl MinkowskiPortalRefinement<3> for Cartesian<3> {
 /// (assuming a non-degenerate portal simplex).
 #[inline]
 fn perp_to_2d_subspace(a: Cartesian<4>, b: Cartesian<4>, tol: f64) -> Option<Cartesian<4>> {
+    let threshold = tol * a.norm() * b.norm(); // counary_cross has units of L^2
     for i in 0..4 {
         let mut e = [0.0f64; 4];
         e[i] = 1.0;
         let n = Cartesian::<4>::counary_cross(&[a, b, e.into()]);
-        if n.into_iter().any(|x| x.abs() > tol) {
+        if n.into_iter().any(|x| x.abs() > threshold) {
             return Some(n);
         }
     }
@@ -389,9 +390,11 @@ impl MinkowskiPortalRefinement<4> for Cartesian<4> {
 
         // Recompute portal normal from 3 edge vectors
         let mut n = Self::counary_cross(&[v1 - *v0, v2 - *v0, v3 - *v0]);
-        // Coplanar v1, v2, v3 with v0 produce a zero normal — origin lies on a flat
-        // boundary region which we treat as overlap
-        if n.into_iter().all(|x| x.abs() < Self::TOLERANCE) {
+        // Coplanar v1, v2, v3 with v0 produce a zero normal: origin lies on a flat
+        // boundary region which we treat as overlap. The normal has units of L^3
+        let coplanar_tol =
+            Self::TOLERANCE * (v1 - *v0).norm() * (v2 - *v0).norm() * (v3 - *v0).norm();
+        if n.into_iter().all(|x| x.abs() < coplanar_tol) {
             return Discovery::Known(true);
         }
         // Orient the portal and its normal together, as the face tests in the
@@ -662,9 +665,12 @@ where
         let normal = Cartesian::<N>::outward_normal(&portal, &v0);
 
         // If the portal's (N-1)-simplex is degenerate, the normal is near zero and the
-        // rest of the algorithm does not make sense (so we fail safe -> overlap)
+        // rest of the algorithm does not make sense (so we fail safe -> overlap).
+        // The normal scales as L^(N-1).
         if normal.norm_squared()
-            < Cartesian::<N>::TOLERANCE * Cartesian::<N>::TOLERANCE * v0.norm_squared()
+            < Cartesian::<N>::TOLERANCE.powi(2)
+                * v0.norm()
+                    .powi(i32::try_from(2 * (N - 1)).expect("N is small"))
         {
             return true;
         }
