@@ -75,6 +75,10 @@ pub trait UpdateNetForceAndVirial<E> {
 /// [`NetTorque`] properties of each body in the microstate to the ones computed
 /// by the interaction model.
 ///
+/// Uses the [`hoomd_utility::parallel`] thread pool to compute forces in
+/// parallel. To avoid deadlocks, do not call this method within a parallel
+/// section.
+///
 /// [`NetBodyForceVirialAndTorque`]: hoomd_interaction::NetBodyForceVirialAndTorque
 /// [`NetForce`]: hoomd_microstate::property::NetForce
 /// [`NetVirial`]: hoomd_microstate::property::NetVirial

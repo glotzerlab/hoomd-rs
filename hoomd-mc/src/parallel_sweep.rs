@@ -56,11 +56,9 @@ struct BodyTrial<B, S> {
 
 /// In parallel, apply local trial moves to bodies in the microstate.
 ///
-/// Trial moves run on the shared thread pool managed by [`with_thread_pool`].
-/// The pool initializes automatically with a topology-based default thread count.
-/// Independent callers serialize their parallel operations. Do not apply this
-/// sweep from a task running on the pool or while holding its lock, as doing so
-/// can deadlock.
+/// Uses the [`hoomd_utility::parallel`] thread pool to compute forces in
+/// parallel. To avoid deadlocks, do not call this method within a parallel
+/// section.
 ///
 /// The generic type names are:
 /// * `L`: The [`LocalTrial`](crate::LocalTrial) type.
