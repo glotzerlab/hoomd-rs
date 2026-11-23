@@ -8,7 +8,7 @@
 #![expect(clippy::wildcard_imports, reason = "simplifies code")]
 #![expect(clippy::cast_possible_truncation, reason = "N is small")]
 
-//! Benchmark 2D and 3D convex hulls.
+//! Benchmark 2D, 3D, and 4D convex hulls.
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
@@ -157,6 +157,34 @@ mod random {
                 let (vertices, facets) = pts.convex_hull().expect("bench points form a hull");
                 black_box((vertices, facets.len()))
             });
+    }
+}
+
+#[divan::bench_group]
+mod hull_4d {
+    use super::*;
+
+    fn bench_points(points: &[Cartesian<4>], bencher: Bencher) {
+        bencher
+            .counter(ItemsCount::from(points.len() as u32))
+            .bench_local(|| {
+                let (vertices, facets) = black_box(points)
+                    .convex_hull()
+                    .expect("bench points form a hull");
+                black_box((vertices, facets.len()))
+            });
+    }
+
+    #[divan::bench(consts = NUM_POINTS)]
+    fn unit_tesseract<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(42);
+        bench_points(&create_random_points(N, &mut rng), bencher);
+    }
+
+    #[divan::bench(consts = NUM_POINTS)]
+    fn unit_hyperball<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(42);
+        bench_points(&create_ball_points(N, &mut rng), bencher);
     }
 }
 
