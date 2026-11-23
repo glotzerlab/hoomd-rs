@@ -63,7 +63,7 @@ pub struct LennardJones<const D: usize, X> {
 impl<const D: usize, X> Effort for LennardJones<D, X> {
     #[inline]
     fn units() -> String {
-        "steps per second".to_string()
+        "step".to_string()
     }
 
     #[inline]
