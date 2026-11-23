@@ -138,17 +138,20 @@ pub fn orient4d_exact(
     pe: Cartesian<4>,
 ) -> Result<i64, Error> {
     let mut coordinates = [[Dyad::ZERO; 4]; 5];
-    let mut min_exponent = i32::MAX;
-    let mut max_exponent = i32::MIN;
-    for (row, point) in coordinates.iter_mut().zip([pa, pb, pc, pd, pe]) {
-        for (coordinate, value) in row.iter_mut().zip(point.coordinates) {
+    let values = [pa, pb, pc, pd, pe]
+        .into_iter()
+        .flat_map(|point| point.coordinates);
+    let (min_exponent, max_exponent) = coordinates.iter_mut().flatten().zip(values).try_fold(
+        (i32::MAX, i32::MIN),
+        |(min, max), (coordinate, value)| -> Result<_, Error> {
             *coordinate = Dyad::try_from(value).map_err(|_| Error::NumericallyAmbiguousPolytope)?;
-            if !coordinate.is_zero() {
-                min_exponent = min_exponent.min(coordinate.exponent());
-                max_exponent = max_exponent.max(coordinate.exponent());
+            if coordinate.is_zero() {
+                return Ok((min, max));
             }
-        }
-    }
+            let exponent = coordinate.exponent();
+            Ok((min.min(exponent), max.max(exponent)))
+        },
+    )?;
     // Only nonzero coordinates constrain the scale. An empty range means all are zero.
     if min_exponent > max_exponent {
         return Ok(0);
@@ -161,8 +164,7 @@ pub fn orient4d_exact(
         if coordinate.is_zero() {
             return I512::ZERO;
         }
-        let shift = u32::try_from(coordinate.exponent() - min_exponent)
-            .expect("nonzero coordinates are at or above the minimum exponent");
+        let shift = coordinate.exponent().abs_diff(min_exponent);
         I512::from_i64(coordinate.mantissa()) << shift
     };
     let [rows @ .., anchor] = coordinates;
