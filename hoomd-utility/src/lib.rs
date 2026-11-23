@@ -20,4 +20,5 @@
 //! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 pub mod data;
+pub mod dyad;
 pub mod valid;
