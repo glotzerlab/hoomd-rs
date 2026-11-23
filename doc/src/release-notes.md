@@ -28,6 +28,7 @@
 *Fixed:*
 
 * [`benchmarks`]: Fix inconsistencies in the output (#489).
+* `[hoomd-mc]`: `ParallelSweep` no longer separately tracks `TrialStatus::Invalid` moves, fixing a subtle inconsistency in the statistics of parallel MC simulations. Moves proposed in empty cells are marked with the new `TrialStatus::EmptySpace` to keep move counts reasonable (#490).
 
 ## 1.4.0 (2026-10-26)
 
