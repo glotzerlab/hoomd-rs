@@ -26,6 +26,8 @@
 
 *Fixed:*
 
+* `[hoomd-mc]`: `ParallelSweep` no longer separately tracks `TrialStatus::Invalid` moves, fixing a subtle inconsistency in the statistics of parallel MC simulations (#490).
+
 ## 1.4.0 (2026-10-26)
 
 *Highlight:*
