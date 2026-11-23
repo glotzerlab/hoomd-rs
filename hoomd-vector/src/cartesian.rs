@@ -634,6 +634,38 @@ impl Wedge for Cartesian<3> {
     }
 }
 
+impl Wedge for Cartesian<4> {
+    type Bivector = Cartesian<6>;
+
+    /// Compute the wedge product of two vectors.
+    ///
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    ///
+    /// Each coefficient is the signed area of the parallelogram spanned by $`a`$ and
+    /// $`b`$, projected onto a coordinate plane in the order `xy, xz, xw, yz, yw, zw`.
+    /// The norm of the six coefficients is the area of the parallelogram.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Cartesian, InnerProduct, Wedge};
+    ///
+    /// let a = Cartesian::from([2.0, 0.0, 0.0, 0.0]);
+    /// let b = Cartesian::from([1.0, 0.0, 0.0, 3.0]);
+    /// let projected_areas = a.wedge(&b);
+    /// assert_eq!(projected_areas, [0.0, 0.0, 6.0, 0.0, 0.0, 0.0].into());
+    /// assert_eq!(projected_areas.norm(), 2.0 * 3.0);
+    /// ```
+    #[inline]
+    fn wedge(&self, other: &Self) -> Self::Bivector {
+        [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]
+            .map(|(i, j)| self[i] * other[j] - self[j] * other[i])
+            .into()
+    }
+}
+
 impl Cartesian<4> {
     /// Compute the `N-1`-ary ([co-unary]) cross product of a four-dimensional vector.
     ///

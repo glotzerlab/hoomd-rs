@@ -129,10 +129,6 @@ pub use convex::Convex;
 
 pub mod hull;
 
-#[allow(
-    dead_code,
-    reason = "used by the upcoming four-dimensional hull implementation"
-)]
 pub(crate) mod orient4d;
 pub mod shape;
 pub mod xenocollide;
