@@ -770,12 +770,10 @@ fn incremental_hull_4d(points: &[Cartesian<4>]) -> Result<(Vec<usize>, Vec<[usiz
                 triangles.extend(
                     [[b, c, d], [a, d, c], [a, b, d], [a, c, b]].map(|[a, b, c]| {
                         // Rotate the smallest index first, preserving orientation.
-                        if a < b && a < c {
-                            [a, b, c]
-                        } else if b < c {
-                            [b, c, a]
-                        } else {
-                            [c, a, b]
+                        match a.min(b).min(c) {
+                            smallest if smallest == a => [a, b, c],
+                            smallest if smallest == b => [b, c, a],
+                            _ => [c, a, b],
                         }
                     }),
                 );
