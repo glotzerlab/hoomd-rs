@@ -95,7 +95,7 @@ jobs:
         cache-bin: false
         add-job-id-key: false
         save-if: ${{ github.ref != 'refs/heads/trunk' && matrix.example == 'applying-interactions' }}
-        lookup-only: ${{ github.ref_type == 'tag' || github.ref != 'refs/heads/trunk' }}
+        lookup-only: ${{ github.ref_type == 'tag' || github.ref == 'refs/heads/trunk' }}
 
     - name: Create output directory
       run: mkdir -p html
@@ -159,7 +159,7 @@ jobs:
         cache-bin: false
         add-job-id-key: false
         save-if: false
-        lookup-only: ${{ github.ref_type == 'tag' || github.ref != 'refs/heads/trunk' }}
+        lookup-only: ${{ github.ref_type == 'tag' || github.ref == 'refs/heads/trunk' }}
 
     - name: Build API documentation
       run: >
