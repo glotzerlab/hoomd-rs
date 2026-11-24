@@ -31,7 +31,7 @@
 *Fixed:*
 
 * `[benchmarks]`: Fix inconsistencies in the output (#489).
-* `[hoomd-geometry]`: Fix fractional coordinate conversion and containment for rotated `Hyperparallelepiped` shapes, including periodic ghost generation.
+* `[hoomd-geometry]`: Fix `Hyperparallelepiped::fractional`,`is_point_inside`, and `generate_ghosts` when using rotated boxes (#495).
 * `[hoomd-mc]`: `ParallelSweep` no longer separately tracks `TrialStatus::Invalid` moves, fixing a subtle inconsistency in the statistics of parallel MC simulations. Moves proposed in empty cells are marked with the new `TrialStatus::EmptySpace` to keep move counts reasonable (#490).
 * `[hoomd-microstate]`: Generate ghosts for wrapped positions that lie on or slightly outside sheared periodic boundaries due to floating point roundoff (#486).
 
