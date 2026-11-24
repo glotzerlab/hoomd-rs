@@ -47,7 +47,7 @@ default-members = ["examples",
 [workspace.package]
 version = "1.4.0"
 edition = "2024"
-rust-version = "1.95"
+rust-version = "1.100"
 homepage = "https://glotzerlab.engin.umich.edu"
 documentation = "https://hoomd-rs.readthedocs.io"
 repository = "https://github.com/glotzerlab/hoomd-rs"
@@ -91,10 +91,10 @@ clap = {version = "4.5.48", features = ["derive"]}
 clap-verbosity-flag = "3.0.3"
 env_logger = "0.11.8"
 hex = "0.4.3"
+forkunion = { git = "https://github.com/ashvardanian/ForkUnion.git", branch = "main-dev" }
 itertools = "0.15.0"
 md-5 = "0.11.0"
 postcard = {version = "1.1.3", default-features = false, features = ["use-std"]}
-rayon = "1.11.0"
 robust = "1.2.0"
 rustc-hash = "2.1.1"
 serde-json-fmt = "0.2.0"
