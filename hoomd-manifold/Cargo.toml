@@ -18,6 +18,7 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 approxim.workspace = true
 num-complex.workspace = true
 rand.workspace = true
+rand_distr.workspace = true
 serde.workspace = true
 serde_with.workspace = true
 thiserror.workspace = true
@@ -43,4 +44,8 @@ harness = false
 
 [[bench]]
 name = "hyperbolic_angle"
+harness = false
+
+[[bench]]
+name = "spherical"
 harness = false
