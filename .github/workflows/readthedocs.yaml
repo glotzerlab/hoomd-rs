@@ -88,12 +88,14 @@ jobs:
     # dramatically. Add the Cargo.lock hash again in the key portion to
     # prevent this restoration.
     - name: Cache
+      # zizmor: ignore[cache-poisoning] - Cach reads are disabled on published pages
       uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
         key: build-interactive-examples-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
         add-job-id-key: false
         save-if: ${{ github.ref != 'refs/heads/trunk' && matrix.example == 'applying-interactions' }}
+        lookup-only: ${{ github.ref_type == 'tag' || github.ref != 'refs/heads/trunk' }}
 
     - name: Create output directory
       run: mkdir -p html
@@ -150,16 +152,18 @@ jobs:
         done
     # reuse the cache from `test.yaml`
     - name: Cache
+      # zizmor: ignore[cache-poisoning] - Cach reads are disabled on published pages
       uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
         key: test-native-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
         add-job-id-key: false
         save-if: false
+        lookup-only: ${{ github.ref_type == 'tag' || github.ref != 'refs/heads/trunk' }}
 
     - name: Build API documentation
       run: >
-        ./build_api_documentation
+        ./build_api_documentation.sh
         --profile=ci
         --all-features
         --locked
@@ -251,7 +255,7 @@ jobs:
       run: du -hsc html/*
 
     - name: Deploy
-      uses: readthedocs/upload-action@80f3c6547919b97858e61ffbe3a4990a25959f9a # unreleased
+      uses: readthedocs/upload-action@80f3c6547919b97858e61ffbe3a4990a25959f9a
       with:
         token: ${{ secrets.READTHEDOCS_TOKEN }}
         project-slug: hoomd-rs
