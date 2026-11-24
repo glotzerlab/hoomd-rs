@@ -4,8 +4,8 @@ build:
   tools:
     rust: "1.91"
   commands:
-    - rustup install 1.96.0
-    - rustup default 1.96.0
+    - rustup install nightly-2026-11-22
+    - rustup default nightly-2026-11-22
     - rustup component list --installed
     # Install cargo binstall
     - mkdir -p "${PATH%%:*}"

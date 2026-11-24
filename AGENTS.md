@@ -25,7 +25,7 @@ Commands match `doc/src/development.md` and the CI workflows
 - **Examples:** name = filename without path/extension.
   - batch (GSD output): `cargo run --quiet --release --example <name>`
   - interactive desktop: `cargo run --quiet --release --features bevy --example <name>`
-  - browser/wasm: `cargo run --quiet --features bevy --target wasm32-unknown-unknown --example <name>`
+  - browser/wasm: `cargo run --quiet --no-default-features --features bevy --target wasm32-unknown-unknown --example <name>`
   Agents should not run examples without permission.
 
 Lints, format, and prek checks are not needed after every task, only once when the

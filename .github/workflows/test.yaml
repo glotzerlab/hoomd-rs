@@ -76,6 +76,7 @@ jobs:
         save-if: ${{ github.ref != 'refs/heads/trunk' }}
 
     - name: Build [default features]
+      if: ${{ matrix.target == '' }}
       run: >
         cargo build
         --profile=ci
@@ -87,9 +88,9 @@ jobs:
         --examples
         ${{ matrix.target != '' && '--target' || '' }} ${{ matrix.target }}
         --verbose
-      if: ${{ matrix.target == '' }}
 
     - name: Build [all features]
+      if: ${{ matrix.target == '' }}
       run: >
         cargo build
         --profile=ci
@@ -103,7 +104,24 @@ jobs:
         ${{ matrix.target != '' && '--target' || '' }} ${{ matrix.target }}
         --verbose
 
+    - name: Build [WebAssembly, serial]
+      if: ${{ matrix.target != '' }}
+      run: >
+        cargo build
+        --profile=ci
+        --no-default-features
+        --features=bevy,webgpu,doc-example
+        --locked
+        --workspace
+        --lib
+        --bins
+        --tests
+        --examples
+        --target ${{ matrix.target }}
+        --verbose
+
     - name: Run tests
+      if: ${{ matrix.target == '' }}
       run: >
         cargo test
         --profile=ci
@@ -111,9 +129,9 @@ jobs:
         --locked
         --workspace
         --verbose
-      if: ${{ matrix.target == '' }}
 
     - name: Run tests [max_ghosts_12]
+      if: ${{ matrix.target == '' }}
       run: >
         cargo test
         --profile=ci
@@ -121,9 +139,21 @@ jobs:
         --locked
         --package=hoomd-microstate
         --verbose
+
+    - name: Run tests [serial]
       if: ${{ matrix.target == '' }}
+      run: >
+        cargo test
+        --profile=ci
+        --no-default-features
+        --locked
+        --package=hoomd-utility
+        --package=hoomd-mc
+        --package=hoomd-md
+        --verbose
 
     - name: Build API documentation
+      if: ${{ matrix.target == '' }}
       run: >
         cargo doc
         --profile=ci
@@ -131,16 +161,15 @@ jobs:
         --locked
         --workspace
         --no-deps
-      if: ${{ matrix.target == '' }}
 
     - name: Run benchmarks
+      if: ${{ matrix.target == '' }}
       run: >
         cargo bench
         --profile=ci
         --all-features
         --locked
         --workspace
-      if: ${{ matrix.target == '' }}
 
     - name: Show target directory size
       run: du -hsc target/*

@@ -7,6 +7,7 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Apply the Metropolis Monte Carlo simulation method to systems of bodies.
 //!
@@ -79,6 +80,10 @@
 //! behavior. [`QuickCompress`] compresses the simulation boundary until it
 //! reaches a target volume.
 //!
+//! # Feature flags
+//!
+//! The `parallel` feature, enabled by default, provides [`ParallelSweep`].
+//!
 //! # Complete documentation
 //!
 //! `hoomd-mc` is is a part of *hoomd-rs*. Read the [complete documentation]
@@ -95,6 +100,7 @@ use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
 
 mod grand_canonical;
 mod hypercuboid;
+#[cfg(feature = "parallel")]
 mod parallel_sweep;
 mod quick_compress;
 mod quick_insert;
@@ -106,6 +112,7 @@ mod uniform_in;
 
 pub use grand_canonical::{GrandCanonical, InsertRemoveCount};
 pub use hypercuboid::HypercuboidCheckerboard;
+#[cfg(feature = "parallel")]
 pub use parallel_sweep::ParallelSweep;
 pub use quick_compress::QuickCompress;
 pub use quick_insert::QuickInsert;

@@ -3,6 +3,7 @@
 
 //! Define `UpdateNetForce`
 
+#[cfg(feature = "parallel")]
 use forkunion::{DynamicScheduler, IntoParallelIterator, ParallelIteratorExt};
 
 use hoomd_interaction::{NetBodyForceAndVirial, NetBodyForceVirialAndTorque};
@@ -10,6 +11,7 @@ use hoomd_microstate::{
     Microstate,
     property::{NetForce, NetTorque, NetVirial},
 };
+#[cfg(feature = "parallel")]
 use hoomd_utility::parallel::with_thread_pool;
 use hoomd_vector::{Outer, Vector, Wedge};
 
@@ -20,6 +22,10 @@ use hoomd_vector::{Outer, Vector, Wedge};
 /// [`UpdateNetForceAndVirial`] sets the [`NetForce`] and [`NetVirial`]
 /// properties of each body in the microstate to the one computed by the
 /// interaction model.
+///
+/// Computes results in parallel when the `parallel` feature is enabled (the
+/// default), and serially otherwise. To avoid deadlocks, do not call this
+/// within a parallel section.
 ///
 /// [`NetBodyForceAndVirial`]: hoomd_interaction::NetBodyForceAndVirial
 /// [`NetForce`]: hoomd_microstate::property::NetForce
@@ -75,9 +81,9 @@ pub trait UpdateNetForceAndVirial<E> {
 /// [`NetTorque`] properties of each body in the microstate to the ones computed
 /// by the interaction model.
 ///
-/// Uses the [`hoomd_utility::parallel`] thread pool to compute forces in
-/// parallel. To avoid deadlocks, do not call this method within a parallel
-/// section.
+/// Computes results in parallel when the `parallel` feature is enabled (the
+/// default), and serially otherwise. To avoid deadlocks, do not call this
+/// within a parallel section.
 ///
 /// [`NetBodyForceVirialAndTorque`]: hoomd_interaction::NetBodyForceVirialAndTorque
 /// [`NetForce`]: hoomd_microstate::property::NetForce
@@ -153,6 +159,7 @@ where
         let mut net_force_and_virial_tmp: Vec<Option<(V, V::Tensor)>> =
             vec![None; self.bodies().len()];
 
+        #[cfg(feature = "parallel")]
         with_thread_pool(|pool| {
             net_force_and_virial_tmp
                 .as_mut_slice()
@@ -164,6 +171,11 @@ where
                 })
         })
         .expect("force computation should succeed");
+
+        #[cfg(not(feature = "parallel"))]
+        for (body_index, result) in net_force_and_virial_tmp.iter_mut().enumerate() {
+            *result = Some(interaction_model.net_body_force_and_virial(self, body_index));
+        }
 
         for (body_index, result) in net_force_and_virial_tmp.into_iter().enumerate() {
             let (net_force, net_virial) =
@@ -193,6 +205,7 @@ where
         let mut net_force_virial_and_torque_tmp: Vec<Option<(V, V::Tensor, V::Bivector)>> =
             vec![None; self.bodies().len()];
 
+        #[cfg(feature = "parallel")]
         with_thread_pool(|pool| {
             net_force_virial_and_torque_tmp
                 .as_mut_slice()
@@ -205,6 +218,11 @@ where
                 })
         })
         .expect("force computation should succeed");
+
+        #[cfg(not(feature = "parallel"))]
+        for (body_index, result) in net_force_virial_and_torque_tmp.iter_mut().enumerate() {
+            *result = Some(interaction_model.net_body_force_virial_and_torque(self, body_index));
+        }
 
         for (body_index, result) in net_force_virial_and_torque_tmp.into_iter().enumerate() {
             let (net_force, net_virial, net_torque) =

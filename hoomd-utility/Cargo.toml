@@ -17,8 +17,12 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 [lints]
 workspace = true
 
+[features]
+default = ["parallel"]
+parallel = ["dep:forkunion"]
+
 [dependencies]
-forkunion.workspace = true
+forkunion = { workspace = true, optional = true }
 parquet.workspace = true
 serde.workspace = true
 thiserror.workspace = true

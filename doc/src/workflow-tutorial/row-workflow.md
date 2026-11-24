@@ -43,10 +43,10 @@ resources.threads_per_process = 4
 How should you choose `threads_per_process`? Start with 1. Most of *hoomd-rs*
 uses only 1 thread, so asking for more is a waste of resources. In the current
 release, only `hoomd_mc::ParallelSweep` and `hoomd_md::UpdateNetForce*` use
-multiple threads. Benchmark and see how your model scales before submitting
-a set of jobs to a cluster. You would waste your own time if you requested
-`threads_per_process=32`, but your model ran even faster with
-`threads_per_process=8`.
+multiple threads (when the default `parallel` feature is enabled). Benchmark
+and see how your model scales before submitting a set of jobs to a cluster.
+You would waste your own time if you requested `threads_per_process=32`,
+but your model ran even faster with `threads_per_process=8`.
 
 ### Maximum Size
 

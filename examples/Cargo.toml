@@ -25,6 +25,8 @@ print_stdout = "allow"
 unused_dependencies= "allow"
 
 [features]
+default = ["parallel"]
+parallel = ["hoomd-mc/parallel", "hoomd-md/parallel", "hoomd-utility/parallel"]
 bevy = ["dep:bevy", "dep:hoomd-bevy", "dep:bevy_egui"]
 webgpu = ["hoomd-bevy/webgpu"]
 doc-example = ["bevy", "hoomd-bevy/doc-example"]

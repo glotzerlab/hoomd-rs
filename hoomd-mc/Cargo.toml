@@ -17,8 +17,12 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 [lints]
 workspace = true
 
+[features]
+default = ["parallel"]
+parallel = ["dep:forkunion", "hoomd-utility/parallel"]
+
 [dependencies]
-forkunion.workspace = true
+forkunion = { workspace = true, optional = true }
 itertools.workspace = true
 log.workspace = true
 rand.workspace = true

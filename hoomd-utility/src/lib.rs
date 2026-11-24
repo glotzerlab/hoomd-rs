@@ -7,10 +7,16 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Utilities
 //!
 //! Common utility code used by other hoomd-rs crates and user code.
+//!
+//! # Feature flags
+//!
+//! The `parallel` feature, enabled by default, provides the shared thread pool.
+//! Disable default features when building for WebAssembly.
 //!
 //! # Complete documentation
 //!
@@ -21,4 +27,5 @@
 
 pub mod data;
 pub mod valid;
+#[cfg(feature = "parallel")]
 pub mod parallel;
