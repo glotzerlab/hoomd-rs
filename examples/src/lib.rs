@@ -5,6 +5,7 @@
 
 # Feature flags
 
+* `parallel` Compute forces in parallel (enabled by default).
 * `bevy` Enable examples that use the Bevy game engine.
 * `doc-example` Make examples suitable for display in a web browser.
 * `webgpu` Compile for the WebGPU platform when building for the wasm32 target.

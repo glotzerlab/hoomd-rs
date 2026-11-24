@@ -65,12 +65,12 @@ hoomd-gsd = { version = "1.4.0", path = "hoomd-gsd" }
 hoomd-interaction = { version = "1.4.0", path = "hoomd-interaction" }
 hoomd-linear-algebra = { version = "1.4.0", path = "hoomd-linear-algebra" }
 hoomd-manifold = { version = "1.4.0", path = "hoomd-manifold" }
-hoomd-mc = { version = "1.4.0", path = "hoomd-mc" }
-hoomd-md = { version = "1.4.0", path = "hoomd-md"}
+hoomd-mc = { version = "1.4.0", path = "hoomd-mc", default-features = false }
+hoomd-md = { version = "1.4.0", path = "hoomd-md", default-features = false }
 hoomd-microstate = { version = "1.4.0", path = "hoomd-microstate" }
 hoomd-simulation = { version = "1.4.0", path = "hoomd-simulation" }
 hoomd-spatial = { version = "1.4.0", path = "hoomd-spatial" }
-hoomd-utility = { version = "1.4.0", path = "hoomd-utility" }
+hoomd-utility = { version = "1.4.0", path = "hoomd-utility", default-features = false }
 hoomd-vector = { version = "1.4.0", path = "hoomd-vector" }
 hoomd-rand = { version = "1.4.0", path = "hoomd-rand" }
 

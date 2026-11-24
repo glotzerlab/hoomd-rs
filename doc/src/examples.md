@@ -67,7 +67,7 @@ $ cargo install wasm-bindgen-cli wasm-server-runner
 
 To build and run an example, execute:
 ```shell
-$ cargo run --features bevy --target wasm32-unknown-unknown --example {example}
+$ cargo run --no-default-features --features bevy --target wasm32-unknown-unknown --example {example}
 ```
 then open the printed `http://localhost` URL in your browser. This works in
 Linux, MacOS, Windows, and WSL.

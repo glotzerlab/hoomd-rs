@@ -65,7 +65,9 @@ fn build_examples(table: &Table, args: &Args) -> anyhow::Result<()> {
 
     cargo_build
         .arg("build")
+        .args(["--package", "examples"])
         .args(["--profile", profile])
+        .arg("--no-default-features")
         .args(["--features", "doc-example"])
         .args(["--target", "wasm32-unknown-unknown"]);
 

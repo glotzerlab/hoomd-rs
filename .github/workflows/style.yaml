@@ -79,6 +79,7 @@ jobs:
       run: >
         cargo check
         --profile ci
+        --no-default-features
         --features "bevy"
         --locked
         --workspace
@@ -91,6 +92,7 @@ jobs:
       run: >
         cargo check
         --profile ci
+        --no-default-features
         --features "bevy,webgpu"
         --locked
         --workspace
@@ -103,6 +105,7 @@ jobs:
       run: >
         cargo clippy
         --profile ci
+        --no-default-features
         --features "bevy"
         --locked
         --workspace
@@ -115,6 +118,7 @@ jobs:
       run: >
         cargo clippy
         --profile ci
+        --no-default-features
         --features "bevy,webgpu"
         --locked
         --workspace

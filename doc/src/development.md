@@ -109,7 +109,7 @@ In all cases, see the existing examples for the needed syntax.
 To build and test an individual example with WASM (requires
 [wasm-server-runner]), run:
 ```shell
-$ cargo run --features bevy --target wasm32-unknown-unknown --example {example}
+$ cargo run --no-default-features --features bevy --target wasm32-unknown-unknown --example {example}
 ```
 and open the printed `http://localhost` URL in your browser.
 

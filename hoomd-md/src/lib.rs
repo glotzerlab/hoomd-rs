@@ -122,6 +122,19 @@
 //! rotational degrees of freedom.
 //!
 //! As with the modifies, the compute traits are implemented for [`Microstate`].
+//!
+//! # Feature flags
+//!
+//! The `parallel` feature, enabled by default, computes net forces, virials, and
+//! torques on the shared thread pool. Without it, the same update traits compute
+//! results serially.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-md` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://hoomd-rs.readthedocs.io
 
 use rand::Rng;
 

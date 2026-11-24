@@ -12,6 +12,11 @@
 //!
 //! Common utility code used by other hoomd-rs crates and user code.
 //!
+//! # Feature flags
+//!
+//! The `parallel` feature, enabled by default, provides the shared thread pool.
+//! Disable default features when building for WebAssembly.
+//!
 //! # Complete documentation
 //!
 //! `hoomd-utility` is is a part of *hoomd-rs*. Read the [complete documentation]
@@ -21,4 +26,5 @@
 
 pub mod data;
 pub mod valid;
+#[cfg(feature = "parallel")]
 pub mod parallel;
