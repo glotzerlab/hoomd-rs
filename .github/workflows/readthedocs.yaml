@@ -215,7 +215,7 @@ jobs:
 
     - name: Set site-url
       run: echo "site-url = \"/en/$READTHEDOCS_VERSION/\"" >> doc/book.toml
-        
+
     - name: Build documentation
       run: mdbook build doc --dest-dir=html
       env:
@@ -229,7 +229,7 @@ jobs:
       with:
         name: html-mdbook
         path: html
-  
+
   deploy:
     name: Deploy
     permissions:
@@ -239,7 +239,7 @@ jobs:
 
     # Pull requests from forks don't have access to secrets.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    
+
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -260,7 +260,7 @@ jobs:
         token: ${{ secrets.READTHEDOCS_TOKEN }}
         project-slug: hoomd-rs
         html: html
-          
+
   tests_complete:
     name: All WASM example builds
     if: always()
