@@ -7,6 +7,7 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/glotzerlab/hoomd-rs/7352214172a490cc716492e9724ff42720a0018a/doc/theme/favicon.svg"
 )]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Apply the Metropolis Monte Carlo simulation method to systems of bodies.
 //!

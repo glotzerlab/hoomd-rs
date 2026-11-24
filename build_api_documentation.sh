@@ -10,11 +10,11 @@
 
 set -euo pipefail
 
-export RUSTDOCFLAGS="--html-in-header google_analytics.html --html-in-header katex.html"
+export RUSTDOCFLAGS="--html-in-header google_analytics.html --html-in-header katex.html --cfg docsrs"
 for package in workspace derive linear-algebra simulation utility rand vector gsd manifold spatial \
                geometry microstate interaction mc bevy md order
 do
-  cargo doc --package hoomd-$package --lib --no-deps
+  cargo +nightly-2026-11-22 doc --package hoomd-$package --lib --no-deps
   cp katex.html hoomd-$package/
   cp README.md hoomd-$package/
 done
