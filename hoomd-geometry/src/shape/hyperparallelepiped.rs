@@ -503,7 +503,7 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
     fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
         self.fractional(*point)
             .into_iter()
-            .all(|x| -0.5 <= x && x < 0.5)
+            .all(|x| (-0.5..0.5).contains(&x))
     }
 }
 
@@ -736,7 +736,11 @@ mod tests {
             [-3.0, -2.0, 2.0].into(),
             [6.0, -6.0, 1.0].into(),
         ]);
-        for coordinates in [[0.25, -0.375, 0.125], [-0.49, 0.49, -0.49], [1.2, -0.8, 0.9]] {
+        for coordinates in [
+            [0.25, -0.375, 0.125],
+            [-0.49, 0.49, -0.49],
+            [1.2, -0.8, 0.9],
+        ] {
             let frac = Cartesian::from(coordinates);
             let absolute = b.absolute(frac);
             let frac_back = b.fractional(absolute);
