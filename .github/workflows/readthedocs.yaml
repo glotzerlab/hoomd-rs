@@ -1,0 +1,272 @@
+name: Read the Docs
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches:
+    - trunk
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+  workflow_dispatch:
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
+  CLICOLOR: 1
+
+jobs:
+  build_examples:
+    name: Build [${{ matrix.example }}]
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+        - applying-interactions
+        - binary-hard-shapes
+        - capsules-on-a-plane
+        - crystal-stability
+        - custom-random-walk
+        - ellipse-gcmc-2d
+        - hard-disk-self-assembly
+        - hard-ellipse-self-assembly
+        - hard-tetrahedron-self-assembly
+        - lj-fluid
+        - multi-site-patchy-shapes
+        - patchy-body-2d
+        - patchy-body-3d
+        - patchy-particle-self-assembly
+        - polydisperse-hard-disk-model
+        - seeded-self-assembly
+        - tetronimoes
+        - type-dependent-interactions
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Remove native build configuration
+      run: rm .cargo/config.toml
+    - name: Configure Rust
+      uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+      with:
+        toolchain: 1.100.0
+        targets: wasm32-unknown-unknown
+    - name: Check rust installation
+      run: rustup toolchain list
+    # extra toolchains occur on some actions runners but not others, resulting in cache misses
+    - name: Remove extra rust toolchains
+      run: >
+        for toolchain in $(rustup toolchain list | grep -v default); do
+            rustup toolchain uninstall "$toolchain"
+        done
+    - name: Install cargo-binstall
+      run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "$HOME/.cargo/bin"
+    - name: Install wasm-bindgen
+      run: cargo binstall wasm-bindgen-cli@0.2.130 --no-confirm --disable-strategies=compile --disable-telemetry
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install binaryen
+      run: curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "$HOME/.cargo/bin"
+
+    # rust-cache already includes a Cargo.lock hash in the key. However, it
+    # eagerly restores caches with previous Cargo.lock files. This causes
+    # multiple builds to be cached in target/ increasing the cache usage
+    # dramatically. Add the Cargo.lock hash again in the key portion to
+    # prevent this restoration.
+    - name: Cache
+      uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      with:
+        key: build-interactive-examples-${{ hashFiles('Cargo.lock') }}
+        cache-bin: false
+        add-job-id-key: false
+        save-if: ${{ github.ref != 'refs/heads/trunk' && matrix.example == 'applying-interactions' }}
+
+    - name: Create output directory
+      run: mkdir -p html
+
+    - name: Build examples
+      run: >
+        cargo run
+        --locked
+        -p build-wasm-doc-examples
+        --
+        --reduce-size
+        --root html
+        ${{ matrix.example }}
+
+    - name: Show target directory size
+      run: du -hsc target/*
+
+    - name: Show html directory size
+      run: du -hsc html/*
+
+    - name: Show html directory contents
+      run: ls -lR html
+
+    - name: Upload example
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: html-${{ matrix.example }}
+        path: html
+
+  build_api_docs:
+    name: Build API docs
+    permissions:
+      contents: read
+    runs-on: ubuntu-26.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Remove native build configuration
+      run: rm .cargo/config.toml
+    - name: Configure Rust
+      uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+      with:
+        toolchain: 1.100.0
+    - name: Check rust installation
+      run: rustup toolchain list
+    # extra toolchains occur on some actions runners but not others, resulting in cache misses
+    - name: Remove extra rust toolchains
+      run: >
+        for toolchain in $(rustup toolchain list | grep -v default); do
+            rustup toolchain uninstall "$toolchain"
+        done
+    # reuse the cache from `test.yaml`
+    - name: Cache
+      uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      with:
+        key: test-native-${{ hashFiles('Cargo.lock') }}
+        cache-bin: false
+        add-job-id-key: false
+        save-if: false
+
+    - name: Build API documentation
+      run: >
+        ./build_api_documentation
+        --profile=ci
+        --all-features
+        --locked
+
+    - name: Make the output directory
+      run: mkdir -p html/api
+
+    - name: Move API docs to the output directory
+      run: mv target/doc/* html/api
+
+    - name: Directory contents
+      run: ls -lR html
+
+    - name: Upload API docs
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: html-api-docs
+        path: html
+
+  build_mdbook:
+    name: Build mdBook
+    permissions:
+      contents: read
+    runs-on: ubuntu-26.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Set up mdbook
+      uses: glotzerlab/workflows/setup-mdbook@00c67cb577c36bdc2570845fc62d1a30e3383012 # 0.14.0
+      with:
+        mdbook_version: 0.5.4
+
+    - name: Make the output directory
+      run: mkdir -p html
+
+    - name: Determine version (branch/tag)
+      if: github.event_name == 'push'
+      run: echo READTHEDOCS_VERSION="$(echo "${GITHUB_REF_NAME}")" >> "$GITHUB_ENV"
+
+    - name: Determine version (pull request)
+      if: github.event_name == 'pull_request'
+      run: echo READTHEDOCS_VERSION="$(echo "${PR_NUMBER}")" >> "$GITHUB_ENV"
+      env:
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+
+    - name: Set site-url
+      run: echo "site-url = \"/en/$READTHEDOCS_VERSION/\"" >> doc/book.toml
+        
+    - name: Build documentation
+      run: mdbook build doc --dest-dir=html
+      env:
+        RUST_LOG: "mdbook=info"
+
+    - name: Directory contents
+      run: ls -lR html
+
+    - name: Upload mdbook
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: html-mdbook
+        path: html
+  
+  deploy:
+    name: Deploy
+    permissions:
+      contents: read
+    needs: [build_examples, build_api_docs, build_mdbook]
+    runs-on: ubuntu-26.04
+
+    # Pull requests from forks don't have access to secrets.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        merge-multiple: 'true'
+        pattern: html-*
+        path: html
+
+    - name: Directory contents
+      run: ls -lR .
+
+    - name: Show web directory size
+      run: du -hsc html/*
+
+    - name: Deploy
+      uses: readthedocs/upload-action@80f3c6547919b97858e61ffbe3a4990a25959f9a # unreleased
+      with:
+        token: ${{ secrets.READTHEDOCS_TOKEN }}
+        project-slug: hoomd-rs
+        html: html
+          
+  tests_complete:
+    name: All WASM example builds
+    if: always()
+    needs: build_examples
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+    - run: jq --exit-status 'all(.result == "success")' <<< "${NEEDS}"
+      env:
+        NEEDS: ${{ toJson(needs) }}
+    - name: Done
+      run: exit 0
