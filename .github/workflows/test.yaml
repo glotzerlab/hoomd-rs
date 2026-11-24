@@ -123,16 +123,6 @@ jobs:
         --verbose
       if: ${{ matrix.target == '' }}
 
-    - name: Build API documentation
-      run: >
-        cargo doc
-        --profile=ci
-        --all-features
-        --locked
-        --workspace
-        --no-deps
-      if: ${{ matrix.target == '' }}
-
     - name: Run benchmarks
       run: >
         cargo bench
