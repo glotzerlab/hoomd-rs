@@ -205,11 +205,11 @@ jobs:
 
     - name: Determine version (branch/tag)
       if: github.event_name == 'push'
-      run: echo READTHEDOCS_VERSION="$(echo "${GITHUB_REF_NAME}")" >> "$GITHUB_ENV"
+      run: echo READTHEDOCS_VERSION="${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
 
     - name: Determine version (pull request)
       if: github.event_name == 'pull_request'
-      run: echo READTHEDOCS_VERSION="$(echo "${PR_NUMBER}")" >> "$GITHUB_ENV"
+      run: echo READTHEDOCS_VERSION="${PR_NUMBER}" >> "$GITHUB_ENV"
       env:
         PR_NUMBER: ${{ github.event.pull_request.number }}
 
