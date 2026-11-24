@@ -68,14 +68,13 @@ pub struct Hyperparallelepiped<const N: usize> {
 impl<const N: usize> Hyperparallelepiped<N> {
     /// Construct a new hyperparallelepiped from N edge vectors.
     ///
-    /// Hyperparallelepiped construction is expensive because it computes the
-    /// QR decomposition of a matrix. Once construction is complete, operations
-    /// such as [`fractional`], [`is_point_inside`], and [`map_point`] are very
-    /// efficient.
+    /// Hyperparallelepiped construction computes and caches the QR decomposition
+    /// of the edge-vector matrix for [`volume`] and [`nearest_plane_distances`].
+    /// Conversion from absolute to fractional coordinates computes a new
+    /// decomposition on each call.
     ///
-    /// [`fractional`]: Self::fractional
-    /// [`is_point_inside`]: IsPointInside::is_point_inside
-    /// [`map_point`]: MapPoint::map_point
+    /// [`volume`]: Volume::volume
+    /// [`nearest_plane_distances`]: Self::nearest_plane_distances
     ///
     /// # Example
     ///
@@ -110,10 +109,8 @@ impl<const N: usize> Hyperparallelepiped<N> {
     ///
     /// The edge vectors are assembled into an N×N matrix $`\mathbf{A}`$ whose *columns*
     /// are the edge vectors, and the result is stored in `self.qr`. This
-    /// factorization is later used by [`fractional`](Self::fractional),
-    /// [`is_point_inside`](IsPointInside::is_point_inside), and
-    /// [`map_point`](MapPoint::map_point) to solve the linear system
-    /// $`\mathbf{A} \vec{s} = \vec{r}`$.
+    /// factorization is later used by [`volume`](Volume::volume) and
+    /// [`nearest_plane_distances`](Self::nearest_plane_distances).
     #[inline]
     fn calculate_qr(edge_vectors: &[Cartesian<N>; N]) -> Matrix<N, N> {
         let box_matrix = Matrix {
@@ -212,7 +209,12 @@ impl<const N: usize> Hyperparallelepiped<N> {
     /// ```
     #[inline]
     pub fn fractional(&self, absolute: Cartesian<N>) -> Cartesian<N> {
-        Cartesian::from_column_matrix(&qr::qr_solve(&self.qr, &absolute.to_column_matrix()))
+        let a = Matrix {
+            rows: self.edge_vectors.map(|v| v.coordinates),
+        }
+        .transpose();
+
+        Cartesian::from_column_matrix(&qr::qr_solve(&a, &absolute.to_column_matrix()))
     }
 
     /// Convert fractional coordinates to absolute position.
@@ -499,12 +501,9 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
     /// ```
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
-        let fractional = qr::qr_solve(&self.qr, &point.to_column_matrix());
-
-        fractional
-            .rows
+        self.fractional(*point)
             .into_iter()
-            .all(|x| -0.5 <= x[0] && x[0] < 0.5)
+            .all(|x| -0.5 <= x && x < 0.5)
     }
 }
 
@@ -708,6 +707,45 @@ mod tests {
     }
 
     #[test]
+    fn fractional_known_values_rotated_2d() {
+        let b = Hyperparallelepiped::new([[0.0, 10.0].into(), [-10.0, 0.0].into()]);
+        let frac = b.fractional([4.5, 0.0].into());
+        assert_relative_eq!(frac, Cartesian::from([0.0, -0.45]), epsilon = 1e-14);
+    }
+
+    #[test]
+    fn fractional_round_trip_rotated_2d() {
+        // Rotate a 4×6 rectangle by 30 degrees.
+        let b = Hyperparallelepiped::new([
+            [2.0 * f64::sqrt(3.0), 2.0].into(),
+            [-3.0, 3.0 * f64::sqrt(3.0)].into(),
+        ]);
+        for coordinates in [[0.25, -0.375], [-0.49, 0.49], [1.2, -0.8]] {
+            let frac = Cartesian::from(coordinates);
+            let absolute = b.absolute(frac);
+            let frac_back = b.fractional(absolute);
+            assert_relative_eq!(frac_back, frac, epsilon = 1e-14);
+            assert_relative_eq!(b.absolute(frac_back), absolute, epsilon = 1e-14);
+        }
+    }
+
+    #[test]
+    fn fractional_round_trip_rotated_3d() {
+        let b = Hyperparallelepiped::new([
+            [2.0, 3.0, 6.0].into(),
+            [-3.0, -2.0, 2.0].into(),
+            [6.0, -6.0, 1.0].into(),
+        ]);
+        for coordinates in [[0.25, -0.375, 0.125], [-0.49, 0.49, -0.49], [1.2, -0.8, 0.9]] {
+            let frac = Cartesian::from(coordinates);
+            let absolute = b.absolute(frac);
+            let frac_back = b.fractional(absolute);
+            assert_relative_eq!(frac_back, frac, epsilon = 1e-14);
+            assert_relative_eq!(b.absolute(frac_back), absolute, epsilon = 1e-14);
+        }
+    }
+
+    #[test]
     fn absolute_origin_maps_to_origin() {
         let b = ortho_box_3d(5.0, 7.0, 9.0);
         let origin = Cartesian::from([0.0, 0.0, 0.0]);
@@ -765,6 +803,25 @@ mod tests {
             Hyperparallelepiped::new([Cartesian::from([4.0, 0.0]), Cartesian::from([1.0, 4.0])]);
         // Fractional origin maps to Cartesian (0,0) — must be inside
         assert!(b.is_point_inside(&Cartesian::from([0.0, 0.0])));
+    }
+
+    #[test]
+    fn is_point_inside_rotated_2d() {
+        let b = Hyperparallelepiped::new([[0.0, 4.0].into(), [-6.0, 0.0].into()]);
+        assert!(b.is_point_inside(&[-2.9, 1.9].into()));
+        assert!(!b.is_point_inside(&[0.0, 2.25].into()));
+        assert!(b.is_point_inside(&[0.0, -2.0].into()));
+        assert!(b.is_point_inside(&[3.0, 0.0].into()));
+        assert!(!b.is_point_inside(&[0.0, 2.0].into()));
+        assert!(!b.is_point_inside(&[-3.0, 0.0].into()));
+
+        let b = Hyperparallelepiped::new([
+            [2.0 * f64::sqrt(3.0), 2.0].into(),
+            [-3.0, 3.0 * f64::sqrt(3.0)].into(),
+        ]);
+        assert!(b.is_point_inside(&b.absolute([0.4, -0.4].into())));
+        assert!(!b.is_point_inside(&b.absolute([0.6, 0.0].into())));
+        assert!(!b.is_point_inside(&b.absolute([0.0, -0.6].into())));
     }
 
     // ------------------------------------------------------------------
