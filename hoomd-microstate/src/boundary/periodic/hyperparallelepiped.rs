@@ -7,12 +7,13 @@ use std::array;
 
 use crate::{
     boundary::{
-        Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
+        Error, GenerateGhosts, GenerateMinimumImageCandidates, MAX_GHOSTS,
+        MaximumAllowableInteractionRange, Periodic, Wrap,
     },
     property::Position,
 };
 use arrayvec::ArrayVec;
-use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
+use hoomd_geometry::shape::Hyperparallelepiped;
 use hoomd_linear_algebra::{
     MatMul,
     matrix::{Matrix, qr},
@@ -43,6 +44,11 @@ where
     P: Position<Position = Cartesian<N>>,
 {
     /// Wrap any cartesian vector to the inside of the given hyperparallelepiped.
+    ///
+    /// *Nominally*, wrapped points will be greater than or equal to the left
+    /// boundary and less than the right. However, callers must be resilient
+    /// to floating point round off errors that result in points exactly on
+    /// the right boundary or slightly outside of either.
     ///
     /// # Example
     ///
@@ -87,30 +93,24 @@ where
     }
 }
 
-impl<S, const N: usize> GenerateGhosts<S> for Periodic<Hyperparallelepiped<N>>
-where
-    S: Position<Position = Cartesian<N>> + Copy + Default,
-{
-    #[inline]
-    fn maximum_interaction_range(&self) -> f64 {
-        self.maximum_interaction_range
-    }
-
-    /// Place periodic images of sites near the edge of the periodic boundary.
+impl<const N: usize> Periodic<Hyperparallelepiped<N>> {
+    /// Generate ghosts within a given range.
     #[inline(always)]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+    fn generate_ghosts_in_range<S>(
+        &self,
+        site_properties: &S,
+        range: f64,
+    ) -> ArrayVec<S, MAX_GHOSTS>
+    where
+        S: Position<Position = Cartesian<N>> + Copy + Default,
+    {
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();
 
-        if !self.shape.is_point_inside(r) {
-            return result;
-        }
-
         // Determine fractional coordinates of "twilight zones," where ghosts must be generated
         let plane_distances = self.shape.nearest_plane_distances();
-        let fractional_cutoffs: [f64; N] =
-            array::from_fn(|i| self.maximum_interaction_range() / plane_distances[i].get());
+        let fractional_cutoffs: [f64; N] = array::from_fn(|i| range / plane_distances[i].get());
         let fractional_coordinate = self.shape.fractional(*r);
 
         // For each axis, determine if the particle is near the negative or positive face.
@@ -144,12 +144,45 @@ where
     }
 }
 
+impl<S, const N: usize> GenerateGhosts<S> for Periodic<Hyperparallelepiped<N>>
+where
+    S: Position<Position = Cartesian<N>> + Copy + Default,
+{
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        self.maximum_interaction_range
+    }
+
+    /// Place periodic images of sites near the edge of the periodic boundary.
+    #[inline(always)]
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        self.generate_ghosts_in_range(site_properties, self.maximum_interaction_range)
+    }
+}
+
+impl<S, const N: usize> GenerateMinimumImageCandidates<S> for Periodic<Hyperparallelepiped<N>>
+where
+    S: Position<Position = Cartesian<N>> + Copy + Default,
+{
+    /// Place periodic images of sites near the edge of the periodic boundary.
+    #[inline(always)]
+    fn generate_minimum_image_candidates(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        self.generate_ghosts_in_range(
+            site_properties,
+            self.shape.maximum_allowable_interaction_range(),
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::property::Point;
     use approxim::assert_relative_eq;
-    use hoomd_geometry::shape::{Hyperparallelepiped, Triclinic};
+    use hoomd_geometry::{
+        IsPointInside,
+        shape::{Hyperparallelepiped, Triclinic},
+    };
     use hoomd_vector::Cartesian;
     use rstest::{fixture, rstest};
 
@@ -208,6 +241,83 @@ mod tests {
             ghosts.is_empty(),
             "Interior point should not generate ghosts"
         );
+
+        let candidates = periodic.generate_minimum_image_candidates(&Point::new(abs_pos));
+        assert!(!candidates.is_empty());
+    }
+
+    #[test]
+    fn unequal_edges_candidates() -> anyhow::Result<()> {
+        let hyperparallelepiped = hyper_from_triclinic(&Triclinic {
+            extents: [20.0.try_into()?, 10.0.try_into()?, 100.0.try_into()?],
+            tilt_factors: [0.2, 0.3, 0.4],
+        });
+        let periodic =
+            Periodic::new(0.0, hyperparallelepiped).expect("hard-coded range should be valid");
+
+        // only one image is within a distance of 4.642383454426295 from the narrowest face
+        let point = Point::new(periodic.shape.absolute([0.0, -0.48, 0.0].into()));
+        assert!(periodic.is_point_inside(point.position()));
+        let candidates = periodic.generate_minimum_image_candidates(&point);
+        assert_eq!(candidates.len(), 1);
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute([0.0, 0.52, 0.0].into())
+        );
+
+        // 3 images within a distance of 4.642383454426295 from an edge
+        let point = Point::new(periodic.shape.absolute([0.0, 0.48, -0.48].into()));
+        assert!(periodic.is_point_inside(point.position()));
+        let candidates = periodic.generate_minimum_image_candidates(&point);
+        assert_eq!(candidates.len(), 3);
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute([0.0, -0.52, -0.48].into())
+        );
+        assert_relative_eq!(
+            candidates[1].position(),
+            &periodic.shape.absolute([0.0, 0.48, 0.52].into())
+        );
+        assert_relative_eq!(
+            candidates[2].position(),
+            &periodic.shape.absolute([0.0, -0.52, 0.52].into())
+        );
+
+        // 7 images within a distance of 4.642383454426295 from a vertex
+        let point = Point::new(periodic.shape.absolute([-0.48, 0.48, -0.48].into()));
+        assert!(periodic.is_point_inside(point.position()));
+        let candidates = periodic.generate_minimum_image_candidates(&point);
+        assert_eq!(candidates.len(), 7);
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute([0.52, 0.48, -0.48].into())
+        );
+        assert_relative_eq!(
+            candidates[1].position(),
+            &periodic.shape.absolute([-0.48, -0.52, -0.48].into())
+        );
+        assert_relative_eq!(
+            candidates[2].position(),
+            &periodic.shape.absolute([-0.48, 0.48, 0.52].into())
+        );
+        assert_relative_eq!(
+            candidates[3].position(),
+            &periodic.shape.absolute([0.52, -0.52, -0.48].into())
+        );
+        assert_relative_eq!(
+            candidates[4].position(),
+            &periodic.shape.absolute([0.52, 0.48, 0.52].into())
+        );
+        assert_relative_eq!(
+            candidates[5].position(),
+            &periodic.shape.absolute([-0.48, -0.52, 0.52].into())
+        );
+        assert_relative_eq!(
+            candidates[6].position(),
+            &periodic.shape.absolute([0.52, -0.52, 0.52].into())
+        );
+
+        Ok(())
     }
 
     #[rstest]

@@ -12,11 +12,12 @@ use hoomd_utility::valid::PositiveReal;
 use crate::{
     Body, Microstate, Replicate, SiteKey, Transform,
     boundary::{
-        Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
+        Error, GenerateGhosts, GenerateMinimumImageCandidates, MAX_GHOSTS,
+        MaximumAllowableInteractionRange, Periodic, Wrap,
     },
     property::Position,
 };
-use hoomd_geometry::{IsPointInside, shape::Rhomboid};
+use hoomd_geometry::shape::Rhomboid;
 
 use hoomd_vector::Cartesian;
 
@@ -65,6 +66,11 @@ where
     /// the rhomboid tilt factors. The wrapping ensures particles remain
     /// within the periodic boundaries.
     ///
+    /// *Nominally*, wrapped points will be greater than or equal to the left
+    /// boundary and less than the right. However, callers must be resilient
+    /// to floating point round off errors that result in points exactly on
+    /// the right boundary or slightly outside of either.
+    ///
     /// # Example
     ///
     /// ```
@@ -102,6 +108,68 @@ where
     }
 }
 
+impl Periodic<Rhomboid> {
+    /// Generate ghosts within a given range.
+    #[inline(always)]
+    fn generate_ghosts_in_range<S>(
+        &self,
+        site_properties: &S,
+        range: f64,
+    ) -> ArrayVec<S, MAX_GHOSTS>
+    where
+        S: Position<Position = Cartesian<2>> + Copy + Default,
+    {
+        let mut result = ArrayVec::new();
+
+        let r = site_properties.position();
+
+        let edge_vectors = self.shape.edge_vectors();
+
+        let new_site = |x, y| {
+            let mut new_site = *site_properties;
+            *new_site.position_mut() += x * edge_vectors[0];
+            *new_site.position_mut() += y * edge_vectors[1];
+            new_site
+        };
+
+        let plane_distances = self.shape.nearest_plane_distance();
+        let frac = self.shape.fractional(r);
+
+        let near_right = frac[0] > 0.5 - range / plane_distances[0].get();
+        let near_left = frac[0] < -0.5 + range / plane_distances[0].get();
+        let near_top = frac[1] > 0.5 - range / plane_distances[1].get();
+        let near_bottom = frac[1] < -0.5 + range / plane_distances[1].get();
+
+        if near_right {
+            result.push(new_site(-1.0, 0.0));
+        }
+        if near_left {
+            result.push(new_site(1.0, 0.0));
+        }
+        if near_top {
+            result.push(new_site(0.0, -1.0));
+        }
+        if near_bottom {
+            result.push(new_site(0.0, 1.0));
+        }
+
+        if near_right && near_top {
+            result.push(new_site(-1.0, -1.0));
+        }
+        if near_right && near_bottom {
+            result.push(new_site(-1.0, 1.0));
+        }
+        if near_left && near_top {
+            result.push(new_site(1.0, -1.0));
+        }
+        if near_left && near_bottom {
+            result.push(new_site(1.0, 1.0));
+        }
+
+        result
+    }
+}
+
 impl<S> GenerateGhosts<S> for Periodic<Rhomboid>
 where
     S: Position<Position = Cartesian<2>> + Copy + Default,
@@ -134,11 +202,9 @@ where
     /// let rhomboid = Rhomboid::square(4.0.try_into()?);
     /// let periodic = Periodic::new(1.0, rhomboid)?;
     ///
-    /// // Point near the x-face
     /// let point = Point::new(Cartesian::from([1.9, 0.0]));
     /// let ghosts = periodic.generate_ghosts(&point);
     ///
-    /// // Should generate ghost on the opposite side
     /// assert!(!ghosts.is_empty());
     /// assert_eq!(ghosts[0].position[0], -2.1); // wrapped around
     /// //
@@ -148,59 +214,44 @@ where
     /// ```
     #[inline(always)]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
-        let mut result = ArrayVec::new();
+        self.generate_ghosts_in_range(site_properties, self.maximum_interaction_range)
+    }
+}
 
-        let r = site_properties.position();
-
-        if !self.shape.is_point_inside(r) {
-            return result;
-        }
-
-        let edge_vectors = self.shape.edge_vectors();
-
-        let new_site = |x, y| {
-            let mut new_site = *site_properties;
-            *new_site.position_mut() += x * edge_vectors[0];
-            *new_site.position_mut() += y * edge_vectors[1];
-            new_site
-        };
-
-        let plane_distances = self.shape.nearest_plane_distance();
-        let frac = self.shape.fractional(r);
-
-        let near_right = frac[0] > 0.5 - self.maximum_interaction_range / plane_distances[0].get();
-        let near_left = frac[0] < -0.5 + self.maximum_interaction_range / plane_distances[0].get();
-        let near_top = frac[1] > 0.5 - self.maximum_interaction_range / plane_distances[1].get();
-        let near_bottom =
-            frac[1] < -0.5 + self.maximum_interaction_range / plane_distances[1].get();
-
-        if near_right {
-            result.push(new_site(-1.0, 0.0));
-        }
-        if near_left {
-            result.push(new_site(1.0, 0.0));
-        }
-        if near_top {
-            result.push(new_site(0.0, -1.0));
-        }
-        if near_bottom {
-            result.push(new_site(0.0, 1.0));
-        }
-
-        if near_right && near_top {
-            result.push(new_site(-1.0, -1.0));
-        }
-        if near_right && near_bottom {
-            result.push(new_site(-1.0, 1.0));
-        }
-        if near_left && near_top {
-            result.push(new_site(1.0, -1.0));
-        }
-        if near_left && near_bottom {
-            result.push(new_site(1.0, 1.0));
-        }
-
-        result
+impl<S> GenerateMinimumImageCandidates<S> for Periodic<Rhomboid>
+where
+    S: Position<Position = Cartesian<2>> + Copy + Default,
+{
+    /// Place periodic images of sites at all candidate minimum image locations.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rhomboid;
+    /// use hoomd_microstate::{
+    ///     boundary::{GenerateMinimumImageCandidates, Periodic},
+    ///     property::Point,
+    /// };
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rhomboid = Rhomboid::square(4.0.try_into()?);
+    /// let periodic = Periodic::new(0.0, rhomboid)?;
+    ///
+    /// let point = Point::new(Cartesian::from([1.9, 0.0]));
+    /// let candidates = periodic.generate_minimum_image_candidates(&point);
+    ///
+    /// assert!(!candidates.is_empty());
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline(always)]
+    fn generate_minimum_image_candidates(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        self.generate_ghosts_in_range(
+            site_properties,
+            self.shape.maximum_allowable_interaction_range(),
+        )
     }
 }
 
@@ -308,6 +359,7 @@ mod tests {
 
     use approxim::assert_relative_eq;
 
+    use hoomd_geometry::IsPointInside;
     use rstest::{fixture, rstest};
 
     #[fixture]
@@ -426,6 +478,9 @@ mod tests {
             ghosts.is_empty(),
             "Interior point should not generate ghosts: {interior_pos:?}"
         );
+
+        let candidates = periodic.generate_minimum_image_candidates(&Point::new(interior_pos));
+        assert!(!candidates.is_empty());
     }
 
     #[rstest]
@@ -444,6 +499,47 @@ mod tests {
     }
 
     #[test]
+    fn unequal_edges_candidates() -> anyhow::Result<()> {
+        let rhomboid = Rhomboid {
+            extents: [10.0.try_into()?, 100.0.try_into()?],
+            xy: 1.0,
+        };
+        let periodic = Periodic::new(0.0, rhomboid).expect("hard-coded range should be valid");
+
+        // only one image within a distance of 3.5355339059327373 from the narrowest face
+        let point = Point::new(periodic.shape.absolute(&[-0.48, 0.0].into()));
+        assert!(periodic.is_point_inside(point.position()));
+        let candidates = periodic.generate_minimum_image_candidates(&point);
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute(&[0.52, 0.0].into())
+        );
+
+        // 3 images within a distance of 3.5355339059327373 from an edge
+        let point = Point::new(periodic.shape.absolute(&[-0.48, -0.48].into()));
+        assert!(periodic.is_point_inside(point.position()));
+        let candidates = periodic.generate_minimum_image_candidates(&point);
+        assert_eq!(candidates.len(), 3);
+        assert_relative_eq!(
+            candidates[0].position(),
+            &periodic.shape.absolute(&[0.52, -0.48].into()),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            candidates[1].position(),
+            &periodic.shape.absolute(&[-0.48, 0.52].into()),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            candidates[2].position(),
+            &periodic.shape.absolute(&[0.52, 0.52].into()),
+            epsilon = 1e-6
+        );
+
+        Ok(())
+    }
+
+    #[test]
     fn ghosts_orthogonal_faces() {
         // Comprehensive test with orthogonal rhomboid to validate ghost generation
         let rhomboid = Rhomboid {
@@ -451,13 +547,6 @@ mod tests {
             xy: 0.0,
         };
         let periodic = Periodic::new(1.0, rhomboid).expect("hard-coded range should be valid");
-
-        // no ghosts for points outside the boundary
-        let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([10.5, 0.0])));
-        assert!(ghosts.is_empty());
-
-        let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([0.0, 5.5])));
-        assert!(ghosts.is_empty());
 
         // Face: x-direction
         let ghosts = periodic.generate_ghosts(&Point::new(Cartesian::from([9.5, 0.0])));

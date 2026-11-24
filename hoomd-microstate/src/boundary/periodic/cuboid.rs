@@ -11,7 +11,8 @@ use hoomd_spatial::PointUpdate;
 use crate::{
     Body, Microstate, Replicate, SiteKey, Transform,
     boundary::{
-        Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
+        Error, GenerateGhosts, GenerateMinimumImageCandidates, MAX_GHOSTS,
+        MaximumAllowableInteractionRange, Periodic, Wrap,
     },
     property::Position,
 };
@@ -61,6 +62,11 @@ where
 {
     /// Wrap any cartesian vector to the inside of the given cuboid.
     ///
+    /// *Nominally*, wrapped points will be greater than or equal to the left
+    /// boundary and less than the right. However, callers must be resilient
+    /// to floating point round off errors that result in points exactly on
+    /// the right boundary or slightly outside of either.
+    ///
     /// # Example
     ///
     /// ```
@@ -94,6 +100,64 @@ where
             *coordinate = lambda * edge_length;
         }
         Ok(properties)
+    }
+}
+
+impl<const N: usize> Periodic<Hypercuboid<N>> {
+    /// Generate ghosts within a given range.
+    #[inline(always)]
+    fn generate_ghosts_in_range<S>(
+        &self,
+        site_properties: &S,
+        range: f64,
+    ) -> ArrayVec<S, MAX_GHOSTS>
+    where
+        S: Position<Position = Cartesian<N>> + Copy + Default,
+    {
+        let mut result = ArrayVec::new();
+
+        let r = site_properties.position();
+
+        // Record what facets a site is within range of, or
+        // none if outside the box (as checked by `x < -half || x >= half`).
+        let mut near_facets_bitmask = 0u32;
+        let mut per_dimension_translation = [0.0_f64; N];
+        for i in 0..N {
+            let half = self.shape.edge_lengths[i].get() / 2.0;
+            let x = r[i];
+            if x < -half || x >= half {
+                return result;
+            }
+            if x > half - range {
+                near_facets_bitmask |= 1 << i;
+                per_dimension_translation[i] = -self.shape.edge_lengths[i].get();
+            } else if x < -half + range {
+                near_facets_bitmask |= 1 << i;
+                per_dimension_translation[i] = self.shape.edge_lengths[i].get();
+            }
+        }
+
+        // Emit ghosts nearby lower-dimensional elements of the hypercuboid: edges,
+        // corners, etc. Each of these requires a mixture of zero and
+        // per_dimension_translation displacements, which we construct in the loop
+        // `(subset - 1) & near_mask` walks over the ghost subsets in descending order,
+        // stopping once the mask is 0 (no ghosts left to generate).
+        let mut subset = near_facets_bitmask;
+        while subset != 0 {
+            let mut ghost = *site_properties;
+            let ghost_position = ghost.position_mut();
+            // Accumulate per-direction offset
+            // These will be all nonzero for corners, 1 zero for 3D edges, etc.
+            for i in 0..N {
+                if subset & (1 << i) != 0 {
+                    ghost_position[i] += per_dimension_translation[i];
+                }
+            }
+            result.push(ghost);
+            subset = (subset - 1) & near_facets_bitmask;
+        }
+
+        result
     }
 }
 
@@ -137,51 +201,42 @@ where
     /// ```
     #[inline(always)]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
-        let mut result = ArrayVec::new();
+        self.generate_ghosts_in_range(site_properties, self.maximum_interaction_range)
+    }
+}
 
-        let r = site_properties.position();
-        let range = self.maximum_interaction_range;
-
-        // Record what facets a site is within the maximum_interaction_range of, or
-        // none if outside the box (as checked by `x < -half || x >= half`).
-        let mut near_facets_bitmask = 0u32;
-        let mut per_dimension_translation = [0.0_f64; N];
-        for i in 0..N {
-            let half = self.shape.edge_lengths[i].get() / 2.0;
-            let x = r[i];
-            if x < -half || x >= half {
-                return result;
-            }
-            if x > half - range {
-                near_facets_bitmask |= 1 << i;
-                per_dimension_translation[i] = -self.shape.edge_lengths[i].get();
-            } else if x < -half + range {
-                near_facets_bitmask |= 1 << i;
-                per_dimension_translation[i] = self.shape.edge_lengths[i].get();
-            }
-        }
-
-        // Emit ghosts nearby lower-dimensional elements of the hypercuboid: edges,
-        // corners, etc. Each of these requires a mixture of zero and
-        // per_dimension_translation displacements, which we construct in the loop
-        // `(subset - 1) & near_mask` walks over the ghost subsets in descending order,
-        // stopping once the mask is 0 (no ghosts left to generate).
-        let mut subset = near_facets_bitmask;
-        while subset != 0 {
-            let mut ghost = *site_properties;
-            let ghost_position = ghost.position_mut();
-            // Accumulate per-direction offset
-            // These will be all nonzero for corners, 1 zero for 3D edges, etc.
-            for i in 0..N {
-                if subset & (1 << i) != 0 {
-                    ghost_position[i] += per_dimension_translation[i];
-                }
-            }
-            result.push(ghost);
-            subset = (subset - 1) & near_facets_bitmask;
-        }
-
-        result
+impl<const N: usize, S> GenerateMinimumImageCandidates<S> for Periodic<Hypercuboid<N>>
+where
+    S: Position<Position = Cartesian<N>> + Copy + Default,
+{
+    /// Place periodic images of sites at all candidate minimum image locations.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_microstate::{
+    ///     boundary::{GenerateMinimumImageCandidates, Periodic},
+    ///     property::Point,
+    /// };
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic =
+    ///     Periodic::new(0.0, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    /// let candidates = periodic.generate_minimum_image_candidates(&Point::new(
+    ///     Cartesian::from([4.6, 4.6]),
+    /// ));
+    /// assert_eq!(candidates.len(), 3);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline(always)]
+    fn generate_minimum_image_candidates(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
+        self.generate_ghosts_in_range(
+            site_properties,
+            self.shape.maximum_allowable_interaction_range(),
+        )
     }
 }
 
@@ -366,6 +421,9 @@ mod tests {
                     .generate_ghosts(&Point::new([10.5].into()))
                     .is_empty()
             );
+            // but does generate candidate minimum images
+            let candidates = periodic.generate_minimum_image_candidates(&Point::new([-9.5].into()));
+            assert_ghost_positions(&candidates, &[[10.5]]);
         }
 
         #[test]
@@ -487,6 +545,30 @@ mod tests {
                 let ghosts = periodic.generate_ghosts(&Point::new(point));
                 assert!(ghosts.is_empty());
             }
+        }
+
+        #[test]
+        fn unequal_edges_candidates() -> anyhow::Result<()> {
+            let cuboid = Hypercuboid {
+                edge_lengths: [10.0.try_into()?, 100.0.try_into()?],
+            };
+            let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
+
+            // only one image within a distance of 5.0 from the narrowest face
+            let candidates =
+                periodic.generate_minimum_image_candidates(&Point::new([0.0, -48.0].into()));
+            assert_eq!(candidates.len(), 1);
+            assert_relative_eq!(candidates[0].position(), &[0.0, 52.0].into());
+
+            // three images within a distance of 5.0 from a vertex
+            let candidates =
+                periodic.generate_minimum_image_candidates(&Point::new([-4.8, -48.0].into()));
+            assert_eq!(candidates.len(), 3);
+            assert_relative_eq!(candidates[0].position(), &[5.2, 52.0].into());
+            assert_relative_eq!(candidates[1].position(), &[-4.8, 52.0].into());
+            assert_relative_eq!(candidates[2].position(), &[5.2, -48.0].into());
+
+            Ok(())
         }
 
         #[test]
@@ -844,6 +926,42 @@ mod tests {
                 let ghosts = periodic.generate_ghosts(&Point::new(point));
                 assert!(ghosts.is_empty());
             }
+        }
+
+        #[test]
+        fn unequal_edges_candidates() -> anyhow::Result<()> {
+            let cuboid = Hypercuboid {
+                edge_lengths: [20.0.try_into()?, 10.0.try_into()?, 100.0.try_into()?],
+            };
+            let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
+
+            // only one image is within a distance of 5.0 from the narrowest face
+            let candidates =
+                periodic.generate_minimum_image_candidates(&Point::new([0.0, -4.8, 0.0].into()));
+            assert_eq!(candidates.len(), 1);
+            assert_relative_eq!(candidates[0].position(), &[0.0, 5.2, 0.0].into());
+
+            // 3 images within a distance of 5.0 from an edge
+            let candidates =
+                periodic.generate_minimum_image_candidates(&Point::new([0.0, -4.8, -48.0].into()));
+            assert_eq!(candidates.len(), 3);
+            assert_relative_eq!(candidates[0].position(), &[0.0, 5.2, 52.0].into());
+            assert_relative_eq!(candidates[1].position(), &[0.0, -4.8, 52.0].into());
+            assert_relative_eq!(candidates[2].position(), &[0.0, 5.2, -48.0].into());
+
+            // 7 images within a distance of 5.0 from a vertex
+            let candidates =
+                periodic.generate_minimum_image_candidates(&Point::new([-9.6, -4.8, -48.0].into()));
+            assert_eq!(candidates.len(), 7);
+            assert_relative_eq!(candidates[0].position(), &[10.4, 5.2, 52.0].into());
+            assert_relative_eq!(candidates[1].position(), &[-9.6, 5.2, 52.0].into());
+            assert_relative_eq!(candidates[2].position(), &[10.4, -4.8, 52.0].into());
+            assert_relative_eq!(candidates[3].position(), &[-9.6, -4.8, 52.0].into());
+            assert_relative_eq!(candidates[4].position(), &[10.4, 5.2, -48.0].into());
+            assert_relative_eq!(candidates[5].position(), &[-9.6, 5.2, -48.0].into());
+            assert_relative_eq!(candidates[6].position(), &[10.4, -4.8, -48.0].into());
+
+            Ok(())
         }
 
         #[expect(clippy::too_many_lines, reason = "There are many cases to test.")]

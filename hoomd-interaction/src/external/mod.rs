@@ -11,3 +11,6 @@ pub use constant_torque::ConstantTorque;
 
 mod linear;
 pub use linear::Linear;
+
+mod pin;
+pub use pin::{PinOrientations, PinPositions};

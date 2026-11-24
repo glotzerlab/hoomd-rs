@@ -8,10 +8,14 @@
 * `[hoomd-geometry]`: Implement `IsPointInside` for `Capsule`, `Cylinder`, and `Hyperellipsoid` (#484).
 * `[hoomd-geometry]`: Implement `MapPoint` for `Cylinder` and `Hyperellipsoid` (#484).
 * `[hoomd-gsd]`: Add `Frame::particles_type_shapes` to write `particles/type_shapes` (#477).
+* `[hoomd-interaction]`: Add `PinPositions` and `PinOrientations` harmonic external potentials for Frenkel–Ladd free energy calculations (#486).
 * `[hoomd-microstate]`: Implement `IsPointInside` for `Open`, `Closed`, and `Periodic` (#420).
+* `[hoomd-microstate]`: Add `GenerateMinimumImageCandidates` to generate periodic image candidates within the boundary's maximum allowable interaction range. Implement it for Cartesian periodic boundaries, `Open`, `Closed`, and `OpenSpherical` (#486).
+* `[hoomd-microstate]`: Implement `MaximumAllowableInteractionRange` for `Open`, `Closed`, and `Periodic` (#486).
 * `[hoomd-order]`: Add the `hoomd-order` crate. It implements Rotational autocorrelation, Spherical Harmonics, Steinhardt and *k-atic* order parameters, neighbor queries, and an algorithm that averages values over neighbors (#293, #420, #481).
 * `[hoomd-utility]`: Implement `Add`, `AddAssign`, `cbrt`, and `sqrt` for `PositiveReal` (#466).
 * `[hoomd-vector]`:  Implement `from_spherical_coordinates` for `Unit<Cartesian<3>>` (#293).
+* `[hoomd-vector]`: Add `RotationalDistance` and implement it for `Angle` and `Versor` to compute the smallest angle separating two rotations (#486).
 * `[hoomd-workspace]`: Explain how to add new optional fields to state points (#482).
 
 *Changed:*
@@ -28,6 +32,7 @@
 
 * [`benchmarks`]: Fix inconsistencies in the output (#489).
 * `[hoomd-mc]`: `ParallelSweep` no longer separately tracks `TrialStatus::Invalid` moves, fixing a subtle inconsistency in the statistics of parallel MC simulations. Moves proposed in empty cells are marked with the new `TrialStatus::EmptySpace` to keep move counts reasonable (#490).
+* `[hoomd-microstate]`: Generate ghosts for wrapped positions that lie on or slightly outside sheared periodic boundaries due to floating point roundoff (#486).
 
 ## 1.4.0 (2026-10-26)
 
