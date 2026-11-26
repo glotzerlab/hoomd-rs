@@ -149,25 +149,25 @@ where
 impl<L, K, B, S> ParallelSweep<L, K, B, S> {
     /// Get the body interaction range.
     #[inline]
-    pub fn body_interaction_range(&self) -> &PositiveReal {
+    pub const fn body_interaction_range(&self) -> &PositiveReal {
         &self.body_interaction_range
     }
 
     /// Get the body interaction range (mutable).
     #[inline]
-    pub fn body_interaction_range_mut(&mut self) -> &mut PositiveReal {
+    pub const fn body_interaction_range_mut(&mut self) -> &mut PositiveReal {
         &mut self.body_interaction_range
     }
 
     /// Get the local trial.
     #[inline]
-    pub fn local_trial(&self) -> &L {
+    pub const fn local_trial(&self) -> &L {
         &self.local_trial
     }
 
     /// Get the local trial (mutable).
     #[inline]
-    pub fn local_trial_mut(&mut self) -> &mut L {
+    pub const fn local_trial_mut(&mut self) -> &mut L {
         &mut self.local_trial
     }
 

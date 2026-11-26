@@ -44,7 +44,7 @@ pub struct Representation<T> {
 impl<T> Representation<T> {
     /// Get the material
     #[must_use]
-    pub fn material(&self) -> &Handle<ColorMaterial> {
+    pub const fn material(&self) -> &Handle<ColorMaterial> {
         &self.material
     }
 }

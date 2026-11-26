@@ -553,7 +553,7 @@ impl<const N: usize> Cartesian<N> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_row_matrix(matrix: &Matrix<1, N>) -> Self {
+    pub const fn from_row_matrix(matrix: &Matrix<1, N>) -> Self {
         Self {
             coordinates: matrix.rows[0],
         }
@@ -870,7 +870,7 @@ impl<const N: usize> RotationMatrix<N> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn rows(&self) -> [Cartesian<N>; N] {
+    pub const fn rows(&self) -> [Cartesian<N>; N] {
         self.rows
     }
 
@@ -1013,7 +1013,7 @@ impl<const N: usize> Cartesian<N> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn to_row_matrix(self) -> Matrix<1, N> {
+    pub const fn to_row_matrix(self) -> Matrix<1, N> {
         Matrix {
             rows: [self.coordinates],
         }

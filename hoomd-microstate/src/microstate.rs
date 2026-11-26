@@ -67,7 +67,7 @@ struct VecWithTags<T> {
 
 impl<T> VecWithTags<T> {
     /// Construct an empty vector of tagged items.
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             items: Vec::new(),
             tags: Vec::new(),
@@ -123,7 +123,7 @@ impl<T> VecWithTags<T> {
     }
 
     /// Number of items stored.
-    fn len(&self) -> usize {
+    const fn len(&self) -> usize {
         self.items.len()
     }
 
@@ -366,7 +366,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn step(&self) -> u64 {
+    pub const fn step(&self) -> u64 {
         self.step
     }
 
@@ -409,7 +409,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// assert_eq!(microstate.substep(), 0);
     /// ```
     #[inline]
-    pub fn increment_step(&mut self) {
+    pub const fn increment_step(&mut self) {
         self.step += 1;
         self.substep = 0;
     }
@@ -430,7 +430,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn substep(&self) -> u32 {
+    pub const fn substep(&self) -> u32 {
         self.substep
     }
 
@@ -449,7 +449,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// assert_eq!(microstate.substep(), 1);
     /// ```
     #[inline]
-    pub fn increment_substep(&mut self) {
+    pub const fn increment_substep(&mut self) {
         self.substep += 1;
     }
 
@@ -488,7 +488,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn seed(&self) -> u32 {
+    pub const fn seed(&self) -> u32 {
         self.seed
     }
 
@@ -526,7 +526,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// let rng = microstate.counter().index(tag).make_rng();
     /// ```
     #[inline]
-    pub fn counter(&self) -> Counter {
+    pub const fn counter(&self) -> Counter {
         Counter::new(self.step, self.substep, self.seed)
     }
 
@@ -563,13 +563,13 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// # }
     /// ```
     #[inline]
-    pub fn conserved_degrees_of_freedom(&self) -> usize {
+    pub const fn conserved_degrees_of_freedom(&self) -> usize {
         self.conserved_degrees_of_freedom
     }
 
     /// The number of conserved degrees of freedom (mutable).
     #[inline]
-    pub fn conserved_degrees_of_freedom_mut(&mut self) -> &mut usize {
+    pub const fn conserved_degrees_of_freedom_mut(&mut self) -> &mut usize {
         &mut self.conserved_degrees_of_freedom
     }
 }
@@ -598,7 +598,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// # }
     /// ```
     #[inline]
-    pub fn boundary(&self) -> &C {
+    pub const fn boundary(&self) -> &C {
         &self.boundary
     }
 
@@ -1405,7 +1405,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
 
     /// Get the spatial data structure.
     #[inline]
-    pub fn spatial_data(&self) -> &X {
+    pub const fn spatial_data(&self) -> &X {
         &self.spatial_data
     }
 }
@@ -1750,7 +1750,7 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn step(mut self, step: u64) -> Self {
+    pub const fn step(mut self, step: u64) -> Self {
         self.step = step;
         self
     }
@@ -1778,7 +1778,7 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn seed(mut self, seed: u32) -> Self {
+    pub const fn seed(mut self, seed: u32) -> Self {
         self.seed = seed;
         self
     }

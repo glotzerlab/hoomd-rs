@@ -91,7 +91,7 @@ where
     /// Choose the search radius from a given Euclidean search radius.
     #[inline]
     #[must_use]
-    pub fn euclidean_nominal_search_radius(
+    pub const fn euclidean_nominal_search_radius(
         mut self,
         euclidean_nominal_search_radius: PositiveReal,
     ) -> Self {
@@ -107,7 +107,10 @@ where
     /// than the maximum.
     #[inline]
     #[must_use]
-    pub fn euclidean_maximum_search_radius(mut self, euclidean_maximum_search_radius: f64) -> Self {
+    pub const fn euclidean_maximum_search_radius(
+        mut self,
+        euclidean_maximum_search_radius: f64,
+    ) -> Self {
         self.0.maximum_search_radius = euclidean_maximum_search_radius;
         self
     }

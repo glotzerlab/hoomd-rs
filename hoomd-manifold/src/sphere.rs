@@ -36,13 +36,13 @@ impl<const N: usize> Spherical<N> {
     /// Get the coordinates of the point
     #[inline]
     #[must_use]
-    pub fn coordinates(&self) -> &[f64; N] {
+    pub const fn coordinates(&self) -> &[f64; N] {
         &self.point.coordinates
     }
     /// Get the point of the sphere
     #[inline]
     #[must_use]
-    pub fn point(&self) -> &Cartesian<N> {
+    pub const fn point(&self) -> &Cartesian<N> {
         &self.point
     }
     /// Construct a Sphere given a Cartesian vector and a radius.

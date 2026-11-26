@@ -93,7 +93,7 @@ impl<const L: usize> RotationalAutocorrelation<L> {
     )]
     #[must_use]
     #[inline]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         const { assert!(L.is_multiple_of(2), "L must be even") };
         Self {
             gegenbauer: Gegenbauer::new(),

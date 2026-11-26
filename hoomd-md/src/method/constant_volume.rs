@@ -192,7 +192,7 @@ impl ConstantVolume<NoThermostat, NoThermostat> {
     /// let constant_volume = ConstantVolume::builder(delta_t).build();
     /// ```
     /// [`NoThermostat`]: crate::thermostat::NoThermostat
-    pub fn builder(delta_t: f64) -> ConstantVolumeBuilder<NoThermostat, NoThermostat> {
+    pub const fn builder(delta_t: f64) -> ConstantVolumeBuilder<NoThermostat, NoThermostat> {
         ConstantVolumeBuilder {
             delta_t,
             translational_thermostat: NoThermostat,
@@ -204,25 +204,25 @@ impl ConstantVolume<NoThermostat, NoThermostat> {
 impl<TT, TR> ConstantVolume<TT, TR> {
     /// Access the translational thermostat.
     #[inline]
-    pub fn translational_thermostat(&self) -> &TT {
+    pub const fn translational_thermostat(&self) -> &TT {
         &self.translational_thermostat
     }
 
     /// Access the translational thermostat (mutable).
     #[inline]
-    pub fn translational_thermostat_mut(&mut self) -> &mut TT {
+    pub const fn translational_thermostat_mut(&mut self) -> &mut TT {
         &mut self.translational_thermostat
     }
 
     /// Access the rotational thermostat.
     #[inline]
-    pub fn rotational_thermostat(&self) -> &TR {
+    pub const fn rotational_thermostat(&self) -> &TR {
         &self.rotational_thermostat
     }
 
     /// Access the rotational thermostat (mutable).
     #[inline]
-    pub fn rotational_thermostat_mut(&mut self) -> &mut TR {
+    pub const fn rotational_thermostat_mut(&mut self) -> &mut TR {
         &mut self.rotational_thermostat
     }
 }

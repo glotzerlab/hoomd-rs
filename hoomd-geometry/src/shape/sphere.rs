@@ -197,7 +197,7 @@ impl<const N: usize> Hypersphere<N> {
     /// Create a sphere with a given positive real radius.
     #[must_use]
     #[inline]
-    pub fn with_radius(radius: PositiveReal) -> Self {
+    pub const fn with_radius(radius: PositiveReal) -> Self {
         Hypersphere { radius }
     }
 

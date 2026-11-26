@@ -834,21 +834,21 @@ impl IndexEntry {
     /// Trajectory frame number.
     #[must_use]
     #[inline]
-    pub fn frame(&self) -> u64 {
+    pub const fn frame(&self) -> u64 {
         self.frame
     }
 
     /// Number of rows in the array.
     #[must_use]
     #[inline]
-    pub fn rows(&self) -> u64 {
+    pub const fn rows(&self) -> u64 {
         self.n
     }
 
     /// Number of columns in the array.
     #[must_use]
     #[inline]
-    pub fn columns(&self) -> u32 {
+    pub const fn columns(&self) -> u32 {
         self.m
     }
 
@@ -871,7 +871,7 @@ impl IndexEntry {
     /// ```
     #[must_use]
     #[inline]
-    pub fn data_type(&self) -> Option<DataType> {
+    pub const fn data_type(&self) -> Option<DataType> {
         match self.data_type {
             1 => Some(DataType::U8),
             2 => Some(DataType::U16),
@@ -1305,7 +1305,7 @@ impl GsdFile {
 
     /// Get the size of a type given by its identifier.
     #[inline]
-    fn size_of(data_type: u8) -> Option<usize> {
+    const fn size_of(data_type: u8) -> Option<usize> {
         match data_type {
             1 => Some(size_of::<u8>()),
             2 => Some(size_of::<u16>()),
@@ -2083,7 +2083,7 @@ impl GsdFile {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn n_frames(&self) -> u64 {
+    pub const fn n_frames(&self) -> u64 {
         self.file_frame
     }
 
@@ -2120,7 +2120,7 @@ impl GsdFile {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn name_id(&self) -> &HashMap<String, u16> {
+    pub const fn name_id(&self) -> &HashMap<String, u16> {
         &self.name_list.name_id
     }
 
@@ -2189,21 +2189,21 @@ impl GsdFile {
     /// ```
     #[inline]
     #[must_use]
-    pub fn schema_version(&self) -> (u16, u16) {
+    pub const fn schema_version(&self) -> (u16, u16) {
         self.header.schema_version
     }
 
     #[inline]
     #[must_use]
     /// The maximum number of bytes to store in the write buffer.
-    pub fn maximum_write_buffer_size(&self) -> usize {
+    pub const fn maximum_write_buffer_size(&self) -> usize {
         self.maximum_write_buffer_size
     }
 
     #[inline]
     #[must_use]
     /// Mutable reference to the maximum number of bytes to store in the write buffer.
-    pub fn maximum_write_buffer_size_mut(&mut self) -> &mut usize {
+    pub const fn maximum_write_buffer_size_mut(&mut self) -> &mut usize {
         &mut self.maximum_write_buffer_size
     }
 
@@ -2435,7 +2435,7 @@ impl GsdFile {
     /// Get the file mode.
     #[inline]
     #[must_use]
-    pub fn mode(&self) -> &Mode {
+    pub const fn mode(&self) -> &Mode {
         &self.mode
     }
 }

@@ -529,13 +529,13 @@ impl<const N: usize> Hyperbolic<N> {
     /// Get the coordinates of the point on the hyperboloid.
     #[must_use]
     #[inline]
-    pub fn coordinates(&self) -> &[f64; N] {
+    pub const fn coordinates(&self) -> &[f64; N] {
         &self.point.coordinates
     }
     /// Get the Minkowski point of the hyperboloid.
     #[must_use]
     #[inline]
-    pub fn point(&self) -> &Minkowski<N> {
+    pub const fn point(&self) -> &Minkowski<N> {
         &self.point
     }
     /// Create a Hyperbolic point from a Minkowski vector.

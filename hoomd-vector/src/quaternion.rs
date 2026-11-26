@@ -182,7 +182,7 @@ impl Quaternion {
     /// assert_eq!(q.vector, [1.0, -2.0, 4.0].into());
     /// ```
     #[inline]
-    pub fn pure(vector: Cartesian<3>) -> Self {
+    pub const fn pure(vector: Cartesian<3>) -> Self {
         Self {
             scalar: 0.0,
             vector,
@@ -598,7 +598,7 @@ impl Versor {
     /// Get the unit quaternion.
     #[inline]
     #[must_use]
-    pub fn get(&self) -> &Quaternion {
+    pub const fn get(&self) -> &Quaternion {
         &self.0
     }
 

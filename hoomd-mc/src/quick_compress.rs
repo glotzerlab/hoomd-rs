@@ -173,7 +173,7 @@ impl<C> QuickCompress<C> {
     /// # }
     /// ```
     #[inline]
-    pub fn is_complete(&self) -> bool {
+    pub const fn is_complete(&self) -> bool {
         matches!(self.state, State::Complete(_))
     }
 
@@ -198,7 +198,7 @@ impl<C> QuickCompress<C> {
     /// # }
     /// ```
     #[inline]
-    pub fn target_volume(&self) -> PositiveReal {
+    pub const fn target_volume(&self) -> PositiveReal {
         self.target_volume
     }
 
@@ -270,7 +270,7 @@ impl<C> QuickCompress<C> {
     /// # }
     /// ```
     #[inline]
-    pub fn maximum_energy_per_site(&self) -> f64 {
+    pub const fn maximum_energy_per_site(&self) -> f64 {
         self.maximum_energy_per_site
     }
 
@@ -294,7 +294,7 @@ impl<C> QuickCompress<C> {
     /// # }
     /// ```
     #[inline]
-    pub fn maximum_energy_per_site_mut(&mut self) -> &mut f64 {
+    pub const fn maximum_energy_per_site_mut(&mut self) -> &mut f64 {
         &mut self.maximum_energy_per_site
     }
 
@@ -317,7 +317,7 @@ impl<C> QuickCompress<C> {
     /// # }
     /// ```
     #[inline]
-    pub fn maximum_delta(&self) -> OpenUnitIntervalNumber {
+    pub const fn maximum_delta(&self) -> OpenUnitIntervalNumber {
         self.maximum_delta
     }
 
@@ -341,7 +341,7 @@ impl<C> QuickCompress<C> {
     /// # }
     /// ```
     #[inline]
-    pub fn maximum_delta_mut(&mut self) -> &mut OpenUnitIntervalNumber {
+    pub const fn maximum_delta_mut(&mut self) -> &mut OpenUnitIntervalNumber {
         &mut self.maximum_delta
     }
 

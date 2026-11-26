@@ -193,19 +193,19 @@ impl Hypercuboid<3> {
     /// Length of the `Hypercuboid` edge along the x axis
     #[inline]
     #[must_use]
-    pub fn a(&self) -> PositiveReal {
+    pub const fn a(&self) -> PositiveReal {
         self.edge_lengths[0]
     }
     /// Length of the `Hypercuboid` edge along the y axis
     #[inline]
     #[must_use]
-    pub fn b(&self) -> PositiveReal {
+    pub const fn b(&self) -> PositiveReal {
         self.edge_lengths[1]
     }
     /// Length of the `Hypercuboid` edge along the z axis
     #[inline]
     #[must_use]
-    pub fn c(&self) -> PositiveReal {
+    pub const fn c(&self) -> PositiveReal {
         self.edge_lengths[2]
     }
 }
@@ -223,7 +223,7 @@ impl<const N: usize> Hypercuboid<N> {
     /// # }
     #[inline]
     #[must_use]
-    pub fn with_equal_edges(l: PositiveReal) -> Self {
+    pub const fn with_equal_edges(l: PositiveReal) -> Self {
         Self {
             edge_lengths: [l; N],
         }
@@ -326,8 +326,13 @@ impl<const N: usize> Hypercuboid<N> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn maximal_extents(&self) -> [f64; N] {
-        array::from_fn(|i| self.edge_lengths[i].get() / 2.0)
+    pub const fn maximal_extents(&self) -> [f64; N] {
+        let (mut i, mut extents) = (0, [0.0; N]);
+        while i < N {
+            extents[i] = self.edge_lengths[i].get() / 2.0;
+            i += 1;
+        }
+        extents
     }
 
     #[inline]
@@ -349,8 +354,13 @@ impl<const N: usize> Hypercuboid<N> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn minimal_extents(&self) -> [f64; N] {
-        array::from_fn(|i| -self.edge_lengths[i].get() / 2.0)
+    pub const fn minimal_extents(&self) -> [f64; N] {
+        let (mut i, mut extents) = (0, [0.0; N]);
+        while i < N {
+            extents[i] = -self.edge_lengths[i].get() / 2.0;
+            i += 1;
+        }
+        extents
     }
 }
 
@@ -374,7 +384,7 @@ impl Hypercuboid<2> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn to_gsd_box(&self) -> [f64; 6] {
+    pub const fn to_gsd_box(&self) -> [f64; 6] {
         [
             self.edge_lengths[0].get(),
             self.edge_lengths[1].get(),
@@ -406,7 +416,7 @@ impl Hypercuboid<3> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn to_gsd_box(&self) -> [f64; 6] {
+    pub const fn to_gsd_box(&self) -> [f64; 6] {
         [
             self.edge_lengths[0].get(),
             self.edge_lengths[1].get(),

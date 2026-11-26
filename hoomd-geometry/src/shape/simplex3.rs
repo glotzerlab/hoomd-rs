@@ -149,7 +149,7 @@ impl Simplex3 {
     /// The vertices of the simplex.
     #[inline]
     #[must_use]
-    pub fn vertices(&self) -> [Cartesian<3>; 4] {
+    pub const fn vertices(&self) -> [Cartesian<3>; 4] {
         self.vertices
     }
 
@@ -174,7 +174,7 @@ impl Simplex3 {
     /// form, this returns values in the order [(1, 0), (2, 0), (3, 0), (2, 1), (3, 2)]
     #[inline]
     #[must_use]
-    pub fn get_edges(&self) -> [[Cartesian<3>; 2]; 5] {
+    pub const fn get_edges(&self) -> [[Cartesian<3>; 2]; 5] {
         [
             [self.b(), self.a()],
             [self.c(), self.a()],
@@ -194,25 +194,25 @@ impl Simplex3 {
     #[inline]
     #[must_use]
     /// 0th vertex of the tetrahedron
-    pub(crate) fn a(&self) -> Cartesian<3> {
+    pub(crate) const fn a(&self) -> Cartesian<3> {
         self.vertices[0]
     }
     #[inline]
     #[must_use]
     /// 1st vertex of the tetrahedron
-    pub(crate) fn b(&self) -> Cartesian<3> {
+    pub(crate) const fn b(&self) -> Cartesian<3> {
         self.vertices[1]
     }
     #[inline]
     #[must_use]
     /// 2nd vertex of the tetrahedron
-    pub(crate) fn c(&self) -> Cartesian<3> {
+    pub(crate) const fn c(&self) -> Cartesian<3> {
         self.vertices[2]
     }
     #[inline]
     #[must_use]
     /// 3rd vertex of the tetrahedron
-    pub(crate) fn d(&self) -> Cartesian<3> {
+    pub(crate) const fn d(&self) -> Cartesian<3> {
         self.vertices[3]
     }
     /// Return the vertices of an oriented tetrahedron. Users should call ``orient_in_place``
@@ -258,7 +258,7 @@ fn check_face_on_q_is_separating(aff: &[f64; 4]) -> bool {
 )]
 #[inline]
 #[must_use]
-fn edge_test(
+const fn edge_test(
     ma: u8,
     mb: u8,
     a: u8,

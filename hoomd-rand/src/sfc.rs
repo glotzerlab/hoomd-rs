@@ -71,7 +71,7 @@ impl SFC64 {
     }
     /// Increment the RNG forward, returning the generated result.
     #[inline]
-    fn step(&mut self) -> u64 {
+    const fn step(&mut self) -> u64 {
         const BARREL_SHIFT: u32 = 24;
         const RSHIFT: u64 = 11;
         const LSHIFT: u64 = 3;

@@ -68,7 +68,7 @@ impl Bussi {
     /// let bussi = Bussi::new(0.5);
     /// ```
     #[inline]
-    pub fn new(tau: f64) -> Self {
+    pub const fn new(tau: f64) -> Self {
         Self { tau, energy: 0.0 }
     }
     /// Calculate the energy drift on one time step.
@@ -87,7 +87,7 @@ impl Bussi {
     /// let energy = bussi.energy();
     /// ```
     #[inline]
-    pub fn energy(&self) -> f64 {
+    pub const fn energy(&self) -> f64 {
         self.energy
     }
 }

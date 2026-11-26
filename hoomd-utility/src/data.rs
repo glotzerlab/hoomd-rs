@@ -283,13 +283,13 @@ where
     /// Maximum number of log records to buffer in memory.
     #[inline]
     #[must_use]
-    pub fn maximum_buffer_size(&self) -> usize {
+    pub const fn maximum_buffer_size(&self) -> usize {
         self.maximum_buffer_size
     }
 
     /// Mutable reference to the maximum number of log records to buffer in memory.
     #[inline]
-    pub fn maximum_buffer_size_mut(&mut self) -> &mut usize {
+    pub const fn maximum_buffer_size_mut(&mut self) -> &mut usize {
         &mut self.maximum_buffer_size
     }
 

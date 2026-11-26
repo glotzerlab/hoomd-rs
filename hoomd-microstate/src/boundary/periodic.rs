@@ -127,7 +127,7 @@ impl<T> Periodic<T> {
     /// # }
     /// ```
     #[inline]
-    pub fn shape(&self) -> &T {
+    pub const fn shape(&self) -> &T {
         &self.shape
     }
 
@@ -152,7 +152,7 @@ impl<T> Periodic<T> {
         reason = "MaximumInteractionRange is a trait in hoomd-interaction"
     )]
     #[inline]
-    pub fn maximum_interaction_range(&self) -> f64 {
+    pub const fn maximum_interaction_range(&self) -> f64 {
         self.maximum_interaction_range
     }
 }

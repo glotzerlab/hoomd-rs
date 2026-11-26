@@ -90,7 +90,7 @@ impl<const N: usize> Hyperellipsoid<N> {
     /// Get the semi axes.
     #[must_use]
     #[inline]
-    pub fn semi_axes(&self) -> &[PositiveReal; N] {
+    pub const fn semi_axes(&self) -> &[PositiveReal; N] {
         &self.semi_axes
     }
 }

@@ -23,6 +23,7 @@
 * `[hoomd-gsd]`: Remove the 63 character type name limit (#477).
 * `[hoomd-microstate]`: Panic in `iter_sites_near` when the search radius is larger than the boundary's maximum interaction range. Adds a `C: GenerateGhosts<S>` bound to some implementations, but all boundaries must already implement `GenerateGhosts<S>` (#420).
 * `[hoomd-mc]`: Users can now set non-default values in `TuneOptions` (#483).
+* Many functions across all crates can now be used in const contexts (#492).
 
 *Deprecated:*
 
